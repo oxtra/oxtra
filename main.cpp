@@ -1,20 +1,19 @@
 #include <cstdint>
 #include <cstdio>
-#include <sys/mman.h>
 #include <cstring>
+#include <sys/mman.h>
 extern "C" {
     #include "../fadec/fadec.h"
 }
 
-int readelf(char *file, uint8_t *x86code, int x86size) {
+int readelf(const char *file, const uint8_t *x86code, int x86size) {
     return 0;
 }
 
-int translate(uint8_t *x86code, int x86size, uint8_t *rvcode, int rvsize) {
-    // TODO: in decode und encode aufspalten
+int decode(const uint8_t *x86code, size_t x86size, FdInstr *intermediate, size_t inter_size) {
     FdInstr instr;
-    uint8_t *rvcurr = rvcode;
-    uint8_t *x86curr = x86code;
+    const uint8_t *x86curr = x86code;
+    FdInstr *inter_curr = intermediate;
 
     for (;;) {
         int fdret = fd_decode(x86curr, x86size, 64, 0, &instr);
@@ -23,10 +22,38 @@ int translate(uint8_t *x86code, int x86size, uint8_t *rvcode, int rvsize) {
             return -1;
         }
 
-        if (instr.type >= 259 && instr.type <= 268) { // mov
+        *inter_curr = instr;
+
+        ++inter_curr;
+        x86curr += instr.size;
+
+        if (instr.type == 313) break; //ret
+
+        if (x86curr - x86code > x86size) {
+            printf("exceeded x86 buffer\n");
+            return -1;
+        } if (inter_curr - intermediate > inter_size) {
+            printf("exceeded intermediate buffer\n");
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+int optimize(FdInstr *intermediate, size_t inter_size) {
+    return 0;
+}
+
+int encode(const FdInstr *intermediate, size_t inter_size, uint8_t *rvcode, size_t rvsize) {
+    const FdInstr *inter_curr = intermediate;
+    uint8_t *rvcurr = rvcode;
+
+    for (;;) {
+        if (inter_curr->type >= 259 && inter_curr->type <= 268) { // mov
             // lui a0, imm
             // imm[31:12] rd 0110111
-            auto lui = instr.imm & 0xfffff000;
+            uint32_t lui = inter_curr->imm & 0xfffff000;
             lui |= 0x537;
             uint8_t *tmp = reinterpret_cast<uint8_t *>(&lui);
             rvcurr[0] = tmp[0];
@@ -39,14 +66,14 @@ int translate(uint8_t *x86code, int x86size, uint8_t *rvcode, int rvsize) {
             // ori a0, x0, imm
             // imm[11:0] rs1 110 rd 0010011
             // 10000 110 01010 0010011
-            auto ori = instr.imm << 20;
+            uint32_t ori = inter_curr->imm << 20;
             ori |= 0x6513;
             tmp = reinterpret_cast<uint8_t *>(&ori);
             rvcurr[0] = tmp[0];
             rvcurr[1] = tmp[1];
             rvcurr[2] = tmp[2];
             rvcurr[3] = tmp[3];
-        } else if (instr.type == 313) { // ret
+        } else if (inter_curr->type == 313) { // ret
             // jalr x0, x1, 0
             // imm[11:0]    rs1   000 rd    1100111
             // 000000000000 00001 000 00000 1100111 
@@ -61,9 +88,10 @@ int translate(uint8_t *x86code, int x86size, uint8_t *rvcode, int rvsize) {
             return -1;
         }
 
-        x86curr += instr.size;
+        ++inter_curr;
         rvcurr += 4;
-        if (x86curr - x86code > x86size) {
+
+        if (inter_curr - intermediate > inter_size) {
             printf("exceeded x86 buffer\n");
             return -1;
         } if (rvcurr - rvcode > rvsize) {
@@ -75,7 +103,15 @@ int translate(uint8_t *x86code, int x86size, uint8_t *rvcode, int rvsize) {
     return 0;
 }
 
-int dispatch(uint8_t *rvcode, int rvsize) {
+int translate(const uint8_t *x86code, size_t x86size, uint8_t *rvcode, size_t rvsize) {
+    FdInstr intermediate[8];
+    decode(x86code, x86size, intermediate, sizeof(intermediate));
+    optimize(intermediate, sizeof(intermediate));
+    encode(intermediate, sizeof(intermediate), rvcode, rvsize);
+    return 0;
+}
+
+int dispatch(const uint8_t *rvcode, size_t rvsize) {
     // write our code into a block of memory and make it executable
     void *mem = mmap(NULL, rvsize, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
     memcpy(mem, rvcode, rvsize);
