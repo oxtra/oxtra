@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData">
+    <serverData>
+      <paths name="RemoteHost (9d438014-9818-47ad-92aa-01e5637d1b57)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/tmp/tmp.VmvAaiLo7c" local="$PROJECT_DIR$" />
+          </mappings>
+          <excludedPaths>
+            <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-debug" />
+            <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-debug" />
+          </excludedPaths>
+        </serverdata>
+      </paths>
+    </serverData>
+  </component>
+</project>
