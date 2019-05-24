@@ -161,7 +161,7 @@ void Parser::unpack_file(Buffer* file) {
 
         //get the section-name-pointer
         auto name_ptr = (uint8_t*)find_in_file(file, shdr[s_i].sh_offset, shdr[s_i].sh_size);
-        if(name_ptr == 0)
+        if(name_ptr == nullptr)
 			throw ParserException(ParserException::file_content);
 
 		//find the bss section
@@ -192,7 +192,7 @@ void Parser::unpack_file(Buffer* file) {
                 _address_range = phdr[i].p_vaddr + phdr[i].p_memsz;
         }
     }
-    if(bss_section != 0) {
+    if(bss_section != nullptr) {
         if(bss_section->sh_addr < _base_address)
             _base_address = bss_section->sh_addr;
         if(bss_section->sh_addr + bss_section->sh_size > _address_range)
@@ -208,10 +208,10 @@ void Parser::unpack_file(Buffer* file) {
 
 	//allocate the buffer for the image & the table for the page-entries
     _image_ptr = malloc(_address_range);
-    if(_image_ptr == 0)
+    if(_image_ptr == nullptr)
 		throw ParserException(ParserException::resource_failure);
 	_page_flags = (uint8_t*)malloc(_address_range >> 12u);
-    if(_page_flags == 0) {
+    if(_page_flags == nullptr) {
         free(_image_ptr);
 		throw ParserException(ParserException::resource_failure);
     }
@@ -221,14 +221,14 @@ void Parser::unpack_file(Buffer* file) {
     //iterate through the program-headers and write the to memory
     for(uint64_t i = 0; i < p_c + 1; i++) {
         if (i < p_c ? phdr[i].p_type == PT_LOAD : true) {
-            void* ptr = 0;
+            void* ptr = nullptr;
             if (i < p_c)
                 ptr = find_in_file(file, phdr[i].p_offset, phdr[i].p_filesz);
-            else if(bss_section == 0)
+            else if(bss_section == nullptr)
                 break;
             else
                 ptr = find_in_file(file, bss_section->sh_offset, bss_section->sh_size);
-            if(ptr == 0) {
+            if(ptr == nullptr) {
                 free(_image_ptr);
                 free(_page_flags);
 				throw ParserException(ParserException::file_content);
