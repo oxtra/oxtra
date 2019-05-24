@@ -2,12 +2,13 @@ extern "C" {
 	#include <fadec.h>
 }
 
+#include <iostream>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <sys/mman.h>
 
-#include "oxtra/elf/Elf.h"
+#include "oxtra/elf/Parser.h"
 
 int decode(const uint8_t *x86code, size_t x86size, FdInstr *intermediate, size_t inter_size) {
 	FdInstr instr;
@@ -127,7 +128,24 @@ int main(int argc, char **argv) {
 	uint8_t x86code[] = {0xb8, 0x02, 0x00, 0x00, 0x00, 0xc3}; // mov eax, 2; ret
 	uint8_t rvcode[12] = {0};
 
-	read_elf(argv[1], x86code, sizeof(x86code));
+	//parse the binary-file
+	elf::Parser parser(argv[1]);
+
+	//print the memory-pages of the unpacked elf-file
+	uint64_t vaddr = parser.get_base_vaddr();
+	while(vaddr < parser.get_highest_vaddr()) {
+		uint64_t max_size = parser.get_size(vaddr, 0x100000);
+		std::cout << (void*)vaddr << " - " << (void*)(vaddr + max_size - 1) << " : ";
+		std::cout << ((parser.get_page_flags(vaddr) & elf::PAGE_READ) ? 'r' : '-');
+		std::cout << ((parser.get_page_flags(vaddr) & elf::PAGE_WRITE) ? 'w' : '-');
+		std::cout << ((parser.get_page_flags(vaddr) & elf::PAGE_EXECUTE) ? 'x' : '-');
+		std::cout << ((parser.get_page_flags(vaddr) & elf::PAGE_MAPPED) ? 'm' : '-');
+		if(parser.get_entry_point() >= vaddr && parser.get_entry_point() < vaddr + max_size)
+			std::cout << " (entry: " << std::hex << (void*)parser.get_entry_point() << ")";
+		std::cout << std::endl;
+		vaddr += max_size;
+	}
+
 	translate(x86code, sizeof(x86code), rvcode, sizeof(rvcode));
 	dispatch(rvcode, sizeof(rvcode));
 
