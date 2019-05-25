@@ -1,5 +1,6 @@
-#ifndef ELFPARSER_ELFPARSER_H
-#define ELFPARSER_ELFPARSER_H
+#ifndef OXTRA_PARSER_H
+#define OXTRA_PARSER_H
+
 #include <inttypes.h>
 #include <string.h>
 #include <malloc.h>
@@ -10,14 +11,13 @@
 //enter the namespace
 namespace elf {
 	//define the flags
-	const uint8_t PAGE_EXECUTE 	= 0x01;
-	const uint8_t PAGE_READ 	= 0x02;
-	const uint8_t PAGE_WRITE 	= 0x04;
-	const uint8_t PAGE_MAPPED 	= 0x08;
+	constexpr uint8_t PAGE_EXECUTE = 0x01;
+	constexpr uint8_t PAGE_READ = 0x02;
+	constexpr uint8_t PAGE_WRITE = 0x04;
+	constexpr uint8_t PAGE_MAPPED = 0x08;
 
 	//define the exception-class
 	class ParserException : public std::exception {
-		//define the publicly used object
 	public:
 		enum Error : uint8_t {
 			undefined,
@@ -31,63 +31,112 @@ namespace elf {
 			page_conflict
 		};
 
-		//define the private attributes
 	private:
 		Error _err;
 
-		//define the constructors
 	public:
-		ParserException() ;
+		ParserException();
+
 		ParserException(Error e);
 
-		//define the public functions
 	public:
-		const char* what() const noexcept;
+		const char *what() const noexcept;
 	};
 
 	//define the parser-class
 	class Parser {
-		//define the internally used object
 	private:
 		struct Buffer {
-			void* 		ptr;
-			uint64_t 	size;
+			void *_ptr;
+			uint64_t _size;
+
 			Buffer();
-			Buffer(void* p, uint64_t s);
+
+			Buffer(void *p, uint64_t s);
+
 			~Buffer();
 		};
 
-		//define the attributes
 	private:
-		void*           _image_ptr;
-		uint64_t 		_base_address;
-		uint64_t		_address_range;
-		uint8_t*        _page_flags;
-		uint64_t        _entry_point;
+		void *_image_ptr;
+		uint64_t _base_address;
+		uint64_t _address_range;
+		uint8_t *_page_flags;
+		uint64_t _entry_point;
 
-		//define the private functions
 	private:
-        static Buffer read_file(const char* path);
-        static void* find_in_file(Buffer* file, uint64_t addr, uint64_t size);
-        static void validate_elf(Buffer* file, uint8_t data_form, uint16_t machine, uint16_t type);
-        void unpack_file(Buffer* file);
+		static Buffer read_file(const char *path);
 
-		//define the constructor and deconstructor
+		static void *find_in_file(Buffer *file, uint64_t addr, uint64_t size);
+
+		static void validate_elf(Buffer *file, uint8_t data_form, uint16_t machine, uint16_t type);
+
+		void unpack_file(Buffer *file);
+
 	public:
-		Parser(const char *path, uint8_t data_form = ELFDATA2LSB, uint16_t machine = EM_X86_64, uint16_t type = ET_EXEC);
+
+		/**
+ 		* Parses an elf-binary-file and unpacks the file
+ 		* @param path path to the elf-binary-file
+ 		* @param data_form little endian or big endian (default: ELFDATA2LSB)
+ 		* @param machine architecture the parser looks for (default: EM_X86_64)
+ 		* @param type the type of elf-binary (default: ET_EXEC)
+ 		* @return returns false if already called before. Otherwise parses and returns true
+ 		*/
+		Parser(const char *path, uint8_t data_form = ELFDATA2LSB, uint16_t machine = EM_X86_64,
+			   uint16_t type = ET_EXEC);
+
 		~Parser();
-		Parser() = delete;
-		Parser(Parser&) = delete;
-		Parser(Parser&&) = delete;
 
-		//define the public functions
+		Parser() = delete;
+
+		Parser(Parser &) = delete;
+
+		Parser(Parser &&) = delete;
+
 	public:
+		/**
+ 		* retrieves the base-address of the image created by the binary-file
+ 		* @return virtual base-address
+ 		*/
 		uint64_t get_base_vaddr();
+
+		/**
+ 		* retrieves the address to the first byte outside of the image created by the binary-file
+ 		* @return virtual base-address + virtual address-range
+	 	*/
 		uint64_t get_highest_vaddr();
+
+		/**
+ 		* retrieves the entry-point of the binary-image (might be zero, if not an executable)
+ 		* @return virtual address of entry point
+ 		*/
 		uint64_t get_entry_point();
-		void* resolve_vaddr(uint64_t vaddr);
+
+		/**
+ 		* resolves a virtual address to an actual pointer inside of the binary-image
+ 		* (Pages within the virtual address-space of this binary, flagged as unmapped can be accessed but will be set to 0)
+ 		* @param vaddr the virtual address
+ 		* @return 0 if the virtual address lies outside of the addressable range of the binary, otherwise the pointer
+ 		*/
+		void *resolve_vaddr(uint64_t vaddr);
+
+		/**
+ 		* extracts the page-flags of a given address inside of the binary-image
+ 		* (PAGE_EXECUTE/PAGE_READ/PAGE_WRITE/PAGE_MAPPED)
+ 		* @param vaddr the virtual address
+ 		* @return 0 if the virtual address lies outside of the addressable range of the binary, otherwise the attributes
+ 		*/
 		uint8_t get_page_flags(uint64_t vaddr);
+
+		/**
+ 		* retrieves the maximum available memory for a given virtual address within the binary-image, which all share the
+ 		* same page-flags, up to max_page's away from the virtual address
+ 		* @param vaddr the virtual address
+ 		* @param max_page the maximum number of pages to sample
+ 		* @return number of bytes to end of max_page or change in page-flags
+ 		*/
 		uint64_t get_size(uint64_t vaddr, uint64_t max_page = 1);
 	};
 }
-#endif //ELFPARSER_ELFPARSER_H
+#endif //OXTRA_PARSER_H
