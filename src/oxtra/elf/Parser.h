@@ -48,26 +48,26 @@ namespace elf {
 	private:
 		struct Buffer {
 			void *_ptr;
-			uint64_t _size;
+			size_t _size;
 
 			Buffer();
 
-			Buffer(void *p, uint64_t s);
+			Buffer(void *p, size_t s);
 
 			~Buffer();
 		};
 
 	private:
 		void *_image_ptr;
-		uint64_t _base_address;
-		uint64_t _address_range;
+		uintptr_t _base_address;
+		size_t _address_range;
 		uint8_t *_page_flags;
-		uint64_t _entry_point;
+		uintptr_t _entry_point;
 
 	private:
 		static Buffer read_file(const char *path);
 
-		static void *find_in_file(Buffer *file, uint64_t addr, uint64_t size);
+		static void *find_in_file(Buffer *file, uintptr_t addr, size_t size);
 
 		static void validate_elf(Buffer *file, uint8_t data_form, uint16_t machine, uint16_t type);
 
@@ -99,19 +99,19 @@ namespace elf {
  		* retrieves the base-address of the image created by the binary-file
  		* @return virtual base-address
  		*/
-		uint64_t get_base_vaddr();
+		uintptr_t get_base_vaddr();
 
 		/**
  		* retrieves the address to the first byte outside of the image created by the binary-file
  		* @return virtual base-address + virtual address-range
 	 	*/
-		uint64_t get_highest_vaddr();
+		uintptr_t get_highest_vaddr();
 
 		/**
  		* retrieves the entry-point of the binary-image (might be zero, if not an executable)
  		* @return virtual address of entry point
  		*/
-		uint64_t get_entry_point();
+		uintptr_t get_entry_point();
 
 		/**
  		* resolves a virtual address to an actual pointer inside of the binary-image
@@ -119,7 +119,7 @@ namespace elf {
  		* @param vaddr the virtual address
  		* @return 0 if the virtual address lies outside of the addressable range of the binary, otherwise the pointer
  		*/
-		void *resolve_vaddr(uint64_t vaddr);
+		void *resolve_vaddr(uintptr_t vaddr);
 
 		/**
  		* extracts the page-flags of a given address inside of the binary-image
@@ -127,7 +127,7 @@ namespace elf {
  		* @param vaddr the virtual address
  		* @return 0 if the virtual address lies outside of the addressable range of the binary, otherwise the attributes
  		*/
-		uint8_t get_page_flags(uint64_t vaddr);
+		uint8_t get_page_flags(uintptr_t vaddr);
 
 		/**
  		* retrieves the maximum available memory for a given virtual address within the binary-image, which all share the
@@ -136,7 +136,7 @@ namespace elf {
  		* @param max_page the maximum number of pages to sample
  		* @return number of bytes to end of max_page or change in page-flags
  		*/
-		uint64_t get_size(uint64_t vaddr, uint64_t max_page = 1);
+		size_t get_size(uintptr_t vaddr, size_t max_page = 1);
 	};
 }
 #endif //OXTRA_PARSER_H

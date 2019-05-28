@@ -14,24 +14,24 @@ ParserException::ParserException(Error e) {
 const char *ParserException::what() const noexcept {
 	switch (_err) {
 		case Error::resource_failure:
-			return "[elf::Parser::resource_failure]: failed to allocate the necessary memory";
+			return "[resource_failure] failed to allocate the necessary memory";
 		case Error::file_failed:
-			return "[elf::Parser::file_failed]: failed to open or read the file";
+			return "[file_failed] failed to open or read the file";
 		case Error::file_content:
-			return "[elf::Parser::file_content]: this program can not handle the alignment of the contents of the file";
+			return "[file_content] this program can not handle the alignment of the contents of the file";
 		case Error::not_elf_file:
-			return "[elf::Parser::not_elf_file]: the file is not an elf-file";
+			return "[not_elf_file] the file is not an elf-file";
 		case Error::unsupported_binary:
-			return "[elf::Parser::unsupported_binary]: the file does not conform to the binary-standards of this program";
+			return "[unsupported_binary] the file does not conform to the binary-standards of this program";
 		case Error::format_issue:
-			return "[elf::Parser::format_issue]: this program can not handle this elf-format";
+			return "[format_issue] this program can not handle this elf-format";
 		case Error::no_content:
-			return "[elf::Parser::no_content]: the file does not contain any mappable data";
+			return "[no_content] the file does not contain any mappable data";
 		case Error::page_conflict:
-			return "[elf::Parser::page_conflict]: two or more segments try to share a page with different flags";
+			return "[page_conflict] two or more segments try to share a page with different flags";
 		case Error::undefined:
 		default:
-			return "[elf::Parser::undefined]: undefined";
+			return "[undefined] undefined";
 	}
 }
 
@@ -41,7 +41,7 @@ Parser::Buffer::Buffer() {
 	_size = 0;
 }
 
-Parser::Buffer::Buffer(void *p, uint64_t s) {
+Parser::Buffer::Buffer(void *p, size_t s) {
 	_ptr = p;
 	_size = s;
 }
@@ -59,7 +59,7 @@ Parser::Buffer Parser::read_file(const char *path) {
 
 	//read the size of the file
 	fseek(file, 0, SEEK_END);
-	uint64_t size = ftell(file);
+	size_t size = ftell(file);
 	fseek(file, 0, SEEK_SET);
 	if (size == 0) {
 		fclose(file);
@@ -83,10 +83,10 @@ Parser::Buffer Parser::read_file(const char *path) {
 	return Buffer(ptr, size);
 }
 
-void *Parser::find_in_file(Buffer *file, uint64_t addr, uint64_t size) {
+void *Parser::find_in_file(Buffer *file, uintptr_t addr, size_t size) {
 	if (addr + size > file->_size)
 		return nullptr;
-	return (void *) ((uint64_t) file->_ptr + addr);
+	return reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(file->_ptr) + addr);
 }
 
 void Parser::validate_elf(Buffer *file, uint8_t data_form, uint16_t machine, uint16_t type) {
@@ -128,26 +128,26 @@ void Parser::validate_elf(Buffer *file, uint8_t data_form, uint16_t machine, uin
 
 void Parser::unpack_file(Buffer *file) {
 	//extract the file-header and the entry-point
-	auto ehdr = (Elf64_Ehdr *) find_in_file(file, 0, sizeof(Elf64_Ehdr));
+	auto ehdr = reinterpret_cast<Elf64_Ehdr *>(find_in_file(file, 0, sizeof(Elf64_Ehdr)));
 	if (ehdr == nullptr)
 		throw ParserException(ParserException::file_content);
 	_entry_point = ehdr->e_entry;
 
 	//extract the number of program-headers/section-header & the index to the string-table
-	uint64_t p_c = ehdr->e_phnum;
-	uint64_t s_c = ehdr->e_shnum;
-	uint64_t s_i = ehdr->e_shstrndx;
+	size_t p_c = ehdr->e_phnum;
+	size_t s_c = ehdr->e_shnum;
+	size_t s_i = ehdr->e_shstrndx;
 	if (ehdr->e_phnum == PN_XNUM || ehdr->e_shnum == 0 || s_i == SHN_XINDEX) {
 		//extract the initial section-header
-		auto i_shdr = (Elf64_Shdr *) find_in_file(file, ehdr->e_shoff, sizeof(Elf64_Shdr));
-		if (i_shdr == 0)
+		auto shdr = reinterpret_cast<Elf64_Shdr *>(find_in_file(file, ehdr->e_shoff, sizeof(Elf64_Shdr)));
+		if (shdr == nullptr)
 			throw ParserException(ParserException::file_content);
 		if (ehdr->e_phnum == PN_XNUM)
-			p_c = i_shdr->sh_info;
+			p_c = shdr->sh_info;
 		if (ehdr->e_shnum == 0)
-			s_c = i_shdr->sh_size;
+			s_c = shdr->sh_size;
 		if (s_i == SHN_XINDEX)
-			s_i = i_shdr->sh_link;
+			s_i = shdr->sh_link;
 	}
 	if (p_c == 0 && s_c == 0)
 		throw ParserException(ParserException::no_content);
@@ -155,8 +155,8 @@ void Parser::unpack_file(Buffer *file) {
 		throw ParserException(ParserException::file_content);
 
 	//extract the program-header & section-header
-	auto phdr = (Elf64_Phdr *) find_in_file(file, ehdr->e_phoff, p_c * ehdr->e_phentsize);
-	auto shdr = (Elf64_Shdr *) find_in_file(file, ehdr->e_shoff, s_c * ehdr->e_shentsize);
+	auto phdr = reinterpret_cast<Elf64_Phdr *>(find_in_file(file, ehdr->e_phoff, p_c * ehdr->e_phentsize));
+	auto shdr = reinterpret_cast<Elf64_Shdr *>(find_in_file(file, ehdr->e_shoff, s_c * ehdr->e_shentsize));
 	if ((phdr == nullptr && p_c > 0) || (shdr == nullptr && s_c > 0))
 		throw ParserException(ParserException::file_content);
 
@@ -167,12 +167,12 @@ void Parser::unpack_file(Buffer *file) {
 			throw ParserException(ParserException::file_content);
 
 		//get the section-name-pointer
-		auto name_ptr = (uint8_t *) find_in_file(file, shdr[s_i].sh_offset, shdr[s_i].sh_size);
+		auto name_ptr = reinterpret_cast<uint8_t *>(find_in_file(file, shdr[s_i].sh_offset, shdr[s_i].sh_size));
 		if (name_ptr == nullptr)
 			throw ParserException(ParserException::file_content);
 
 		//find the bss section
-		for (uint64_t i = 0; i < s_c; i++) {
+		for (auto i = 0; i < s_c; i++) {
 			if (shdr[i].sh_name >= shdr[s_i].sh_size)
 				throw ParserException(ParserException::file_content);
 			if (shdr[i].sh_name + 5 > shdr[s_i].sh_size)
@@ -190,7 +190,7 @@ void Parser::unpack_file(Buffer *file) {
 	//extract the base-address and the total address-range
 	_base_address = ~0x00u;
 	_address_range = 0;
-	for (uint64_t i = 0; i < p_c; i++) {
+	for (auto i = 0; i < p_c; i++) {
 		if (phdr[i].p_type == PT_LOAD) {
 			if (phdr[i].p_memsz < phdr[i].p_filesz)
 				throw ParserException(ParserException::file_content);
@@ -218,7 +218,7 @@ void Parser::unpack_file(Buffer *file) {
 	_image_ptr = malloc(_address_range);
 	if (_image_ptr == nullptr)
 		throw ParserException(ParserException::resource_failure);
-	_page_flags = (uint8_t *) malloc(_address_range >> 12u);
+	_page_flags = reinterpret_cast<uint8_t *>(malloc(_address_range >> 12u));
 	if (_page_flags == nullptr) {
 		free(_image_ptr);
 		throw ParserException(ParserException::resource_failure);
@@ -227,7 +227,7 @@ void Parser::unpack_file(Buffer *file) {
 	memset(_image_ptr, 0, _address_range);
 
 	//iterate through the program-headers and write the to memory
-	for (uint64_t i = 0; i < p_c + 1; i++) {
+	for (auto i = 0; i < p_c + 1; i++) {
 		if (i < p_c ? phdr[i].p_type == PT_LOAD : true) {
 			void *ptr = nullptr;
 			if (i < p_c)
@@ -243,8 +243,8 @@ void Parser::unpack_file(Buffer *file) {
 			}
 
 			//compute the first and the last page the blocks are within
-			uint64_t page_start = ((i < p_c) ? phdr[i].p_vaddr : bss_section->sh_addr) - _base_address;
-			uint64_t page_end =
+			size_t page_start = ((i < p_c) ? phdr[i].p_vaddr : bss_section->sh_addr) - _base_address;
+			size_t page_end =
 					((i < p_c) ? phdr[i].p_vaddr + phdr[i].p_memsz : bss_section->sh_addr + bss_section->sh_size) -
 					_base_address;
 			page_start >>= 12u;
@@ -263,7 +263,7 @@ void Parser::unpack_file(Buffer *file) {
 				flags |= PAGE_WRITE | PAGE_READ;
 
 			//setup the page-flags
-			for (uint64_t p = page_start; p < page_end; p++) {
+			for (auto p = page_start; p < page_end; p++) {
 				if (_page_flags[p] != 0 && _page_flags[p] != flags) {
 					free(_image_ptr);
 					free(_page_flags);
@@ -274,7 +274,8 @@ void Parser::unpack_file(Buffer *file) {
 
 			//write the content to the memory
 			if (i < p_c)
-				memcpy((void *) ((uint64_t) _image_ptr + phdr[i].p_vaddr - _base_address), ptr, phdr[i].p_filesz);
+				memcpy(reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(_image_ptr) + phdr[i].p_vaddr -
+												_base_address), ptr, phdr[i].p_filesz);
 		}
 	}
 }
@@ -299,34 +300,32 @@ Parser::Parser(const char *path, uint8_t data_form, uint16_t machine, uint16_t t
 }
 
 Parser::~Parser() {
-	if (_image_ptr != nullptr)
-		free(_image_ptr);
-	if (_page_flags != nullptr)
-		free(_page_flags);
+	free(_image_ptr);
+	free(_page_flags);
 }
 
 //implementation of the public-functions of the parser-class
-uint64_t Parser::get_base_vaddr() {
+uintptr_t Parser::get_base_vaddr() {
 	return _base_address;
 }
 
-uint64_t Parser::get_highest_vaddr() {
+uintptr_t Parser::get_highest_vaddr() {
 	return _base_address + _address_range;
 }
 
-uint64_t Parser::get_entry_point() {
+uintptr_t Parser::get_entry_point() {
 	return _entry_point;
 }
 
-void *Parser::resolve_vaddr(uint64_t vaddr) {
+void *Parser::resolve_vaddr(uintptr_t vaddr) {
 	//validate the address
 	vaddr -= _base_address;
 	if (vaddr >= _address_range)
 		return nullptr;
-	return (void *) ((uint64_t) _image_ptr + vaddr);
+	return reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(_image_ptr) + vaddr);
 }
 
-uint8_t Parser::get_page_flags(uint64_t vaddr) {
+uint8_t Parser::get_page_flags(uintptr_t vaddr) {
 	//validate the address
 	vaddr -= _base_address;
 	if (vaddr >= _address_range)
@@ -334,7 +333,7 @@ uint8_t Parser::get_page_flags(uint64_t vaddr) {
 	return _page_flags[vaddr >> 12u];
 }
 
-uint64_t Parser::get_size(uint64_t vaddr, uint64_t max_page) {
+size_t Parser::get_size(uintptr_t vaddr, size_t max_page) {
 	//validate the address
 	vaddr -= _base_address;
 	if (vaddr >= _address_range)
@@ -344,7 +343,7 @@ uint64_t Parser::get_size(uint64_t vaddr, uint64_t max_page) {
 	uint8_t flags = _page_flags[vaddr >> 12u];
 
 	//compute the initial size and convert vaddr to its page-index
-	uint64_t size = vaddr & 0x00000FFFu;
+	size_t size = vaddr & 0x00000FFFu;
 	vaddr = (vaddr >> 12u) + (size > 0 ? 1 : 0);
 
 	//compute the page-index of the last page to check and clip the value
@@ -353,7 +352,7 @@ uint64_t Parser::get_size(uint64_t vaddr, uint64_t max_page) {
 		max_page = (_address_range >> 12u);
 
 	//iterate through the pages and add their size up
-	for (uint64_t i = vaddr; i < max_page; i++) {
+	for (size_t i = vaddr; i < max_page; i++) {
 		if (flags != _page_flags[i])
 			return size;
 		size += 0x1000;
