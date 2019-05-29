@@ -1,5 +1,6 @@
 <component name="ProjectCodeStyleConfiguration">
   <code_scheme name="Project" version="173">
+    <option name="LINE_SEPARATOR" value="&#10;" />
     <Objective-C>
       <option name="NAMESPACES_NAMING_CONVENTION">
         <value prefix="" style="LOWERCASE" suffix="" />
