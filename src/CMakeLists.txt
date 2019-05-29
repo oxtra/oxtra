@@ -12,10 +12,3 @@ target_include_directories(oxtra_libs
 		PUBLIC
 		../src
 )
-
-add_executable(oxtra main.cpp)
-
-target_link_libraries(oxtra
-		fadec
-		oxtra_libs
-)
