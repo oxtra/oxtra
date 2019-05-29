@@ -8,4 +8,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 # Add sub directories
 add_subdirectory(libs/fadec)
+
 add_subdirectory(src)
+
+add_subdirectory(test)
