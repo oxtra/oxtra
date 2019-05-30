@@ -1,5 +1,6 @@
 <component name="ProjectCodeStyleConfiguration">
   <code_scheme name="Project" version="173">
+    <option name="LINE_SEPARATOR" value="&#10;" />
     <Objective-C>
       <option name="NAMESPACES_NAMING_CONVENTION">
         <value prefix="" style="LOWERCASE" suffix="" />
@@ -10,14 +11,32 @@
       <option name="ENUMS_NAMING_CONVENTION">
         <value prefix="" style="PASCAL_CASE" suffix="" />
       </option>
+      <option name="ENUMERATORS_NAMING_CONVENTION">
+        <value prefix="" style="SNAKE_CASE" suffix="" />
+      </option>
+      <option name="TYPEDEFS_NAMING_CONVENTION">
+        <value prefix="" style="SNAKE_CASE" suffix="" />
+      </option>
+      <option name="UNIONS_NAMING_CONVENTION">
+        <value prefix="" style="PASCAL_CASE" suffix="" />
+      </option>
       <option name="METHODS_NAMING_CONVENTION">
+        <value prefix="" style="SNAKE_CASE" suffix="" />
+      </option>
+      <option name="FIELDS_NAMING_CONVENTION">
+        <value prefix="" style="SNAKE_CASE" suffix="" />
+      </option>
+      <option name="GLOBAL_FUNCTIONS_NAMING_CONVENTION">
+        <value prefix="" style="SNAKE_CASE" suffix="" />
+      </option>
+      <option name="GLOBAL_VARIABLES_NAMING_CONVENTION">
         <value prefix="" style="SNAKE_CASE" suffix="" />
       </option>
       <option name="PARAMETERS_NAMING_CONVENTION">
         <value prefix="" style="SNAKE_CASE" suffix="" />
       </option>
       <option name="LOCAL_VARIABLES_NAMING_CONVENTION">
-        <value prefix="_" style="SNAKE_CASE" suffix="" />
+        <value prefix="" style="SNAKE_CASE" suffix="" />
       </option>
     </Objective-C>
     <codeStyleSettings language="CMake">
