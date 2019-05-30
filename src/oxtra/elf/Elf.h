@@ -28,6 +28,7 @@ namespace elf {
 			format_issue,
 			unsupported_binary,
 			unsupported_type,
+			not_static,
 			no_content,
 			page_conflict
 		};

@@ -23,6 +23,8 @@ const char *ParserException::what() const noexcept {
 			return "[unsupported_binary] the file does not conform to the binary-standards of this program";
 		case Error::unsupported_type:
 			return "[unsupported_type] the file does not seem to be an executable";
+		case Error::not_static:
+			return "[not_static] the file has not been linked statically";
 		case Error::format_issue:
 			return "[format_issue] this program can not handle this elf-format";
 		case Error::no_content:
@@ -82,7 +84,7 @@ void Elf::validate_elf(Buffer *file, uint8_t data_form, uint16_t machine) {
 		throw ParserException(ParserException::file_content);
 
 	//validate the header-identification
-	if (memcmp(ehdr->e_ident, "\x7f" "Elf", 4) != 0)
+	if (memcmp(ehdr->e_ident, "\x7f" "ELF", 4) != 0)
 		throw ParserException(ParserException::not_elf_file);
 	if (ehdr->e_ident[EI_CLASS] != ELFCLASS64)
 		throw ParserException(ParserException::unsupported_binary);
@@ -171,6 +173,12 @@ void Elf::unpack_file(Buffer *file) {
 				break;
 			}
 		}
+	}
+
+	//check if the binary was statically linked
+	for (auto i = 0; i < p_c; i++) {
+		if (phdr[i].p_type == PT_INTERP)
+			throw ParserException(ParserException::not_static);
 	}
 
 	//extract the base-address and the total address-range
