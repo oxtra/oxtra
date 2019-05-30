@@ -1,4 +1,4 @@
-#include "ELF.h"
+#include "Elf.h"
 
 using namespace elf;
 
@@ -36,13 +36,13 @@ const char *ParserException::what() const noexcept {
 }
 
 //implementation of the internally used objects
-ELF::Buffer::Buffer(size_t size) {
+Elf::Buffer::Buffer(size_t size) {
 	_ptr = std::make_unique<uint8_t[]>(size);
 	_size = size;
 }
 
 //implementation of the private-functions of the parser-class
-ELF::Buffer ELF::read_file(const char *path) {
+Elf::Buffer Elf::read_file(const char *path) {
 	//open the file
 	FILE *file = fopen(path, "r");
 	if (file == nullptr)
@@ -69,20 +69,20 @@ ELF::Buffer ELF::read_file(const char *path) {
 	return buf;
 }
 
-void *ELF::find_in_file(Buffer *file, uintptr_t addr, size_t size) {
+void *Elf::find_in_file(Buffer *file, uintptr_t addr, size_t size) {
 	if (addr + size > file->_size)
 		return nullptr;
 	return reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(file->_ptr.get()) + addr);
 }
 
-void ELF::validate_elf(Buffer *file, uint8_t data_form, uint16_t machine) {
+void Elf::validate_elf(Buffer *file, uint8_t data_form, uint16_t machine) {
 	//get the pointer to the fileheader
 	auto ehdr = reinterpret_cast<Elf64_Ehdr *>(find_in_file(file, 0, sizeof(Elf64_Ehdr)));
 	if (ehdr == nullptr)
 		throw ParserException(ParserException::file_content);
 
 	//validate the header-identification
-	if (memcmp(ehdr->e_ident, "\x7f" "ELF", 4) != 0)
+	if (memcmp(ehdr->e_ident, "\x7f" "Elf", 4) != 0)
 		throw ParserException(ParserException::not_elf_file);
 	if (ehdr->e_ident[EI_CLASS] != ELFCLASS64)
 		throw ParserException(ParserException::unsupported_binary);
@@ -112,7 +112,7 @@ void ELF::validate_elf(Buffer *file, uint8_t data_form, uint16_t machine) {
 		throw ParserException(ParserException::format_issue);
 }
 
-void ELF::unpack_file(Buffer *file) {
+void Elf::unpack_file(Buffer *file) {
 	//extract the file-header and the entry-point
 	auto ehdr = reinterpret_cast<Elf64_Ehdr *>(find_in_file(file, 0, sizeof(Elf64_Ehdr)));
 	if (ehdr == nullptr)
@@ -255,7 +255,7 @@ void ELF::unpack_file(Buffer *file) {
 }
 
 //implementation of the constructor of the parser-class
-ELF::ELF(const char *path, uint8_t data_form, uint16_t machine) {
+Elf::Elf(const char *path, uint8_t data_form, uint16_t machine) {
 	//initialize the this object
 	_image_ptr = nullptr;
 	_page_flags = nullptr;
@@ -274,19 +274,19 @@ ELF::ELF(const char *path, uint8_t data_form, uint16_t machine) {
 }
 
 //implementation of the public-functions of the parser-class
-uintptr_t ELF::get_base_vaddr() {
+uintptr_t Elf::get_base_vaddr() {
 	return _base_address;
 }
 
-uintptr_t ELF::get_highest_vaddr() {
+uintptr_t Elf::get_highest_vaddr() {
 	return _base_address + _address_range;
 }
 
-uintptr_t ELF::get_entry_point() {
+uintptr_t Elf::get_entry_point() {
 	return _entry_point;
 }
 
-void *ELF::resolve_vaddr(uintptr_t vaddr) {
+void *Elf::resolve_vaddr(uintptr_t vaddr) {
 	//validate the address
 	vaddr -= _base_address;
 	if (vaddr >= _address_range)
@@ -294,7 +294,7 @@ void *ELF::resolve_vaddr(uintptr_t vaddr) {
 	return reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(_image_ptr.get()) + vaddr);
 }
 
-uint8_t ELF::get_page_flags(uintptr_t vaddr) {
+uint8_t Elf::get_page_flags(uintptr_t vaddr) {
 	//validate the address
 	vaddr -= _base_address;
 	if (vaddr >= _address_range)
@@ -302,7 +302,7 @@ uint8_t ELF::get_page_flags(uintptr_t vaddr) {
 	return _page_flags[vaddr >> 12u];
 }
 
-size_t ELF::get_size(uintptr_t vaddr, size_t max_page) {
+size_t Elf::get_size(uintptr_t vaddr, size_t max_page) {
 	//validate the address
 	vaddr -= _base_address;
 	if (vaddr >= _address_range)

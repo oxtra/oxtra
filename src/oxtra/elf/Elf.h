@@ -45,7 +45,7 @@ namespace elf {
 	};
 
 	//define the parser-class
-	class ELF {
+	class Elf {
 	private:
 		struct Buffer {
 			std::unique_ptr<uint8_t[]> _ptr;
@@ -79,13 +79,13 @@ namespace elf {
  		* @param machine architecture the parser looks for (default: EM_X86_64)
  		* @return returns false if already called before. Otherwise parses and returns true
  		*/
-		ELF(const char *path, uint8_t data_form = ELFDATA2LSB, uint16_t machine = EM_X86_64);
+		Elf(const char *path, uint8_t data_form = ELFDATA2LSB, uint16_t machine = EM_X86_64);
 
-		ELF() = delete;
+		Elf() = delete;
 
-		ELF(ELF &) = delete;
+		Elf(Elf &) = delete;
 
-		ELF(ELF &&) = delete;
+		Elf(Elf &&) = delete;
 
 	public:
 		/**

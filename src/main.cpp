@@ -8,7 +8,7 @@ extern "C" {
 #include <cstring>
 #include <sys/mman.h>
 
-#include "oxtra/elf/ELF.h"
+#include "oxtra/elf/Elf.h"
 
 int decode(const uint8_t *x86code, size_t x86size, FdInstr *intermediate, size_t inter_size) {
 	FdInstr instr;
@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
 	uint8_t rvcode[12] = {0};
 
 	//parse the binary-file
-	elf::ELF parser(argv[1]);
+	elf::Elf parser(argv[1]);
 
 	//print the memory-pages of the unpacked elf-file
 	uint64_t vaddr = parser.get_base_vaddr();
