@@ -22,7 +22,7 @@ const char *ParserException::what() const noexcept {
 		case Error::unsupported_binary:
 			return "[unsupported_binary] the file does not conform to the binary-standards of this program";
 		case Error::unsupported_type:
-			return "[unsupported_type] the file does not seem to be a statically linked binary";
+			return "[unsupported_type] the file does not seem to be an executable";
 		case Error::format_issue:
 			return "[format_issue] this program can not handle this elf-format";
 		case Error::no_content:
