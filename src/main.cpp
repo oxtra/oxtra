@@ -1,7 +1,3 @@
-extern "C" {
-	#include <fadec.h>
-}
-
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -9,13 +5,13 @@ extern "C" {
 
 #include "oxtra/elf/Elf.h"
 
-int decode(const uint8_t *x86code, size_t x86size, FdInstr *intermediate, size_t inter_size) {
-	FdInstr instr;
+int decode(const uint8_t *x86code, size_t x86size, x86::Instr *intermediate, size_t inter_size) {
+	x86::Instr instr;
 	const uint8_t *x86curr = x86code;
-	FdInstr *inter_curr = intermediate;
+	x86::Instr *inter_curr = intermediate;
 
 	for (;;) {
-		int fdret = fd_decode(x86curr, x86size, 64, 0, &instr);
+		int fdret = x86::decode(x86curr, x86size, 64, 0, instr);
 		if (fdret < 0) {
 			printf("decode failed: %d\n", fdret);
 			return -1;
@@ -40,12 +36,12 @@ int decode(const uint8_t *x86code, size_t x86size, FdInstr *intermediate, size_t
 	return 0;
 }
 
-int optimize(FdInstr *intermediate, size_t inter_size) {
+int optimize(x86::Instr *intermediate, size_t inter_size) {
 	return 0;
 }
 
-int encode(const FdInstr *intermediate, size_t inter_size, uint8_t *rvcode, size_t rvsize) {
-	const FdInstr *inter_curr = intermediate;
+int encode(const x86::Instr *intermediate, size_t inter_size, uint8_t *rvcode, size_t rvsize) {
+	const x86::Instr *inter_curr = intermediate;
 	uint8_t *rvcurr = rvcode;
 
 	for (;;) {
@@ -103,7 +99,7 @@ int encode(const FdInstr *intermediate, size_t inter_size, uint8_t *rvcode, size
 }
 
 int translate(const uint8_t *x86code, size_t x86size, uint8_t *rvcode, size_t rvsize) {
-	FdInstr intermediate[8];
+	x86::Instr intermediate[8];
 	decode(x86code, x86size, intermediate, sizeof(intermediate));
 	optimize(intermediate, sizeof(intermediate));
 	encode(intermediate, sizeof(intermediate), rvcode, rvsize);
