@@ -8,7 +8,7 @@ extern "C" {
 #include <cstring>
 #include <sys/mman.h>
 
-#include "oxtra/elf/Parser.h"
+#include "oxtra/elf/ELF.h"
 
 int decode(const uint8_t *x86code, size_t x86size, FdInstr *intermediate, size_t inter_size) {
 	FdInstr instr;
@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
 	uint8_t rvcode[12] = {0};
 
 	//parse the binary-file
-	elf::Parser parser(argv[1]);
+	elf::ELF parser(argv[1]);
 
 	//print the memory-pages of the unpacked elf-file
 	uint64_t vaddr = parser.get_base_vaddr();
@@ -142,6 +142,7 @@ int main(int argc, char **argv) {
 		std::cout << ((parser.get_page_flags(vaddr) & elf::PAGE_MAPPED) ? 'm' : '-');
 		if(parser.get_entry_point() >= vaddr && parser.get_entry_point() < vaddr + max_size)
 			std::cout << " (entry: " << std::hex << (void*)parser.get_entry_point() << ")";
+
 		std::cout << std::endl;
 		vaddr += max_size;
 	}

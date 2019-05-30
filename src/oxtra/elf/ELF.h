@@ -1,5 +1,5 @@
-#ifndef OXTRA_PARSER_H
-#define OXTRA_PARSER_H
+#ifndef OXTRA_ELF_H
+#define OXTRA_ELF_H
 
 #include <inttypes.h>
 #include <string.h>
@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <elf.h>
 #include <exception>
+#include <memory>
 
 //enter the namespace
 namespace elf {
@@ -21,12 +22,12 @@ namespace elf {
 	public:
 		enum Error : uint8_t {
 			undefined,
-			resource_failure,
 			file_failed,
 			file_content,
 			not_elf_file,
 			format_issue,
 			unsupported_binary,
+			unsupported_type,
 			no_content,
 			page_conflict
 		};
@@ -44,24 +45,20 @@ namespace elf {
 	};
 
 	//define the parser-class
-	class Parser {
+	class ELF {
 	private:
 		struct Buffer {
-			void *_ptr;
+			std::unique_ptr<uint8_t[]> _ptr;
 			size_t _size;
 
-			Buffer();
-
-			Buffer(void *p, size_t s);
-
-			~Buffer();
+			Buffer(size_t size);
 		};
 
 	private:
-		void *_image_ptr;
+		std::unique_ptr<uint8_t[]> _image_ptr;
 		uintptr_t _base_address;
 		size_t _address_range;
-		uint8_t *_page_flags;
+		std::unique_ptr<uint8_t[]> _page_flags;
 		uintptr_t _entry_point;
 
 	private:
@@ -69,7 +66,7 @@ namespace elf {
 
 		static void *find_in_file(Buffer *file, uintptr_t addr, size_t size);
 
-		static void validate_elf(Buffer *file, uint8_t data_form, uint16_t machine, uint16_t type);
+		static void validate_elf(Buffer *file, uint8_t data_form, uint16_t machine);
 
 		void unpack_file(Buffer *file);
 
@@ -80,19 +77,15 @@ namespace elf {
  		* @param path path to the elf-binary-file
  		* @param data_form little endian or big endian (default: ELFDATA2LSB)
  		* @param machine architecture the parser looks for (default: EM_X86_64)
- 		* @param type the type of elf-binary (default: ET_EXEC)
  		* @return returns false if already called before. Otherwise parses and returns true
  		*/
-		Parser(const char *path, uint8_t data_form = ELFDATA2LSB, uint16_t machine = EM_X86_64,
-			   uint16_t type = ET_EXEC);
+		ELF(const char *path, uint8_t data_form = ELFDATA2LSB, uint16_t machine = EM_X86_64);
 
-		~Parser();
+		ELF() = delete;
 
-		Parser() = delete;
+		ELF(ELF &) = delete;
 
-		Parser(Parser &) = delete;
-
-		Parser(Parser &&) = delete;
+		ELF(ELF &&) = delete;
 
 	public:
 		/**
@@ -139,4 +132,4 @@ namespace elf {
 		size_t get_size(uintptr_t vaddr, size_t max_page = 1);
 	};
 }
-#endif //OXTRA_PARSER_H
+#endif //OXTRA_ELF_H

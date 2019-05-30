@@ -1,4 +1,4 @@
-#include "Parser.h"
+#include "ELF.h"
 
 using namespace elf;
 
@@ -13,8 +13,6 @@ ParserException::ParserException(Error e) {
 
 const char *ParserException::what() const noexcept {
 	switch (_err) {
-		case Error::resource_failure:
-			return "[resource_failure] failed to allocate the necessary memory";
 		case Error::file_failed:
 			return "[file_failed] failed to open or read the file";
 		case Error::file_content:
@@ -23,6 +21,8 @@ const char *ParserException::what() const noexcept {
 			return "[not_elf_file] the file is not an elf-file";
 		case Error::unsupported_binary:
 			return "[unsupported_binary] the file does not conform to the binary-standards of this program";
+		case Error::unsupported_type:
+			return "[unsupported_type] the file does not seem to be a statically linked binary";
 		case Error::format_issue:
 			return "[format_issue] this program can not handle this elf-format";
 		case Error::no_content:
@@ -36,22 +36,13 @@ const char *ParserException::what() const noexcept {
 }
 
 //implementation of the internally used objects
-Parser::Buffer::Buffer() {
-	_ptr = nullptr;
-	_size = 0;
-}
-
-Parser::Buffer::Buffer(void *p, size_t s) {
-	_ptr = p;
-	_size = s;
-}
-
-Parser::Buffer::~Buffer() {
-	if (_ptr != nullptr) free(_ptr);
+ELF::Buffer::Buffer(size_t size) {
+	_ptr = std::make_unique<uint8_t[]>(size);
+	_size = size;
 }
 
 //implementation of the private-functions of the parser-class
-Parser::Buffer Parser::read_file(const char *path) {
+ELF::Buffer ELF::read_file(const char *path) {
 	//open the file
 	FILE *file = fopen(path, "r");
 	if (file == nullptr)
@@ -67,29 +58,24 @@ Parser::Buffer Parser::read_file(const char *path) {
 	}
 
 	//allocate a buffer for the file
-	void *ptr = malloc(size);
-	if (ptr == nullptr) {
-		fclose(file);
-		throw ParserException(ParserException::resource_failure);
-	}
+	Buffer buf(size);
 
 	//read the contents of the file
-	if (fread(ptr, 1, size, file) != size) {
+	if (fread(buf._ptr.get(), 1, size, file) != size) {
 		fclose(file);
-		free(ptr);
 		throw ParserException(ParserException::file_failed);
 	}
 	fclose(file);
-	return Buffer(ptr, size);
+	return buf;
 }
 
-void *Parser::find_in_file(Buffer *file, uintptr_t addr, size_t size) {
+void *ELF::find_in_file(Buffer *file, uintptr_t addr, size_t size) {
 	if (addr + size > file->_size)
 		return nullptr;
-	return reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(file->_ptr) + addr);
+	return reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(file->_ptr.get()) + addr);
 }
 
-void Parser::validate_elf(Buffer *file, uint8_t data_form, uint16_t machine, uint16_t type) {
+void ELF::validate_elf(Buffer *file, uint8_t data_form, uint16_t machine) {
 	//get the pointer to the fileheader
 	auto ehdr = reinterpret_cast<Elf64_Ehdr *>(find_in_file(file, 0, sizeof(Elf64_Ehdr)));
 	if (ehdr == nullptr)
@@ -104,21 +90,21 @@ void Parser::validate_elf(Buffer *file, uint8_t data_form, uint16_t machine, uin
 		throw ParserException(ParserException::unsupported_binary);
 	if (ehdr->e_ident[EI_VERSION] != EV_CURRENT)
 		throw ParserException(ParserException::format_issue);
-	if (ehdr->e_ident[EI_OSABI] != ELFOSABI_LINUX)
+	if (ehdr->e_ident[EI_OSABI] != ELFOSABI_LINUX && ehdr->e_ident[EI_OSABI] != ELFOSABI_SYSV)
 		throw ParserException(ParserException::format_issue);
 	if (ehdr->e_ident[EI_ABIVERSION] != 0)
 		throw ParserException(ParserException::format_issue);
 
 	//validate the type and machine of this binary
-	if (ehdr->e_type != type)
-		throw ParserException(ParserException::unsupported_binary);
+	if (ehdr->e_type != ET_EXEC)
+		throw ParserException(ParserException::unsupported_type);
 	if (ehdr->e_machine != machine)
 		throw ParserException(ParserException::unsupported_binary);
 
 	//validate the rest of the parameter of the header
 	if (ehdr->e_version != EV_CURRENT)
 		throw ParserException(ParserException::format_issue);
-	if (ehdr->e_entry == 0 && ehdr->e_type == ET_EXEC)
+	if (ehdr->e_entry == 0)
 		throw ParserException(ParserException::unsupported_binary);
 	if (ehdr->e_phoff == 0 || ehdr->e_phnum == 0 || ehdr->e_phentsize != sizeof(Elf64_Phdr))
 		throw ParserException(ParserException::format_issue);
@@ -126,7 +112,7 @@ void Parser::validate_elf(Buffer *file, uint8_t data_form, uint16_t machine, uin
 		throw ParserException(ParserException::format_issue);
 }
 
-void Parser::unpack_file(Buffer *file) {
+void ELF::unpack_file(Buffer *file) {
 	//extract the file-header and the entry-point
 	auto ehdr = reinterpret_cast<Elf64_Ehdr *>(find_in_file(file, 0, sizeof(Elf64_Ehdr)));
 	if (ehdr == nullptr)
@@ -215,16 +201,10 @@ void Parser::unpack_file(Buffer *file) {
 		throw ParserException(ParserException::file_content);
 
 	//allocate the buffer for the image & the table for the page-entries
-	_image_ptr = malloc(_address_range);
-	if (_image_ptr == nullptr)
-		throw ParserException(ParserException::resource_failure);
-	_page_flags = reinterpret_cast<uint8_t *>(malloc(_address_range >> 12u));
-	if (_page_flags == nullptr) {
-		free(_image_ptr);
-		throw ParserException(ParserException::resource_failure);
-	}
-	memset(_page_flags, 0, _address_range >> 12u);
-	memset(_image_ptr, 0, _address_range);
+	_image_ptr = std::make_unique<uint8_t[]>(_address_range);
+	_page_flags = std::make_unique<uint8_t[]>(_address_range >> 12u);
+	memset(_image_ptr.get(), 0, _address_range);
+	memset(_page_flags.get(), 0, _address_range >> 12u);
 
 	//iterate through the program-headers and write the to memory
 	for (auto i = 0; i < p_c + 1; i++) {
@@ -236,11 +216,8 @@ void Parser::unpack_file(Buffer *file) {
 				break;
 			else
 				ptr = find_in_file(file, bss_section->sh_offset, bss_section->sh_size);
-			if (ptr == nullptr) {
-				free(_image_ptr);
-				free(_page_flags);
+			if (ptr == nullptr)
 				throw ParserException(ParserException::file_content);
-			}
 
 			//compute the first and the last page the blocks are within
 			size_t page_start = ((i < p_c) ? phdr[i].p_vaddr : bss_section->sh_addr) - _base_address;
@@ -264,24 +241,21 @@ void Parser::unpack_file(Buffer *file) {
 
 			//setup the page-flags
 			for (auto p = page_start; p < page_end; p++) {
-				if (_page_flags[p] != 0 && _page_flags[p] != flags) {
-					free(_image_ptr);
-					free(_page_flags);
+				if (_page_flags[p] != 0 && _page_flags[p] != flags)
 					throw ParserException(ParserException::page_conflict);
-				}
 				_page_flags[p] = flags;
 			}
 
 			//write the content to the memory
 			if (i < p_c)
-				memcpy(reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(_image_ptr) + phdr[i].p_vaddr -
+				memcpy(reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(_image_ptr.get()) + phdr[i].p_vaddr -
 												_base_address), ptr, phdr[i].p_filesz);
 		}
 	}
 }
 
 //implementation of the constructor of the parser-class
-Parser::Parser(const char *path, uint8_t data_form, uint16_t machine, uint16_t type) {
+ELF::ELF(const char *path, uint8_t data_form, uint16_t machine) {
 	//initialize the this object
 	_image_ptr = nullptr;
 	_page_flags = nullptr;
@@ -293,39 +267,34 @@ Parser::Parser(const char *path, uint8_t data_form, uint16_t machine, uint16_t t
 	Buffer file = read_file(path);
 
 	//validate the file
-	validate_elf(&file, data_form, machine, type);
+	validate_elf(&file, data_form, machine);
 
 	//unpack the file
 	unpack_file(&file);
 }
 
-Parser::~Parser() {
-	free(_image_ptr);
-	free(_page_flags);
-}
-
 //implementation of the public-functions of the parser-class
-uintptr_t Parser::get_base_vaddr() {
+uintptr_t ELF::get_base_vaddr() {
 	return _base_address;
 }
 
-uintptr_t Parser::get_highest_vaddr() {
+uintptr_t ELF::get_highest_vaddr() {
 	return _base_address + _address_range;
 }
 
-uintptr_t Parser::get_entry_point() {
+uintptr_t ELF::get_entry_point() {
 	return _entry_point;
 }
 
-void *Parser::resolve_vaddr(uintptr_t vaddr) {
+void *ELF::resolve_vaddr(uintptr_t vaddr) {
 	//validate the address
 	vaddr -= _base_address;
 	if (vaddr >= _address_range)
 		return nullptr;
-	return reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(_image_ptr) + vaddr);
+	return reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(_image_ptr.get()) + vaddr);
 }
 
-uint8_t Parser::get_page_flags(uintptr_t vaddr) {
+uint8_t ELF::get_page_flags(uintptr_t vaddr) {
 	//validate the address
 	vaddr -= _base_address;
 	if (vaddr >= _address_range)
@@ -333,7 +302,7 @@ uint8_t Parser::get_page_flags(uintptr_t vaddr) {
 	return _page_flags[vaddr >> 12u];
 }
 
-size_t Parser::get_size(uintptr_t vaddr, size_t max_page) {
+size_t ELF::get_size(uintptr_t vaddr, size_t max_page) {
 	//validate the address
 	vaddr -= _base_address;
 	if (vaddr >= _address_range)
