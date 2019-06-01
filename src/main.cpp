@@ -7,7 +7,7 @@ extern "C" {
 #include <cstring>
 #include <sys/mman.h>
 
-#include "oxtra/elf/Elf.h"
+#include "oxtra/elf/elf.h"
 
 int decode(const uint8_t *x86code, size_t x86size, FdInstr *intermediate, size_t inter_size) {
 	FdInstr instr;

@@ -1,7 +1,7 @@
 # In here, all .cpp files are listed that will be added to the executable
 add_library(oxtra_libs
 		STATIC
-		oxtra/elf/Elf.cpp
+		oxtra/elf/elf.cpp
 		oxtra/codegen/codegen.cpp
 		oxtra/codegen/codestore/codestore.cpp
 		oxtra/dispatcher/dispatcher.cpp)
