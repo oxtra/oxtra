@@ -2,7 +2,9 @@
 add_library(oxtra_libs
 		STATIC
 		oxtra/elf/Elf.cpp
-)
+		oxtra/codegen/codegen.cpp
+		oxtra/codegen/codestore/codestore.cpp
+		oxtra/dispatcher/dispatcher.cpp)
 
 target_link_libraries(oxtra_libs
 		fadec
