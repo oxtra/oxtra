@@ -23,25 +23,54 @@ namespace codegen::codestore {
 	 *
 	 */
 
+	 /*
+	 look at VADs from windows
+	 */
+
 	struct InstOffset {
-		uint8_t _x86 : 4;
-		uint8_t _riscv : 4;
+		uint8_t x86 : 4;
+		uint8_t riscv : 4;
 	};
+
 	struct BlockEntry {
-		oxtra::virt_t _virt;
-		oxtra::virt_t _last;
-		oxtra::real_t _real;
-		size_t _inst_count;
-		InstOffset *_offset;
-	};
-	struct BlockArray {
-		BlockEntry *_entry;
-		size_t _capacity;
-		size_t _size;
+		oxtra::virt_t virt;
+		oxtra::virt_t last;
+		oxtra::real_t real;
+		size_t inst_count;
+		InstOffset *offset;
 	};
 
 	class CodeStore {
+	private:
 
+		/** stores which block entries are in a 'page' */
+		using BlockArray = std::vector<BlockEntry*>;
+
+		std::unique_ptr<BlockArray[]> _pages;
+
+		/** risc-v code buffer */
+		uint8_t* _code_buffer;
+		size_t _size_left;
+		const size_t _buffer_size;
+
+		/** block entry buffer */
+		BlockEntry* _entry_buffer;
+		size_t _entries_left;
+
+	public:
+		CodeStore(const elf::Elf& elf);
+
+		oxtra::real_t find(oxtra::virt_t x86code) const;
+
+		oxtra::real_t get_next_block(oxtra::virt_t& x86code) const;
+
+		void add_instructions(BlockEntry& block, );
+
+		uint8_t* get_code_buffer() const;
+
+		size_t get_code_buffer_size() const;
+
+		void* resize_code_buffer(size_t& size);
 	};
 }
 

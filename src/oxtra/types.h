@@ -5,6 +5,8 @@
 #include <cstddef>
 
 namespace oxtra {
+	// TODO: rename virt_t -> guest_addr_t; real_t -> host_addr_t
+
 	/*
 	 * describes all addresses referenced by the guest-program.
 	 */
