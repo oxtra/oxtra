@@ -13,15 +13,15 @@ namespace elf {
 		Elf(Elf &&) = delete;
 
 	public:
-		oxtra::virt_t get_base_address() const;
+		oxtra::guest_addr_t get_base_address() const;
 
 		size_t get_image_size() const;
 
-		oxtra::virt_t get_entry_point() const;
+		oxtra::guest_addr_t get_entry_point() const;
 
-		uint8_t get_page_flags(oxtra::virt_t vaddr) const;
+		uint8_t get_page_flags(oxtra::guest_addr_t vaddr) const;
 
-		void *get_addr(oxtra::virt_t vaddr) const;
+		void *get_addr(oxtra::guest_addr_t vaddr) const;
 	};
 }
 

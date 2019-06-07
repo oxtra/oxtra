@@ -5,5 +5,5 @@
 #include "oxtra/elf/elf.h"
 
 TEST_CASE("simple") {
-	REQUIRE(read_elf(nullptr, nullptr, sizeof(int)) == 0);
+	//REQUIRE(read_elf(nullptr, nullptr, sizeof(int)) == 0);
 }

@@ -2,6 +2,11 @@
 #define OXTRA_CODESTORE_H
 
 #include "oxtra/types.h"
+#include "oxtra/static_list.h"
+#include "oxtra/elf/elf.h"
+#include <vector>
+#include <memory>
+#include <fadec.h>
 
 namespace codegen::codestore {
 
@@ -23,54 +28,74 @@ namespace codegen::codestore {
 	 *
 	 */
 
-	 /*
-	 look at VADs from windows
-	 */
-
-	struct InstOffset {
+	struct InstructionOffset {
+		/**
+		 * number of bytes for the x86 instruction
+		 */
 		uint8_t x86 : 4;
+
+		/**
+		 * number of risc-v instructions (every instruction is 4 bytes)
+		 */
 		uint8_t riscv : 4;
 	};
 
 	struct BlockEntry {
-		oxtra::virt_t virt;
-		oxtra::virt_t last;
-		oxtra::real_t real;
-		size_t inst_count;
-		InstOffset *offset;
+		oxtra::guest_addr_t x86_start;
+		oxtra::guest_addr_t x86_end;
+		oxtra::host_addr_t riscv_start;
+		size_t instruction_count;
+		const InstructionOffset* offsets;
 	};
 
 	class CodeStore {
 	private:
-
 		/** stores which block entries are in a 'page' */
 		using BlockArray = std::vector<BlockEntry*>;
 
 		std::unique_ptr<BlockArray[]> _pages;
 
 		/** risc-v code buffer */
-		uint8_t* _code_buffer;
-		size_t _size_left;
-		const size_t _buffer_size;
+		oxtra::StaticList<oxtra::riscv_instruction_t> _code_buffer;
 
 		/** block entry buffer */
-		BlockEntry* _entry_buffer;
-		size_t _entries_left;
+		oxtra::StaticList<BlockEntry> _block_entries;
+
+		/** global instruction offset buffer */
+		oxtra::StaticList<InstructionOffset> _instruction_offset_buffer;
 
 	public:
 		CodeStore(const elf::Elf& elf);
 
-		oxtra::real_t find(oxtra::virt_t x86code) const;
+		/**
+		 *
+		 * @param x86_code The address of the x86 instructions.
+		 * @return The address of the translated risc-v instructions.
+		 */
+		oxtra::host_addr_t find(oxtra::guest_addr_t x86_code) const;
 
-		oxtra::real_t get_next_block(oxtra::virt_t& x86code) const;
+		/**
+		 *
+		 * @param x86_code The address of the x86 code used to find the next block.
+		 * @return a pointer to the next translated block that may conflict with this x86_code. May be null.
+		 */
+		BlockEntry* get_next_block(oxtra::guest_addr_t x86_code) const;
 
-		void add_instructions(BlockEntry& block, );
+		/**
+		 * Allocate a new block entry.
+		 * @return A newly allocated block entry.
+		 */
+		BlockEntry& create_block();
 
-		uint8_t* get_code_buffer() const;
-
-		size_t get_code_buffer_size() const;
-
-		void* resize_code_buffer(size_t& size);
+		/**
+		 * Adds an x86 instruction with the corresponding risc-v instructions to a block.
+		 * @param block The basic block that the x86 instruction belongs to.
+		 * @param x86_instruction The decoded x86 instruction (contains address and size).
+		 * @param riscv_instructions A pointer to an array of encoded risc-v instructions.
+		 * @param num_instructions The size of the array of encoded risc-v instructions.
+		 */
+		void add_instruction(BlockEntry& block, const FdInstr& x86_instruction,
+				oxtra::riscv_instruction_t* riscv_instructions, size_t num_instructions);
 	};
 }
 

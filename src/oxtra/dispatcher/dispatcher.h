@@ -35,7 +35,7 @@ namespace dispatcher {
 	private:
 		static void host_enter();
 
-		static void host_exit(oxtra::real_t addr);
+		static void host_exit(oxtra::host_addr_t addr);
 
 		static void inline_translate();
 	};

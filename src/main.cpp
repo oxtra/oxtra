@@ -127,7 +127,7 @@ int main(int argc, char **argv) {
 	uint8_t x86code[] = {0xb8, 0x02, 0x00, 0x00, 0x00, 0xc3}; // mov eax, 2; ret
 	uint8_t rvcode[12] = {0};
 
-	read_elf(argv[1], x86code, sizeof(x86code));
+	//read_elf(argv[1], x86code, sizeof(x86code));
 	translate(x86code, sizeof(x86code), rvcode, sizeof(rvcode));
 	dispatch(rvcode, sizeof(rvcode));
 
