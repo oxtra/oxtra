@@ -70,14 +70,14 @@ namespace codegen::codestore {
 		/**
 		 *
 		 * @param x86_code The address of the x86 instructions.
-		 * @return The address of the translated risc-v instructions.
+		 * @return The address of the translated risc-v instructions. May be null, if not translated yet.
 		 */
 		oxtra::host_addr_t find(oxtra::guest_addr_t x86_code) const;
 
 		/**
 		 *
 		 * @param x86_code The address of the x86 code used to find the next block.
-		 * @return a pointer to the next translated block that may conflict with this x86_code. May be null.
+		 * @return a pointer to the next translated block that may conflict with this x86_code-block. May be null.
 		 */
 		BlockEntry* get_next_block(oxtra::guest_addr_t x86_code) const;
 
