@@ -39,7 +39,7 @@ namespace x86
 		// segment registers
 		es = 0, cs, ss, ds, fs, gs,
 
-		// no register speicified
+		// no register specified
 		none = 0x3f
 	};
 
@@ -74,7 +74,7 @@ namespace x86
 		// register type is encoded in mnemonic
 		implicit = 0,
 
-		// low general pupose reigster
+		// low general purpose register
 		gpl,
 
 		// high general purpose register
@@ -86,7 +86,7 @@ namespace x86
 		// fpu register ST(n)
 		fpu,
 
-		// mmx reigster
+		// mmx register
 		mmx,
 
 		// vector (sse/avx) register xmm/ymm/zmm
@@ -106,20 +106,38 @@ namespace x86
 	};
 
 	// operand
-	class Op {
+	class Operand {
 	public:
+		/**
+		 *
+		 * @return The type of the operand. E.g. reg (register), imm (immediate), mem (memory).
+		 */
 		OpType get_type() const {
 			return type;
 		}
 
+		/**
+		 *
+		 * @return The size of the operand in bytes.
+		 */
 		uint8_t get_size() const {
 			return size;
 		}
 
+		/**
+		 *
+		 * @return The register of an operand.
+		 * @remark Only valid if get_type() == OpType::reg.
+		 */
 		Reg get_register() const {
 			return reg;
 		}
 
+		/**
+		 *
+		 * @return The type of the register.
+		 * @remark Only valid if get_type() == OpType::reg. Needed for example to distinguish high-byte registers.
+		 */
 		RegType get_register_type() const {
 			return reg_type;
 		}
@@ -133,15 +151,28 @@ namespace x86
 
 	class Instr {
 	public:
+		/**
+		 *
+		 * @return The type/mnemonic of the instruction.
+		 */
 		InstrType get_type() const {
 			return type;
 		}
 
-		uint8_t  get_size() const {
+		/**
+		 *
+		 * @return The size of the instruction in bytes.
+		 */
+		uint8_t get_size() const {
 			return size;
 		}
 
-		const Op& get_operand(size_t idx) const {
+		/**
+		 *
+		 * @param idx The index of the operand.
+		 * @return The Operand at the index.
+		 */
+		const Operand& get_operand(size_t idx) const {
 			/*
 			 * this will throw if the idx is invalid
 			 * TODO decide if we want to do this
@@ -149,38 +180,103 @@ namespace x86
 			return operands.at(idx);
 		}
 
+		/**
+		 *
+		 * @return The segment override or Reg::none if no segment override was specified.
+		 */
 		Reg get_segment() const {
 			return segment;
 		}
 
+		/**
+		 *
+		 * @return The index register of the [base+index*scale+displacement] addressing mode.
+		 * @remark Only valid if an operand is of type OpType::mem.
+		 */
 		Reg get_index_register() const {
 			return idx_reg;
 		}
 
+		/**
+		 *
+		 * @return The scale of the [base+index*scale+displacement] addressing mode.
+		 * @remark Only valid if an operand is of type OpType::mem and get_index_register() != Reg::none.
+		 */
 		uint8_t get_index_scale() const {
-			return idx_scale;
+			return 1 << idx_scale;
 		}
 
+		/**
+		 *
+		 * @return The displacement of the [base+index*scale+displacement] addressing mode.
+		 * @remark Only valid if an operand is of type OpType::mem.
+		 */
 		intptr_t get_displacement() const {
 			return disp;
 		}
 
+		/**
+		 *
+		 * @return The value of an immediate operand.
+		 * @remark Only valid if an operand is of type OpType::imm.
+		 */
 		uintptr_t  get_immediate() const {
 			return imm;
 		}
 
+		/**
+		 *
+		 * @return The address size attribute of the instruction in bytes.
+		 */
 		uint8_t get_address_size() const {
 			return addrsz;
 		}
 
+		/**
+		 *
+		 * @return The operand width in bytes.
+		 * @remark Needed for MOVS for example.
+		 */
 		uint8_t get_operand_size() const {
 			return operandsz;
 		}
 
-		uint8_t get_flags() const {
-			return flags;
+		/**
+		 *
+		 * @return True if the instruction has a rep prefix.
+		 */
+		bool has_rep() const {
+			return flags & rep;
 		}
 
+		/**
+		 *
+		 * @return True if the instruction has a repnz prefix.
+		 */
+		bool has_repnz() const {
+			return flags & repnz;
+		}
+
+		/**
+		 *
+		 * @return True if the instruction has a lock prefix.
+		 */
+		bool has_lock() const {
+			return flags & lock;
+		}
+
+		/**
+		 *
+		 * @return True if the instruction is a 64-bit instruction.
+		 */
+		bool is_64() const {
+			return flags & x64;
+		}
+
+		/**
+		 *
+		 * @return The address of the instruction.
+		 */
 		uintptr_t get_address() const {
 			return address;
 		}
@@ -191,7 +287,7 @@ namespace x86
 		Reg segment;
 		uint8_t addrsz;
 		uint8_t operandsz;
-		std::array<Op, 4> operands;
+		std::array<Operand, 4> operands;
 
 		Reg idx_reg;
 		uint8_t idx_scale;
@@ -202,7 +298,24 @@ namespace x86
 		uintptr_t address;
 	};
 
+	/**
+	 *
+	 * @param buffer Buffer containing the instructions in bytes.
+	 * @param len_sz Length of the buffer.
+	 * @param mode_int Decoding mode. 32 for protected/compatibility mode or 64 for long mode.
+	 * @param address Virtual address  where the instruction is located.
+	 * @param instr Reference to the instruction buffer.
+	 * @return The number of bytes consumed by the instruction or a negative number indicating an error.
+	 */
 	int decode(const uint8_t* buffer, size_t len_sz, int mode_int, uintptr_t address, x86::Instr& instr);
+
+	/**
+	 *
+	 * @param instr Instruction to format.
+	 * @param buffer Buffer holding the formatted instruction.
+	 * @param len Length of the buffer.
+	 */
+	void format(const Instr& instr, char* buffer, size_t len);
 }
 
 #endif

@@ -169,7 +169,7 @@ out:
 	return off;
 }
 
-int decode_modrm(const uint8_t* buffer, size_t len, DecodeMode mode, x86::Instr& instr, int prefixes, bool vsib, x86::Op* o1, x86::Op* o2) {
+int decode_modrm(const uint8_t* buffer, size_t len, DecodeMode mode, x86::Instr& instr, int prefixes, bool vsib, x86::Operand* o1, x86::Operand* o2) {
 	size_t off = 0;
 
 	if (UNLIKELY(off >= len))
@@ -622,4 +622,117 @@ int x86::decode(const uint8_t* buffer, size_t len_sz, int mode_int, uintptr_t ad
 	instr.size = off;
 
 	return off;
+}
+
+#define FD_DECODE_TABLE_STRTAB1
+static const char* _mnemonic_str =
+#include <decode-table.inc>
+;
+#undef FD_DECODE_TABLE_STRTAB1
+
+#define FD_DECODE_TABLE_STRTAB2
+static const uint16_t _mnemonic_offs[] = {
+#include <decode-table.inc>
+};
+#undef FD_DECODE_TABLE_STRTAB2
+
+#define fmt_concat(...) { \
+	buf += snprintf(buf, end - buf, __VA_ARGS__); \
+	if (buf > end) \
+		buf = end; \
+}
+
+void x86::format(const x86::Instr& instr, char* buffer, size_t len) {
+	auto buf = buffer;
+	auto end = buffer + len;
+
+	fmt_concat("[")
+	if (instr.has_rep())
+		fmt_concat("rep:")
+
+	if (instr.has_repnz())
+		fmt_concat("repnz:")
+
+	if (instr.get_segment() < 6)
+		fmt_concat("%cs:", "ecsdfg"[instr.get_segment()]);
+
+	if (instr.is_64() && instr.get_address_size() == 4)
+		fmt_concat("addr32:")
+
+	else if (!instr.is_64() && instr.get_address_size() == 2)
+		fmt_concat("addr16:")
+
+	if (instr.has_lock())
+		fmt_concat("lock:")
+
+	fmt_concat("%s", &_mnemonic_str[_mnemonic_offs[instr.get_type()]]);
+	if (instr.get_operand_size())
+		fmt_concat("_%u", instr.get_operand_size())
+
+	for (size_t i = 0; i < 4; ++i) {
+		auto&& operand = instr.get_operand(i);
+
+		const auto op_type = operand.get_type();
+		if (op_type == OpType::none)
+			break;
+
+		auto op_type_name = "reg\0imm\0mem" + static_cast<uintptr_t>(op_type) * 4 - 4;
+		fmt_concat(" %s%u:", op_type_name, operand.get_size());
+
+		switch (op_type) {
+		case OpType::reg: {
+			if (operand.get_register_type() == RegType::gph)
+				fmt_concat("r%uh", operand.get_register() - 4)
+
+			else
+				fmt_concat("r%u", operand.get_register())
+
+			break;
+		}
+		case OpType::imm: {
+			auto immediate = instr.get_immediate();
+			if (instr.get_operand_size() == 1)
+				immediate &= 0xff;
+
+			else if (instr.get_operand_size() == 2)
+				immediate &= 0xffff;
+
+			else if (instr.get_operand_size() == 4)
+				immediate &= 0xffffffff;
+
+			fmt_concat("0x%lx", immediate)
+			break;
+		}
+		case OpType::mem: {
+			const auto base = operand.get_register();
+			const auto idx = instr.get_index_register();
+			const auto disp = instr.get_displacement();
+
+			if (base != Reg::none) {
+				fmt_concat("r%u", base)
+				if (idx != Reg::none || disp != 0)
+					fmt_concat("+")
+			}
+
+			if (idx != Reg::none) {
+				fmt_concat("%u*r%u", instr.get_index_scale(), instr.get_index_register());
+
+				if (disp != 0)
+					fmt_concat("+")
+			}
+
+			if (disp < 0)
+				fmt_concat("-0x%lx", -disp)
+
+			else if (disp != 0 || (base == Reg::none && idx == Reg::none))
+				fmt_concat("0x%lx", disp)
+		}
+
+		case OpType::none:
+		default:
+			break;
+		}
+	}
+
+	fmt_concat("]")
 }
