@@ -1,5 +1,11 @@
 image: plainerman/qemuriscv:gcc
 
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - libs/spdlog/CMakeFiles/
+    - libs/spdlog/libspdlog.a
+
 build:
   stage: build
   script:

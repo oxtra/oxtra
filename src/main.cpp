@@ -2,6 +2,11 @@ extern "C" {
 #include <fadec.h>
 }
 
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG
+
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/basic_file_sink.h>
+
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -17,7 +22,7 @@ int decode(const uint8_t* x86code, size_t x86size, FdInstr* intermediate, size_t
 	for (;;) {
 		int fdret = fd_decode(x86curr, x86size, 64, 0, &instr);
 		if (fdret < 0) {
-			printf("decode failed: %d\n", fdret);
+			spdlog::error("Decoding failed: {}", fdret);
 			return -1;
 		}
 
@@ -29,11 +34,11 @@ int decode(const uint8_t* x86code, size_t x86size, FdInstr* intermediate, size_t
 		if (instr.type == 313) break; //ret
 
 		if (x86curr - x86code > x86size) {
-			printf("exceeded x86 buffer\n");
+			spdlog::error("Exceeded x86 buffer");
 			return -1;
 		}
 		if (inter_curr - intermediate > inter_size) {
-			printf("exceeded intermediate buffer\n");
+			spdlog::error("Exceeded intermediate buffer");
 			return -1;
 		}
 	}
@@ -84,7 +89,7 @@ int encode(const FdInstr* intermediate, size_t inter_size, uint8_t* rvcode, size
 			rvcurr[3] = 0x00;
 			break;
 		} else {
-			printf("instruction not supported\n");
+			spdlog::error("Instruction {} not supported", inter_curr->type);
 			return -1;
 		}
 
@@ -92,11 +97,11 @@ int encode(const FdInstr* intermediate, size_t inter_size, uint8_t* rvcode, size
 		rvcurr += 4;
 
 		if (inter_curr - intermediate > inter_size) {
-			printf("exceeded x86 buffer\n");
+			spdlog::error("Exceeded x86 buffer");
 			return -1;
 		}
 		if (rvcurr - rvcode > rvsize) {
-			printf("exceeded rv buffer\n");
+			spdlog::error("Exceeded riscv buffer");
 			return -1;
 		}
 	}
@@ -121,7 +126,7 @@ int dispatch(const uint8_t* rvcode, size_t rvsize) {
 	// change our memory pointer to a function pointer to allow execution
 	auto (* func)() = reinterpret_cast<int (*)()>(mem);
 
-	printf("%d\n", func());
+	SPDLOG_INFO("The function returned: {}", func());
 	return 0;
 }
 
@@ -130,6 +135,7 @@ int main(int argc, char** argv) {
 	uint8_t rvcode[12] = {0};
 
 	read_elf(argv[1], x86code, sizeof(x86code));
+	SPDLOG_INFO("Finished reading and parsing elf file.");
 	translate(x86code, sizeof(x86code), rvcode, sizeof(rvcode));
 	dispatch(rvcode, sizeof(rvcode));
 
