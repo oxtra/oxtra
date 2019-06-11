@@ -8,6 +8,7 @@ add_library(oxtra_libs
 
 target_link_libraries(oxtra_libs
 		fadec
+		spdlog
 )
 
 target_include_directories(oxtra_libs
