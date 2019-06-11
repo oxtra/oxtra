@@ -6,7 +6,7 @@
 #include "oxtra/elf/elf.h"
 
 extern "C" {
-	#include "fadec.h"
+#include "fadec.h"
 }
 
 namespace codegen {
@@ -17,9 +17,9 @@ namespace codegen {
 	public:
 		CodeGenerator(const elf::Elf& elf);
 
-		CodeGenerator(CodeGenerator &) = delete;
+		CodeGenerator(CodeGenerator&) = delete;
 
-		CodeGenerator(CodeGenerator &&) = delete;
+		CodeGenerator(CodeGenerator&&) = delete;
 
 	public:
 		oxtra::host_addr_t translate(oxtra::guest_addr_t addr);

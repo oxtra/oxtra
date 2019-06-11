@@ -1,9 +1,11 @@
 #include "oxtra/codegen/codegen.h"
 
-codegen::CodeGenerator::CodeGenerator(const elf::Elf &elf)
-	: _codestore{elf} {}
+using namespace codegen;
 
-oxtra::host_addr_t codegen::CodeGenerator::translate(oxtra::guest_addr_t addr) {
+CodeGenerator::CodeGenerator(const elf::Elf& elf)
+		: _codestore{elf} {}
+
+oxtra::host_addr_t CodeGenerator::translate(oxtra::guest_addr_t addr) {
 	const auto cached_code = _codestore.find(addr);
 	if (cached_code)
 		return cached_code;

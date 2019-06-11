@@ -6,11 +6,11 @@
 namespace elf {
 	class Elf {
 	public:
-		Elf(const char *path);
+		Elf(const char* path);
 
-		Elf(Elf &) = delete;
+		Elf(Elf&) = delete;
 
-		Elf(Elf &&) = delete;
+		Elf(Elf&&) = delete;
 
 	public:
 		oxtra::guest_addr_t get_base_address() const;
@@ -21,7 +21,7 @@ namespace elf {
 
 		uint8_t get_page_flags(oxtra::guest_addr_t vaddr) const;
 
-		void *get_addr(oxtra::guest_addr_t vaddr) const;
+		void* get_addr(oxtra::guest_addr_t vaddr) const;
 	};
 }
 

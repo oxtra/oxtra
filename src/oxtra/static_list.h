@@ -4,14 +4,16 @@
 #include <cstdlib>
 
 namespace oxtra {
-	template <class T>
+	template<class T>
 	class StaticList {
 	private:
 		T* _buffer;
 		size_t _size_left;
 
 	public:
-		StaticList(size_t num_elements);
+		StaticList(size_t num_elements) {
+
+		}
 
 		/**
 		 * Add a new element to the list ensuring that the memory is consecutive from start to the element.
@@ -19,7 +21,9 @@ namespace oxtra {
 		 * @param element The element to add.
 		 * @return The (new) start of the section.
 		 */
-		const T* add(const T* const start, const T& element);
+		const T* add(const T* const start, const T& element) {
+			return nullptr;
+		}
 	};
 }
 

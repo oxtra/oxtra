@@ -6,28 +6,30 @@
 #include "oxtra/elf/elf.h"
 
 namespace dispatcher {
-	struct Context {
-		//TODO: implement context
-	};
-
 	class Dispatcher {
+	private:
+		struct Context {
+			//TODO: implement context
+		};
+
+	private:
 		friend codegen::CodeGenerator;
 
 	private:
-		static Dispatcher *_this;
+		static Dispatcher* _this;
 
 	private:
-		const elf::Elf &_elf;
+		const elf::Elf& _elf;
 		codegen::CodeGenerator _codegen;
 		Context _guest_context;
 		Context _host_context;
 
 	public:
-		Dispatcher(const elf::Elf &elf);
+		Dispatcher(const elf::Elf& elf);
 
-		Dispatcher(Dispatcher &) = delete;
+		Dispatcher(Dispatcher&) = delete;
 
-		Dispatcher(Dispatcher &&) = delete;
+		Dispatcher(Dispatcher&&) = delete;
 
 	public:
 		void run();

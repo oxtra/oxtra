@@ -64,6 +64,9 @@ namespace codegen::codestore {
 		/** global instruction offset buffer */
 		oxtra::StaticList<InstructionOffset> _instruction_offset_buffer;
 
+		/** elf-image object */
+		const elf::Elf& _elf;
+
 	public:
 		CodeStore(const elf::Elf& elf);
 
@@ -95,7 +98,7 @@ namespace codegen::codestore {
 		 * @param num_instructions The size of the array of encoded risc-v instructions.
 		 */
 		void add_instruction(BlockEntry& block, const FdInstr& x86_instruction,
-				oxtra::riscv_instruction_t* riscv_instructions, size_t num_instructions);
+							 oxtra::riscv_instruction_t* riscv_instructions, size_t num_instructions);
 	};
 }
 
