@@ -1,8 +1,12 @@
 extern "C" {
-	#include <fadec.h>
+#include <fadec.h>
 }
 
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG
+
 #include <iostream>
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/basic_file_sink.h>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -10,15 +14,15 @@ extern "C" {
 
 #include "oxtra/elf/Elf.h"
 
-int decode(const uint8_t *x86code, size_t x86size, FdInstr *intermediate, size_t inter_size) {
+int decode(const uint8_t* x86code, size_t x86size, FdInstr* intermediate, size_t inter_size) {
 	FdInstr instr;
-	const uint8_t *x86curr = x86code;
-	FdInstr *inter_curr = intermediate;
+	const uint8_t* x86curr = x86code;
+	FdInstr* inter_curr = intermediate;
 
 	for (;;) {
 		int fdret = fd_decode(x86curr, x86size, 64, 0, &instr);
 		if (fdret < 0) {
-			printf("decode failed: %d\n", fdret);
+			spdlog::error("Decoding failed: {}", fdret);
 			return -1;
 		}
 
@@ -30,10 +34,11 @@ int decode(const uint8_t *x86code, size_t x86size, FdInstr *intermediate, size_t
 		if (instr.type == 313) break; //ret
 
 		if (x86curr - x86code > x86size) {
-			printf("exceeded x86 buffer\n");
+			spdlog::error("Exceeded x86 buffer");
 			return -1;
-		} if (inter_curr - intermediate > inter_size) {
-			printf("exceeded intermediate buffer\n");
+		}
+		if (inter_curr - intermediate > inter_size) {
+			spdlog::error("Exceeded intermediate buffer");
 			return -1;
 		}
 	}
@@ -41,13 +46,13 @@ int decode(const uint8_t *x86code, size_t x86size, FdInstr *intermediate, size_t
 	return 0;
 }
 
-int optimize(FdInstr *intermediate, size_t inter_size) {
+int optimize(FdInstr* intermediate, size_t inter_size) {
 	return 0;
 }
 
-int encode(const FdInstr *intermediate, size_t inter_size, uint8_t *rvcode, size_t rvsize) {
-	const FdInstr *inter_curr = intermediate;
-	uint8_t *rvcurr = rvcode;
+int encode(const FdInstr* intermediate, size_t inter_size, uint8_t* rvcode, size_t rvsize) {
+	const FdInstr* inter_curr = intermediate;
+	uint8_t* rvcurr = rvcode;
 
 	for (;;) {
 		if (inter_curr->type >= 259 && inter_curr->type <= 268) { // mov
@@ -55,7 +60,7 @@ int encode(const FdInstr *intermediate, size_t inter_size, uint8_t *rvcode, size
 			// imm[31:12] rd 0110111
 			uint32_t lui = inter_curr->imm & 0xfffff000u;
 			lui |= 0x537u;
-			auto *tmp = reinterpret_cast<uint8_t *>(&lui);
+			auto* tmp = reinterpret_cast<uint8_t*>(&lui);
 			rvcurr[0] = tmp[0];
 			rvcurr[1] = tmp[1];
 			rvcurr[2] = tmp[2];
@@ -68,7 +73,7 @@ int encode(const FdInstr *intermediate, size_t inter_size, uint8_t *rvcode, size
 			// 10000 110 01010 0010011
 			uint32_t ori = inter_curr->imm << 20;
 			ori |= 0x6513u;
-			tmp = reinterpret_cast<uint8_t *>(&ori);
+			tmp = reinterpret_cast<uint8_t*>(&ori);
 			rvcurr[0] = tmp[0];
 			rvcurr[1] = tmp[1];
 			rvcurr[2] = tmp[2];
@@ -84,7 +89,7 @@ int encode(const FdInstr *intermediate, size_t inter_size, uint8_t *rvcode, size
 			rvcurr[3] = 0x00;
 			break;
 		} else {
-			printf("instruction not supported\n");
+			spdlog::error("Instruction {} not supported", inter_curr->type);
 			return -1;
 		}
 
@@ -92,10 +97,11 @@ int encode(const FdInstr *intermediate, size_t inter_size, uint8_t *rvcode, size
 		rvcurr += 4;
 
 		if (inter_curr - intermediate > inter_size) {
-			printf("exceeded x86 buffer\n");
+			spdlog::error("Exceeded x86 buffer");
 			return -1;
-		} if (rvcurr - rvcode > rvsize) {
-			printf("exceeded rv buffer\n");
+		}
+		if (rvcurr - rvcode > rvsize) {
+			spdlog::error("Exceeded riscv buffer");
 			return -1;
 		}
 	}
@@ -103,7 +109,7 @@ int encode(const FdInstr *intermediate, size_t inter_size, uint8_t *rvcode, size
 	return 0;
 }
 
-int translate(const uint8_t *x86code, size_t x86size, uint8_t *rvcode, size_t rvsize) {
+int translate(const uint8_t* x86code, size_t x86size, uint8_t* rvcode, size_t rvsize) {
 	FdInstr intermediate[8];
 	decode(x86code, x86size, intermediate, sizeof(intermediate));
 	optimize(intermediate, sizeof(intermediate));
@@ -111,20 +117,20 @@ int translate(const uint8_t *x86code, size_t x86size, uint8_t *rvcode, size_t rv
 	return 0;
 }
 
-int dispatch(const uint8_t *rvcode, size_t rvsize) {
+int dispatch(const uint8_t* rvcode, size_t rvsize) {
 	// write our code into a block of memory and make it executable
-	void *mem = mmap(nullptr, rvsize, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+	void* mem = mmap(nullptr, rvsize, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 	memcpy(mem, rvcode, rvsize);
 	mprotect(mem, rvsize, PROT_READ | PROT_EXEC);
 
 	// change our memory pointer to a function pointer to allow execution
-	auto (*func)() = reinterpret_cast<int(*)()>(mem);
+	auto (* func)() = reinterpret_cast<int (*)()>(mem);
 
-	printf("%d\n", func());
+	SPDLOG_INFO("The function returned: {}", func());
 	return 0;
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
 	uint8_t x86code[] = {0xb8, 0x02, 0x00, 0x00, 0x00, 0xc3}; // mov eax, 2; ret
 	uint8_t rvcode[12] = {0};
 
