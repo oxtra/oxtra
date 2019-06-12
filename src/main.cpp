@@ -139,7 +139,7 @@ int main(int argc, char** argv) {
 
 	//print the memory-pages of the unpacked elf-file
 	uint64_t vaddr = parser.get_base_vaddr();
-	while (vaddr < parser.get_image_size()) {
+	while (vaddr < parser.get_base_vaddr() + parser.get_image_size()) {
 		uint64_t max_size = parser.get_size(vaddr, 0x100000);
 		std::cout << (void*)vaddr << " - " << (void*)(vaddr + max_size - 1) << " : ";
 		std::cout << ((parser.get_page_flags(vaddr) & elf::PAGE_READ) ? 'r' : '-');
@@ -151,7 +151,8 @@ int main(int argc, char** argv) {
 		std::cout << std::endl;
 
 		//do the self-test
-		if ((parser.get_page_flags(vaddr) & elf::PAGE_WRITE) == 0) {
+		if ((parser.get_page_flags(vaddr) & elf::PAGE_WRITE) == 0 &&
+			(parser.get_page_flags(vaddr) & elf::PAGE_MAPPED) != 0) {
 			uint64_t* ptr = (uint64_t*)parser.resolve_vaddr(vaddr);
 			uint64_t* actual_ptr = (uint64_t*)vaddr;
 			bool conflict = false;

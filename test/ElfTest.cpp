@@ -19,7 +19,8 @@ TEST_CASE("Elf-Parser self test") {
 
 	//iterate through the non-writable pages and compare them
 	for (auto i = 0; i < elf.get_image_size(); i += 0x1000) {
-		if (elf.get_page_flags(i + elf.get_base_vaddr()) & elf::PAGE_WRITE)
+		if ((elf.get_page_flags(i + elf.get_base_vaddr()) & elf::PAGE_WRITE) > 0 ||
+			(elf.get_page_flags(i + elf.get_base_vaddr()) & elf::PAGE_MAPPED) == 0)
 			continue;
 		REQUIRE(memcmp(&target_ptr[i], &actual_ptr[i], 0x1000) == 0);
 	}
