@@ -9,16 +9,13 @@
 #include <exception>
 #include <memory>
 
-//enter the namespace
 namespace elf {
-	//define the flags
 	constexpr uint8_t PAGE_EXECUTE = 0x01;
 	constexpr uint8_t PAGE_READ = 0x02;
 	constexpr uint8_t PAGE_WRITE = 0x04;
 	constexpr uint8_t PAGE_MAPPED = 0x08;
 
-	//define the exception-class
-	class ParserException : public std::exception {
+	class ElfException : public std::exception {
 	public:
 		enum Error : uint8_t {
 			undefined,
@@ -35,17 +32,22 @@ namespace elf {
 
 	private:
 		Error _err;
+		std::string _info;
+
+	private:
+		static const char* error_string(Error e);
 
 	public:
-		ParserException();
+		ElfException();
 
-		ParserException(Error e);
+		ElfException(Error e);
+
+		ElfException(Error e, const char* info);
 
 	public:
 		const char* what() const noexcept;
 	};
 
-	//define the parser-class
 	class Elf {
 	private:
 		struct Buffer {
@@ -94,10 +96,10 @@ namespace elf {
 		uintptr_t get_base_vaddr();
 
 		/**
- 		* retrieves the address to the first byte outside of the image created by the binary-file
- 		* @return virtual base-address + virtual address-range
+ 		* retrieves the total size of the loaded and unpacked binary-file
+ 		* @return virtual address-range
 	 	*/
-		uintptr_t get_highest_vaddr();
+		uintptr_t get_image_size();
 
 		/**
  		* retrieves the entry-point of the binary-image (might be zero, if not an executable)

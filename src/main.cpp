@@ -135,11 +135,11 @@ int main(int argc, char** argv) {
 	uint8_t rvcode[12] = {0};
 
 	//parse the binary-file
-	elf::Elf parser(argv[1]);
+	elf::Elf parser(argv[0]);
 
 	//print the memory-pages of the unpacked elf-file
 	uint64_t vaddr = parser.get_base_vaddr();
-	while (vaddr < parser.get_highest_vaddr()) {
+	while (vaddr < parser.get_image_size()) {
 		uint64_t max_size = parser.get_size(vaddr, 0x100000);
 		std::cout << (void*)vaddr << " - " << (void*)(vaddr + max_size - 1) << " : ";
 		std::cout << ((parser.get_page_flags(vaddr) & elf::PAGE_READ) ? 'r' : '-');
@@ -148,13 +148,43 @@ int main(int argc, char** argv) {
 		std::cout << ((parser.get_page_flags(vaddr) & elf::PAGE_MAPPED) ? 'm' : '-');
 		if (parser.get_entry_point() >= vaddr && parser.get_entry_point() < vaddr + max_size)
 			std::cout << " (entry: " << std::hex << (void*)parser.get_entry_point() << ")";
-
 		std::cout << std::endl;
+
+		//do the self-test
+		if ((parser.get_page_flags(vaddr) & elf::PAGE_WRITE) == 0) {
+			uint64_t* ptr = (uint64_t*)parser.resolve_vaddr(vaddr);
+			uint64_t* actual_ptr = (uint64_t*)vaddr;
+			bool conflict = false;
+			uint64_t target_val = 0;
+			uint64_t actual_val = 0;
+			for (auto i = 0; i < max_size; i += 8) {
+				if (conflict) {
+					if (ptr[i >> 3] == actual_ptr[i >> 3]) {
+						conflict = false;
+						std::cout << (void*)(vaddr + i - 1) << " -> ";
+						std::cout << "target<" << (void*)target_val << "> ";
+						std::cout << "actual<" << (void*)actual_val << ">" << std::endl;
+					}
+				} else if (ptr[i >> 3] != actual_ptr[i >> 3]) {
+					std::cout << (void*)(vaddr + i) << " - ";
+					target_val = actual_ptr[i >> 3];
+					actual_val = ptr[i >> 3];
+					conflict = true;
+				}
+			}
+			if (conflict) {
+				std::cout << (void*)(vaddr + max_size - 1) << " -> ";
+				std::cout << "target<" << (void*)target_val << "> ";
+				std::cout << "actual<" << (void*)actual_val << ">" << std::endl;
+			}
+		}
+
+		//update the virtual-address
 		vaddr += max_size;
 	}
 
-	translate(x86code, sizeof(x86code), rvcode, sizeof(rvcode));
-	dispatch(rvcode, sizeof(rvcode));
+	//translate(x86code, sizeof(x86code), rvcode, sizeof(rvcode));
+	//dispatch(rvcode, sizeof(rvcode));
 
 	return 0;
 }
