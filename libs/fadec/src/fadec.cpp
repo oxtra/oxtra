@@ -29,7 +29,7 @@ enum TableEntry : uint32_t {
 	entry_mask
 };
 
-constexpr inline void entry_unpack(const uint16_t*& table, uint32_t& kind, uint16_t entry) {
+inline void entry_unpack(const uint16_t*& table, uint32_t& kind, uint16_t entry) {
 	const auto entry_copy = entry;
 	table = reinterpret_cast<const uint16_t*>(&_decode_table[entry_copy & ~7]);
 	kind = entry_copy & entry_mask;
@@ -43,17 +43,12 @@ constexpr inline void entry_unpack(const uint16_t*& table, uint32_t& kind, uint1
 #define LOAD_LE_8(buf) (LOAD_LE_4(buf) | LOAD_LE_4((uint8_t*) (buf) + 4)<<32)
 #endif
 
-enum DecodeMode {
-	decode_64 = 0,
-	decode_32 = 1
-};
-
 enum PrefixSet {
 	prefix_none = 0,
-	prefix_lock = x86::lock,
-	prefix_rep = x86::rep,
-	prefix_repnz = x86::repnz,
-	prefix_rex = x86::rex,
+	prefix_lock = static_cast<int>(x86::InstructionFlags::lock),
+	prefix_rep = static_cast<int>(x86::InstructionFlags::rep),
+	prefix_repnz = static_cast<int>(x86::InstructionFlags::repnz),
+	prefix_rex = static_cast<int>(x86::InstructionFlags::rex),
 	prefix_opsz = 1 << 13,
 	prefix_addrsz = 1 << 14,
 	prefix_rexb = 1 << 15,
@@ -64,96 +59,96 @@ enum PrefixSet {
 	prefix_vex = 1 << 20,
 };
 
-static int decode_prefixes(const uint8_t* buffer, size_t len, DecodeMode mode, int& prefixes,
-	uint8_t& mandatory, x86::Reg& segment, uint8_t& vex_operand, int& opcode_escape) {
+int x86::decode_prefixes(const uint8_t* buffer, size_t len, x86::DecodeMode mode, int& prefixes,
+	uint8_t& mandatory, x86::Register& segment, uint8_t& vex_operand, int& opcode_escape) {
 
 	size_t off = 0;
 	prefixes = prefix_none;
 
 	uint8_t rep = 0;
 	mandatory = 0;
-	segment = x86::Reg::none;
+	segment = x86::Register::none;
 	opcode_escape = -1;
 
 	while (LIKELY(off < len)) {
 		const auto prefix = buffer[off];
 		switch (prefix) {
-		default: goto out;
+			default: goto out;
 
 			// From segment overrides, the last one wins.
-		case 0x26: segment = x86::es; off++; break;
-		case 0x2e: segment = x86::cs; off++; break;
-		case 0x3e: segment = x86::ds; off++; break;
-		case 0x64: segment = x86::fs; off++; break;
-		case 0x65: segment = x86::gs; off++; break;
-		case 0x67: prefixes |= prefix_addrsz; break;
-		case 0xf0: prefixes |= prefix_lock; break;
-		case 0x66: prefixes |= prefix_opsz; break;
+			case 0x26: segment = x86::Register::es; off++; break;
+			case 0x2e: segment = x86::Register::cs; off++; break;
+			case 0x3e: segment = x86::Register::ds; off++; break;
+			case 0x64: segment = x86::Register::fs; off++; break;
+			case 0x65: segment = x86::Register::gs; off++; break;
+			case 0x67: prefixes |= prefix_addrsz; break;
+			case 0xf0: prefixes |= prefix_lock; break;
+			case 0x66: prefixes |= prefix_opsz; break;
 			// From REP/REPE and REPNZ, the last one wins; and for mandatory
 			// prefixes they have a higher priority than 66h (handled below).
-		case 0xf3: rep = prefix_rep; mandatory = 2; off++; break;
-		case 0xf2: rep = prefix_repnz; mandatory = 3; off++; break;
+			case 0xf3: rep = prefix_rep; mandatory = 2; off++; break;
+			case 0xf2: rep = prefix_repnz; mandatory = 3; off++; break;
 
 #if defined(ARCH_X86_64)
-		case 0x40: case 0x41: case 0x42: case 0x43: case 0x44: case 0x45:
-		case 0x46: case 0x47: case 0x48: case 0x49: case 0x4a: case 0x4b:
-		case 0x4c: case 0x4d: case 0x4e: case 0x4f:
-			if (mode == decode_64)
-			{
-				prefixes |= prefix_rex;
-				prefixes |= prefix & 0x1 ? prefix_rexb : 0;
-				prefixes |= prefix & 0x2 ? prefix_rexx : 0;
-				prefixes |= prefix & 0x4 ? prefix_rexr : 0;
-				prefixes |= prefix & 0x8 ? prefix_rexw : 0;
-				off++;
-			}
-			// If in 64-bit mode, the REX prefix is always the last prefix. In
-			// 32-bit mode these are regular opcodes, so exit without consuming.
-			goto out;
+			case 0x40: case 0x41: case 0x42: case 0x43: case 0x44: case 0x45:
+			case 0x46: case 0x47: case 0x48: case 0x49: case 0x4a: case 0x4b:
+			case 0x4c: case 0x4d: case 0x4e: case 0x4f:
+				if (mode == x86::DecodeMode::decode_64)
+				{
+					prefixes |= prefix_rex;
+					prefixes |= prefix & 0x1 ? prefix_rexb : 0;
+					prefixes |= prefix & 0x2 ? prefix_rexx : 0;
+					prefixes |= prefix & 0x4 ? prefix_rexr : 0;
+					prefixes |= prefix & 0x8 ? prefix_rexw : 0;
+					off++;
+				}
+				// If in 64-bit mode, the REX prefix is always the last prefix. In
+				// 32-bit mode these are regular opcodes, so exit without consuming.
+				goto out;
 #endif
 
-		case 0xc4: case 0xc5: { // VEX
-			if (UNLIKELY(off + 1 >= len))
-				return -1;
-
-			auto byte = buffer[off + 1];
-			if (mode == decode_32 && (byte & 0xc0) != 0xc0)
-				goto out;
-
-			prefixes |= prefix_vex;
-			prefixes |= (byte & 0x80) ? 0 : prefix_rexr;
-			if (prefix == 0xc4) { // 3-byte VEX
-				prefixes |= (byte & 0x80) ? 0 : prefix_rexr;
-				prefixes |= (byte & 0x40) ? 0 : prefix_rexx;
-
-				// SDM Vol 2A 2-15 (Dec. 2016): Ignored in 32-bit mode
-				prefixes |= (mode == decode_64 || (byte & 0x20)) ? 0 : prefix_rexb;
-				opcode_escape = (byte & 0x1f);
-
-				// Load third byte of VEX prefix
-				if (UNLIKELY(off + 2 >= len))
+			case 0xc4: case 0xc5: { // VEX
+				if (UNLIKELY(off + 1 >= len))
 					return -1;
 
-				byte = buffer[off + 2];
-				// SDM Vol 2A 2-16 (Dec. 2016) says that:
-				// - "In 32-bit modes, VEX.W is silently ignored."
-				// - VEX.W either replaces REX.W, is don't care or is reserved.
-				// This is actually incorrect, there are instructions that
-				// use VEX.W as an opcode extension even in 32-bit mode.
-				prefixes |= (byte & 0x80) ? prefix_rexw : 0;
-			}
-			else { // 2-byte VEX
-				opcode_escape = 1;
-			}
+				auto byte = buffer[off + 1];
+				if (mode == x86::DecodeMode::decode_32 && (byte & 0xc0) != 0xc0)
+					goto out;
 
-			prefixes |= (byte & 0x04) ? prefix_vexl : 0;
-			mandatory = (byte & 0x03);
-			vex_operand = ((byte & 0x78) >> 3) ^ 0xf;
+				prefixes |= prefix_vex;
+				prefixes |= (byte & 0x80) ? 0 : prefix_rexr;
+				if (prefix == 0xc4) { // 3-byte VEX
+					prefixes |= (byte & 0x80) ? 0 : prefix_rexr;
+					prefixes |= (byte & 0x40) ? 0 : prefix_rexx;
 
-			// VEX prefix is always the last prefix.
-			off += (prefix == 0xc4) ? 3 : 2;
-			goto out;
-		}
+					// SDM Vol 2A 2-15 (Dec. 2016): Ignored in 32-bit mode
+					prefixes |= (mode == x86::DecodeMode::decode_64 || (byte & 0x20)) ? 0 : prefix_rexb;
+					opcode_escape = (byte & 0x1f);
+
+					// Load third byte of VEX prefix
+					if (UNLIKELY(off + 2 >= len))
+						return -1;
+
+					byte = buffer[off + 2];
+					// SDM Vol 2A 2-16 (Dec. 2016) says that:
+					// - "In 32-bit modes, VEX.W is silently ignored."
+					// - VEX.W either replaces REX.W, is don't care or is reserved.
+					// This is actually incorrect, there are instructions that
+					// use VEX.W as an opcode extension even in 32-bit mode.
+					prefixes |= (byte & 0x80) ? prefix_rexw : 0;
+				}
+				else { // 2-byte VEX
+					opcode_escape = 1;
+				}
+
+				prefixes |= (byte & 0x04) ? prefix_vexl : 0;
+				mandatory = (byte & 0x03);
+				vex_operand = ((byte & 0x78) >> 3) ^ 0xf;
+
+				// VEX prefix is always the last prefix.
+				off += (prefix == 0xc4) ? 3 : 2;
+				goto out;
+			}
 
 		}
 	}
@@ -169,7 +164,7 @@ out:
 	return off;
 }
 
-int decode_modrm(const uint8_t* buffer, size_t len, DecodeMode mode, x86::Instr& instr, int prefixes, bool vsib, x86::Operand* o1, x86::Operand* o2) {
+int x86::decode_modrm(const uint8_t* buffer, size_t len, x86::DecodeMode mode, x86::Instruction& instr, int prefixes, bool vsib, x86::Operand* o1, x86::Operand* o2) {
 	size_t off = 0;
 
 	if (UNLIKELY(off >= len))
@@ -188,8 +183,8 @@ int decode_modrm(const uint8_t* buffer, size_t len, DecodeMode mode, x86::Instr&
 		reg_idx += (prefixes & prefix_rexr) ? 8 : 0;
 #endif
 
-		o2->type = x86::OpType::reg;
-		o2->reg = static_cast<x86::Reg>(reg_idx);
+		o2->type = x86::OperandType::reg;
+		o2->reg = static_cast<x86::Register>(reg_idx);
 	}
 
 	if (mod == 3) {
@@ -199,8 +194,8 @@ int decode_modrm(const uint8_t* buffer, size_t len, DecodeMode mode, x86::Instr&
 		reg_idx += (prefixes & prefix_rexr) ? 8 : 0;
 #endif
 
-		o1->type = x86::OpType::reg;
-		o1->reg = static_cast<x86::Reg>(reg_idx);
+		o1->type = x86::OperandType::reg;
+		o1->reg = static_cast<x86::Register>(reg_idx);
 
 		return off;
 	}
@@ -224,17 +219,17 @@ int decode_modrm(const uint8_t* buffer, size_t len, DecodeMode mode, x86::Instr&
 		base = (sib & 0x07);
 	}
 
-	o1->type = x86::OpType::mem;
+	o1->type = x86::OperandType::mem;
 	instr.idx_scale = scale;
-	instr.idx_reg = (!vsib && idx == 4) ? x86::Reg::none : static_cast<x86::Reg>(idx);
+	instr.idx_reg = (!vsib && idx == 4) ? x86::Register::none : static_cast<x86::Register>(idx);
 
 	// RIP-relative addressing only if SIB-byte is absent
-	if (mod == 0 && rm == 5 && mode == decode_64)
-		o1->reg = x86::ip;
+	if (mod == 0 && rm == 5 && mode == x86::DecodeMode::decode_64)
+		o1->reg = x86::Register::ip;
 	else if (mod == 0 && base == 5)
-		o1->reg = x86::Reg::none;
+		o1->reg = x86::Register::none;
 	else
-		o1->reg = static_cast<x86::Reg>(base + (prefixes & prefix_rexb ? 8 : 0));
+		o1->reg = static_cast<x86::Register>(base + (prefixes & prefix_rexb ? 8 : 0));
 
 	if (mod == 1) {
 		if (UNLIKELY(off + 1 > len))
@@ -259,7 +254,7 @@ int decode_modrm(const uint8_t* buffer, size_t len, DecodeMode mode, x86::Instr&
 
 struct InstrDesc
 {
-	x86::InstrType type;
+	x86::InstructionType type;
 	uint8_t operand_indices;
 	uint8_t operand_sizes;
 	uint8_t immediate;
@@ -316,20 +311,17 @@ struct InstrDesc
 	}
 };
 
-int x86::decode(const uint8_t* buffer, size_t len_sz, int mode_int, uintptr_t address, x86::Instr& instr) {
+int x86::decode(const uint8_t* buffer, size_t len_sz, DecodeMode mode, uintptr_t address, x86::Instruction& instr) {
 	const uint16_t* table = nullptr;
 
 	size_t len = len_sz > 15 ? 15 : len_sz;
 
-	const auto mode = mode_int == 32 ? decode_32 :
-		mode_int == 64 ? decode_64 : static_cast<DecodeMode>(-1);
-
 #if defined(ARCH_386)
-	if (mode == decode_32)
+	if (mode == x86::DecodeMode::decode_32)
 		table = reinterpret_cast<const uint16_t*>(&_decode_table[FD_TABLE_OFFSET_32]);
 #endif
 #if defined(ARCH_X86_64)
-	if (mode == decode_64)
+	if (mode == x86::DecodeMode::decode_64)
 		table = reinterpret_cast<const uint16_t*>(&_decode_table[FD_TABLE_OFFSET_64]);
 #endif
 
@@ -418,8 +410,8 @@ int x86::decode(const uint8_t* buffer, size_t len_sz, int mode_int, uintptr_t ad
 	instr.type = desc->type;
 	instr.flags = prefixes & 0x7f;
 
-	if (mode == decode_64)
-		instr.flags |= x86::InstrFlags::x64;
+	if (mode == x86::DecodeMode::decode_64)
+		instr.flags |= static_cast<int>(x86::InstructionFlags::x64);
 
 	instr.address = address;
 
@@ -427,13 +419,13 @@ int x86::decode(const uint8_t* buffer, size_t len_sz, int mode_int, uintptr_t ad
 	if (desc->gp_size_8)
 		op_size = 1;
 
-	else if (mode == decode_64 && (prefixes & prefix_rexw))
+	else if (mode == x86::DecodeMode::decode_64 && (prefixes & prefix_rexw))
 		op_size = 8;
 
 	else if (prefixes & prefix_opsz)
 		op_size = 2;
 
-	else if (mode == decode_64 && desc->gp_size_def64)
+	else if (mode == x86::DecodeMode::decode_64 && desc->gp_size_def64)
 		op_size = 8;
 
 	else
@@ -446,7 +438,7 @@ int x86::decode(const uint8_t* buffer, size_t len_sz, int mode_int, uintptr_t ad
 		vec_size = 32;
 
 	// Compute address size.
-	uint8_t addr_size = (mode == decode_64) ? 8 : 4;
+	uint8_t addr_size = (mode == x86::DecodeMode::decode_64) ? 8 : 4;
 	if (prefixes & prefix_addrsz)
 		addr_size >>= 1;
 
@@ -464,15 +456,15 @@ int x86::decode(const uint8_t* buffer, size_t len_sz, int mode_int, uintptr_t ad
 
 	if (desc->has_implicit()) {
 		auto& operand = instr.operands[desc->implicit_idx()];
-		operand.type = x86::OpType::reg;
-		operand.reg = x86::Reg::none;
+		operand.type = x86::OperandType::reg;
+		operand.reg = x86::Register::none;
 	}
 
 	if (desc->has_modrm()) {
 		auto op1 = &instr.operands[desc->modrm_idx()];
 		auto op2 = desc->has_modreg() ? &instr.operands[desc->modreg_idx()] : nullptr;
 
-		const auto retval = decode_modrm(buffer + off, len - off, mode, instr, prefixes, desc->vsib, op1, op2);
+		const auto retval = x86::decode_modrm(buffer + off, len - off, mode, instr, prefixes, desc->vsib, op1, op2);
 		if (UNLIKELY(retval < 0))
 			return -1;
 
@@ -487,29 +479,29 @@ int x86::decode(const uint8_t* buffer, size_t len_sz, int mode_int, uintptr_t ad
 		reg_idx += (prefixes & prefix_rexb) ? 8 : 0;
 #endif
 
-		op.type = x86::OpType::reg;
-		op.reg = static_cast<x86::Reg>(reg_idx);
+		op.type = x86::OperandType::reg;
+		op.reg = static_cast<x86::Register>(reg_idx);
 	}
 
 	if (UNLIKELY(desc->has_vexreg())) {
 		auto& op = instr.operands[desc->vexreg_idx()];
-		op.type = x86::OpType::reg;
-		op.reg = static_cast<x86::Reg>(vex_operand);
+		op.type = x86::OperandType::reg;
+		op.reg = static_cast<x86::Register>(vex_operand);
 	}
 
 	const auto imm_control = static_cast<uint32_t>(desc->imm_control());
 	if (imm_control == 1) {
 		auto& op = instr.operands[desc->imm_index()];
-		op.type = x86::OpType::imm;
+		op.type = x86::OperandType::imm;
 		op.size = 1;
 		instr.imm = 1;
 	}
 	else if (imm_control == 2) {
 		auto& op = instr.operands[desc->imm_index()];
-		op.type = x86::OpType::mem;
-		op.reg = x86::Reg::none;
+		op.type = x86::OperandType::mem;
+		op.reg = x86::Register::none;
 		op.size = op_size;
-		instr.idx_reg = x86::Reg::none;
+		instr.idx_reg = x86::Register::none;
 
 		if (UNLIKELY(off + addr_size > len))
 			return -1;
@@ -535,14 +527,14 @@ int x86::decode(const uint8_t* buffer, size_t len_sz, int mode_int, uintptr_t ad
 		if (desc->imm_byte())
 			imm_size = 1;
 
-		else if (UNLIKELY(instr.type == x86::RET_IMM))
+		else if (UNLIKELY(instr.type == x86::InstructionType::RET_IMM))
 			imm_size = 2;
 
-		else if (UNLIKELY(instr.type == x86::ENTER))
+		else if (UNLIKELY(instr.type == x86::InstructionType::ENTER))
 			imm_size = 3;
 
 #if defined(ARCH_X86_64)
-		else if (mode == decode_64 && UNLIKELY(imm_control == 4))
+		else if (mode == x86::DecodeMode::decode_64 && UNLIKELY(imm_control == 4))
 			// Jumps are always 8 or 32 bit on x86-64
 			imm_size = 4;
 #endif
@@ -551,7 +543,7 @@ int x86::decode(const uint8_t* buffer, size_t len_sz, int mode_int, uintptr_t ad
 			imm_size = 2;
 
 #if defined(ARCH_X86_64)
-		else if (mode == decode_64 && (prefixes & prefix_rexw && instr.type == x86::MOVABS_IMM))
+		else if (mode == x86::DecodeMode::decode_64 && (prefixes & prefix_rexw && instr.type == x86::InstructionType::MOVABS_IMM))
 			imm_size = 8;
 #endif
 
@@ -585,38 +577,38 @@ int x86::decode(const uint8_t* buffer, size_t len_sz, int mode_int, uintptr_t ad
 
 #if defined(ARCH_X86_64)
 			// On x86-64, jumps always have an operand size of 64 bit.
-			if (mode == decode_64)
+			if (mode == x86::DecodeMode::decode_64)
 				op.size = 8;
 
 #endif
 		}
 
 		if (UNLIKELY(imm_control == 5)) {
-			op.type == x86::OpType::reg;
-			op.reg = static_cast<x86::Reg>((instr.imm & 0xf0) >> 4);
+			op.type == x86::OperandType::reg;
+			op.reg = static_cast<x86::Register>((instr.imm & 0xf0) >> 4);
 		}
 		else {
-			op.type = x86::OpType::imm;
+			op.type = x86::OperandType::imm;
 		}
 	}
 
 	if ((prefixes & prefix_lock) && !desc->lock)
 		return -1;
 
-	if ((prefixes & prefix_lock) & instr.operands[0].type != x86::OpType::mem)
+	if ((prefixes & prefix_lock) & instr.operands[0].type != x86::OperandType::mem)
 		return -1;
 
 	for (auto i = 0; i < 4; i++) {
 		auto& op = instr.operands[i];
 
-		if (op.type != x86::OpType::reg)
+		if (op.type != x86::OperandType::reg)
 			continue;
 
-		uint32_t reg_type = (desc->reg_types >> 4 * i) & 0xf;
-		if (reg_type == x86::RegType::gpl && !(prefixes & prefix_rex) && op.size == 1 && op.reg >= 4)
-			reg_type = x86::RegType::gph;
+		auto reg_type = static_cast<x86::RegisterType>((desc->reg_types >> 4 * i) & 0xf);
+		if (reg_type == x86::RegisterType::gpl && !(prefixes & prefix_rex) && op.size == 1 && static_cast<uint8_t>(op.reg) >= 4)
+			reg_type = x86::RegisterType::gph;
 
-		op.reg_type = static_cast<x86::RegType>(reg_type);
+		op.reg_type = reg_type;
 	}
 
 	instr.size = off;
@@ -642,7 +634,7 @@ static const uint16_t _mnemonic_offs[] = {
 		buf = end; \
 }
 
-void x86::format(const x86::Instr& instr, char* buffer, size_t len) {
+void x86::format(const x86::Instruction& instr, char* buffer, size_t len) {
 	auto buf = buffer;
 	auto end = buffer + len;
 
@@ -653,8 +645,8 @@ void x86::format(const x86::Instr& instr, char* buffer, size_t len) {
 	if (instr.has_repnz())
 		fmt_concat("repnz:")
 
-	if (instr.get_segment() < 6)
-		fmt_concat("%cs:", "ecsdfg"[instr.get_segment()]);
+	if (static_cast<uint8_t>(instr.get_segment()) < 6)
+		fmt_concat("%cs:", "ecsdfg"[static_cast<uint8_t>(instr.get_segment())]);
 
 	if (instr.is_64() && instr.get_address_size() == 4)
 		fmt_concat("addr32:")
@@ -665,7 +657,7 @@ void x86::format(const x86::Instr& instr, char* buffer, size_t len) {
 	if (instr.has_lock())
 		fmt_concat("lock:")
 
-	fmt_concat("%s", &_mnemonic_str[_mnemonic_offs[instr.get_type()]]);
+	fmt_concat("%s", &_mnemonic_str[_mnemonic_offs[static_cast<uint16_t>(instr.get_type())]]);
 	if (instr.get_operand_size())
 		fmt_concat("_%u", instr.get_operand_size())
 
@@ -673,23 +665,23 @@ void x86::format(const x86::Instr& instr, char* buffer, size_t len) {
 		auto&& operand = instr.get_operand(i);
 
 		const auto op_type = operand.get_type();
-		if (op_type == OpType::none)
+		if (op_type == OperandType::none)
 			break;
 
 		auto op_type_name = "reg\0imm\0mem" + static_cast<uintptr_t>(op_type) * 4 - 4;
 		fmt_concat(" %s%u:", op_type_name, operand.get_size());
 
 		switch (op_type) {
-		case OpType::reg: {
-			if (operand.get_register_type() == RegType::gph)
-				fmt_concat("r%uh", operand.get_register() - 4)
+		case OperandType::reg: {
+			if (operand.get_register_type() == RegisterType::gph)
+				fmt_concat("r%uh", static_cast<uint8_t>(operand.get_register()) - 4)
 
 			else
 				fmt_concat("r%u", operand.get_register())
 
 			break;
 		}
-		case OpType::imm: {
+		case OperandType::imm: {
 			auto immediate = instr.get_immediate();
 			if (instr.get_operand_size() == 1)
 				immediate &= 0xff;
@@ -703,18 +695,18 @@ void x86::format(const x86::Instr& instr, char* buffer, size_t len) {
 			fmt_concat("0x%lx", immediate)
 			break;
 		}
-		case OpType::mem: {
+		case OperandType::mem: {
 			const auto base = operand.get_register();
 			const auto idx = instr.get_index_register();
 			const auto disp = instr.get_displacement();
 
-			if (base != Reg::none) {
+			if (base != Register::none) {
 				fmt_concat("r%u", base)
-				if (idx != Reg::none || disp != 0)
+				if (idx != Register::none || disp != 0)
 					fmt_concat("+")
 			}
 
-			if (idx != Reg::none) {
+			if (idx != Register::none) {
 				fmt_concat("%u*r%u", instr.get_index_scale(), instr.get_index_register());
 
 				if (disp != 0)
@@ -724,11 +716,11 @@ void x86::format(const x86::Instr& instr, char* buffer, size_t len) {
 			if (disp < 0)
 				fmt_concat("-0x%lx", -disp)
 
-			else if (disp != 0 || (base == Reg::none && idx == Reg::none))
+			else if (disp != 0 || (base == Register::none && idx == Register::none))
 				fmt_concat("0x%lx", disp)
 		}
 
-		case OpType::none:
+		case OperandType::none:
 		default:
 			break;
 		}

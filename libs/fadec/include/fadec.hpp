@@ -11,7 +11,7 @@
 namespace x86
 {
 	// register
-	enum Reg : uint8_t {
+	enum class Register : uint8_t {
 		// 64 bit
 		rax = 0, rcx, rdx, rbx,
 		rsp, rbp, rsi, rdi,
@@ -44,7 +44,7 @@ namespace x86
 	};
 
 	// instruction (mnemonic)
-	enum InstrType : uint16_t {
+	enum class InstructionType : uint16_t {
 #define FD_DECODE_TABLE_MNEMONICS
 #define FD_MNEMONIC(name, value) name = value,
 #include <decode-table.inc>
@@ -53,7 +53,7 @@ namespace x86
 	};
 
 	// flags
-	enum InstrFlags : uint8_t {
+	enum class InstructionFlags : uint8_t {
 		lock = 1 << 0,
 		rep = 1 << 1,
 		repnz = 1 << 2,
@@ -63,14 +63,14 @@ namespace x86
 
 
 	// operand type
-	enum class OpType : uint8_t {
+	enum class OperandType : uint8_t {
 		none,
 		reg,
 		imm,
 		mem,
 	};
 
-	enum RegType : uint8_t {
+	enum class RegisterType : uint8_t {
 		// register type is encoded in mnemonic
 		implicit = 0,
 
@@ -105,14 +105,24 @@ namespace x86
 		dr,
 	};
 
+	enum class DecodeMode : int {
+		decode_64 = 0,
+		decode_32 = 1
+	};
+
 	// operand
 	class Operand {
+		friend int decode(const uint8_t* buffer, size_t len_sz, DecodeMode mode, uintptr_t address, class Instruction& instr);
+		friend void format(const class Instruction& instr, char* buffer, size_t len);
+		friend int decode_modrm(const uint8_t* buffer, size_t len, DecodeMode mode, Instruction& instr, int prefixes, bool vsib, Operand* o1, Operand* o2);
+		friend int decode_prefixes(const uint8_t* buffer, size_t len, DecodeMode mode, int& prefixes,
+								   uint8_t& mandatory, Register& segment, uint8_t& vex_operand, int& opcode_escape);
 	public:
 		/**
 		 *
 		 * @return The type of the operand. E.g. reg (register), imm (immediate), mem (memory).
 		 */
-		OpType get_type() const {
+		OperandType get_type() const {
 			return type;
 		}
 
@@ -129,7 +139,7 @@ namespace x86
 		 * @return The register of an operand.
 		 * @remark Only valid if get_type() == OpType::reg.
 		 */
-		Reg get_register() const {
+		Register get_register() const {
 			return reg;
 		}
 
@@ -138,24 +148,29 @@ namespace x86
 		 * @return The type of the register.
 		 * @remark Only valid if get_type() == OpType::reg. Needed for example to distinguish high-byte registers.
 		 */
-		RegType get_register_type() const {
+		RegisterType get_register_type() const {
 			return reg_type;
 		}
 
-	public: //private:
-		OpType type;
+	private:
+		OperandType type;
 		uint8_t size;
-		Reg reg;
-		RegType reg_type;
+		Register reg;
+		RegisterType reg_type;
 	};
 
-	class Instr {
+	class Instruction {
+		friend int decode(const uint8_t* buffer, size_t len_sz, DecodeMode mode, uintptr_t address, x86::Instruction& instr);
+		friend void format(const Instruction& instr, char* buffer, size_t len);
+		friend int decode_modrm(const uint8_t* buffer, size_t len, DecodeMode mode, Instruction& instr, int prefixes, bool vsib, Operand* o1, Operand* o2);
+		friend int decode_prefixes(const uint8_t* buffer, size_t len, DecodeMode mode, int& prefixes,
+								   uint8_t& mandatory, Register& segment, uint8_t& vex_operand, int& opcode_escape);
 	public:
 		/**
 		 *
 		 * @return The type/mnemonic of the instruction.
 		 */
-		InstrType get_type() const {
+		InstructionType get_type() const {
 			return type;
 		}
 
@@ -184,7 +199,7 @@ namespace x86
 		 *
 		 * @return The segment override or Reg::none if no segment override was specified.
 		 */
-		Reg get_segment() const {
+		Register get_segment() const {
 			return segment;
 		}
 
@@ -193,7 +208,7 @@ namespace x86
 		 * @return The index register of the [base+index*scale+displacement] addressing mode.
 		 * @remark Only valid if an operand is of type OpType::mem.
 		 */
-		Reg get_index_register() const {
+		Register get_index_register() const {
 			return idx_reg;
 		}
 
@@ -246,7 +261,7 @@ namespace x86
 		 * @return True if the instruction has a rep prefix.
 		 */
 		bool has_rep() const {
-			return flags & rep;
+			return flags & static_cast<uint8_t>(InstructionFlags::rep);
 		}
 
 		/**
@@ -254,7 +269,7 @@ namespace x86
 		 * @return True if the instruction has a repnz prefix.
 		 */
 		bool has_repnz() const {
-			return flags & repnz;
+			return flags & static_cast<uint8_t>(InstructionFlags::repnz);
 		}
 
 		/**
@@ -262,7 +277,7 @@ namespace x86
 		 * @return True if the instruction has a lock prefix.
 		 */
 		bool has_lock() const {
-			return flags & lock;
+			return flags & static_cast<uint8_t>(InstructionFlags::lock);
 		}
 
 		/**
@@ -270,7 +285,7 @@ namespace x86
 		 * @return True if the instruction is a 64-bit instruction.
 		 */
 		bool is_64() const {
-			return flags & x64;
+			return flags & static_cast<uint8_t>(InstructionFlags::x64);
 		}
 
 		/**
@@ -281,15 +296,15 @@ namespace x86
 			return address;
 		}
 
-	public://private:
-		InstrType type;
+	private:
+		InstructionType type;
 		uint8_t flags;
-		Reg segment;
+		Register segment;
 		uint8_t addrsz;
 		uint8_t operandsz;
 		std::array<Operand, 4> operands;
 
-		Reg idx_reg;
+		Register idx_reg;
 		uint8_t idx_scale;
 		uint8_t size;
 		intptr_t disp;
@@ -302,12 +317,12 @@ namespace x86
 	 *
 	 * @param buffer Buffer containing the instructions in bytes.
 	 * @param len_sz Length of the buffer.
-	 * @param mode_int Decoding mode. 32 for protected/compatibility mode or 64 for long mode.
+	 * @param mode Decoding mode.
 	 * @param address Virtual address  where the instruction is located.
 	 * @param instr Reference to the instruction buffer.
 	 * @return The number of bytes consumed by the instruction or a negative number indicating an error.
 	 */
-	int decode(const uint8_t* buffer, size_t len_sz, int mode_int, uintptr_t address, x86::Instr& instr);
+	int decode(const uint8_t* buffer, size_t len_sz, DecodeMode mode, uintptr_t address, Instruction& instr);
 
 	/**
 	 *
@@ -315,7 +330,12 @@ namespace x86
 	 * @param buffer Buffer holding the formatted instruction.
 	 * @param len Length of the buffer.
 	 */
-	void format(const Instr& instr, char* buffer, size_t len);
+	void format(const Instruction& instr, char* buffer, size_t len);
+
+	/** internal usage */
+	int decode_modrm(const uint8_t* buffer, size_t len, DecodeMode mode, Instruction& instr, int prefixes, bool vsib, Operand* o1, Operand* o2);
+	int decode_prefixes(const uint8_t* buffer, size_t len, DecodeMode mode, int& prefixes,
+							   uint8_t& mandatory, Register& segment, uint8_t& vex_operand, int& opcode_escape);
 }
 
 #endif

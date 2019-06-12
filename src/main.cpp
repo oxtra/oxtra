@@ -5,13 +5,13 @@
 
 #include "oxtra/elf/Elf.h"
 
-int decode(const uint8_t *x86code, size_t x86size, x86::Instr *intermediate, size_t inter_size) {
-	x86::Instr instr;
+int decode(const uint8_t *x86code, size_t x86size, x86::Instruction *intermediate, size_t inter_size) {
+	x86::Instruction instr;
 	const uint8_t *x86curr = x86code;
-	x86::Instr *inter_curr = intermediate;
+	x86::Instruction *inter_curr = intermediate;
 
 	for (;;) {
-		int fdret = x86::decode(x86curr, x86size, 64, 0, instr);
+		int fdret = x86::decode(x86curr, x86size, x86::DecodeMode::decode_64, 0, instr);
 		if (fdret < 0) {
 			printf("decode failed: %d\n", fdret);
 			return -1;
@@ -20,9 +20,9 @@ int decode(const uint8_t *x86code, size_t x86size, x86::Instr *intermediate, siz
 		*inter_curr = instr;
 
 		++inter_curr;
-		x86curr += instr.size;
+		x86curr += instr.get_size();
 
-		if (instr.type == 313) break; //ret
+		if (instr.get_type() == x86::InstructionType::RET) break; //ret
 
 		if (x86curr - x86code > x86size) {
 			printf("exceeded x86 buffer\n");
@@ -36,19 +36,19 @@ int decode(const uint8_t *x86code, size_t x86size, x86::Instr *intermediate, siz
 	return 0;
 }
 
-int optimize(x86::Instr *intermediate, size_t inter_size) {
+int optimize(x86::Instruction *intermediate, size_t inter_size) {
 	return 0;
 }
 
-int encode(const x86::Instr *intermediate, size_t inter_size, uint8_t *rvcode, size_t rvsize) {
-	const x86::Instr *inter_curr = intermediate;
+int encode(const x86::Instruction *intermediate, size_t inter_size, uint8_t *rvcode, size_t rvsize) {
+	const x86::Instruction *inter_curr = intermediate;
 	uint8_t *rvcurr = rvcode;
 
 	for (;;) {
-		if (inter_curr->type >= 259 && inter_curr->type <= 268) { // mov
+		if (static_cast<uint16_t>(inter_curr->get_type()) >= 259 && static_cast<uint16_t>(inter_curr->get_type()) <= 268) { // mov
 			// lui a0, imm
 			// imm[31:12] rd 0110111
-			uint32_t lui = inter_curr->imm & 0xfffff000u;
+			uint32_t lui = inter_curr->get_immediate() & 0xfffff000u;
 			lui |= 0x537u;
 			auto *tmp = reinterpret_cast<uint8_t *>(&lui);
 			rvcurr[0] = tmp[0];
@@ -61,14 +61,14 @@ int encode(const x86::Instr *intermediate, size_t inter_size, uint8_t *rvcode, s
 			// ori a0, x0, imm
 			// imm[11:0] rs1 110 rd 0010011
 			// 10000 110 01010 0010011
-			uint32_t ori = inter_curr->imm << 20;
+			uint32_t ori = inter_curr->get_immediate() << 20;
 			ori |= 0x6513u;
 			tmp = reinterpret_cast<uint8_t *>(&ori);
 			rvcurr[0] = tmp[0];
 			rvcurr[1] = tmp[1];
 			rvcurr[2] = tmp[2];
 			rvcurr[3] = tmp[3];
-		} else if (inter_curr->type == 313) { // ret
+		} else if (inter_curr->get_type() == x86::InstructionType::RET) { // ret
 			// jalr x0, x1, 0
 			// imm[11:0]	rs1   000 rd	1100111
 			// 000000000000 00001 000 00000 1100111 
@@ -99,7 +99,7 @@ int encode(const x86::Instr *intermediate, size_t inter_size, uint8_t *rvcode, s
 }
 
 int translate(const uint8_t *x86code, size_t x86size, uint8_t *rvcode, size_t rvsize) {
-	x86::Instr intermediate[8];
+	x86::Instruction intermediate[8];
 	decode(x86code, x86size, intermediate, sizeof(intermediate));
 	optimize(intermediate, sizeof(intermediate));
 	encode(intermediate, sizeof(intermediate), rvcode, rvsize);
@@ -122,6 +122,20 @@ int dispatch(const uint8_t *rvcode, size_t rvsize) {
 int main(int argc, char **argv) {
 	uint8_t x86code[] = {0xb8, 0x02, 0x00, 0x00, 0x00, 0xc3}; // mov eax, 2; ret
 	uint8_t rvcode[12] = {0};
+
+	for (auto cur_instr = x86code; cur_instr < x86code + sizeof(x86code);) {
+		x86::Instruction instr;
+		if (x86::decode(cur_instr, x86code + sizeof(x86code) - cur_instr, x86::DecodeMode::decode_64, 0x1000, instr) < 0) {
+			printf("decoding failed.\n");
+			return 0;
+		}
+
+		char buffer[512];
+		x86::format(instr, buffer, sizeof(buffer));
+		printf("%s\n", buffer);
+
+		cur_instr += instr.get_size();
+	}
 
 	read_elf(argv[1], x86code, sizeof(x86code));
 	translate(x86code, sizeof(x86code), rvcode, sizeof(rvcode));
