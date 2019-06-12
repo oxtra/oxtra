@@ -42,7 +42,7 @@ namespace elf {
 		ParserException(Error e);
 
 	public:
-		const char *what() const noexcept;
+		const char* what() const noexcept;
 	};
 
 	//define the parser-class
@@ -63,30 +63,28 @@ namespace elf {
 		uintptr_t _entry_point;
 
 	private:
-		static Buffer read_file(const char *path);
+		static Buffer read_file(const char* path);
 
-		static void *find_in_file(Buffer *file, uintptr_t addr, size_t size);
+		static void* find_in_file(Buffer* file, uintptr_t addr, size_t size);
 
-		static void validate_elf(Buffer *file, uint8_t data_form, uint16_t machine);
+		static void validate_elf(Buffer* file);
 
-		void unpack_file(Buffer *file);
+		void unpack_file(Buffer* file);
 
 	public:
 
 		/**
  		* Parses an elf-binary-file and unpacks the file
  		* @param path path to the elf-binary-file
- 		* @param data_form little endian or big endian (default: ELFDATA2LSB)
- 		* @param machine architecture the parser looks for (default: EM_X86_64)
  		* @return returns false if already called before. Otherwise parses and returns true
  		*/
-		Elf(const char *path, uint8_t data_form = ELFDATA2LSB, uint16_t machine = EM_X86_64);
+		Elf(const char* path);
 
 		Elf() = delete;
 
-		Elf(Elf &) = delete;
+		Elf(Elf&) = delete;
 
-		Elf(Elf &&) = delete;
+		Elf(Elf&&) = delete;
 
 	public:
 		/**
@@ -113,7 +111,7 @@ namespace elf {
  		* @param vaddr the virtual address
  		* @return 0 if the virtual address lies outside of the addressable range of the binary, otherwise the pointer
  		*/
-		void *resolve_vaddr(uintptr_t vaddr);
+		void* resolve_vaddr(uintptr_t vaddr);
 
 		/**
  		* extracts the page-flags of a given address inside of the binary-image

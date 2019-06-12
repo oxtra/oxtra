@@ -139,14 +139,14 @@ int main(int argc, char** argv) {
 
 	//print the memory-pages of the unpacked elf-file
 	uint64_t vaddr = parser.get_base_vaddr();
-	while(vaddr < parser.get_highest_vaddr()) {
+	while (vaddr < parser.get_highest_vaddr()) {
 		uint64_t max_size = parser.get_size(vaddr, 0x100000);
 		std::cout << (void*)vaddr << " - " << (void*)(vaddr + max_size - 1) << " : ";
 		std::cout << ((parser.get_page_flags(vaddr) & elf::PAGE_READ) ? 'r' : '-');
 		std::cout << ((parser.get_page_flags(vaddr) & elf::PAGE_WRITE) ? 'w' : '-');
 		std::cout << ((parser.get_page_flags(vaddr) & elf::PAGE_EXECUTE) ? 'x' : '-');
 		std::cout << ((parser.get_page_flags(vaddr) & elf::PAGE_MAPPED) ? 'm' : '-');
-		if(parser.get_entry_point() >= vaddr && parser.get_entry_point() < vaddr + max_size)
+		if (parser.get_entry_point() >= vaddr && parser.get_entry_point() < vaddr + max_size)
 			std::cout << " (entry: " << std::hex << (void*)parser.get_entry_point() << ")";
 
 		std::cout << std::endl;

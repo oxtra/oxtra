@@ -2,7 +2,6 @@
 
 using namespace elf;
 
-//implementation of the ParserException-class
 ParserException::ParserException() {
 	_err = Error::undefined;
 }
@@ -11,7 +10,7 @@ ParserException::ParserException(Error e) {
 	_err = e;
 }
 
-const char *ParserException::what() const noexcept {
+const char* ParserException::what() const noexcept {
 	switch (_err) {
 		case Error::file_failed:
 			return "[file_failed] failed to open or read the file";
@@ -37,16 +36,14 @@ const char *ParserException::what() const noexcept {
 	}
 }
 
-//implementation of the internally used objects
 Elf::Buffer::Buffer(size_t size) {
 	_ptr = std::make_unique<uint8_t[]>(size);
 	_size = size;
 }
 
-//implementation of the private-functions of the parser-class
-Elf::Buffer Elf::read_file(const char *path) {
+Elf::Buffer Elf::read_file(const char* path) {
 	//open the file
-	FILE *file = fopen(path, "r");
+	FILE* file = fopen(path, "r");
 	if (file == nullptr)
 		throw ParserException(ParserException::file_failed);
 
@@ -71,24 +68,24 @@ Elf::Buffer Elf::read_file(const char *path) {
 	return buf;
 }
 
-void *Elf::find_in_file(Buffer *file, uintptr_t addr, size_t size) {
+void* Elf::find_in_file(Buffer* file, uintptr_t addr, size_t size) {
 	if (addr + size > file->_size)
 		return nullptr;
-	return reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(file->_ptr.get()) + addr);
+	return reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(file->_ptr.get()) + addr);
 }
 
-void Elf::validate_elf(Buffer *file, uint8_t data_form, uint16_t machine) {
+void Elf::validate_elf(Buffer* file) {
 	//get the pointer to the fileheader
-	auto ehdr = reinterpret_cast<Elf64_Ehdr *>(find_in_file(file, 0, sizeof(Elf64_Ehdr)));
+	auto ehdr = reinterpret_cast<Elf64_Ehdr*>(find_in_file(file, 0, sizeof(Elf64_Ehdr)));
 	if (ehdr == nullptr)
 		throw ParserException(ParserException::file_content);
 
 	//validate the header-identification
-	if (memcmp(ehdr->e_ident, "\x7f" "ELF", 4) != 0)
+	if (memcmp(ehdr->e_ident, ELFMAG, SELFMAG) != 0)
 		throw ParserException(ParserException::not_elf_file);
 	if (ehdr->e_ident[EI_CLASS] != ELFCLASS64)
 		throw ParserException(ParserException::unsupported_binary);
-	if (ehdr->e_ident[EI_DATA] != data_form)
+	if (ehdr->e_ident[EI_DATA] != ELFDATA2LSB)
 		throw ParserException(ParserException::unsupported_binary);
 	if (ehdr->e_ident[EI_VERSION] != EV_CURRENT)
 		throw ParserException(ParserException::format_issue);
@@ -100,7 +97,7 @@ void Elf::validate_elf(Buffer *file, uint8_t data_form, uint16_t machine) {
 	//validate the type and machine of this binary
 	if (ehdr->e_type != ET_EXEC)
 		throw ParserException(ParserException::unsupported_type);
-	if (ehdr->e_machine != machine)
+	if (ehdr->e_machine != EM_X86_64)
 		throw ParserException(ParserException::unsupported_binary);
 
 	//validate the rest of the parameter of the header
@@ -114,9 +111,9 @@ void Elf::validate_elf(Buffer *file, uint8_t data_form, uint16_t machine) {
 		throw ParserException(ParserException::format_issue);
 }
 
-void Elf::unpack_file(Buffer *file) {
+void Elf::unpack_file(Buffer* file) {
 	//extract the file-header and the entry-point
-	auto ehdr = reinterpret_cast<Elf64_Ehdr *>(find_in_file(file, 0, sizeof(Elf64_Ehdr)));
+	auto ehdr = reinterpret_cast<Elf64_Ehdr*>(find_in_file(file, 0, sizeof(Elf64_Ehdr)));
 	if (ehdr == nullptr)
 		throw ParserException(ParserException::file_content);
 	_entry_point = ehdr->e_entry;
@@ -127,7 +124,7 @@ void Elf::unpack_file(Buffer *file) {
 	size_t s_i = ehdr->e_shstrndx;
 	if (ehdr->e_phnum == PN_XNUM || ehdr->e_shnum == 0 || s_i == SHN_XINDEX) {
 		//extract the initial section-header
-		auto shdr = reinterpret_cast<Elf64_Shdr *>(find_in_file(file, ehdr->e_shoff, sizeof(Elf64_Shdr)));
+		auto shdr = reinterpret_cast<Elf64_Shdr*>(find_in_file(file, ehdr->e_shoff, sizeof(Elf64_Shdr)));
 		if (shdr == nullptr)
 			throw ParserException(ParserException::file_content);
 		if (ehdr->e_phnum == PN_XNUM)
@@ -143,19 +140,19 @@ void Elf::unpack_file(Buffer *file) {
 		throw ParserException(ParserException::file_content);
 
 	//extract the program-header & section-header
-	auto phdr = reinterpret_cast<Elf64_Phdr *>(find_in_file(file, ehdr->e_phoff, p_c * ehdr->e_phentsize));
-	auto shdr = reinterpret_cast<Elf64_Shdr *>(find_in_file(file, ehdr->e_shoff, s_c * ehdr->e_shentsize));
+	auto phdr = reinterpret_cast<Elf64_Phdr*>(find_in_file(file, ehdr->e_phoff, p_c * ehdr->e_phentsize));
+	auto shdr = reinterpret_cast<Elf64_Shdr*>(find_in_file(file, ehdr->e_shoff, s_c * ehdr->e_shentsize));
 	if ((phdr == nullptr && p_c > 0) || (shdr == nullptr && s_c > 0))
 		throw ParserException(ParserException::file_content);
 
 	//get a pointer to the seciton-names and find the bss-section
-	Elf64_Shdr *bss_section = nullptr;
+	Elf64_Shdr* bss_section = nullptr;
 	if (s_c > 0) {
 		if (shdr[s_i].sh_type != SHT_STRTAB)
 			throw ParserException(ParserException::file_content);
 
 		//get the section-name-pointer
-		auto name_ptr = reinterpret_cast<uint8_t *>(find_in_file(file, shdr[s_i].sh_offset, shdr[s_i].sh_size));
+		auto name_ptr = reinterpret_cast<uint8_t*>(find_in_file(file, shdr[s_i].sh_offset, shdr[s_i].sh_size));
 		if (name_ptr == nullptr)
 			throw ParserException(ParserException::file_content);
 
@@ -202,8 +199,9 @@ void Elf::unpack_file(Buffer *file) {
 	}
 
 	//page-align the base and the range
-	_base_address &= ~0x00000FFFu;
-	_address_range = ((_address_range & 0x00000FFFu) > 0 ? _address_range + 0x00001000 : _address_range) & ~0x00000FFFu;
+	_base_address ^= (_base_address & 0x00000FFFu);
+	_address_range = (_address_range & 0x00000FFFu) > 0 ? _address_range + 0x00001000 : _address_range;
+	_address_range ^= (_address_range & 0x00000FFFu);
 	_address_range -= _base_address;
 	if (_address_range == 0)
 		throw ParserException(ParserException::file_content);
@@ -217,7 +215,7 @@ void Elf::unpack_file(Buffer *file) {
 	//iterate through the program-headers and write the to memory
 	for (auto i = 0; i < p_c + 1; i++) {
 		if (i < p_c ? phdr[i].p_type == PT_LOAD : true) {
-			void *ptr = nullptr;
+			void* ptr = nullptr;
 			if (i < p_c)
 				ptr = find_in_file(file, phdr[i].p_offset, phdr[i].p_filesz);
 			else if (bss_section == nullptr)
@@ -256,14 +254,13 @@ void Elf::unpack_file(Buffer *file) {
 
 			//write the content to the memory
 			if (i < p_c)
-				memcpy(reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(_image_ptr.get()) + phdr[i].p_vaddr -
-												_base_address), ptr, phdr[i].p_filesz);
+				memcpy(reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(_image_ptr.get()) + phdr[i].p_vaddr -
+											   _base_address), ptr, phdr[i].p_filesz);
 		}
 	}
 }
 
-//implementation of the constructor of the parser-class
-Elf::Elf(const char *path, uint8_t data_form, uint16_t machine) {
+Elf::Elf(const char* path) {
 	//initialize the this object
 	_image_ptr = nullptr;
 	_page_flags = nullptr;
@@ -275,13 +272,12 @@ Elf::Elf(const char *path, uint8_t data_form, uint16_t machine) {
 	Buffer file = read_file(path);
 
 	//validate the file
-	validate_elf(&file, data_form, machine);
+	validate_elf(&file);
 
 	//unpack the file
 	unpack_file(&file);
 }
 
-//implementation of the public-functions of the parser-class
 uintptr_t Elf::get_base_vaddr() {
 	return _base_address;
 }
@@ -294,12 +290,12 @@ uintptr_t Elf::get_entry_point() {
 	return _entry_point;
 }
 
-void *Elf::resolve_vaddr(uintptr_t vaddr) {
+void* Elf::resolve_vaddr(uintptr_t vaddr) {
 	//validate the address
 	vaddr -= _base_address;
 	if (vaddr >= _address_range)
 		return nullptr;
-	return reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(_image_ptr.get()) + vaddr);
+	return reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(_image_ptr.get()) + vaddr);
 }
 
 uint8_t Elf::get_page_flags(uintptr_t vaddr) {
@@ -329,7 +325,7 @@ size_t Elf::get_size(uintptr_t vaddr, size_t max_page) {
 		max_page = (_address_range >> 12u);
 
 	//iterate through the pages and add their size up
-	for (size_t i = vaddr; i < max_page; i++) {
+	for (auto i = vaddr; i < max_page; i++) {
 		if (flags != _page_flags[i])
 			return size;
 		size += 0x1000;
