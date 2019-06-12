@@ -266,12 +266,17 @@ void Elf::unpack_file(Buffer* file) {
 
 			//write the content to the memory
 			if (i < p_c) {
-				uintptr_t copy_start = phdr[i].p_vaddr ^(phdr[i].p_vaddr & 0x00000FFFu);
+				//compute the start-address
+				uintptr_t copy_start = phdr[i].p_vaddr;
 				copy_start += reinterpret_cast<uintptr_t>(_image_ptr.get());
+
+				//compute the copy-size
 				size_t copy_size = phdr[i].p_filesz;
-				if (phdr[i].p_filesz & 0x00000FFFu)
-					copy_size += 0x1000;
-				copy_size ^= copy_size & 0x00000FFFu;
+				if((phdr[i].p_vaddr & 0x00000FFFu) == 0) {
+					if (phdr[i].p_filesz & 0x00000FFFu)
+						copy_size += 0x1000;
+					copy_size ^= copy_size & 0x00000FFFu;
+				}
 				memcpy(reinterpret_cast<void*>(copy_start - _base_address), ptr, copy_size);
 			}
 		}
