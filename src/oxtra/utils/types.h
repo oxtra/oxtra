@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <cstddef>
 
-namespace oxtra {
+namespace utils {
 	/**
 	 * describes all addresses referenced by the guest-program.
 	 */

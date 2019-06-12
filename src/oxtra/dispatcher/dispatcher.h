@@ -1,7 +1,8 @@
 #ifndef OXTRA_DISPATCHER_H
 #define OXTRA_DISPATCHER_H
 
-#include "oxtra/types.h"
+#include "oxtra/utils/types.h"
+#include "oxtra/arguments/arguments.h"
 #include "oxtra/codegen/codegen.h"
 #include "oxtra/elf/elf.h"
 
@@ -37,7 +38,7 @@ namespace dispatcher {
 	private:
 		static void host_enter();
 
-		static void host_exit(oxtra::host_addr_t addr);
+		static void host_exit(utils::host_addr_t addr);
 
 		static void inline_translate();
 	};

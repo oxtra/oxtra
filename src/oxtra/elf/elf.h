@@ -1,7 +1,7 @@
 #ifndef OXTRA_ELF_H
 #define OXTRA_ELF_H
 
-#include "oxtra/types.h"
+#include "oxtra/utils/types.h"
 
 namespace elf {
 	class Elf {
@@ -13,15 +13,15 @@ namespace elf {
 		Elf(Elf&&) = delete;
 
 	public:
-		oxtra::guest_addr_t get_base_address() const;
+		utils::guest_addr_t get_base_address() const;
 
 		size_t get_image_size() const;
 
-		oxtra::guest_addr_t get_entry_point() const;
+		utils::guest_addr_t get_entry_point() const;
 
-		uint8_t get_page_flags(oxtra::guest_addr_t vaddr) const;
+		uint8_t get_page_flags(utils::guest_addr_t vaddr) const;
 
-		void* get_addr(oxtra::guest_addr_t vaddr) const;
+		void* get_addr(utils::guest_addr_t vaddr) const;
 	};
 }
 

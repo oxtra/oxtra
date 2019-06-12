@@ -1,7 +1,8 @@
 #ifndef OXTRA_CODEGEN_H
 #define OXTRA_CODEGEN_H
 
-#include "oxtra/types.h"
+#include "oxtra/utils/types.h"
+#include "oxtra/arguments/arguments.h"
 #include "oxtra/codegen/codestore/codestore.h"
 #include "oxtra/elf/elf.h"
 
@@ -22,7 +23,7 @@ namespace codegen {
 		CodeGenerator(CodeGenerator&&) = delete;
 
 	public:
-		oxtra::host_addr_t translate(oxtra::guest_addr_t addr);
+		utils::host_addr_t translate(utils::guest_addr_t addr);
 	};
 }
 

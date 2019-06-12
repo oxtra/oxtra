@@ -1,8 +1,9 @@
 #ifndef OXTRA_CODESTORE_H
 #define OXTRA_CODESTORE_H
 
-#include "oxtra/types.h"
-#include "oxtra/static_list.h"
+#include "oxtra/utils/types.h"
+#include "oxtra/arguments/arguments.h"
+#include "oxtra/utils/static_list.h"
 #include "oxtra/elf/elf.h"
 #include <vector>
 #include <memory>
@@ -41,9 +42,9 @@ namespace codegen::codestore {
 	};
 
 	struct BlockEntry {
-		oxtra::guest_addr_t x86_start;
-		oxtra::guest_addr_t x86_end;
-		oxtra::host_addr_t riscv_start;
+		utils::guest_addr_t x86_start;
+		utils::guest_addr_t x86_end;
+		utils::host_addr_t riscv_start;
 		size_t instruction_count;
 		const InstructionOffset* offsets;
 	};
@@ -56,13 +57,13 @@ namespace codegen::codestore {
 		std::unique_ptr<BlockArray[]> _pages;
 
 		/** risc-v code buffer */
-		oxtra::StaticList<oxtra::riscv_instruction_t> _code_buffer;
+		utils::StaticList<utils::riscv_instruction_t> _code_buffer;
 
 		/** block entry buffer */
-		oxtra::StaticList<BlockEntry> _block_entries;
+		utils::StaticList<BlockEntry> _block_entries;
 
 		/** global instruction offset buffer */
-		oxtra::StaticList<InstructionOffset> _instruction_offset_buffer;
+		utils::StaticList<InstructionOffset> _instruction_offset_buffer;
 
 		/** elf-image object */
 		const elf::Elf& _elf;
@@ -75,14 +76,14 @@ namespace codegen::codestore {
 		 * @param x86_code The address of the x86 instructions.
 		 * @return The address of the translated risc-v instructions. May be null, if not translated yet.
 		 */
-		oxtra::host_addr_t find(oxtra::guest_addr_t x86_code) const;
+		utils::host_addr_t find(utils::guest_addr_t x86_code) const;
 
 		/**
 		 *
 		 * @param x86_code The address of the x86 code used to find the next block.
 		 * @return a pointer to the next translated block that may conflict with this x86_code-block. May be null.
 		 */
-		BlockEntry* get_next_block(oxtra::guest_addr_t x86_code) const;
+		BlockEntry* get_next_block(utils::guest_addr_t x86_code) const;
 
 		/**
 		 * Allocate a new block entry.
@@ -98,7 +99,7 @@ namespace codegen::codestore {
 		 * @param num_instructions The size of the array of encoded risc-v instructions.
 		 */
 		void add_instruction(BlockEntry& block, const FdInstr& x86_instruction,
-							 oxtra::riscv_instruction_t* riscv_instructions, size_t num_instructions);
+							 utils::riscv_instruction_t* riscv_instructions, size_t num_instructions);
 	};
 }
 

@@ -3,7 +3,7 @@
 
 #include <cstdlib>
 
-namespace oxtra {
+namespace utils {
 	template<class T>
 	class StaticList {
 	private:

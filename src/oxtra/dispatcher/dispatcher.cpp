@@ -2,6 +2,7 @@
 
 using namespace dispatcher;
 using namespace codegen;
+using namespace utils;
 
 Dispatcher::Dispatcher(const elf::Elf& elf) : _elf(elf), _codegen(elf) {
 
@@ -15,7 +16,7 @@ void Dispatcher::host_enter() {
 
 }
 
-void Dispatcher::host_exit(oxtra::host_addr_t addr) {
+void Dispatcher::host_exit(host_addr_t addr) {
 
 }
 
