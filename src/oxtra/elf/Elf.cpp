@@ -6,8 +6,6 @@ const char* ElfException::error_string(Error e) {
 	switch (e) {
 		case Error::file_failed:
 			return "[file_failed] failed to open or read the file";
-		case Error::file_content:
-			return "[file_content] this program can not handle the alignment of the contents of the file";
 		case Error::not_elf_file:
 			return "[not_elf_file] the file is not an elf-file";
 		case Error::unsupported_binary:
@@ -18,10 +16,6 @@ const char* ElfException::error_string(Error e) {
 			return "[not_static] the file has not been linked statically";
 		case Error::format_issue:
 			return "[format_issue] this program can not handle this elf-format";
-		case Error::no_content:
-			return "[no_content] the file does not contain any mappable data";
-		case Error::page_conflict:
-			return "[page_conflict] two or more segments try to share a page with different flags";
 		case Error::undefined:
 		default:
 			return "[undefined] undefined";
@@ -48,12 +42,7 @@ const char* ElfException::what() const noexcept {
 	return _info.c_str();
 }
 
-Elf::Buffer::Buffer(size_t size) {
-	_ptr = std::make_unique<uint8_t[]>(size);
-	_size = size;
-}
-
-Elf::Buffer Elf::read_file(const char* path) {
+void Elf::read_file(const char* path) {
 	//open the file
 	FILE* file = fopen(path, "r");
 	if (file == nullptr)
@@ -69,28 +58,24 @@ Elf::Buffer Elf::read_file(const char* path) {
 	}
 
 	//allocate a buffer for the file
-	Buffer buf(size);
+	_image_ptr = std::make_unique<uint8_t[]>(size);
 
 	//read the contents of the file
-	if (fread(buf._ptr.get(), 1, size, file) != size) {
+	if (fread(_image_ptr.get(), 1, size, file) != size) {
 		fclose(file);
 		throw ElfException(ElfException::file_failed, "read the file");
 	}
 	fclose(file);
-	return buf;
 }
 
-void* Elf::find_in_file(Buffer* file, uintptr_t addr, size_t size) {
-	if (addr + size > file->_size)
-		return nullptr;
-	return reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(file->_ptr.get()) + addr);
+template<typename tp>
+tp Elf::resolve_offset(uintptr_t offset) {
+	return reinterpret_cast<tp>(reinterpret_cast<uintptr_t>(_image_ptr.get()) + offset);
 }
 
-void Elf::validate_elf(Buffer* file) {
+void Elf::validate_elf() {
 	//get the pointer to the fileheader
-	auto ehdr = reinterpret_cast<Elf64_Ehdr*>(find_in_file(file, 0, sizeof(Elf64_Ehdr)));
-	if (ehdr == nullptr)
-		throw ElfException(ElfException::file_content, "extract exe-header");
+	auto ehdr = resolve_offset<Elf64_Ehdr*>(0);
 
 	//validate the header-identification
 	if (memcmp(ehdr->e_ident, ELFMAG, SELFMAG) != 0)
@@ -123,11 +108,9 @@ void Elf::validate_elf(Buffer* file) {
 		throw ElfException(ElfException::format_issue, "exe-header unusable size");
 }
 
-void Elf::unpack_file(Buffer* file) {
+void Elf::unpack_file() {
 	//extract the file-header and the entry-point
-	auto ehdr = reinterpret_cast<Elf64_Ehdr*>(find_in_file(file, 0, sizeof(Elf64_Ehdr)));
-	if (ehdr == nullptr)
-		throw ElfException(ElfException::file_content, "read exe-header");
+	auto ehdr = resolve_offset<Elf64_Ehdr*>(0);
 	_entry_point = ehdr->e_entry;
 
 	//extract the number of program-headers/section-header & the index to the string-table
@@ -136,9 +119,7 @@ void Elf::unpack_file(Buffer* file) {
 	size_t s_i = ehdr->e_shstrndx;
 	if (ehdr->e_phnum == PN_XNUM || ehdr->e_shnum == 0 || s_i == SHN_XINDEX) {
 		//extract the initial section-header
-		auto shdr = reinterpret_cast<Elf64_Shdr*>(find_in_file(file, ehdr->e_shoff, sizeof(Elf64_Shdr)));
-		if (shdr == nullptr)
-			throw ElfException(ElfException::file_content, "read first sec-header");
+		auto shdr = resolve_offset<Elf64_Shdr*>(ehdr->e_shoff);
 		if (ehdr->e_phnum == PN_XNUM)
 			p_c = shdr->sh_info;
 		if (ehdr->e_shnum == 0)
@@ -146,39 +127,21 @@ void Elf::unpack_file(Buffer* file) {
 		if (s_i == SHN_XINDEX)
 			s_i = shdr->sh_link;
 	}
-	if (p_c == 0 && s_c == 0)
-		throw ElfException(ElfException::no_content, "no sec/prog-headers");
-	if (s_i >= s_c)
-		throw ElfException(ElfException::file_content, "invalid sec-name-index");
 
 	//extract the program-header & section-header
-	auto phdr = reinterpret_cast<Elf64_Phdr*>(find_in_file(file, ehdr->e_phoff, p_c * ehdr->e_phentsize));
-	auto shdr = reinterpret_cast<Elf64_Shdr*>(find_in_file(file, ehdr->e_shoff, s_c * ehdr->e_shentsize));
-	if ((phdr == nullptr && p_c > 0) || (shdr == nullptr && s_c > 0))
-		throw ElfException(ElfException::file_content, "no sec/prog-headers");
+	auto phdr = resolve_offset<Elf64_Phdr*>(ehdr->e_phoff);
+	auto shdr = resolve_offset<Elf64_Shdr*>(ehdr->e_shoff);
 
 	//get a pointer to the seciton-names and find the bss-section
 	Elf64_Shdr* bss_section = nullptr;
 	if (s_c > 0) {
-		if (shdr[s_i].sh_type != SHT_STRTAB)
-			throw ElfException(ElfException::file_content, "sec-name-index invalid");
-
-		//get the section-name-pointer
-		auto name_ptr = reinterpret_cast<uint8_t*>(find_in_file(file, shdr[s_i].sh_offset, shdr[s_i].sh_size));
-		if (name_ptr == nullptr)
-			throw ElfException(ElfException::file_content, "no sec-name-pointer");
-
-		//find the bss section
+		//get the section-name-pointer and iterate through the sections
+		auto name_ptr = resolve_offset<uint8_t*>(shdr[s_i].sh_offset);
 		for (auto i = 0; i < s_c; i++) {
-			if (shdr[i].sh_name >= shdr[s_i].sh_size)
-				throw ElfException(ElfException::file_content, "sec-name-index out of range");
 			if (shdr[i].sh_name + 5 > shdr[s_i].sh_size)
 				continue;
 			if (memcmp(&name_ptr[shdr[i].sh_name], ".bss", 5) == 0) {
 				bss_section = &shdr[i];
-				if (bss_section->sh_type != SHT_NOBITS || ((bss_section->sh_flags & SHF_WRITE) == 0) ||
-					((bss_section->sh_flags & SHF_ALLOC) == 0))
-					throw ElfException(ElfException::format_issue, "bss-section invalid");
 				break;
 			}
 		}
@@ -195,8 +158,6 @@ void Elf::unpack_file(Buffer* file) {
 	_address_range = 0;
 	for (auto i = 0; i < p_c; i++) {
 		if (phdr[i].p_type == PT_LOAD) {
-			if (phdr[i].p_memsz < phdr[i].p_filesz)
-				throw ElfException(ElfException::file_content, "prog-entry memsize < filesize");
 			if (phdr[i].p_vaddr < _base_address)
 				_base_address = phdr[i].p_vaddr;
 			if (phdr[i].p_vaddr + phdr[i].p_memsz > _address_range)
@@ -215,72 +176,72 @@ void Elf::unpack_file(Buffer* file) {
 	_address_range = (_address_range & 0x00000FFFu) > 0 ? _address_range + 0x00001000 : _address_range;
 	_address_range ^= (_address_range & 0x00000FFFu);
 	_address_range -= _base_address;
-	if (_address_range == 0)
-		throw ElfException(ElfException::file_content, "total address-range is 0");
 
 	//allocate the buffer for the image & the table for the page-entries
-	_image_ptr = std::make_unique<uint8_t[]>(_address_range);
+	std::unique_ptr<uint8_t[]> image_buffer = std::make_unique<uint8_t[]>(_address_range);
 	_page_flags = std::make_unique<uint8_t[]>(_address_range >> 12u);
-	memset(_image_ptr.get(), 0, _address_range);
+	memset(image_buffer.get(), 0, _address_range);
 	memset(_page_flags.get(), 0, _address_range >> 12u);
 
-	//iterate through the program-headers and write the to memory
-	for (auto i = 0; i < p_c + 1; i++) {
-		if (i < p_c ? phdr[i].p_type == PT_LOAD : true) {
-			void* ptr = nullptr;
-			if (i < p_c)
-				ptr = find_in_file(file, phdr[i].p_offset, phdr[i].p_filesz);
-			else if (bss_section == nullptr)
-				break;
-			else
-				ptr = find_in_file(file, bss_section->sh_offset, bss_section->sh_size);
-			if (ptr == nullptr)
-				throw ElfException(ElfException::file_content, "read sec/prog-data");
+	//iterate through the program-headers and write them to memory
+	for (auto i = 0; i < p_c; i++) {
+		if (phdr[i].p_type != PT_LOAD)
+			continue;
 
-			//compute the first and the last page the blocks are within
-			size_t page_start = ((i < p_c) ? phdr[i].p_vaddr : bss_section->sh_addr) - _base_address;
-			size_t page_end =
-					((i < p_c) ? phdr[i].p_vaddr + phdr[i].p_memsz : bss_section->sh_addr + bss_section->sh_size) -
-					_base_address;
-			page_start >>= 12u;
-			page_end = (page_end >> 12u) + ((page_end & 0x00000FFFu) > 0 ? 1 : 0);
+		//compute the first and the last page the blocks are within
+		size_t page_start = phdr[i].p_vaddr - _base_address;
+		size_t page_end = phdr[i].p_vaddr + phdr[i].p_memsz - _base_address;
+		page_start >>= 12u;
+		page_end = (page_end >> 12u) + ((page_end & 0x00000FFFu) > 0 ? 1 : 0);
 
-			//extract the page-flags
-			uint8_t flags = PAGE_MAPPED;
-			if (i < p_c) {
-				if (phdr[i].p_flags & PF_X)
-					flags |= PAGE_EXECUTE;
-				if (phdr[i].p_flags & PF_W)
-					flags |= PAGE_WRITE;
-				if (phdr[i].p_flags & PF_R)
-					flags |= PAGE_READ;
-			} else
-				flags |= PAGE_WRITE | PAGE_READ;
+		//extract the page-flags
+		uint8_t flags = PAGE_MAPPED;
+		if (phdr[i].p_flags & PF_X) flags |= PAGE_EXECUTE;
+		if (phdr[i].p_flags & PF_W) flags |= PAGE_WRITE;
+		if (phdr[i].p_flags & PF_R) flags |= PAGE_READ;
 
-			//setup the page-flags
-			for (auto p = page_start; p < page_end; p++) {
-				if (_page_flags[p] != 0 && _page_flags[p] != flags)
-					throw ElfException(ElfException::page_conflict, "page-flags");
-				_page_flags[p] = flags;
-			}
+		//setup the page-flags
+		for (auto p = page_start; p < page_end; p++)
+			_page_flags[p] = flags;
 
-			//write the content to the memory
-			if (i < p_c) {
-				//compute the start-address
-				uintptr_t copy_start = phdr[i].p_vaddr;
-				copy_start += reinterpret_cast<uintptr_t>(_image_ptr.get());
+		//compute the source-address
+		auto copy_source = resolve_offset<uintptr_t>(phdr[i].p_offset);
 
-				//compute the copy-size
-				size_t copy_size = phdr[i].p_filesz;
-				if((phdr[i].p_vaddr & 0x00000FFFu) == 0) {
-					if (phdr[i].p_filesz & 0x00000FFFu)
-						copy_size += 0x1000;
-					copy_size ^= copy_size & 0x00000FFFu;
-				}
-				memcpy(reinterpret_cast<void*>(copy_start - _base_address), ptr, copy_size);
-			}
+		//compute the copy-size
+		size_t copy_size = phdr[i].p_filesz;
+		if (phdr[i].p_filesz & 0x00000FFFu)
+			copy_size += 0x1000;
+		copy_size ^= copy_size & 0x00000FFFu;
+
+		//compute the dest-address
+		uintptr_t copy_dest = phdr[i].p_vaddr - _base_address + reinterpret_cast<uintptr_t>(image_buffer.get());
+
+		//check if the starting-address has to be aligned
+		if (phdr[i].p_vaddr & 0x00000FFFu) {
+			uintptr_t offset = phdr[i].p_vaddr & 0x00000FFFu;
+			copy_source -= offset;
+			copy_size += offset;
+			copy_dest -= offset;
 		}
+		memcpy(reinterpret_cast<void*>(copy_dest), reinterpret_cast<void*>(copy_source), copy_size);
 	}
+
+	//map the bss-section to pages
+	if(bss_section != nullptr) {
+		//compute the first and the last page the blocks are within
+		size_t page_start = bss_section->sh_addr - _base_address;
+		size_t page_end = bss_section->sh_addr + bss_section->sh_size - _base_address;
+		page_start >>= 12u;
+		page_end = (page_end >> 12u) + ((page_end & 0x00000FFFu) > 0 ? 1 : 0);
+
+		//setup the page-flags
+		uint8_t flags = PAGE_MAPPED | PAGE_READ | PAGE_WRITE;
+		for (auto p = page_start; p < page_end; p++)
+			_page_flags[p] = flags;
+	}
+
+	//switch the pointers
+	_image_ptr = std::move(image_buffer);
 }
 
 Elf::Elf(const char* path) {
@@ -292,13 +253,13 @@ Elf::Elf(const char* path) {
 	_entry_point = 0;
 
 	//read the file
-	Buffer file = read_file(path);
+	read_file(path);
 
 	//validate the file
-	validate_elf(&file);
+	validate_elf();
 
 	//unpack the file
-	unpack_file(&file);
+	unpack_file();
 }
 
 uintptr_t Elf::get_base_vaddr() {

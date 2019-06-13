@@ -20,14 +20,11 @@ namespace elf {
 		enum Error : uint8_t {
 			undefined,
 			file_failed,
-			file_content,
 			not_elf_file,
 			format_issue,
 			unsupported_binary,
 			unsupported_type,
-			not_static,
-			no_content,
-			page_conflict
+			not_static
 		};
 
 	private:
@@ -50,14 +47,6 @@ namespace elf {
 
 	class Elf {
 	private:
-		struct Buffer {
-			std::unique_ptr<uint8_t[]> _ptr;
-			size_t _size;
-
-			Buffer(size_t size);
-		};
-
-	private:
 		std::unique_ptr<uint8_t[]> _image_ptr;
 		uintptr_t _base_address;
 		size_t _address_range;
@@ -65,13 +54,14 @@ namespace elf {
 		uintptr_t _entry_point;
 
 	private:
-		static Buffer read_file(const char* path);
+		void read_file(const char* path);
 
-		static void* find_in_file(Buffer* file, uintptr_t addr, size_t size);
+		template<typename tp>
+		tp resolve_offset(uintptr_t offset);
 
-		static void validate_elf(Buffer* file);
+		void validate_elf();
 
-		void unpack_file(Buffer* file);
+		void unpack_file();
 
 	public:
 
