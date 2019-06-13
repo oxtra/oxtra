@@ -18,7 +18,10 @@ build:
 test:
     stage: test
     script:
-      - qemu-riscv64 test/unit_tests -r junit > report.xml
+      - set +e # disable exit on error
+      - qemu-riscv64 test/unit_tests
+      - set -e # enable exit on error
+      - qemu-riscv64 test/unit_tests -r junit > test/report.xml
     artifacts:
       reports:
-        junit: report.xml
+        junit: test/report.xml
