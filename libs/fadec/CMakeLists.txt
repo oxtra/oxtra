@@ -3,8 +3,7 @@ project(fadec LANGUAGES C)
 
 # Add a library with the above sources
 add_library(${PROJECT_NAME}
-		src/decode.c
-		src/format.c
+		src/fadec.cpp
 )
 
 target_include_directories(${PROJECT_NAME}
