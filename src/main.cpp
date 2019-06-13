@@ -3,15 +3,16 @@
 #include <cstring>
 #include <sys/mman.h>
 
+#include <fadec.h>
 #include "oxtra/elf/Elf.h"
 
-int decode(const uint8_t *x86code, size_t x86size, x86::Instruction *intermediate, size_t inter_size) {
-	x86::Instruction instr;
+int decode(const uint8_t *x86code, size_t x86size, fadec::Instruction *intermediate, size_t inter_size) {
+	fadec::Instruction instr;
 	const uint8_t *x86curr = x86code;
-	x86::Instruction *inter_curr = intermediate;
+	fadec::Instruction *inter_curr = intermediate;
 
 	for (;;) {
-		int fdret = x86::decode(x86curr, x86size, x86::DecodeMode::decode_64, 0, instr);
+		int fdret = fadec::decode(x86curr, x86size, fadec::DecodeMode::decode_64, 0, instr);
 		if (fdret < 0) {
 			printf("decode failed: %d\n", fdret);
 			return -1;
@@ -22,7 +23,7 @@ int decode(const uint8_t *x86code, size_t x86size, x86::Instruction *intermediat
 		++inter_curr;
 		x86curr += instr.get_size();
 
-		if (instr.get_type() == x86::InstructionType::RET) break; //ret
+		if (instr.get_type() == fadec::InstructionType::RET) break; //ret
 
 		if (x86curr - x86code > x86size) {
 			printf("exceeded x86 buffer\n");
@@ -36,12 +37,12 @@ int decode(const uint8_t *x86code, size_t x86size, x86::Instruction *intermediat
 	return 0;
 }
 
-int optimize(x86::Instruction *intermediate, size_t inter_size) {
+int optimize(fadec::Instruction *intermediate, size_t inter_size) {
 	return 0;
 }
 
-int encode(const x86::Instruction *intermediate, size_t inter_size, uint8_t *rvcode, size_t rvsize) {
-	const x86::Instruction *inter_curr = intermediate;
+int encode(const fadec::Instruction *intermediate, size_t inter_size, uint8_t *rvcode, size_t rvsize) {
+	const fadec::Instruction *inter_curr = intermediate;
 	uint8_t *rvcurr = rvcode;
 
 	for (;;) {
@@ -68,7 +69,7 @@ int encode(const x86::Instruction *intermediate, size_t inter_size, uint8_t *rvc
 			rvcurr[1] = tmp[1];
 			rvcurr[2] = tmp[2];
 			rvcurr[3] = tmp[3];
-		} else if (inter_curr->get_type() == x86::InstructionType::RET) { // ret
+		} else if (inter_curr->get_type() == fadec::InstructionType::RET) { // ret
 			// jalr x0, x1, 0
 			// imm[11:0]	rs1   000 rd	1100111
 			// 000000000000 00001 000 00000 1100111 
@@ -99,7 +100,7 @@ int encode(const x86::Instruction *intermediate, size_t inter_size, uint8_t *rvc
 }
 
 int translate(const uint8_t *x86code, size_t x86size, uint8_t *rvcode, size_t rvsize) {
-	x86::Instruction intermediate[8];
+	fadec::Instruction intermediate[8];
 	decode(x86code, x86size, intermediate, sizeof(intermediate));
 	optimize(intermediate, sizeof(intermediate));
 	encode(intermediate, sizeof(intermediate), rvcode, rvsize);
@@ -124,14 +125,14 @@ int main(int argc, char **argv) {
 	uint8_t rvcode[12] = {0};
 
 	for (auto cur_instr = x86code; cur_instr < x86code + sizeof(x86code);) {
-		x86::Instruction instr;
-		if (x86::decode(cur_instr, x86code + sizeof(x86code) - cur_instr, x86::DecodeMode::decode_64, 0x1000, instr) < 0) {
+		fadec::Instruction instr;
+		if (fadec::decode(cur_instr, x86code + sizeof(x86code) - cur_instr, fadec::DecodeMode::decode_64, 0x1000, instr) < 0) {
 			printf("decoding failed.\n");
 			return 0;
 		}
 
 		char buffer[512];
-		x86::format(instr, buffer, sizeof(buffer));
+		fadec::format(instr, buffer, sizeof(buffer));
 		printf("%s\n", buffer);
 
 		cur_instr += instr.get_size();

@@ -8,8 +8,7 @@
 
 #include <array>
 
-namespace x86
-{
+namespace fadec {
 	// register
 	enum class Register : uint8_t {
 		// 64 bit
@@ -43,16 +42,19 @@ namespace x86
 		none = 0x3f
 	};
 
-	// instruction (mnemonic)
+	/**
+	 * instruction (mnemonic)
+	 */
 	enum class InstructionType : uint16_t {
 #define FD_DECODE_TABLE_MNEMONICS
 #define FD_MNEMONIC(name, value) name = value,
+
 #include <decode-table.inc>
+
 #undef FD_MNEMONIC
 #undef FD_DECODE_TABLE_MNEMONICS
 	};
 
-	// flags
 	enum class InstructionFlags : uint8_t {
 		lock = 1 << 0,
 		rep = 1 << 1,
@@ -71,37 +73,59 @@ namespace x86
 	};
 
 	enum class RegisterType : uint8_t {
-		// register type is encoded in mnemonic
+		/**
+		 * register type is encoded in mnemonic
+		 */
 		implicit = 0,
 
-		// low general purpose register
+		/**
+		 * low general purpose register
+		 */
 		gpl,
 
-		// high general purpose register
+		/**
+		 * high general purpose register
+		 */
 		gph,
 
-		// segment register
+		/**
+		 * segment register
+		 */
 		seg,
 
-		// fpu register ST(n)
+		/**
+		 * fpu register ST(n)
+		 */
 		fpu,
 
-		// mmx register
+		/**
+		 * mmmx register
+		 */
 		mmx,
 
-		// vector (sse/avx) register xmm/ymm/zmm
+		/**
+		 * vector (sse/avx) register xmm/ymm/zmm
+		 */
 		vec,
 
-		// vector mask (avx-512) register Kn
+		/**
+		 * vector mask (avx-512) register Kn
+		 */
 		mask,
 
-		// bound register BNDn
+		/**
+		 * bound register BNDn
+		 */
 		bnd,
 
-		// control register CRn
+		/**
+		 * control register CRn
+		 */
 		cr,
 
-		// debug register DRn
+		/**
+		 * debug register DRn
+		 */
 		dr,
 	};
 
@@ -111,10 +135,16 @@ namespace x86
 	};
 
 	class Operand {
-		friend int decode(const uint8_t*, size_t, DecodeMode, uintptr_t, class Instruction&);
-		friend void format(const class Instruction&, char*, size_t);
-		friend int intern::decode_modrm(const uint8_t*, size_t, DecodeMode, Instruction&, int, bool, Operand*, Operand*);
-		friend int intern::decode_prefixes(const uint8_t*, size_t, DecodeMode, int&, uint8_t&, Register&, uint8_t&, int&);
+		friend int decode(const uint8_t *, size_t, DecodeMode, uintptr_t, class Instruction &);
+
+		friend void format(const class Instruction &, char *, size_t);
+
+		friend int
+		decode_modrm(const uint8_t *, size_t, DecodeMode, Instruction &, int, bool, Operand *, Operand *);
+
+		friend int
+		decode_prefixes(const uint8_t *, size_t, DecodeMode, int &, uint8_t &, Register &, uint8_t &, int &);
+
 	public:
 		/**
 		 *
@@ -158,10 +188,16 @@ namespace x86
 	};
 
 	class Instruction {
-		friend int decode(const uint8_t*, size_t, DecodeMode, uintptr_t, class Instruction&);
-		friend void format(const class Instruction&, char*, size_t);
-		friend int intern::decode_modrm(const uint8_t*, size_t, DecodeMode, Instruction&, int, bool, Operand*, Operand*);
-		friend int intern::decode_prefixes(const uint8_t*, size_t, DecodeMode, int&, uint8_t&, Register&, uint8_t&, int&);
+		friend int decode(const uint8_t *, size_t, DecodeMode, uintptr_t, class Instruction &);
+
+		friend void format(const class Instruction &, char *, size_t);
+
+		friend int
+		decode_modrm(const uint8_t *, size_t, DecodeMode, Instruction &, int, bool, Operand *, Operand *);
+
+		friend int
+		decode_prefixes(const uint8_t *, size_t, DecodeMode, int &, uint8_t &, Register &, uint8_t &, int &);
+
 	public:
 		/**
 		 *
@@ -184,7 +220,7 @@ namespace x86
 		 * @param idx The index of the operand.
 		 * @return The Operand at the index.
 		 */
-		const Operand& get_operand(size_t idx) const {
+		const Operand &get_operand(size_t idx) const {
 			return operands[idx];
 		}
 
@@ -315,7 +351,7 @@ namespace x86
 	 * @param instr Reference to the instruction buffer.
 	 * @return The number of bytes consumed by the instruction or a negative number indicating an error.
 	 */
-	int decode(const uint8_t* buffer, size_t len_sz, DecodeMode mode, uintptr_t address, Instruction& instr);
+	int decode(const uint8_t *buffer, size_t len_sz, DecodeMode mode, uintptr_t address, Instruction &instr);
 
 	/**
 	 *
@@ -323,13 +359,13 @@ namespace x86
 	 * @param buffer Buffer holding the formatted instruction.
 	 * @param len Length of the buffer.
 	 */
-	void format(const Instruction& instr, char* buffer, size_t len);
+	void format(const Instruction &instr, char *buffer, size_t len);
 
-	namespace intern {
-		int decode_modrm(const uint8_t* buffer, size_t len, DecodeMode mode, Instruction& instr, int prefixes, bool vsib, Operand* o1, Operand* o2);
-		int decode_prefixes(const uint8_t* buffer, size_t len, DecodeMode mode, int& prefixes,
-							   uint8_t& mandatory, Register& segment, uint8_t& vex_operand, int& opcode_escape);
-	}
+	int decode_modrm(const uint8_t *buffer, size_t len, DecodeMode mode, Instruction &instr, int prefixes, bool vsib,
+					 Operand *o1, Operand *o2);
+
+	int decode_prefixes(const uint8_t *buffer, size_t len, DecodeMode mode, int &prefixes,
+						uint8_t &mandatory, Register &segment, uint8_t &vex_operand, int &opcode_escape);
 }
 
 #endif
