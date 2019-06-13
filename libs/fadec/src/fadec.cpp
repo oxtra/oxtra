@@ -59,7 +59,7 @@ enum PrefixSet {
 	prefix_vex = 1 << 20,
 };
 
-int x86::decode_prefixes(const uint8_t* buffer, size_t len, x86::DecodeMode mode, int& prefixes,
+int x86::intern::decode_prefixes(const uint8_t* buffer, size_t len, x86::DecodeMode mode, int& prefixes,
 	uint8_t& mandatory, x86::Register& segment, uint8_t& vex_operand, int& opcode_escape) {
 
 	size_t off = 0;
@@ -164,7 +164,7 @@ out:
 	return off;
 }
 
-int x86::decode_modrm(const uint8_t* buffer, size_t len, x86::DecodeMode mode, x86::Instruction& instr, int prefixes, bool vsib, x86::Operand* o1, x86::Operand* o2) {
+int x86::intern::decode_modrm(const uint8_t* buffer, size_t len, x86::DecodeMode mode, x86::Instruction& instr, int prefixes, bool vsib, x86::Operand* o1, x86::Operand* o2) {
 	size_t off = 0;
 
 	if (UNLIKELY(off >= len))

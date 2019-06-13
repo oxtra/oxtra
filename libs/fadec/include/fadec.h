@@ -34,7 +34,7 @@ namespace x86
 		esp, ebp, esi, edi,
 
 		// instruction pointer
-		ip,
+		ip = 0x10,
 
 		// segment registers
 		es = 0, cs, ss, ds, fs, gs,
@@ -110,13 +110,11 @@ namespace x86
 		decode_32 = 1
 	};
 
-	// operand
 	class Operand {
-		friend int decode(const uint8_t* buffer, size_t len_sz, DecodeMode mode, uintptr_t address, class Instruction& instr);
-		friend void format(const class Instruction& instr, char* buffer, size_t len);
-		friend int decode_modrm(const uint8_t* buffer, size_t len, DecodeMode mode, Instruction& instr, int prefixes, bool vsib, Operand* o1, Operand* o2);
-		friend int decode_prefixes(const uint8_t* buffer, size_t len, DecodeMode mode, int& prefixes,
-								   uint8_t& mandatory, Register& segment, uint8_t& vex_operand, int& opcode_escape);
+		friend int decode(const uint8_t*, size_t, DecodeMode, uintptr_t, class Instruction&);
+		friend void format(const class Instruction&, char*, size_t);
+		friend int intern::decode_modrm(const uint8_t*, size_t, DecodeMode, Instruction&, int, bool, Operand*, Operand*);
+		friend int intern::decode_prefixes(const uint8_t*, size_t, DecodeMode, int&, uint8_t&, Register&, uint8_t&, int&);
 	public:
 		/**
 		 *
@@ -160,11 +158,10 @@ namespace x86
 	};
 
 	class Instruction {
-		friend int decode(const uint8_t* buffer, size_t len_sz, DecodeMode mode, uintptr_t address, x86::Instruction& instr);
-		friend void format(const Instruction& instr, char* buffer, size_t len);
-		friend int decode_modrm(const uint8_t* buffer, size_t len, DecodeMode mode, Instruction& instr, int prefixes, bool vsib, Operand* o1, Operand* o2);
-		friend int decode_prefixes(const uint8_t* buffer, size_t len, DecodeMode mode, int& prefixes,
-								   uint8_t& mandatory, Register& segment, uint8_t& vex_operand, int& opcode_escape);
+		friend int decode(const uint8_t*, size_t, DecodeMode, uintptr_t, class Instruction&);
+		friend void format(const class Instruction&, char*, size_t);
+		friend int intern::decode_modrm(const uint8_t*, size_t, DecodeMode, Instruction&, int, bool, Operand*, Operand*);
+		friend int intern::decode_prefixes(const uint8_t*, size_t, DecodeMode, int&, uint8_t&, Register&, uint8_t&, int&);
 	public:
 		/**
 		 *
@@ -188,11 +185,7 @@ namespace x86
 		 * @return The Operand at the index.
 		 */
 		const Operand& get_operand(size_t idx) const {
-			/*
-			 * this will throw if the idx is invalid
-			 * TODO decide if we want to do this
-			*/
-			return operands.at(idx);
+			return operands[idx];
 		}
 
 		/**
@@ -235,7 +228,7 @@ namespace x86
 		 * @return The value of an immediate operand.
 		 * @remark Only valid if an operand is of type OpType::imm.
 		 */
-		uintptr_t  get_immediate() const {
+		uintptr_t get_immediate() const {
 			return imm;
 		}
 
@@ -332,10 +325,11 @@ namespace x86
 	 */
 	void format(const Instruction& instr, char* buffer, size_t len);
 
-	/** internal usage */
-	int decode_modrm(const uint8_t* buffer, size_t len, DecodeMode mode, Instruction& instr, int prefixes, bool vsib, Operand* o1, Operand* o2);
-	int decode_prefixes(const uint8_t* buffer, size_t len, DecodeMode mode, int& prefixes,
+	namespace intern {
+		int decode_modrm(const uint8_t* buffer, size_t len, DecodeMode mode, Instruction& instr, int prefixes, bool vsib, Operand* o1, Operand* o2);
+		int decode_prefixes(const uint8_t* buffer, size_t len, DecodeMode mode, int& prefixes,
 							   uint8_t& mandatory, Register& segment, uint8_t& vex_operand, int& opcode_escape);
+	}
 }
 
 #endif
