@@ -6,7 +6,7 @@
 #include <unistd.h>
 
 TEST_CASE("static Elf-Parser unpacking") {
-	WARN("Expects resources to be in '.' or './test' - directory");
+	WARN("Expects resources to be in '.', '..', '../..' or './test', '../test', '../../test' - directory");
 
 	//extract the base-path to use
 	std::string base_path;
@@ -14,6 +14,14 @@ TEST_CASE("static Elf-Parser unpacking") {
 		base_path = "./resources";
 	else if(access("./test/resources/dump_me", F_OK) != -1)
 		base_path = "./test/resources";
+	else if(access("../resources/dump_me", F_OK) != -1)
+		base_path = "../resources";
+	else if(access("../test/resources/dump_me", F_OK) != -1)
+		base_path = "../test/resources";
+	else if(access("../../resources/dump_me", F_OK) != -1)
+		base_path = "../../resources";
+	else if(access("../../test/resources/dump_me", F_OK) != -1)
+		base_path = "../../test/resources";
 	else
 		FAIL("couldn't find resource-directory");
 
