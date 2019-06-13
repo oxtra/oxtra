@@ -59,6 +59,7 @@ void Elf::read_file(const char* path) {
 
 	//allocate a buffer for the file
 	_image_ptr = std::make_unique<uint8_t[]>(size);
+	_address_range = size;
 
 	//read the contents of the file
 	if (fread(_image_ptr.get(), 1, size, file) != size) {
@@ -155,33 +156,41 @@ void Elf::unpack_file() {
 
 	//extract the base-address and the total address-range
 	_base_address = ~0x00u;
-	_address_range = 0;
+	size_t image_size = 0;
 	for (auto i = 0; i < p_c; i++) {
 		if (phdr[i].p_type == PT_LOAD) {
 			if (phdr[i].p_vaddr < _base_address)
 				_base_address = phdr[i].p_vaddr;
-			if (phdr[i].p_vaddr + phdr[i].p_memsz > _address_range)
-				_address_range = phdr[i].p_vaddr + phdr[i].p_memsz;
+			if (phdr[i].p_vaddr + phdr[i].p_memsz > image_size)
+				image_size = phdr[i].p_vaddr + phdr[i].p_memsz;
 		}
 	}
 	if (bss_section != nullptr) {
 		if (bss_section->sh_addr < _base_address)
 			_base_address = bss_section->sh_addr;
-		if (bss_section->sh_addr + bss_section->sh_size > _address_range)
-			_address_range = bss_section->sh_addr + bss_section->sh_size;
+		if (bss_section->sh_addr + bss_section->sh_size > image_size)
+			image_size = bss_section->sh_addr + bss_section->sh_size;
 	}
 
 	//page-align the base and the range
 	_base_address ^= (_base_address & 0x00000FFFu);
-	_address_range = (_address_range & 0x00000FFFu) > 0 ? _address_range + 0x00001000 : _address_range;
-	_address_range ^= (_address_range & 0x00000FFFu);
-	_address_range -= _base_address;
+	image_size = (image_size & 0x00000FFFu) > 0 ? image_size + 0x00001000 : image_size;
+	image_size ^= (image_size & 0x00000FFFu);
+	image_size -= _base_address;
 
 	//allocate the buffer for the image & the table for the page-entries
-	std::unique_ptr<uint8_t[]> image_buffer = std::make_unique<uint8_t[]>(_address_range);
-	_page_flags = std::make_unique<uint8_t[]>(_address_range >> 12u);
-	memset(image_buffer.get(), 0, _address_range);
-	memset(_page_flags.get(), 0, _address_range >> 12u);
+	//(make the buffer larger by one page-size, allowing the image to be page-aligned)
+	std::unique_ptr<uint8_t[]> image_buffer = std::make_unique<uint8_t[]>(image_size + 0x1000);
+	_page_flags = std::make_unique<uint8_t[]>(image_size >> 12u);
+	memset(image_buffer.get(), 0, image_size + 0x1000);
+	memset(_page_flags.get(), 0, image_size >> 12u);
+
+	//compute the actual base
+	_actual_base = reinterpret_cast<uintptr_t>(image_buffer.get());
+	if (_actual_base & 0x00000FFFu) {
+		_actual_base += 0x1000;
+		_actual_base ^= _actual_base & 0x00000FFFu;
+	}
 
 	//iterate through the program-headers and write them to memory
 	for (auto i = 0; i < p_c; i++) {
@@ -204,30 +213,34 @@ void Elf::unpack_file() {
 		for (auto p = page_start; p < page_end; p++)
 			_page_flags[p] = flags;
 
-		//compute the source-address
-		auto copy_source = resolve_offset<uintptr_t>(phdr[i].p_offset);
-
-		//compute the copy-size
+		//compute the source and destination-address as well as the copy-size
+		uintptr_t copy_src = resolve_offset<uintptr_t>(phdr[i].p_offset);
+		uintptr_t copy_dest = phdr[i].p_vaddr - _base_address + _actual_base;
 		size_t copy_size = phdr[i].p_filesz;
-		if (phdr[i].p_filesz & 0x00000FFFu)
-			copy_size += 0x1000;
-		copy_size ^= copy_size & 0x00000FFFu;
 
-		//compute the dest-address
-		uintptr_t copy_dest = phdr[i].p_vaddr - _base_address + reinterpret_cast<uintptr_t>(image_buffer.get());
-
-		//check if the starting-address has to be aligned
+		//align the source to be page-aligned
 		if (phdr[i].p_vaddr & 0x00000FFFu) {
 			uintptr_t offset = phdr[i].p_vaddr & 0x00000FFFu;
-			copy_source -= offset;
-			copy_size += offset;
+			copy_src -= offset;
 			copy_dest -= offset;
+			copy_size += offset;
 		}
-		memcpy(reinterpret_cast<void*>(copy_dest), reinterpret_cast<void*>(copy_source), copy_size);
+
+		//align the size to be page-aligned
+		if (copy_size & 0x00000FFFu)
+			copy_size += 0x1000;
+		copy_size ^= (copy_size & 0x00000FFFu);
+
+		//adjust the size (in order to not overrun the file-size)
+		if (copy_src + copy_size > reinterpret_cast<uintptr_t>(_image_ptr.get()) + _address_range)
+			copy_size = reinterpret_cast<uintptr_t>(_image_ptr.get()) + _address_range - copy_src;
+
+		//map the section to memory
+		memcpy(reinterpret_cast<void*>(copy_dest), reinterpret_cast<void*>(copy_src), copy_size);
 	}
 
 	//map the bss-section to pages
-	if(bss_section != nullptr) {
+	if (bss_section != nullptr) {
 		//compute the first and the last page the blocks are within
 		size_t page_start = bss_section->sh_addr - _base_address;
 		size_t page_end = bss_section->sh_addr + bss_section->sh_size - _base_address;
@@ -240,8 +253,9 @@ void Elf::unpack_file() {
 			_page_flags[p] = flags;
 	}
 
-	//switch the pointers
+	//switch the pointers and the size
 	_image_ptr = std::move(image_buffer);
+	_address_range = image_size;
 }
 
 Elf::Elf(const char* path) {
@@ -249,6 +263,7 @@ Elf::Elf(const char* path) {
 	_image_ptr = nullptr;
 	_page_flags = nullptr;
 	_base_address = 0;
+	_actual_base = 0;
 	_address_range = 0;
 	_entry_point = 0;
 
@@ -262,24 +277,12 @@ Elf::Elf(const char* path) {
 	unpack_file();
 }
 
-uintptr_t Elf::get_base_vaddr() {
-	return _base_address;
-}
-
-uintptr_t Elf::get_image_size() {
-	return _address_range;
-}
-
-uintptr_t Elf::get_entry_point() {
-	return _entry_point;
-}
-
 void* Elf::resolve_vaddr(uintptr_t vaddr) {
 	//validate the address
 	vaddr -= _base_address;
 	if (vaddr >= _address_range)
 		return nullptr;
-	return reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(_image_ptr.get()) + vaddr);
+	return reinterpret_cast<void*>(_actual_base + vaddr);
 }
 
 uint8_t Elf::get_page_flags(uintptr_t vaddr) {

@@ -10,10 +10,10 @@
 #include <memory>
 
 namespace elf {
-	constexpr uint8_t PAGE_EXECUTE = 0x01;
-	constexpr uint8_t PAGE_READ = 0x02;
-	constexpr uint8_t PAGE_WRITE = 0x04;
-	constexpr uint8_t PAGE_MAPPED = 0x08;
+	constexpr uint8_t PAGE_EXECUTE = 0x01u;
+	constexpr uint8_t PAGE_READ = 0x02u;
+	constexpr uint8_t PAGE_WRITE = 0x04u;
+	constexpr uint8_t PAGE_MAPPED = 0x08u;
 
 	class ElfException : public std::exception {
 	public:
@@ -48,6 +48,7 @@ namespace elf {
 	class Elf {
 	private:
 		std::unique_ptr<uint8_t[]> _image_ptr;
+		uintptr_t _actual_base;
 		uintptr_t _base_address;
 		size_t _address_range;
 		std::unique_ptr<uint8_t[]> _page_flags;
@@ -83,19 +84,33 @@ namespace elf {
  		* retrieves the base-address of the image created by the binary-file
  		* @return virtual base-address
  		*/
-		uintptr_t get_base_vaddr();
+		uintptr_t get_base_vaddr() {
+			return _base_address;
+		}
 
 		/**
  		* retrieves the total size of the loaded and unpacked binary-file
  		* @return virtual address-range
 	 	*/
-		uintptr_t get_image_size();
+		uintptr_t get_image_size() {
+			return _address_range;
+		}
 
 		/**
  		* retrieves the entry-point of the binary-image (might be zero, if not an executable)
  		* @return virtual address of entry point
  		*/
-		uintptr_t get_entry_point();
+		uintptr_t get_entry_point() {
+			return _entry_point;
+		}
+
+		/**
+ 		* retrieves the delta between the virtual address and the actual address
+ 		* @return _actual_base - _base_address
+ 		*/
+		uintptr_t get_address_delta() {
+			return _actual_base - _base_address;
+		}
 
 		/**
  		* resolves a virtual address to an actual pointer inside of the binary-image
