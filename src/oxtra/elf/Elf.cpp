@@ -277,14 +277,6 @@ Elf::Elf(const char* path) {
 	unpack_file();
 }
 
-void* Elf::resolve_vaddr(uintptr_t vaddr) {
-	//validate the address
-	vaddr -= _base_address;
-	if (vaddr >= _address_range)
-		return nullptr;
-	return reinterpret_cast<void*>(_actual_base + vaddr);
-}
-
 uint8_t Elf::get_page_flags(uintptr_t vaddr) {
 	//validate the address
 	vaddr -= _base_address;

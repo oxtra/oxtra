@@ -118,7 +118,9 @@ namespace elf {
  		* @param vaddr the virtual address
  		* @return 0 if the virtual address lies outside of the addressable range of the binary, otherwise the pointer
  		*/
-		void* resolve_vaddr(uintptr_t vaddr);
+		void* resolve_vaddr(uintptr_t vaddr) {
+			return reinterpret_cast<void*>(vaddr - _base_address + _actual_base);
+		}
 
 		/**
  		* extracts the page-flags of a given address inside of the binary-image
