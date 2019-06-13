@@ -2,20 +2,47 @@
 
 #include <oxtra/elf/Elf.h>
 #include "catch2/catch.hpp"
+#include <string>
+#include <unistd.h>
 
-TEST_CASE("Elf-Parser self test") {
-	WARN("- Expects this process to be static and loaded to 0x400000.\n"
-		 "  - Dont run this program as debug, as gdb replaces some opcodes with '0xcc' [debug-break].\n"
-		 "  - Expects this binary to be called 'unit_tests'");
+TEST_CASE("static Elf-Parser unpacking") {
+	WARN("Expects resources to be in '.' or './test' - directory");
+
+	//extract the base-path to use
+	std::string base_path;
+	if(access("./resources/dump_me", F_OK) != -1)
+		base_path = "./resources";
+	else if(access("./test/resources/dump_me", F_OK) != -1)
+		base_path = "./test/resources";
+	else
+		FAIL("couldn't find resource-directory");
 
 	//test the constructor
-	REQUIRE_NOTHROW(elf::Elf("./unit_tests"));
+	REQUIRE_NOTHROW(elf::Elf((base_path + "/dump_me").c_str()));
+
+	//read the file to compare against
+	FILE* file = fopen((base_path + "/dump_me_raw_image").c_str(), "r");
+	REQUIRE(file != nullptr);
+	fseek(file, 0, SEEK_END);
+	size_t size = ftell(file);
+	fseek(file, 0, SEEK_SET);
+	uint8_t* buffer = reinterpret_cast<uint8_t*>(malloc(size));
+	REQUIRE(buffer != 0);
+
+	//read the contents of the file
+	REQUIRE(fread(buffer, 1, size, file) == size);
+	fclose(file);
 
 	//open the elf and extract the importent pointers
-	elf::Elf elf("./unit_tests");
-	uint8_t* target_ptr = reinterpret_cast<uint8_t*>(0x400000);
+	elf::Elf elf((base_path + "/dump_me").c_str());
+	uint8_t* target_ptr = buffer;
 	uint8_t* actual_ptr = reinterpret_cast<uint8_t*>(elf.resolve_vaddr(elf.get_base_vaddr()));
 	REQUIRE((elf.get_image_size() & 0x00000FFFu) == 0);
+
+	//validate the parameter
+	REQUIRE(elf.get_image_size() == size);
+	REQUIRE(elf.get_entry_point() == 0x403fb0);
+	REQUIRE(elf.get_base_vaddr() == 0x400000);
 
 	//iterate through the non-writable pages and compare them
 	for (auto i = 0; i < elf.get_image_size(); i += 0x1000) {
