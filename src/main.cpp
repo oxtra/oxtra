@@ -2,9 +2,9 @@
 
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG
 
+#include <iostream>
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
-
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -144,7 +144,7 @@ int main(int argc, char** argv) {
 		cur_instr += instr.get_size();
 	}
 
-	read_elf(argv[1], x86code, sizeof(x86code));
+	elf::Elf elf(argv[1]);
 	SPDLOG_INFO("Finished reading and parsing elf file.");
 	translate(x86code, sizeof(x86code), rvcode, sizeof(rvcode));
 	dispatch(rvcode, sizeof(rvcode));

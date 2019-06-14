@@ -711,7 +711,7 @@ void fadec::format(const Instruction &instr, char *buffer, size_t len) {
 																				 static_cast<uint8_t>(operand.get_register()) -
 																				 4)
 
-				else fmt_concat("r%u", operand.get_register())
+				else fmt_concat("r%u", static_cast<unsigned int>(operand.get_register()))
 
 				break;
 			}
@@ -735,12 +735,12 @@ void fadec::format(const Instruction &instr, char *buffer, size_t len) {
 				const auto disp = instr.get_displacement();
 
 				if (base != Register::none) {
-					fmt_concat("r%u", base)
+					fmt_concat("r%u", static_cast<unsigned int>(base))
 					if (idx != Register::none || disp != 0) fmt_concat("+")
 				}
 
 				if (idx != Register::none) {
-					fmt_concat("%u*r%u", instr.get_index_scale(), instr.get_index_register());
+					fmt_concat("%u*r%u", instr.get_index_scale(), static_cast<unsigned int>(instr.get_index_register()))
 
 					if (disp != 0) fmt_concat("+")
 				}
