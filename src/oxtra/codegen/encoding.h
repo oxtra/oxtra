@@ -6,6 +6,7 @@
  */
 
 #include <cstdint>
+#include "oxtra/utils/types.h"
 
 namespace encoding {
 
