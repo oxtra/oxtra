@@ -1,201 +1,371 @@
+#ifndef FD_FADEC_H
+#define FD_FADEC_H
 
-#ifndef FD_FADEC_H_
-#define FD_FADEC_H_
+#define ARCH_X86_64
 
-#include <stddef.h>
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 
-typedef enum {
-    FD_REG_R0 = 0, FD_REG_R1, FD_REG_R2, FD_REG_R3,
-    FD_REG_R4, FD_REG_R5, FD_REG_R6, FD_REG_R7,
-    FD_REG_R8, FD_REG_R9, FD_REG_R10, FD_REG_R11,
-    FD_REG_R12, FD_REG_R13, FD_REG_R14, FD_REG_R15,
-    // Alternative names for byte registers
-    FD_REG_AL = 0, FD_REG_CL, FD_REG_DL, FD_REG_BL,
-    FD_REG_AH, FD_REG_CH, FD_REG_DH, FD_REG_BH,
-    // Alternative names for general purpose registers
-    FD_REG_AX = 0, FD_REG_CX, FD_REG_DX, FD_REG_BX,
-    FD_REG_SP, FD_REG_BP, FD_REG_SI, FD_REG_DI,
-    // FD_REG_IP can only be accessed in long mode (64-bit)
-    FD_REG_IP = 0x10,
-    // Segment register values
-    FD_REG_ES = 0, FD_REG_CS, FD_REG_SS, FD_REG_DS, FD_REG_FS, FD_REG_GS,
-    // No register specified
-    FD_REG_NONE = 0x3f
-} FdReg;
+#include <array>
 
-typedef enum {
+namespace fadec {
+	// register
+	enum class Register : uint8_t {
+		// 64 bit
+		rax = 0, rcx, rdx, rbx,
+		rsp, rbp, rsi, rdi,
+
+		r0 = 0, r1, r2, r3,
+		r4, r5, r6, r7,
+		r8, r9, r10, r11,
+		r12, r13, r14, r15,
+
+		// byte
+		al = 0, cl, dl, bl,
+		ah, ch, dh, bh,
+
+		// 16-bit
+		ax = 0, cx, dx, bx,
+		sp, bp, si, di,
+
+		// 32-bit
+		eax, ecx, edx, ebx,
+		esp, ebp, esi, edi,
+
+		// instruction pointer
+		ip = 0x10,
+
+		// segment registers
+		es = 0, cs, ss, ds, fs, gs,
+
+		// no register specified
+		none = 0x3f
+	};
+
+	/**
+	 * instruction (mnemonic)
+	 */
+	enum class InstructionType : uint16_t {
 #define FD_DECODE_TABLE_MNEMONICS
-#define FD_MNEMONIC(name,value) FDI_ ## name = value,
+#define FD_MNEMONIC(name, value) name = value,
+
 #include <decode-table.inc>
-#undef FD_DECODE_TABLE_MNEMONICS
+
 #undef FD_MNEMONIC
-} FdInstrType;
+#undef FD_DECODE_TABLE_MNEMONICS
+	};
 
-/** Internal use only. **/
-enum {
-    FD_FLAG_LOCK = 1 << 0,
-    FD_FLAG_REP = 1 << 1,
-    FD_FLAG_REPNZ = 1 << 2,
-    FD_FLAG_REX = 1 << 3,
-    FD_FLAG_64 = 1 << 7,
-};
-
-typedef enum {
-    FD_OT_NONE = 0,
-    FD_OT_REG = 1,
-    FD_OT_IMM = 2,
-    FD_OT_MEM = 3,
-} FdOpType;
-
-typedef enum {
-    /** Register type is encoded in mnemonic **/
-    FD_RT_IMP = 0,
-    /** Low general purpose register **/
-    FD_RT_GPL = 1,
-    /** High-byte general purpose register **/
-    FD_RT_GPH = 2,
-    /** Segment register **/
-    FD_RT_SEG = 3,
-    /** FPU register ST(n) **/
-    FD_RT_FPU = 4,
-    /** MMX register MMn **/
-    FD_RT_MMX = 5,
-    /** Vector (SSE/AVX) register XMMn/YMMn/ZMMn **/
-    FD_RT_VEC = 6,
-    /** Vector mask (AVX-512) register Kn **/
-    FD_RT_MASK = 7,
-    /** Bound register BNDn **/
-    FD_RT_BND = 8,
-    /** Control Register CRn **/
-    FD_RT_CR = 9,
-    /** Debug Register DRn **/
-    FD_RT_DR = 10,
-} FdRegType;
-
-typedef struct {
-    uint8_t type;
-    uint8_t size;
-    int8_t reg;
-    uint8_t misc;
-} FdOp;
-
-typedef struct {
-    uint16_t type;
-    uint8_t flags;
-    uint8_t segment;
-    uint8_t addrsz;
-    uint8_t operandsz;
-    FdOp operands[4];
-
-    uint8_t idx_reg;
-    uint8_t idx_scale;
-    uint8_t size;
-    intptr_t disp;
-    intptr_t imm;
-
-    uintptr_t address;
-} FdInstr;
+	enum class InstructionFlags : uint8_t {
+		lock = 1 << 0,
+		rep = 1 << 1,
+		repnz = 1 << 2,
+		rex = 1 << 3,
+		x64 = 1 << 7,
+	};
 
 
-/** Decode an instruction.
- * \param buf Buffer for instruction bytes.
- * \param len Length of the buffer (in bytes). An instruction is not longer than
- *        15 bytes on all x86 architectures.
- * \param mode Decoding mode, either 32 for protected/compatibility mode or 64
- *        for long mode. 16-bit mode is not supported.
- * \param address Virtual address where the decoded instruction. This is used
- *        for computing jump targets and segment-offset-relative memory
- *        operations (MOV with moffs* encoding) and stored in the instruction.
- * \param out_instr Pointer to the instruction buffer. Note that this may get
- *        partially written even if an error is returned.
- * \return The number of bytes consumed by the instruction, or a negative number
- *         indicating an error.
- **/
-int fd_decode(const uint8_t* buf, size_t len, int mode, uintptr_t address,
-              FdInstr* out_instr);
+	// operand type
+	enum class OperandType : uint8_t {
+		none,
+		reg,
+		imm,
+		mem,
+	};
 
-/** Format an instruction to a string.
- * \param instr The instruction.
- * \param buf The buffer to hold the formatted string.
- * \param len The length of the buffer.
- **/
-void fd_format(const FdInstr* instr, char* buf, size_t len);
+	enum class RegisterType : uint8_t {
+		/**
+		 * register type is encoded in mnemonic
+		 */
+		implicit = 0,
 
+		/**
+		 * low general purpose register
+		 */
+		gpl,
 
-/** Gets the type/mnemonic of the instruction. **/
-#define FD_TYPE(instr) ((FdInstrType) (instr)->type)
-/** Gets the address of the instruction. **/
-#define FD_ADDRESS(instr) ((instr)->address)
-/** Gets the size of the instruction in bytes. **/
-#define FD_SIZE(instr) ((instr)->size)
-/** Gets the specified segment override, or FD_REG_NONE for default segment. **/
-#define FD_SEGMENT(instr) ((FdReg) (instr)->segment)
-/** Gets the address size attribute of the instruction in bytes. **/
-#define FD_ADDRSIZE(instr) ((instr)->addrsz)
-/** Gets the operation width in bytes of the instruction if this is not encoded
- * in the operands, for example for the string instruction (e.g. MOVS). **/
-#define FD_OPSIZE(instr) ((instr)->operandsz)
-/** Indicates whether the instruction was encoded with a REP prefix. Needed for:
- * (1) Handling the instructions MOVS, STOS, LODS, INS and OUTS properly.
- * (2) Handling the instructions SCAS and CMPS, for which this means REPZ.
- * (3) Distinguishing the instructions BSF (no REP) vs. TZCNT (REP) and the
- *     instructions BSR (no REP) vs. LZCNT (REP). **/
-#define FD_HAS_REP(instr) ((instr)->flags & FD_FLAG_REP)
-/** Indicates whether the instruction was encoded with a REP prefix. Needed for:
- * (1) Handling the instructions SCAS and CMPS.
- * (2) Distinguishing the instructions MOVBE (no REPNZ) vs. CRC32 (REPNZ). **/
-#define FD_HAS_REPNZ(instr) ((instr)->flags & FD_FLAG_REPNZ)
-/** Indicates whether the instruction was encoded with a LOCK prefix. Note that
- * it is not checked whether the LOCK prefix is valid for the instruction. **/
-#define FD_HAS_LOCK(instr) ((instr)->flags & FD_FLAG_LOCK)
-#define FD_IS64(instr) ((instr)->flags & FD_FLAG_64)
+		/**
+		 * high general purpose register
+		 */
+		gph,
 
-/** Gets the type of an operand at the given index. **/
-#define FD_OP_TYPE(instr,idx) ((FdOpType) (instr)->operands[idx].type)
-/** Gets the size in bytes of an operand. However, there are a few exceptions:
- * (1) For some register types, e.g., segment registers, or x87 registers, the
- *     size is zero. (This allows some simplifications internally.)
- * (2) On some vector instructions this may be only an approximation of the
- *     actually needed operand size (that is, an instruction may/must only use
- *     a smaller part than specified here). The real operand size is always
- *     fully recoverable in combination with the instruction type. **/
-#define FD_OP_SIZE(instr,idx) ((instr)->operands[idx].size)
-/** Gets the accessed register index of a register operand. Note that /only/ the
- * index is returned, no further interpretation of the index (which depends on
- * the instruction type) is done. The register type can be fetches using
- * FD_OP_REG_TYPE, e.g. for distinguishing high-byte registers.
- * Only valid if  FD_OP_TYPE == FD_OT_REG  **/
-#define FD_OP_REG(instr,idx) ((FdReg) (instr)->operands[idx].reg)
-/** Gets the type of the accessed register.
- * Only valid if  FD_OP_TYPE == FD_OT_REG  **/
-#define FD_OP_REG_TYPE(instr,idx) ((FdRegType) (instr)->operands[idx].misc)
-/** DEPRECATED: use FD_OP_REG_TYPE() == FD_RT_GPH instead.
- * Returns whether the accessed register is a high-byte register. In that case,
- * the register index has to be decreased by 4.
- * Only valid if  FD_OP_TYPE == FD_OT_REG  **/
-#define FD_OP_REG_HIGH(instr,idx) (FD_OP_REG_TYPE(instr,idx) == FD_RT_GPH)
-/** Gets the index of the base register from a memory operand, or FD_REG_NONE,
- * if the memory operand has no base register. This is the only case where the
- * 64-bit register RIP can be returned, in which case the operand also has no
- * scaled index register.
- * Only valid if  FD_OP_TYPE == FD_OT_MEM  **/
-#define FD_OP_BASE(instr,idx) ((FdReg) (instr)->operands[idx].reg)
-/** Gets the index of the index register from a memory operand, or FD_REG_NONE,
- * if the memory operand has no scaled index register.
- * Only valid if  FD_OP_TYPE == FD_OT_MEM  **/
-#define FD_OP_INDEX(instr,idx) ((FdReg) (instr)->idx_reg)
-/** Gets the scale of the index register from a memory operand when existent.
- * This does /not/ return the scale in an absolute value but returns the amount
- * of bits the index register is shifted to the left (i.e. the value in in the
- * range 0-3). The actual scale can be computed easily using  1<<FD_OP_SCALE.
- * Only valid if  FD_OP_TYPE == FD_OT_MEM  and  FD_OP_INDEX != FD_REG_NONE **/
-#define FD_OP_SCALE(instr,idx) ((instr)->idx_scale)
-/** Gets the sign-extended displacement of a memory operand.
- * Only valid if  FD_OP_TYPE == FD_OT_MEM  **/
-#define FD_OP_DISP(instr,idx) ((instr)->disp)
-/** Gets the (sign-extended) encoded constant for an immediate operand.
- * Only valid if  FD_OP_TYPE == FD_OT_IMM  **/
-#define FD_OP_IMM(instr,idx) ((instr)->imm)
+		/**
+		 * segment register
+		 */
+		seg,
+
+		/**
+		 * fpu register ST(n)
+		 */
+		fpu,
+
+		/**
+		 * mmmx register
+		 */
+		mmx,
+
+		/**
+		 * vector (sse/avx) register xmm/ymm/zmm
+		 */
+		vec,
+
+		/**
+		 * vector mask (avx-512) register Kn
+		 */
+		mask,
+
+		/**
+		 * bound register BNDn
+		 */
+		bnd,
+
+		/**
+		 * control register CRn
+		 */
+		cr,
+
+		/**
+		 * debug register DRn
+		 */
+		dr,
+	};
+
+	enum class DecodeMode : int {
+		decode_64 = 0,
+		decode_32 = 1
+	};
+
+	class Operand {
+		friend int decode(const uint8_t *, size_t, DecodeMode, uintptr_t, class Instruction &);
+
+		friend void format(const class Instruction &, char *, size_t);
+
+		friend int
+		decode_modrm(const uint8_t *, size_t, DecodeMode, Instruction &, int, bool, Operand *, Operand *);
+
+		friend int
+		decode_prefixes(const uint8_t *, size_t, DecodeMode, int &, uint8_t &, Register &, uint8_t &, int &);
+
+	public:
+		/**
+		 *
+		 * @return The type of the operand. E.g. reg (register), imm (immediate), mem (memory).
+		 */
+		OperandType get_type() const {
+			return type;
+		}
+
+		/**
+		 *
+		 * @return The size of the operand in bytes.
+		 */
+		uint8_t get_size() const {
+			return size;
+		}
+
+		/**
+		 *
+		 * @return The register of an operand.
+		 * @remark Only valid if get_type() == OpType::reg.
+		 */
+		Register get_register() const {
+			return reg;
+		}
+
+		/**
+		 *
+		 * @return The type of the register.
+		 * @remark Only valid if get_type() == OpType::reg. Needed for example to distinguish high-byte registers.
+		 */
+		RegisterType get_register_type() const {
+			return reg_type;
+		}
+
+	private:
+		OperandType type;
+		uint8_t size;
+		Register reg;
+		RegisterType reg_type;
+	};
+
+	class Instruction {
+		friend int decode(const uint8_t *, size_t, DecodeMode, uintptr_t, class Instruction &);
+
+		friend void format(const class Instruction &, char *, size_t);
+
+		friend int
+		decode_modrm(const uint8_t *, size_t, DecodeMode, Instruction &, int, bool, Operand *, Operand *);
+
+		friend int
+		decode_prefixes(const uint8_t *, size_t, DecodeMode, int &, uint8_t &, Register &, uint8_t &, int &);
+
+	public:
+		/**
+		 *
+		 * @return The type/mnemonic of the instruction.
+		 */
+		InstructionType get_type() const {
+			return type;
+		}
+
+		/**
+		 *
+		 * @return The size of the instruction in bytes.
+		 */
+		uint8_t get_size() const {
+			return size;
+		}
+
+		/**
+		 *
+		 * @param idx The index of the operand.
+		 * @return The Operand at the index.
+		 */
+		const Operand &get_operand(size_t idx) const {
+			return operands[idx];
+		}
+
+		/**
+		 *
+		 * @return The segment override or Reg::none if no segment override was specified.
+		 */
+		Register get_segment() const {
+			return segment;
+		}
+
+		/**
+		 *
+		 * @return The index register of the [base+index*scale+displacement] addressing mode.
+		 * @remark Only valid if an operand is of type OpType::mem.
+		 */
+		Register get_index_register() const {
+			return idx_reg;
+		}
+
+		/**
+		 *
+		 * @return The scale of the [base+index*scale+displacement] addressing mode.
+		 * @remark Only valid if an operand is of type OpType::mem and get_index_register() != Reg::none.
+		 */
+		uint8_t get_index_scale() const {
+			return 1 << idx_scale;
+		}
+
+		/**
+		 *
+		 * @return The displacement of the [base+index*scale+displacement] addressing mode.
+		 * @remark Only valid if an operand is of type OpType::mem.
+		 */
+		intptr_t get_displacement() const {
+			return disp;
+		}
+
+		/**
+		 *
+		 * @return The value of an immediate operand.
+		 * @remark Only valid if an operand is of type OpType::imm.
+		 */
+		uintptr_t get_immediate() const {
+			return imm;
+		}
+
+		/**
+		 *
+		 * @return The address size attribute of the instruction in bytes.
+		 */
+		uint8_t get_address_size() const {
+			return addrsz;
+		}
+
+		/**
+		 *
+		 * @return The operand width in bytes.
+		 * @remark Needed for MOVS for example.
+		 */
+		uint8_t get_operand_size() const {
+			return operandsz;
+		}
+
+		/**
+		 *
+		 * @return True if the instruction has a rep prefix.
+		 */
+		bool has_rep() const {
+			return flags & static_cast<uint8_t>(InstructionFlags::rep);
+		}
+
+		/**
+		 *
+		 * @return True if the instruction has a repnz prefix.
+		 */
+		bool has_repnz() const {
+			return flags & static_cast<uint8_t>(InstructionFlags::repnz);
+		}
+
+		/**
+		 *
+		 * @return True if the instruction has a lock prefix.
+		 */
+		bool has_lock() const {
+			return flags & static_cast<uint8_t>(InstructionFlags::lock);
+		}
+
+		/**
+		 *
+		 * @return True if the instruction is a 64-bit instruction.
+		 */
+		bool is_64() const {
+			return flags & static_cast<uint8_t>(InstructionFlags::x64);
+		}
+
+		/**
+		 *
+		 * @return The address of the instruction.
+		 */
+		uintptr_t get_address() const {
+			return address;
+		}
+
+	private:
+		InstructionType type;
+		uint8_t flags;
+		Register segment;
+		uint8_t addrsz;
+		uint8_t operandsz;
+		std::array<Operand, 4> operands;
+
+		Register idx_reg;
+		uint8_t idx_scale;
+		uint8_t size;
+		intptr_t disp;
+		uintptr_t imm;
+
+		uintptr_t address;
+	};
+
+	/**
+	 *
+	 * @param buffer Buffer containing the instructions in bytes.
+	 * @param len_sz Length of the buffer.
+	 * @param mode Decoding mode.
+	 * @param address Virtual address  where the instruction is located.
+	 * @param instr Reference to the instruction buffer.
+	 * @return The number of bytes consumed by the instruction or a negative number indicating an error.
+	 */
+	int decode(const uint8_t *buffer, size_t len_sz, DecodeMode mode, uintptr_t address, Instruction &instr);
+
+	/**
+	 *
+	 * @param instr Instruction to format.
+	 * @param buffer Buffer holding the formatted instruction.
+	 * @param len Length of the buffer.
+	 */
+	void format(const Instruction &instr, char *buffer, size_t len);
+
+	int decode_modrm(const uint8_t *buffer, size_t len, DecodeMode mode, Instruction &instr, int prefixes, bool vsib,
+					 Operand *o1, Operand *o2);
+
+	int decode_prefixes(const uint8_t *buffer, size_t len, DecodeMode mode, int &prefixes,
+						uint8_t &mandatory, Register &segment, uint8_t &vex_operand, int &opcode_escape);
+}
 
 #endif

@@ -67,23 +67,23 @@ BlockEntry& CodeStore::create_block() {
 	return _block_entries.allocate_entry();
 }
 
-void CodeStore::add_instruction(BlockEntry& block, const FdInstr& x86_instruction,
+void CodeStore::add_instruction(BlockEntry& block, const fadec::Instruction& x86_instruction,
 								riscv_instruction_t* riscv_instructions, size_t num_instructions) {
 	// If there's no x86 start address then this is the first instruction to add to the block.
 	if (block.x86_start == 0) {
-		block.x86_start = x86_instruction.address;
+		block.x86_start = x86_instruction.get_address();
 		_pages[block.x86_start >> page_shift].push_back(&block);
 	}
 
 	// Maybe do this for the debug build only?
-	else if (block.x86_end != x86_instruction.address) {
+	else if (block.x86_end != x86_instruction.get_address()) {
 		throw new std::runtime_error("Tried to add a non-consecutive instruction to a block.");
 	}
 
 	block.riscv_start = reinterpret_cast<host_addr_t>(
 			_code_buffer.add(reinterpret_cast<riscv_instruction_t*>(block.riscv_start), riscv_instructions, num_instructions));
 
-	block.offsets = _instruction_offset_buffer.add(block.offsets, {x86_instruction.size, static_cast<uint8_t>(num_instructions)});
+	block.offsets = _instruction_offset_buffer.add(block.offsets, {x86_instruction.get_size(), static_cast<uint8_t>(num_instructions)});
 	block.instruction_count++;
-	block.x86_end = x86_instruction.address + x86_instruction.size;
+	block.x86_end = x86_instruction.get_address() + x86_instruction.get_size();
 }

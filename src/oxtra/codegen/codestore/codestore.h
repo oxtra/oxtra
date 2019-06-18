@@ -103,7 +103,7 @@ namespace codegen::codestore {
 		 * @param riscv_instructions A pointer to an array of encoded risc-v instructions.
 		 * @param num_instructions The size of the array of encoded risc-v instructions.
 		 */
-		void add_instruction(BlockEntry& block, const FdInstr& x86_instruction,
+		void add_instruction(BlockEntry& block, const fadec::Instruction& x86_instruction,
 							 utils::riscv_instruction_t* riscv_instructions, size_t num_instructions);
 	};
 }

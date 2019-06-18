@@ -5,7 +5,7 @@ project(unit_tests)
 enable_testing()
 
 add_executable(${PROJECT_NAME}
-		ExampleTest.cpp
+		ElfTest.cpp
 )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
