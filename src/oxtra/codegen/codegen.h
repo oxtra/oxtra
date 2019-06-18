@@ -13,10 +13,11 @@ extern "C" {
 namespace codegen {
 	class CodeGenerator {
 	private:
+		const arguments::Arguments& _args;
 		codestore::CodeStore _codestore;
 
 	public:
-		CodeGenerator(const elf::Elf& elf);
+		CodeGenerator(const elf::Elf& elf, const arguments::Arguments& args);
 
 		CodeGenerator(CodeGenerator&) = delete;
 

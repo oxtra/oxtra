@@ -6,8 +6,8 @@ Arguments::Arguments(int argc, char** argv) {
 
 }
 
-char* Arguments::guest_path() const {
-	return nullptr;
+const char* Arguments::guest_path() const {
+	return "";
 }
 
 
@@ -15,11 +15,7 @@ int Arguments::debug_level() const {
 	return 0;
 }
 
-bool Arguments::is_version() const {
-	return false;
-}
-
-bool Arguments::is_help() const {
+bool Arguments::exit_run() const {
 	return false;
 }
 

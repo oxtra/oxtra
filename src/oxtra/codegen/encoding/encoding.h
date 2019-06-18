@@ -27,56 +27,74 @@ namespace encoding {
 		pc			// program counter
 	};
 
-	struct RType {
-		uint32_t opcode : 7;
-		uint32_t rd : 5;
-		uint32_t funct3 : 3;
-		uint32_t rs1 : 5;
-		uint32_t rs2 : 5;
-		uint32_t funct7 : 7;
+	union RType {
+		struct {
+			uint32_t opcode : 7;
+			uint32_t rd : 5;
+			uint32_t funct3 : 3;
+			uint32_t rs1 : 5;
+			uint32_t rs2 : 5;
+			uint32_t funct7 : 7;
+		};
+		uint32_t raw;
 	};
 
-	struct IType {
-		uint32_t opcode : 7;
-		uint32_t rd : 5;
-		uint32_t funct3 : 3;
-		uint32_t rs1 : 5;
-		uint32_t imm : 12;
+	union IType {
+		struct {
+			uint32_t opcode : 7;
+			uint32_t rd : 5;
+			uint32_t funct3 : 3;
+			uint32_t rs1 : 5;
+			uint32_t imm : 12;
+		};
+		uint32_t raw;
 	};
 
-	struct SType {
-		uint32_t opcode : 7;
-		uint32_t immlow : 5;
-		uint32_t funct3 : 3;
-		uint32_t rs1 : 5;
-		uint32_t rs2 : 5;
-		uint32_t immhigh : 7;
+	union SType {
+		struct {
+			uint32_t opcode : 7;
+			uint32_t immlow : 5;
+			uint32_t funct3 : 3;
+			uint32_t rs1 : 5;
+			uint32_t rs2 : 5;
+			uint32_t immhigh : 7;
+		};
+		uint32_t raw;
 	};
 
-	struct UType {
-		uint32_t opcode : 7;
-		uint32_t rd : 5;
-		uint32_t imm : 20;
+	union UType {
+		struct {
+			uint32_t opcode : 7;
+			uint32_t rd : 5;
+			uint32_t imm : 20;
+		};
+		uint32_t raw;
 	};
 
-	struct BType {
-		uint32_t opcode : 7;
-		uint32_t imm_11 : 1;
-		uint32_t imm_4_1 : 4;
-		uint32_t funct3 : 3;
-		uint32_t rs1 : 5;
-		uint32_t rs2 : 5;
-		uint32_t imm_10_5 : 6;
-		uint32_t imm_12 : 1;
+	union BType {
+		struct {
+			uint32_t opcode : 7;
+			uint32_t imm_11 : 1;
+			uint32_t imm_4_1 : 4;
+			uint32_t funct3 : 3;
+			uint32_t rs1 : 5;
+			uint32_t rs2 : 5;
+			uint32_t imm_10_5 : 6;
+			uint32_t imm_12 : 1;
+		};
+		uint32_t raw;
 	};
 
-	struct JType {
+	union JType {
+		struct {
 		uint32_t opcode : 7;
 		uint32_t rd : 5;
 		uint32_t imm_19_12 : 8;
 		uint32_t imm_11 : 1;
 		uint32_t imm_10_1 : 10;
 		uint32_t imm_20 : 1;
+		};
+		uint32_t raw;
 	};
 
 	/* --- RV32I Base Instruction Set --- */

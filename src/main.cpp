@@ -10,22 +10,19 @@
 #include "oxtra/elf/elf.h"
 #include "oxtra/dispatcher/dispatcher.h"
 
-//TODO: implement argument-parser-class & way to pass arguments to dispatcher
-
 int main(int argc, char** argv) {
-	//create the elf-object
-	if (argc < 2) {
-		spdlog::error("invalid arguments");
-		return 0;
-	}
-
+	//parse the arguments
 	const auto arguments = arguments::Arguments(argc, argv);
+	if(arguments.exit_run())
+		return 0;
+	SPDLOG_INFO("Finished parsing the arguments.");
 
+	//create the elf-object
 	const auto elf = elf::Elf(arguments.guest_path());
 	SPDLOG_INFO("Finished reading and parsing elf file.");
 
 	//create the dispatcher
-	dispatcher::Dispatcher dispatcher(elf);
+	dispatcher::Dispatcher dispatcher(elf, arguments);
 	SPDLOG_INFO("Finished creating and initializing various runtime-objects.");
 
 	//startup the translation and execution of the source-code

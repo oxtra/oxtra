@@ -21,12 +21,13 @@ namespace dispatcher {
 
 	private:
 		const elf::Elf& _elf;
+		const arguments::Arguments& _args;
 		codegen::CodeGenerator _codegen;
 		Context _guest_context;
 		Context _host_context;
 
 	public:
-		Dispatcher(const elf::Elf& elf);
+		Dispatcher(const elf::Elf& elf, const arguments::Arguments& args);
 
 		Dispatcher(Dispatcher&) = delete;
 

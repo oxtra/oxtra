@@ -13,13 +13,11 @@ namespace arguments {
 		Arguments(Arguments&&) = delete;
 
 	public:
-		char* guest_path() const;
+		const char* guest_path() const;
 
 		int debug_level() const;
 
-		bool is_version() const;
-
-		bool is_help() const;
+		bool exit_run() const;
 
 		size_t get_instruction_list_size() const;
 
