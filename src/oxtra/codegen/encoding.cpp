@@ -47,163 +47,163 @@ riscv_instruction_t jtype(uint8_t opcode, uint8_t rd, uint32_t imm) {
 
 /* --- RV32I Base Instruction Set --- */
 
-riscv_instruction_t LUI(RVREG rd, uint32_t imm) {
+riscv_instruction_t LUI(RiscVRegister rd, uint32_t imm) {
 	return utype(55, rd, imm);
 }
 
-riscv_instruction_t AUIPC(RVREG rd, uint32_t imm) {
+riscv_instruction_t AUIPC(RiscVRegister rd, uint32_t imm) {
 	return utype(23, rd, imm);
 }
 
-riscv_instruction_t JAL(RVREG rd, uint32_t offset) {
+riscv_instruction_t JAL(RiscVRegister rd, uint32_t offset) {
 	return jtype(103, rd, offset);
 }
 
-riscv_instruction_t JALR(RVREG rd, RVREG rs1, uint16_t offset) {
+riscv_instruction_t JALR(RiscVRegister rd, RiscVRegister rs1, uint16_t offset) {
 	return itype(103, rd, 0, rs1, offset);
 }
 
-riscv_instruction_t BEQ(RVREG rs1, RVREG rs2, uint32_t offset) {
+riscv_instruction_t BEQ(RiscVRegister rs1, RiscVRegister rs2, uint32_t offset) {
 	return btype(99, 0, rs1, rs2, offset);
 }
 
-riscv_instruction_t BNE(RVREG rs1, RVREG rs2, uint32_t offset) {
+riscv_instruction_t BNE(RiscVRegister rs1, RiscVRegister rs2, uint32_t offset) {
 	return btype(99, 1, rs1, rs2, offset);
 }
 
-riscv_instruction_t BLT(RVREG rs1, RVREG rs2, uint32_t offset) {
+riscv_instruction_t BLT(RiscVRegister rs1, RiscVRegister rs2, uint32_t offset) {
 	return btype(99, 4, rs1, rs2, offset);
 }
 
-riscv_instruction_t BGE(RVREG rs1, RVREG rs2, uint32_t offset) {
+riscv_instruction_t BGE(RiscVRegister rs1, RiscVRegister rs2, uint32_t offset) {
 	return btype(99, 5, rs1, rs2, offset);
 }
 
-riscv_instruction_t BLTU(RVREG rs1, RVREG rs2, uint32_t offset) {
+riscv_instruction_t BLTU(RiscVRegister rs1, RiscVRegister rs2, uint32_t offset) {
 	return btype(99, 6, rs1, rs2, offset);
 }
 
-riscv_instruction_t BGEU(RVREG rs1, RVREG rs2, uint32_t offset) {
+riscv_instruction_t BGEU(RiscVRegister rs1, RiscVRegister rs2, uint32_t offset) {
 	return btype(99, 7, rs1, rs2, offset);
 }
 
-riscv_instruction_t LB(RVREG rd, RVREG rs1, uint16_t imm) {
+riscv_instruction_t LB(RiscVRegister rd, RiscVRegister rs1, uint16_t imm) {
 	return itype(3, rd, 0, rs1, imm);
 }
 
-riscv_instruction_t LH(RVREG rd, RVREG rs1, uint16_t imm) {
+riscv_instruction_t LH(RiscVRegister rd, RiscVRegister rs1, uint16_t imm) {
 	return itype(3, rd, 1, rs1, imm);
 }
 
-riscv_instruction_t LW(RVREG rd, RVREG rs1, uint16_t imm) {
+riscv_instruction_t LW(RiscVRegister rd, RiscVRegister rs1, uint16_t imm) {
 	return itype(3, rd, 2, rs1, imm);
 }
 
-riscv_instruction_t LD(RVREG rd, RVREG rs1, uint16_t imm) {
+riscv_instruction_t LD(RiscVRegister rd, RiscVRegister rs1, uint16_t imm) {
 	return itype(3, rd, 3, rs1, imm);
 }
 
-riscv_instruction_t LBU(RVREG rd, RVREG rs1, uint16_t imm) {
+riscv_instruction_t LBU(RiscVRegister rd, RiscVRegister rs1, uint16_t imm) {
 	return itype(3, rd, 4, rs1, imm);
 }
 
-riscv_instruction_t LHU(RVREG rd, RVREG rs1, uint16_t imm) {
+riscv_instruction_t LHU(RiscVRegister rd, RiscVRegister rs1, uint16_t imm) {
 	return itype(3, rd, 5, rs1, imm);
 }
 
-riscv_instruction_t LWU(RVREG rd, RVREG rs1, uint16_t imm) {
+riscv_instruction_t LWU(RiscVRegister rd, RiscVRegister rs1, uint16_t imm) {
 	return itype(3, rd, 6, rs1, imm);
 }
 
-riscv_instruction_t SB(RVREG rs1, RVREG rs2, uint32_t imm) {
+riscv_instruction_t SB(RiscVRegister rs1, RiscVRegister rs2, uint32_t imm) {
 	return stype(35, 0, rs1, rs2, imm);
 }
 
-riscv_instruction_t SH(RVREG rs1, RVREG rs2, uint32_t imm) {
+riscv_instruction_t SH(RiscVRegister rs1, RiscVRegister rs2, uint32_t imm) {
 	return stype(35, 1, rs1, rs2, imm);
 }
 
-riscv_instruction_t SW(RVREG rs1, RVREG rs2, uint32_t imm) {
+riscv_instruction_t SW(RiscVRegister rs1, RiscVRegister rs2, uint32_t imm) {
 	return stype(35, 2, rs1, rs2, imm);
 }
 
-riscv_instruction_t SD(RVREG rs1, RVREG rs2, uint32_t imm) {
+riscv_instruction_t SD(RiscVRegister rs1, RiscVRegister rs2, uint32_t imm) {
 	return stype(35, 3, rs1, rs2, imm);
 }
 
-riscv_instruction_t ADDI(RVREG rd, RVREG rs1, uint16_t imm) {
+riscv_instruction_t ADDI(RiscVRegister rd, RiscVRegister rs1, uint16_t imm) {
 	return itype(19, rd, 0, rs1, imm);
 }
 
-riscv_instruction_t SLTI(RVREG rd, RVREG rs1, uint16_t imm) {
+riscv_instruction_t SLTI(RiscVRegister rd, RiscVRegister rs1, uint16_t imm) {
 	return itype(19, rd, 1, rs1, imm);
 }
 
-riscv_instruction_t SLTIU(RVREG rd, RVREG rs1, uint16_t imm) {
+riscv_instruction_t SLTIU(RiscVRegister rd, RiscVRegister rs1, uint16_t imm) {
 	return itype(19, rd, 2, rs1, imm);
 }
 
-riscv_instruction_t XORI(RVREG rd, RVREG rs1, uint16_t imm) {
+riscv_instruction_t XORI(RiscVRegister rd, RiscVRegister rs1, uint16_t imm) {
 	return itype(19, rd, 3, rs1, imm);
 }
 
-riscv_instruction_t ORI(RVREG rd, RVREG rs1, uint16_t imm) {
+riscv_instruction_t ORI(RiscVRegister rd, RiscVRegister rs1, uint16_t imm) {
 	return itype(19, rd, 4, rs1, imm);
 }
 
-riscv_instruction_t ANDI(RVREG rd, RVREG rs1, uint16_t imm) {
+riscv_instruction_t ANDI(RiscVRegister rd, RiscVRegister rs1, uint16_t imm) {
 	return itype(19, rd, 5, rs1, imm);
 }
 
-riscv_instruction_t SLLI(RVREG rd, RVREG rs1, uint8_t shamt) {
+riscv_instruction_t SLLI(RiscVRegister rd, RiscVRegister rs1, uint8_t shamt) {
 	return itype(19, rd, 1, rs1, shamt & 0x3f);
 }
 
-riscv_instruction_t SRLI(RVREG rd, RVREG rs1, uint8_t shamt) {
+riscv_instruction_t SRLI(RiscVRegister rd, RiscVRegister rs1, uint8_t shamt) {
 	return itype(19, rd, 5, rs1, shamt & 0x3f);
 }
 
-riscv_instruction_t SRAI(RVREG rd, RVREG rs1, uint8_t shamt) {
+riscv_instruction_t SRAI(RiscVRegister rd, RiscVRegister rs1, uint8_t shamt) {
 	return itype(19, rd, 5, rs1, (shamt & 0x3f) | (1 << 10));
 }
 
-riscv_instruction_t ADD(RVREG rd, RVREG rs1, RVREG rs2) {
+riscv_instruction_t ADD(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2) {
 	return rtype(51, rd, 0, rs1, rs2, 0);
 }
 
-riscv_instruction_t SUB(RVREG rd, RVREG rs1, RVREG rs2) {
+riscv_instruction_t SUB(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2) {
 	return rtype(51, rd, 0, rs1, rs2, 32);
 }
 
-riscv_instruction_t SLL(RVREG rd, RVREG rs1, RVREG rs2) {
+riscv_instruction_t SLL(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2) {
 	return rtype(51, rd, 1, rs1, rs2, 0);
 }
 
-riscv_instruction_t SLT(RVREG rd, RVREG rs1, RVREG rs2) {
+riscv_instruction_t SLT(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2) {
 	return rtype(51, rd, 2, rs1, rs2, 0);
 }
 
-riscv_instruction_t SLTU(RVREG rd, RVREG rs1, RVREG rs2) {
+riscv_instruction_t SLTU(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2) {
 	return rtype(51, rd, 3, rs1, rs2, 0);
 }
 
-riscv_instruction_t XOR(RVREG rd, RVREG rs1, RVREG rs2) {
+riscv_instruction_t XOR(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2) {
 	return rtype(51, rd, 4, rs1, rs2, 0);
 }
 
-riscv_instruction_t SRL(RVREG rd, RVREG rs1, RVREG rs2) {
+riscv_instruction_t SRL(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2) {
 	return rtype(51, rd, 5, rs1, rs2, 0);
 }
 
-riscv_instruction_t SRA(RVREG rd, RVREG rs1, RVREG rs2) {
+riscv_instruction_t SRA(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2) {
 	return rtype(51, rd, 5, rs1, rs2, 32);
 }
 
-riscv_instruction_t OR(RVREG rd, RVREG rs1, RVREG rs2) {
+riscv_instruction_t OR(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2) {
 	return rtype(51, rd, 6, rs1, rs2, 0);
 }
 
-riscv_instruction_t AND(RVREG rd, RVREG rs1, RVREG rs2) {
+riscv_instruction_t AND(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2) {
 	return rtype(51, rd, 7, rs1, rs2, 0);
 }
 
@@ -211,35 +211,35 @@ riscv_instruction_t probably not needed: FENCE, FENCE.I, ECALL, EBREAK, CSRRW, C
 
 riscv_instruction_t --- M Standard Extensions --- */
 
-riscv_instruction_t MUL(RVREG rd, RVREG rs1, RVREG rs2) {
+riscv_instruction_t MUL(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2) {
 	return rtype(51, rd, 0, rs1, rs2, 1);
 }
 
-riscv_instruction_t MULH(RVREG rd, RVREG rs1, RVREG rs2) {
+riscv_instruction_t MULH(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2) {
 	return rtype(51, rd, 1, rs1, rs2, 1);
 }
 
-riscv_instruction_t MULHSU(RVREG rd, RVREG rs1, RVREG rs2) {
+riscv_instruction_t MULHSU(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2) {
 	return rtype(51, rd, 2, rs1, rs2, 1);
 }
 
-riscv_instruction_t MULHU(RVREG rd, RVREG rs1, RVREG rs2) {
+riscv_instruction_t MULHU(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2) {
 	return rtype(51, rd, 3, rs1, rs2, 1);
 }
 
-riscv_instruction_t DIV(RVREG rd, RVREG rs1, RVREG rs2) {
+riscv_instruction_t DIV(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2) {
 	return rtype(51, rd, 4, rs1, rs2, 1);
 }
 
-riscv_instruction_t DIVU(RVREG rd, RVREG rs1, RVREG rs2) {
+riscv_instruction_t DIVU(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2) {
 	return rtype(51, rd, 5, rs1, rs2, 1);
 }
 
-riscv_instruction_t REM(RVREG rd, RVREG rs1, RVREG rs2) {
+riscv_instruction_t REM(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2) {
 	return rtype(51, rd, 6, rs1, rs2, 1);
 }
 
-riscv_instruction_t REMU(RVREG rd, RVREG rs1, RVREG rs2) {
+riscv_instruction_t REMU(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2) {
 	return rtype(51, rd, 7, rs1, rs2, 1);
 }
 
@@ -251,75 +251,75 @@ riscv_instruction_t NOP() {
 	return ADDI(zero, zero, 0);
 }
 
-riscv_instruction_t LI(RVREG rd, uint32_t imm) {
+riscv_instruction_t LI(RiscVRegister rd, uint32_t imm) {
 	// more than one instruction
 }
 
-riscv_instruction_t MV(RVREG rd, RVREG rs) {
+riscv_instruction_t MV(RiscVRegister rd, RiscVRegister rs) {
 	return ADDI(rd, rs, 0);
 }
 
-riscv_instruction_t NOT(RVREG rd, RVREG rs) {
+riscv_instruction_t NOT(RiscVRegister rd, RiscVRegister rs) {
 	return XORI(rd, rs, -1);
 }
 
-riscv_instruction_t NEG(RVREG rd, RVREG rs) {
+riscv_instruction_t NEG(RiscVRegister rd, RiscVRegister rs) {
 	return SUB(rd, zero, rs);
 }
 
-riscv_instruction_t SEQZ(RVREG rd, RVREG rs) {
+riscv_instruction_t SEQZ(RiscVRegister rd, RiscVRegister rs) {
 	return SLTIU(rd, rs, 1);
 }
 
-riscv_instruction_t SNEZ(RVREG rd, RVREG rs) {
+riscv_instruction_t SNEZ(RiscVRegister rd, RiscVRegister rs) {
 	return SLTU(rd, zero, rd);
 }
 
-riscv_instruction_t SLTZ(RVREG rd, RVREG rs) {
+riscv_instruction_t SLTZ(RiscVRegister rd, RiscVRegister rs) {
 	return SLT(rd, rs, zero);
 }
 
-riscv_instruction_t SGTZ(RVREG rd, RVREG rs) {
+riscv_instruction_t SGTZ(RiscVRegister rd, RiscVRegister rs) {
 	return SLT(rd, zero, rs);
 }
 
-riscv_instruction_t BEQZ(RVREG rs, uint32_t offset) {
+riscv_instruction_t BEQZ(RiscVRegister rs, uint32_t offset) {
 	return BEQ(rs, zero, offset);
 }
 
-riscv_instruction_t BNQZ(RVREG rs, uint32_t offset) {
+riscv_instruction_t BNQZ(RiscVRegister rs, uint32_t offset) {
 	return BNE(rs, zero, offset);
 }
 
-riscv_instruction_t BLEZ(RVREG rs, uint32_t offset) {
+riscv_instruction_t BLEZ(RiscVRegister rs, uint32_t offset) {
 	return BGE(zero, rs, offset);
 }
 
-riscv_instruction_t BGEZ(RVREG rs, uint32_t offset) {
+riscv_instruction_t BGEZ(RiscVRegister rs, uint32_t offset) {
 	return BGE(rs, zero, offset);
 }
 
-riscv_instruction_t BLTZ(RVREG rs, uint32_t offset) {
+riscv_instruction_t BLTZ(RiscVRegister rs, uint32_t offset) {
 	return BLT(rs, zero, offset);
 }
 
-riscv_instruction_t BGTZ(RVREG rs, uint32_t offset) {
+riscv_instruction_t BGTZ(RiscVRegister rs, uint32_t offset) {
 	return BEQ(zero, rs, offset);
 }
 
-riscv_instruction_t BGT(RVREG rs1, RVREG rs2, uint32_t offset) {
+riscv_instruction_t BGT(RiscVRegister rs1, RiscVRegister rs2, uint32_t offset) {
 	return BLT(rs2, rs1, offset);
 }
 
-riscv_instruction_t BLE(RVREG rs1, RVREG rs2, uint32_t offset) {
+riscv_instruction_t BLE(RiscVRegister rs1, RiscVRegister rs2, uint32_t offset) {
 	return BGE(rs2, rs1, offset);
 }
 
-riscv_instruction_t BGTU(RVREG rs1, RVREG rs2, uint32_t offset) {
+riscv_instruction_t BGTU(RiscVRegister rs1, RiscVRegister rs2, uint32_t offset) {
 	return BLTU(rs2, rs1, offset);
 }
 
-riscv_instruction_t BLEU(RVREG rs1, RVREG rs2, uint32_t offset) {
+riscv_instruction_t BLEU(RiscVRegister rs1, RiscVRegister rs2, uint32_t offset) {
 	return BGEU(rs2, rs1, offset);
 }
 
