@@ -3,6 +3,8 @@
 
 /* --- Instruction Types --- */
 
+using namespace utils;
+
 riscv_instruction_t rtype(uint8_t opcode, uint8_t rd, uint8_t funct3, uint8_t rs1, uint8_t rs2, uint8_t funct7) {
 	uint32_t rtype = (funct7 << 25) + (rs2 << 20) + (rs1 << 15) + (funct3 << 12) + (rd << 7) + opcode;
 	return rtype;
