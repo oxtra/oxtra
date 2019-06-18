@@ -34,7 +34,7 @@ host_addr_t CodeStore::find(guest_addr_t x86_code) const {
 			 * That means that the x86_code points inside of an instruction. We could just start translating the block from that point onwards,
 			 * but usually only obfuscated programs require this.
 			 */
-			throw new std::runtime_error("Jump inside instruction.");
+			throw std::runtime_error("Jump inside instruction.");
 		}
 	}
 
@@ -77,7 +77,7 @@ void CodeStore::add_instruction(BlockEntry& block, const fadec::Instruction& x86
 
 	// Maybe do this for the debug build only?
 	else if (block.x86_end != x86_instruction.get_address()) {
-		throw new std::runtime_error("Tried to add a non-consecutive instruction to a block.");
+		throw std::runtime_error("Tried to add a non-consecutive instruction to a block.");
 	}
 
 	block.riscv_start = reinterpret_cast<host_addr_t>(
