@@ -3,8 +3,8 @@
 using namespace codegen;
 using namespace utils;
 
-CodeGenerator::CodeGenerator(const elf::Elf& elf)
-		: _codestore{elf} {}
+CodeGenerator::CodeGenerator(const elf::Elf& elf, const arguments::Arguments& args)
+		: _codestore{elf, args}, _args{args} {}
 
 host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 	const auto cached_code = _codestore.find(addr);

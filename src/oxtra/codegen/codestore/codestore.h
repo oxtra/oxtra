@@ -73,8 +73,11 @@ namespace codegen::codestore {
 		/** elf-image object */
 		const elf::Elf& _elf;
 
+		/** arguments-parser object */
+		const arguments::Arguments& _args;
+
 	public:
-		CodeStore(const elf::Elf& elf);
+		CodeStore(const elf::Elf& elf, const arguments::Arguments& args);
 
 		/**
 		 *

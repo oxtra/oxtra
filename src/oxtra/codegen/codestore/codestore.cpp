@@ -1,13 +1,13 @@
 #include "oxtra/codegen/codestore/codestore.h"
 
-#include <algorithm>
 
 using namespace utils;
 using namespace codegen::codestore;
 
-CodeStore::CodeStore(const elf::Elf& elf)
-		: _elf{elf}, _instruction_offset_buffer{0x10000}, _block_entries{0x10000}, _code_buffer{0x10000},
-		_pages{elf.get_image_size() >> page_shift} {}
+CodeStore::CodeStore(const elf::Elf& elf, const arguments::Arguments& args)
+		: _elf{elf}, _args{args}, _instruction_offset_buffer{args.get_offset_list_size()},
+		  _block_entries{args.get_entry_list_size()}, _code_buffer{args.get_instruction_list_size()},
+		  _pages{elf.get_image_size() >> page_shift} {}
 
 host_addr_t CodeStore::find(guest_addr_t x86_code) const {
 	// Index into the page table by shifting the address.
@@ -37,9 +37,7 @@ host_addr_t CodeStore::find(guest_addr_t x86_code) const {
 			throw std::runtime_error("Jump inside instruction.");
 		}
 	}
-
 	return 0;
-
 }
 
 BlockEntry* CodeStore::get_next_block(guest_addr_t x86_code) const {
@@ -48,6 +46,8 @@ BlockEntry* CodeStore::get_next_block(guest_addr_t x86_code) const {
 		auto&& entries = _pages[index];
 
 		BlockEntry* closest = nullptr;
+
+		//TODO: Optimization: blockEntry-Array sorted ascending by their address. This allows returning, once a block >= x86_code has been found
 
 		for (const auto entry : entries) {
 			// Update closest if it's closer than the previously closest entry.
@@ -75,15 +75,17 @@ void CodeStore::add_instruction(BlockEntry& block, const fadec::Instruction& x86
 		_pages[block.x86_start >> page_shift].push_back(&block);
 	}
 
-	// Maybe do this for the debug build only?
+		// Maybe do this for the debug build only?
 	else if (block.x86_end != x86_instruction.get_address()) {
 		throw std::runtime_error("Tried to add a non-consecutive instruction to a block.");
 	}
 
 	block.riscv_start = reinterpret_cast<host_addr_t>(
-			_code_buffer.add(reinterpret_cast<riscv_instruction_t*>(block.riscv_start), riscv_instructions, num_instructions));
+			_code_buffer.add(reinterpret_cast<riscv_instruction_t*>(block.riscv_start), riscv_instructions,
+							 num_instructions));
 
-	block.offsets = _instruction_offset_buffer.add(block.offsets, {x86_instruction.get_size(), static_cast<uint8_t>(num_instructions)});
+	block.offsets = _instruction_offset_buffer.add(block.offsets, {x86_instruction.get_size(),
+																   static_cast<uint8_t>(num_instructions)});
 	block.instruction_count++;
 	block.x86_end = x86_instruction.get_address() + x86_instruction.get_size();
 }
