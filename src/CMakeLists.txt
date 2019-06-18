@@ -5,7 +5,7 @@ add_library(oxtra_libs
 		oxtra/elf/elf.cpp
 		oxtra/codegen/codegen.cpp
 		oxtra/codegen/codestore/codestore.cpp
-		oxtra/dispatcher/dispatcher.cpp)
+		oxtra/dispatcher/dispatcher.cpp oxtra/utils/fixed_array.h)
 
 target_link_libraries(oxtra_libs
 		fadec

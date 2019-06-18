@@ -4,6 +4,7 @@
 #include "oxtra/utils/types.h"
 #include "oxtra/arguments/arguments.h"
 #include "oxtra/utils/static_list.h"
+#include "oxtra/utils/fixed_array.h"
 #include "oxtra/elf/elf.h"
 #include <vector>
 #include <memory>
@@ -51,10 +52,14 @@ namespace codegen::codestore {
 
 	class CodeStore {
 	private:
-		/** stores which block entries are in a 'page' */
+		static constexpr size_t
+			page_shift = 12,
+			page_size = (1 << page_shift);
+
+		/** stores which block entries are in a 'page'*/
 		using BlockArray = std::vector<BlockEntry*>;
 
-		std::unique_ptr<BlockArray[]> _pages;
+		utils::FixedArray<BlockArray> _pages;
 
 		/** risc-v code buffer */
 		utils::StaticList<utils::riscv_instruction_t> _code_buffer;
