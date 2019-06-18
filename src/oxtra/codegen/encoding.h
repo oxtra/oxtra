@@ -79,20 +79,6 @@ namespace encoding {
 		uint32_t imm_20 : 1;
 	};
 
-	/* --- Instruction Types --- */
-
-	utils::riscv_instruction_t rtype(uint8_t opcode, uint8_t rd, uint8_t funct3, uint8_t rs1, uint8_t rs2, uint8_t funct7);
-
-	utils::riscv_instruction_t itype(uint8_t opcode, uint8_t rd, uint8_t funct3, uint8_t rs1, uint16_t imm);
-
-	utils::riscv_instruction_t stype(uint8_t opcode, uint8_t funct3, uint8_t rs1, uint8_t rs2, uint16_t imm);
-
-	utils::riscv_instruction_t utype(uint8_t opcode, uint8_t rd, uint32_t imm);
-
-	utils::riscv_instruction_t btype(uint8_t opcode, uint8_t funct3, uint8_t rs1, uint8_t rs2, uint32_t imm);
-
-	utils::riscv_instruction_t jtype(uint8_t opcode, uint8_t rd, uint32_t imm);
-
 	/* --- RV32I Base Instruction Set --- */
 
 	/**
@@ -298,12 +284,12 @@ namespace encoding {
 	*/
 	utils::riscv_instruction_t AND(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2);
 
-	utils::riscv_instruction_t probably not needed: FENCE, FENCE.I, ECALL, EBREAK, CSRRW, CSRRS, CSRRC, CSRRWI, CSRRSI, CSRRCI
+	// probably not needed: FENCE, FENCE.I, ECALL, EBREAK, CSRRW, CSRRS, CSRRC, CSRRWI, CSRRSI, CSRRCI
 
 	/* --- RV64I Base Integer Instructions --- */
-	utils::riscv_instruction_t *W instructions maybe necessary
+	//*W instructions maybe necessary
 
-	utils::riscv_instruction_t --- M Standard Extension --- */
+	/* --- M Standard Extension --- */
 
 	/**
 	* rd = (rs1 * rs2)[63:0]
@@ -346,12 +332,12 @@ namespace encoding {
 	utils::riscv_instruction_t REMU(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2);
 
 	/* --- RV64M Standard Extension --- */
-	utils::riscv_instruction_t *W instructions maybe necessary
+	//*W instructions maybe necessary
 
 	// probably not needed: atomics
-	utils::riscv_instruction_t nice to have: floating point
+	// nice to have: floating point
 
-	utils::riscv_instruction_t --- Pseudoinstructions --- */
+	/* --- Pseudoinstructions --- */
 
 	/**
 	*/
@@ -360,7 +346,7 @@ namespace encoding {
 	/**
 	* rd = imm
 	*/
-	utils::riscv_instruction_t LI(RiscVRegister rd, uint32_t imm);
+	void LI(RiscVRegister rd, uint32_t imm);
 
 	/**
 	* rd = rs
