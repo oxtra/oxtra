@@ -45,21 +45,14 @@ BlockEntry* CodeStore::get_next_block(guest_addr_t x86_code) const {
 	for (auto index = x86_code >> page_shift; index < _pages.size(); ++index) {
 		auto&& entries = _pages[index];
 
-		BlockEntry* closest = nullptr;
-
-		//TODO: Optimization: blockEntry-Array sorted ascending by their address. This allows returning, once a block >= x86_code has been found
-
+		/* Find the next block, who's start-address is larger or equal to the address to query, and return it.
+		 * This is only valid, if we make sure that the entries within one page are sorted ascending by
+		 * their address. */
 		for (const auto entry : entries) {
-			// Update closest if it's closer than the previously closest entry.
-			if (entry->x86_start >= x86_code && (closest == nullptr || closest->x86_start > entry->x86_start))
-				closest = entry;
+			if(entry->x86_start >= x86_code)
+				return entry;
 		}
-
-		// Did we find a block that comes after x86_code?
-		if (closest)
-			return closest;
 	}
-
 	return nullptr;
 }
 
@@ -72,7 +65,18 @@ void CodeStore::add_instruction(BlockEntry& block, const fadec::Instruction& x86
 	// If there's no x86 start address then this is the first instruction to add to the block.
 	if (block.x86_start == 0) {
 		block.x86_start = x86_instruction.get_address();
-		_pages[block.x86_start >> page_shift].push_back(&block);
+
+		//sort the block by its address into the current page (ascending)
+		BlockArray* page_array = &_pages[block.x86_start >> page_shift];
+		for (auto i = 0; i < page_array->size(); i++) {
+			if (page_array->at(i)->x86_start > x86_instruction.get_address()) {
+				page_array->insert(page_array->begin() + i, &block);
+				page_array = nullptr;
+				break;
+			}
+		}
+		if (page_array != nullptr)
+			page_array->push_back(&block);
 	}
 
 		// Maybe do this for the debug build only?
@@ -88,4 +92,18 @@ void CodeStore::add_instruction(BlockEntry& block, const fadec::Instruction& x86
 																   static_cast<uint8_t>(num_instructions)});
 	block.instruction_count++;
 	block.x86_end = x86_instruction.get_address() + x86_instruction.get_size();
+
+	//check if the block overlaps into another page
+	if((block.x86_start >> page_shift) < (block.x86_end >> page_shift)) {
+		/* This block will be executed for every instruction added, which lies within another page.
+		 * As we expect instruction-blocks not to overlap, we can accelerate the execution, by making the assumption
+		 * that the block has not been added to the new page yet, if the first entry of the overlapping page-array is
+		 * not equal to this block. This assumption should hold true, as the new block is coming from the lower
+		 * addresses and thus via the base-address of the page. */
+		BlockArray* page_array = &_pages[block.x86_end >> page_shift];
+		if(page_array->size() == 0)
+			page_array->push_back(&block);
+		else if(page_array->at(0) != &block)
+			page_array->insert(page_array->begin(), &block);
+	}
 }
