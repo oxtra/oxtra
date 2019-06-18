@@ -6,44 +6,68 @@
 using namespace utils;
 using namespace encoding;
 
-riscv_instruction_t rtype(uint8_t opcode, RiscVRegister rd, uint8_t funct3, RiscVRegister rs1, RiscVRegister rs2, uint8_t funct7) {
-	uint32_t rtype = (funct7 << 25) + ((uint8_t)rs2 << 20) + ((uint8_t)rs1 << 15) + (funct3 << 12) + ((uint8_t)rd << 7) + opcode;
-	return rtype;
+uint32_t rtype(uint8_t opcode, RiscVRegister rd, uint8_t funct3, RiscVRegister rs1, RiscVRegister rs2, uint8_t funct7) {
+	RType rtype;
+	rtype.opcode = opcode;
+	rtype.rd = static_cast<uint8_t>(rd);
+	rtype.funct3 = funct3;
+	rtype.rs1 = static_cast<uint8_t>(rs1);
+	rtype.rs2 = static_cast<uint8_t>(rs2);
+	rtype.funct7 = funct7;
+	return rtype.raw;
 };
 
-riscv_instruction_t itype(uint8_t opcode, RiscVRegister rd, uint8_t funct3, RiscVRegister rs1, uint16_t imm) {
-	uint32_t itype = (imm << 20) + ((uint8_t)rs1 << 15) + (funct3 <<12) + ((uint8_t)rd << 7) + opcode;
-	return itype;
+uint32_t itype(uint8_t opcode, RiscVRegister rd, uint8_t funct3, RiscVRegister rs1, uint16_t imm) {
+	IType itype;
+	itype.opcode = opcode;
+	itype.rd = static_cast<uint8_t>(rd);
+	itype.funct3 = funct3;
+	itype.rs1 = static_cast<uint8_t>(rs1);
+	itype.imm = imm;
+	return itype.raw;
 }
 
-riscv_instruction_t stype(uint8_t opcode, uint8_t funct3, RiscVRegister rs1, RiscVRegister rs2, uint16_t imm) {
-	uint8_t immlow = imm & 0x1f;
-	uint8_t immhigh = (imm >> 5) & 0x7f;
-	uint32_t stype  = (immhigh << 25) + ((uint8_t)rs2 << 20) + ((uint8_t)rs1 << 15) + (funct3 << 12) + (immlow << 7) + opcode;
-	return stype;
+uint32_t stype(uint8_t opcode, uint8_t funct3, RiscVRegister rs1, RiscVRegister rs2, uint16_t imm) {
+	SType stype;
+	stype.opcode = opcode;
+	stype.immlow = imm & 0x1f;
+	stype.funct3 = funct3;
+	stype.rs1 = static_cast<uint8_t>(rs1);
+	stype.rs2 = static_cast<uint8_t>(rs2);
+	stype.immhigh = (imm >> 5) & 0x7f;
+	return stype.raw;
 }
 
-riscv_instruction_t utype(uint8_t opcode, RiscVRegister rd, uint32_t imm) {
-	uint32_t utype = (imm << 12) + ((uint8_t)rd << 7) + opcode;
-	return utype;
+uint32_t utype(uint8_t opcode, RiscVRegister rd, uint32_t imm) {
+	UType utype;
+	utype.opcode = opcode;
+	utype.rd = static_cast<uint8_t>(rd);
+	utype.imm = imm;
+	return utype.raw;
 }
 
-riscv_instruction_t btype(uint8_t opcode, uint8_t funct3, RiscVRegister rs1, RiscVRegister rs2, uint32_t imm) {
-	uint8_t imm_11 = (imm >> 11) & 1;
-	uint8_t imm_4_1 = (imm >> 1) & 0xf;
-	uint8_t imm_10_5 = (imm >> 5) & 0x3f;
-	uint8_t imm_12 = (imm >> 12) & 1;
-	uint32_t btype = (imm_12 << 31) + (imm_10_5 << 25) + ((uint8_t)rs2 << 20) + ((uint8_t)rs1 << 15) + (funct3 << 12) + (imm_4_1 << 8) + (imm_11 << 7) + opcode;
-	return btype;
+uint32_t btype(uint8_t opcode, uint8_t funct3, RiscVRegister rs1, RiscVRegister rs2, uint32_t imm) {
+	BType btype;
+	btype.opcode = opcode;
+	btype.imm_11 = (imm >> 11) & 1;
+	btype.imm_4_1 = (imm >> 1) & 0xf;
+	btype.funct3 = funct3;
+	btype.rs1 = static_cast<uint8_t>(rs1);
+	btype.rs2 = static_cast<uint8_t>(rs2);
+	btype.imm_10_5 = (imm >> 5) & 0x3f;
+	btype.imm_12 = (imm >> 12) & 1;
+	return btype.raw;
 }
 
-riscv_instruction_t jtype(uint8_t opcode, RiscVRegister rd, uint32_t imm) {
-	uint8_t imm_20 = (imm >> 20) & 1;
-	uint16_t imm_10_1 = (imm >> 1) & 0x3ff;
-	uint8_t imm_11 = (imm >> 11) & 1;
-	uint8_t imm_19_12 = (imm > 12) & 0xff;
-	uint32_t jtype = (imm_20 << 31) + (imm_10_1 << 21) + (imm_11 << 20) + (imm_19_12 << 12) + ((uint8_t)rd << 7) + opcode;
-	return jtype;
+uint32_t jtype(uint8_t opcode, RiscVRegister rd, uint32_t imm) {
+	JType jtype;
+	jtype.opcode = opcode;
+	jtype.rd = static_cast<uint8_t>(rd);
+	jtype.imm_19_12 = (imm > 12) & 0xff;
+	jtype.imm_11 = (imm >> 11) & 1;
+	jtype.imm_10_1 = (imm >> 1) & 0x3ff;
+	jtype.imm_20 = (imm >> 20) & 1;
+	return jtype.raw;
 }
 
 /* --- RV32I Base Instruction Set --- */
