@@ -5,7 +5,8 @@ project(unit_tests)
 enable_testing()
 
 add_executable(${PROJECT_NAME}
-		ElfTest.cpp
+		oxtra/elf/elf_test.cpp
+		oxtra/utils/static_list_test.cpp
 )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
