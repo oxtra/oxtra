@@ -55,7 +55,7 @@ TEST_CASE("static Elf-Parser unpacking") {
 	REQUIRE((reinterpret_cast<uintptr_t>(elf.resolve_vaddr(elf.get_base_vaddr())) & 0x00000FFFu) == 0);
 
 	//iterate through the non-writable pages and compare them
-	for (auto i = 0; i < elf.get_image_size(); i += 0x1000) {
+	for (size_t i = 0; i < elf.get_image_size(); i += 0x1000) {
 		if ((elf.get_page_flags(i + elf.get_base_vaddr()) & elf::PAGE_WRITE) > 0 ||
 			(elf.get_page_flags(i + elf.get_base_vaddr()) & elf::PAGE_MAPPED) == 0)
 			continue;

@@ -5,7 +5,7 @@ using namespace codegen;
 using namespace utils;
 
 Dispatcher::Dispatcher(const elf::Elf& elf, const arguments::Arguments& args)
-		: _elf(elf), _args(args), _codegen(elf, args) {
+		: _elf(elf), _args(args), _codegen(args, elf) {
 
 }
 

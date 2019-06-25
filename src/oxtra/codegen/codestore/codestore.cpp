@@ -4,10 +4,10 @@
 using namespace utils;
 using namespace codegen::codestore;
 
-CodeStore::CodeStore(const elf::Elf& elf, const arguments::Arguments& args)
-		: _elf{elf}, _args{args}, _instruction_offset_buffer{args.get_offset_list_size()},
-		  _block_entries{args.get_entry_list_size()}, _code_buffer{args.get_instruction_list_size()},
-		  _pages{elf.get_image_size() >> page_shift} {}
+CodeStore::CodeStore(const arguments::Arguments& args, const elf::Elf& elf)
+		: _args{args}, _elf{elf}, _pages{elf.get_image_size() >> page_shift},
+		  _code_buffer{args.get_instruction_list_size()}, _block_entries{args.get_entry_list_size()},
+		  _instruction_offset_buffer{args.get_offset_list_size()} {}
 
 host_addr_t CodeStore::find(guest_addr_t x86_code) const {
 	// Index into the page table by shifting the address.
@@ -49,7 +49,7 @@ BlockEntry* CodeStore::get_next_block(guest_addr_t x86_code) const {
 		 * This is only valid, if we make sure that the entries within one page are sorted ascending by
 		 * their address. */
 		for (const auto entry : entries) {
-			if(entry->x86_start >= x86_code)
+			if (entry->x86_start >= x86_code)
 				return entry;
 		}
 	}
@@ -68,7 +68,7 @@ void CodeStore::add_instruction(BlockEntry& block, const fadec::Instruction& x86
 
 		//sort the block by its address into the current page (ascending)
 		BlockArray* page_array = &_pages[block.x86_start >> page_shift];
-		for (auto i = 0; i < page_array->size(); i++) {
+		for (size_t i = 0; i < page_array->size(); i++) {
 			if (page_array->at(i)->x86_start > x86_instruction.get_address()) {
 				page_array->insert(page_array->begin() + i, &block);
 				page_array = nullptr;
@@ -94,16 +94,16 @@ void CodeStore::add_instruction(BlockEntry& block, const fadec::Instruction& x86
 	block.x86_end = x86_instruction.get_address() + x86_instruction.get_size();
 
 	//check if the block overlaps into another page
-	if((block.x86_start >> page_shift) < (block.x86_end >> page_shift)) {
+	if ((block.x86_start >> page_shift) < (block.x86_end >> page_shift)) {
 		/* This block will be executed for every instruction added, which lies within another page.
 		 * As we expect instruction-blocks not to overlap, we can accelerate the execution, by making the assumption
 		 * that the block has not been added to the new page yet, if the first entry of the overlapping page-array is
 		 * not equal to this block. This assumption should hold true, as the new block is coming from the lower
 		 * addresses and thus via the base-address of the page. */
 		BlockArray* page_array = &_pages[block.x86_end >> page_shift];
-		if(page_array->size() == 0)
+		if (page_array->size() == 0)
 			page_array->push_back(&block);
-		else if(page_array->at(0) != &block)
+		else if (page_array->at(0) != &block)
 			page_array->insert(page_array->begin(), &block);
 	}
 }

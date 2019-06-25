@@ -138,7 +138,7 @@ void Elf::unpack_file() {
 	if (s_c > 0) {
 		//get the section-name-pointer and iterate through the sections
 		auto name_ptr = resolve_offset<uint8_t*>(shdr[s_i].sh_offset);
-		for (auto i = 0; i < s_c; i++) {
+		for (size_t i = 0; i < s_c; i++) {
 			if (shdr[i].sh_name + 5 > shdr[s_i].sh_size)
 				continue;
 			if (memcmp(&name_ptr[shdr[i].sh_name], ".bss", 5) == 0) {
@@ -149,7 +149,7 @@ void Elf::unpack_file() {
 	}
 
 	//check if the binary was statically linked
-	for (auto i = 0; i < p_c; i++) {
+	for (size_t i = 0; i < p_c; i++) {
 		if (phdr[i].p_type == PT_INTERP)
 			throw ElfException(ElfException::not_static, "contains interpreter");
 	}
@@ -157,7 +157,7 @@ void Elf::unpack_file() {
 	//extract the base-address and the total address-range
 	_base_address = ~0x00u;
 	size_t image_size = 0;
-	for (auto i = 0; i < p_c; i++) {
+	for (size_t i = 0; i < p_c; i++) {
 		if (phdr[i].p_type == PT_LOAD) {
 			if (phdr[i].p_vaddr < _base_address)
 				_base_address = phdr[i].p_vaddr;
@@ -193,7 +193,7 @@ void Elf::unpack_file() {
 	}
 
 	//iterate through the program-headers and write them to memory
-	for (auto i = 0; i < p_c; i++) {
+	for (size_t i = 0; i < p_c; i++) {
 		if (phdr[i].p_type != PT_LOAD)
 			continue;
 

@@ -17,7 +17,7 @@ namespace codegen {
 		codestore::CodeStore _codestore;
 
 	public:
-		CodeGenerator(const elf::Elf& elf, const arguments::Arguments& args);
+		CodeGenerator(const arguments::Arguments& args, const elf::Elf& elf);
 
 		CodeGenerator(CodeGenerator&) = delete;
 

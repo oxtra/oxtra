@@ -52,12 +52,18 @@ namespace codegen::codestore {
 
 	class CodeStore {
 	private:
+		/** stores which block entries are in a 'page' */
+		using BlockArray = std::vector<BlockEntry*>;
+
 		static constexpr size_t
 			page_shift = 12,
 			page_size = (1 << page_shift);
 
-		/** stores which block entries are in a 'page'*/
-		using BlockArray = std::vector<BlockEntry*>;
+		/** arguments-parser object */
+		const arguments::Arguments& _args;
+
+		/** elf-image object */
+		const elf::Elf& _elf;
 
 		utils::FixedArray<BlockArray> _pages;
 
@@ -70,14 +76,8 @@ namespace codegen::codestore {
 		/** global instruction offset buffer */
 		utils::StaticList<InstructionOffset> _instruction_offset_buffer;
 
-		/** elf-image object */
-		const elf::Elf& _elf;
-
-		/** arguments-parser object */
-		const arguments::Arguments& _args;
-
 	public:
-		CodeStore(const elf::Elf& elf, const arguments::Arguments& args);
+		CodeStore(const arguments::Arguments& args, const elf::Elf& elf);
 
 		/**
 		 *
