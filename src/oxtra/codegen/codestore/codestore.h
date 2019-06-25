@@ -12,23 +12,8 @@
 
 namespace codegen::codestore {
 
-	/*
-	 *  xxxxvvvv
-	 *
-	 *	//x86
-	 *	inst[0] = _virt;
-	 *	inst[1] = inst[0] + (_offset[0] >> 4);
-	 *  inst[2] = inst[1] + (_offset[1] >> 4);
-	 * 	inst[3] = inst[2] + (_offset[2] >> 4);
-	 *
-	 *
-	 *	//riscv
-	 *	inst[0] = _real;
-	 *	inst[1] = inst[0] + ((_offset[0] & 0x0f) << 2);
-	 *  inst[2] = inst[1] + ((_offset[1] & 0x0f) << 2);
-	 * 	inst[3] = inst[2] + ((_offset[2] & 0x0f) << 2);
-	 *
-	 */
+	constexpr size_t max_riscv_instructions_bits = 4;
+	constexpr size_t max_riscv_instructions = (0x01u << max_riscv_instructions_bits) - 1;
 
 	struct InstructionOffset {
 		/**
@@ -39,7 +24,10 @@ namespace codegen::codestore {
 		/**
 		 * number of risc-v instructions (every instruction is 4 bytes)
 		 */
-		uint8_t riscv : 4;
+		uint8_t riscv : max_riscv_instructions_bits;
+
+		static_assert(max_riscv_instructions_bits <= 4,
+					  "max_riscv_instruction has been modified. Type of InstructionOffset::riscv probably has to be adapted.");
 	};
 
 	struct BlockEntry {
@@ -56,8 +44,8 @@ namespace codegen::codestore {
 		using BlockArray = std::vector<BlockEntry*>;
 
 		static constexpr size_t
-			page_shift = 12,
-			page_size = (1 << page_shift);
+				page_shift = 12,
+				page_size = (1 << page_shift);
 
 		/** arguments-parser object */
 		const arguments::Arguments& _args;
