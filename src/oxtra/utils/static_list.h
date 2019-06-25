@@ -17,7 +17,7 @@ namespace utils {
 		StaticList(size_t num_elements) {
 			_size_left = num_elements;
 			_max_elements = num_elements;
-			_buffer = static_cast<T*>(malloc(sizeof(T) * num_elements));
+			_buffer = new T[_max_elements];
 		}
 
 		/**
@@ -73,6 +73,14 @@ namespace utils {
 		 * @return A reference to the new entry.
 		 */
 		T& allocate_entry() {
+			if (_size_left <= 0) {
+				_buffer = new T[_max_elements];
+				_size_left  = _max_elements;
+			}
+
+			auto& new_entry = *_buffer;
+			_buffer++;
+			return new_entry;
 		}
 
 	private:
@@ -84,7 +92,7 @@ namespace utils {
 		 * @return The start address of the new buffer. The number of elements have to be added manually.
 		 */
 		static T* reallocate(const T* start, const size_t elements, size_t max_elements) {
-			T* new_buffer = static_cast<T*>(malloc(sizeof(T) * max_elements));
+			T* new_buffer = new T[max_elements];
 			if (elements > 0) {
 				memcpy(new_buffer, start, elements * sizeof(T));
 			}

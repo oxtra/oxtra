@@ -47,8 +47,16 @@ TEST_CASE("static_list supports adding elements", "[static_list]") {
 		auto element = list.add(nullptr, 9);
 		element = list.add(element, ptr, 5);
 
+		free(ptr);
+
 		for (int i = 0; i < 6; i++) {
 			REQUIRE(element[i] == (9 + i));
 		}
 	}
 }
+
+TEST_CASE("static_list supports copying elements", "[static_list]") {
+	//TODO: support check for overflow
+}
+
+//TODO: test allocate_entry
