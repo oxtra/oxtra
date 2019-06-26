@@ -1,12 +1,16 @@
 #include "oxtra/codegen/codestore/codestore.h"
-
+#include <sys/mman.h>
 
 using namespace utils;
 using namespace codegen::codestore;
 
+static void* code_allocator(size_t size) {
+	return mmap(nullptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+}
+
 CodeStore::CodeStore(const arguments::Arguments& args, const elf::Elf& elf)
 		: _args{args}, _elf{elf}, _pages{elf.get_image_size() >> page_shift},
-		  _code_buffer{args.get_instruction_list_size()}, _block_entries{args.get_entry_list_size()},
+		  _code_buffer{args.get_instruction_list_size(), code_allocator}, _block_entries{args.get_entry_list_size()},
 		  _instruction_offset_buffer{args.get_offset_list_size()} {}
 
 host_addr_t CodeStore::find(guest_addr_t x86_code) const {
@@ -66,8 +70,8 @@ void CodeStore::add_instruction(BlockEntry& block, const fadec::Instruction& x86
 	if (block.x86_start == 0) {
 		block.x86_start = x86_instruction.get_address();
 
-		//sort the block by its address into the current page (ascending)
-		BlockArray* page_array = &_pages[block.x86_start >> page_shift];
+		// sort the block by its address into the current page (ascending)
+		auto page_array = &_pages[(block.x86_start - _elf.get_base_vaddr()) >> page_shift];
 		for (size_t i = 0; i < page_array->size(); i++) {
 			if (page_array->at(i)->x86_start > x86_instruction.get_address()) {
 				page_array->insert(page_array->begin() + i, &block);
@@ -77,10 +81,8 @@ void CodeStore::add_instruction(BlockEntry& block, const fadec::Instruction& x86
 		}
 		if (page_array != nullptr)
 			page_array->push_back(&block);
-	}
-
-		// Maybe do this for the debug build only?
-	else if (block.x86_end != x86_instruction.get_address()) {
+	} else if (block.x86_end != x86_instruction.get_address()) {
+		// maybe do this for the debug build only?
 		throw std::runtime_error("Tried to add a non-consecutive instruction to a block.");
 	}
 
@@ -100,10 +102,11 @@ void CodeStore::add_instruction(BlockEntry& block, const fadec::Instruction& x86
 		 * that the block has not been added to the new page yet, if the first entry of the overlapping page-array is
 		 * not equal to this block. This assumption should hold true, as the new block is coming from the lower
 		 * addresses and thus via the base-address of the page. */
-		BlockArray* page_array = &_pages[block.x86_end >> page_shift];
-		if (page_array->size() == 0)
+		auto page_array = &_pages[block.x86_end >> page_shift];
+		if (page_array->size() == 0) {
 			page_array->push_back(&block);
-		else if (page_array->at(0) != &block)
+		} else if (page_array->at(0) != &block) {
 			page_array->insert(page_array->begin(), &block);
+		}
 	}
 }

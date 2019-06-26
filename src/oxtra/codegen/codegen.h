@@ -5,15 +5,13 @@
 #include "oxtra/arguments/arguments.h"
 #include "oxtra/codegen/codestore/codestore.h"
 #include "oxtra/elf/elf.h"
-
-extern "C" {
-#include "fadec.h"
-}
+#include <fadec.h>
 
 namespace codegen {
 	class CodeGenerator {
 	private:
 		const arguments::Arguments& _args;
+		const elf::Elf& _elf;
 		codestore::CodeStore _codestore;
 
 	public:
@@ -25,6 +23,12 @@ namespace codegen {
 
 	public:
 		utils::host_addr_t translate(utils::guest_addr_t addr);
+
+		const arguments::Arguments& get_args() const;
+
+	private:
+		size_t translate_add(const fadec::Instruction& x86_instruction, utils::riscv_instruction_t* riscv_instruction);
+		//size_t translate_mov(const fadec::Instruction& x86_instruction, utils::riscv_instruction_t* riscv_instruction);
 	};
 }
 

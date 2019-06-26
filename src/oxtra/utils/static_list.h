@@ -3,21 +3,29 @@
 
 #include <cstdlib>
 #include <stdexcept>
+#include <algorithm>
 #include <string.h>
 
 namespace utils {
 	template<class T>
 	class StaticList {
+	public:
+		using Allocator = void* (*)(size_t);
+
 	private:
 		T* _buffer;
 		size_t _size_left;
 		size_t _max_elements;
+		Allocator _allocator;
 
 	public:
-		StaticList(size_t num_elements) {
+		StaticList(size_t num_elements, Allocator allocator = [](size_t size) -> void* { return new uint8_t[size]; }) {
 			_size_left = num_elements;
 			_max_elements = num_elements;
-			_buffer = new T[_max_elements];
+
+			_allocator = allocator;
+
+			_buffer = static_cast<T*>(_allocator(_max_elements * sizeof(T)));
 		}
 
 		/**
@@ -53,13 +61,13 @@ namespace utils {
 			}
 
 			if (_size_left < num_elements) {
-				actual_start = reallocate(start, store_count, _max_elements);
+				actual_start = reallocate(start, store_count);
 				_buffer = actual_start + store_count;
 
 				_size_left = _max_elements;
 			}
 
-			memcpy(_buffer, elements, num_elements * sizeof(T));
+			std::copy(elements, elements + num_elements, _buffer);
 
 			_buffer += num_elements;
 			_size_left -= num_elements;
@@ -74,8 +82,8 @@ namespace utils {
 		 */
 		T& allocate_entry() {
 			if (_size_left <= 0) {
-				_buffer = new T[_max_elements];
-				_size_left  = _max_elements;
+				_buffer = static_cast<T*>(_allocator(_max_elements * sizeof(T)));
+				_size_left = _max_elements;
 			}
 
 			auto& new_entry = *_buffer;
@@ -88,13 +96,12 @@ namespace utils {
 		 * Create a new buffer copying parts of an existing buffer into the new one.
 		 * @param start The start of the buffer that will be used as start for copying.
 		 * @param elements The number of elements that are currently stored inside the buffer.
-		 * @param max_elements The maximum number of elements required for calculating the new acquired size.
 		 * @return The start address of the new buffer. The number of elements have to be added manually.
 		 */
-		static T* reallocate(const T* start, const size_t elements, size_t max_elements) {
-			T* new_buffer = new T[max_elements];
+		T* reallocate(const T* start, const size_t elements) {
+			T* new_buffer = static_cast<T*>(_allocator(_max_elements * sizeof(T)));
 			if (elements > 0) {
-				memcpy(new_buffer, start, elements * sizeof(T));
+				std::copy(start, start + elements, new_buffer);
 			}
 
 			return new_buffer;
