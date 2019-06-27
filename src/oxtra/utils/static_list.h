@@ -5,27 +5,23 @@
 #include <stdexcept>
 #include <algorithm>
 #include <string.h>
+#include <sys/mman.h>
 
 namespace utils {
 	template<class T>
 	class StaticList {
-	public:
-		using Allocator = void* (*)(size_t);
 
-	private:
+	protected:
 		T* _buffer;
 		size_t _size_left;
 		size_t _max_elements;
-		Allocator _allocator;
 
 	public:
-		StaticList(size_t num_elements, Allocator allocator = [](size_t size) -> void* { return new uint8_t[size]; }) {
+		StaticList(size_t num_elements) {
 			_size_left = num_elements;
 			_max_elements = num_elements;
 
-			_allocator = allocator;
-
-			_buffer = static_cast<T*>(_allocator(_max_elements * sizeof(T)));
+			_buffer = allocate();
 		}
 
 		/**
@@ -82,7 +78,7 @@ namespace utils {
 		 */
 		T& allocate_entry() {
 			if (_size_left <= 0) {
-				_buffer = static_cast<T*>(_allocator(_max_elements * sizeof(T)));
+				_buffer = allocate();
 				_size_left = _max_elements;
 			}
 
@@ -91,7 +87,11 @@ namespace utils {
 			return new_entry;
 		}
 
-	private:
+	protected:
+		virtual T* allocate() {
+			return new T[_max_elements];
+		}
+
 		/**
 		 * Create a new buffer copying parts of an existing buffer into the new one.
 		 * @param start The start of the buffer that will be used as start for copying.
@@ -99,12 +99,31 @@ namespace utils {
 		 * @return The start address of the new buffer. The number of elements have to be added manually.
 		 */
 		T* reallocate(const T* start, const size_t elements) {
-			T* new_buffer = static_cast<T*>(_allocator(_max_elements * sizeof(T)));
+			T* new_buffer = allocate();
 			if (elements > 0) {
 				std::copy(start, start + elements, new_buffer);
 			}
 
 			return new_buffer;
+		}
+	};
+
+	template<class T>
+	class ExecutableList : public StaticList<T> {
+	public:
+		ExecutableList(size_t num_elements) : StaticList<T>(num_elements) {}
+
+	protected:
+		virtual T* allocate() override {
+			auto data = static_cast<T*>(mmap(nullptr, StaticList<T>::_max_elements * sizeof(T), PROT_READ | PROT_WRITE | PROT_EXEC,
+											 MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+			if (data == MAP_FAILED) throw std::bad_alloc();
+
+			for (size_t i = 0; i < StaticList<T>::_max_elements; i++) {
+				data[i] = T();
+			}
+
+			return data;
 		}
 	};
 }

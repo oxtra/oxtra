@@ -1,16 +1,11 @@
 #include "oxtra/codegen/codestore/codestore.h"
-#include <sys/mman.h>
 
 using namespace utils;
 using namespace codegen::codestore;
 
-static void* code_allocator(size_t size) {
-	return mmap(nullptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-}
-
 CodeStore::CodeStore(const arguments::Arguments& args, const elf::Elf& elf)
 		: _args{args}, _elf{elf}, _pages{elf.get_image_size() >> page_shift},
-		  _code_buffer{args.get_instruction_list_size(), code_allocator}, _block_entries{args.get_entry_list_size()},
+		  _code_buffer{args.get_instruction_list_size()}, _block_entries{args.get_entry_list_size()},
 		  _instruction_offset_buffer{args.get_offset_list_size()} {}
 
 host_addr_t CodeStore::find(guest_addr_t x86_code) const {

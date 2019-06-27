@@ -56,7 +56,7 @@ namespace codegen::codestore {
 		utils::FixedArray<BlockArray> _pages;
 
 		/** risc-v code buffer */
-		utils::StaticList<utils::riscv_instruction_t> _code_buffer;
+		utils::ExecutableList<utils::riscv_instruction_t> _code_buffer;
 
 		/** block entry buffer */
 		utils::StaticList<BlockEntry> _block_entries;
