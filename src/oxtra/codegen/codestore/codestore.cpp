@@ -10,7 +10,7 @@ CodeStore::CodeStore(const arguments::Arguments& args, const elf::Elf& elf)
 
 host_addr_t CodeStore::find(guest_addr_t x86_code) const {
 	// Index into the page table by shifting the address.
-	auto&& entries = _pages[x86_code >> page_shift];
+	auto&& entries = _pages[get_page_index(x86_code)];
 
 	// Loop through all basic block entries to find the one that contains the x86_code.
 	for (const auto entry : entries) {
@@ -41,7 +41,7 @@ host_addr_t CodeStore::find(guest_addr_t x86_code) const {
 
 BlockEntry* CodeStore::get_next_block(guest_addr_t x86_code) const {
 	// std::span in c++20 c:
-	for (auto index = x86_code >> page_shift; index < _pages.size(); ++index) {
+	for (auto index = get_page_index(x86_code); index < _pages.size(); ++index) {
 		auto&& entries = _pages[index];
 
 		/* Find the next block, who's start-address is larger or equal to the address to query, and return it.
@@ -61,25 +61,8 @@ BlockEntry& CodeStore::create_block() {
 
 void CodeStore::add_instruction(BlockEntry& block, const fadec::Instruction& x86_instruction,
 								riscv_instruction_t* riscv_instructions, size_t num_instructions) {
-	// If there's no x86 start address then this is the first instruction to add to the block.
-	if (block.x86_start == 0) {
-		block.x86_start = x86_instruction.get_address();
 
-		// sort the block by its address into the current page (ascending)
-		auto page_array = &_pages[(block.x86_start - _elf.get_base_vaddr()) >> page_shift];
-		for (size_t i = 0; i < page_array->size(); i++) {
-			if (page_array->at(i)->x86_start > x86_instruction.get_address()) {
-				page_array->insert(page_array->begin() + i, &block);
-				page_array = nullptr;
-				break;
-			}
-		}
-		if (page_array != nullptr)
-			page_array->push_back(&block);
-	} else if (block.x86_end != x86_instruction.get_address()) {
-		// maybe do this for the debug build only?
-		throw std::runtime_error("Tried to add a non-consecutive instruction to a block.");
-	}
+	insert_block(block, x86_instruction.get_address());
 
 	block.riscv_start = reinterpret_cast<host_addr_t>(
 			_code_buffer.add(reinterpret_cast<riscv_instruction_t*>(block.riscv_start), riscv_instructions,
@@ -97,11 +80,38 @@ void CodeStore::add_instruction(BlockEntry& block, const fadec::Instruction& x86
 		 * that the block has not been added to the new page yet, if the first entry of the overlapping page-array is
 		 * not equal to this block. This assumption should hold true, as the new block is coming from the lower
 		 * addresses and thus via the base-address of the page. */
-		auto page_array = &_pages[block.x86_end >> page_shift];
-		if (page_array->size() == 0) {
-			page_array->push_back(&block);
-		} else if (page_array->at(0) != &block) {
-			page_array->insert(page_array->begin(), &block);
+		auto page_array = _pages[get_page_index(block.x86_end)];
+		if (page_array.empty()) {
+			page_array.push_back(&block);
+		} else if (page_array[0] != &block) {
+			page_array.insert(page_array.begin(), &block);
 		}
 	}
+}
+
+void CodeStore::insert_block(codegen::codestore::BlockEntry& block, utils::guest_addr_t x86_address) {
+	// If there's no x86 start address then this is the first instruction to add to the block.
+	if (block.x86_start == 0) {
+		block.x86_start = x86_address;
+
+		// sort the block by its address into the current page (ascending)
+		auto&& page_array = _pages[get_page_index(block.x86_start)];
+		for (size_t i = 0; i < page_array.size(); i++) {
+			if (page_array[i]->x86_start > x86_address) {
+				page_array.insert(page_array.begin() + i, &block);
+				return;
+			}
+		}
+
+		page_array.push_back(&block);
+
+	} else if (block.x86_end != x86_address) {
+		// maybe do this for the debug build only?
+		throw std::runtime_error("Tried to add a non-consecutive instruction to a block.");
+	}
+
+}
+
+size_t CodeStore::get_page_index(utils::guest_addr_t x86_address) const {
+	return (x86_address - _elf.get_base_vaddr()) >> page_shift;
 }

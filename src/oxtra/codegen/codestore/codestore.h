@@ -96,6 +96,11 @@ namespace codegen::codestore {
 		 */
 		void add_instruction(BlockEntry& block, const fadec::Instruction& x86_instruction,
 							 utils::riscv_instruction_t* riscv_instructions, size_t num_instructions);
+
+	private:
+		void insert_block(BlockEntry& block, utils::guest_addr_t x86_address);
+
+		size_t get_page_index(utils::guest_addr_t x86_address) const;
 	};
 }
 
