@@ -20,14 +20,14 @@ bool Arguments::exit_run() const {
 }
 
 size_t Arguments::get_instruction_list_size() const {
-	return 99;
+	return 128;
 }
 
 size_t Arguments::get_offset_list_size() const {
-	return 123;
+	return 128;
 }
 
 size_t Arguments::get_entry_list_size() const {
-	return 126;
+	return 128;
 }
 
