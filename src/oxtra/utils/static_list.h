@@ -3,12 +3,15 @@
 
 #include <cstdlib>
 #include <stdexcept>
+#include <algorithm>
 #include <string.h>
+#include <sys/mman.h>
 
 namespace utils {
 	template<class T>
 	class StaticList {
-	private:
+
+	protected:
 		T* _buffer;
 		size_t _size_left;
 		size_t _max_elements;
@@ -17,7 +20,8 @@ namespace utils {
 		StaticList(size_t num_elements) {
 			_size_left = num_elements;
 			_max_elements = num_elements;
-			_buffer = new T[_max_elements];
+
+			_buffer = allocate();
 		}
 
 		/**
@@ -53,13 +57,13 @@ namespace utils {
 			}
 
 			if (_size_left < num_elements) {
-				actual_start = reallocate(start, store_count, _max_elements);
+				actual_start = reallocate(start, store_count);
 				_buffer = actual_start + store_count;
 
 				_size_left = _max_elements;
 			}
 
-			memcpy(_buffer, elements, num_elements * sizeof(T));
+			std::copy(elements, elements + num_elements, _buffer);
 
 			_buffer += num_elements;
 			_size_left -= num_elements;
@@ -74,8 +78,8 @@ namespace utils {
 		 */
 		T& allocate_entry() {
 			if (_size_left <= 0) {
-				_buffer = new T[_max_elements];
-				_size_left  = _max_elements;
+				_buffer = allocate();
+				_size_left = _max_elements;
 			}
 
 			auto& new_entry = *_buffer;
@@ -83,21 +87,43 @@ namespace utils {
 			return new_entry;
 		}
 
-	private:
+	protected:
+		virtual T* allocate() {
+			return new T[_max_elements];
+		}
+
 		/**
 		 * Create a new buffer copying parts of an existing buffer into the new one.
 		 * @param start The start of the buffer that will be used as start for copying.
 		 * @param elements The number of elements that are currently stored inside the buffer.
-		 * @param max_elements The maximum number of elements required for calculating the new acquired size.
 		 * @return The start address of the new buffer. The number of elements have to be added manually.
 		 */
-		static T* reallocate(const T* start, const size_t elements, size_t max_elements) {
-			T* new_buffer = new T[max_elements];
+		T* reallocate(const T* start, const size_t elements) {
+			T* new_buffer = allocate();
 			if (elements > 0) {
-				memcpy(new_buffer, start, elements * sizeof(T));
+				std::copy(start, start + elements, new_buffer);
 			}
 
 			return new_buffer;
+		}
+	};
+
+	template<class T>
+	class ExecutableList : public StaticList<T> {
+	public:
+		ExecutableList(size_t num_elements) : StaticList<T>(num_elements) {}
+
+	protected:
+		virtual T* allocate() override {
+			auto data = static_cast<T*>(mmap(nullptr, StaticList<T>::_max_elements * sizeof(T), PROT_READ | PROT_WRITE | PROT_EXEC,
+											 MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+			if (data == MAP_FAILED) throw std::bad_alloc();
+
+			for (size_t i = 0; i < StaticList<T>::_max_elements; i++) {
+				data[i] = T();
+			}
+
+			return data;
 		}
 	};
 }

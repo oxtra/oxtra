@@ -19,6 +19,8 @@ TEST_CASE("static_list supports adding elements", "[static_list]") {
 	}
 	SECTION ("add multiple elements non-consecutive") {
 		auto ptr = static_cast<uint64_t*>(malloc(sizeof(uint64_t) * 3));
+		REQUIRE(ptr != nullptr);
+
 		ptr[0] = 10;
 		ptr[1] = 11;
 		ptr[2] = 12;
@@ -40,6 +42,8 @@ TEST_CASE("static_list supports adding elements", "[static_list]") {
 	}
 	SECTION("add multiple consecutive elements") {
 		auto ptr = static_cast<uint64_t*>(malloc(sizeof(uint64_t) * 5));
+		REQUIRE(ptr != nullptr);
+
 		for (int i = 0; i < 5; i++) {
 			ptr[i] = i + 10;
 		}

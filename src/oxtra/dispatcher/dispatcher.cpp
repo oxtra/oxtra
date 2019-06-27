@@ -1,4 +1,5 @@
 #include "oxtra/dispatcher/dispatcher.h"
+#include <spdlog/spdlog.h>
 
 using namespace dispatcher;
 using namespace codegen;
@@ -10,7 +11,8 @@ Dispatcher::Dispatcher(const elf::Elf& elf, const arguments::Arguments& args)
 }
 
 void Dispatcher::run() {
-
+	int64_t val = ((int64_t (*)())_codegen.translate(0))();
+	spdlog::warn("Returned value is: {}", val >> 12);
 }
 
 void Dispatcher::host_enter() {
