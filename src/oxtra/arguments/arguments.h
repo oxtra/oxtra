@@ -67,30 +67,51 @@ namespace arguments {
 	private:
 		void parse_arguments(int argc, char** argv);
 
+		static int parse_string(struct argp_state* state, char* str, int min_value, const char* failure_string) {
+			char* end_parse;
+			int parsed_value = strtol(str, &end_parse, 10);
+			if (*end_parse != '\0' || parsed_value < min_value) {
+				argp_failure(state, 1, 0, "%s: %s", failure_string, str);
+			}
+
+			return parsed_value;
+		}
+
+		static int parse_string(struct argp_state* state, char* str,
+								int min_value, int max_value, const char* failure_string) {
+			int ret = parse_string(state, str, min_value, failure_string);
+
+			if (ret > max_value) {
+				argp_failure(state, 1, 0, "%s: %s", failure_string, str);
+			}
+
+			return ret;
+		}
+
 		/**
 		 * This method parses a single argument for argp.
 		 */
 		static error_t parse_opt(int key, char* arg, struct argp_state* state) {
 			auto* arguments = static_cast<struct StoredArguments*>(state->input);
+			int parsed;
 
 			switch (key) {
 				case _instruction_list_size_id:
-					arguments->instruction_list_size = atoi(arg);
+					arguments->instruction_list_size = parse_string(state, arg, 1, "Illegal size");
 					break;
 				case _offset_list_size_id:
-					arguments->offset_list_size = atoi(arg);
+					arguments->offset_list_size = parse_string(state, arg, 1, "Illegal size");
 					break;
 				case _entry_list_size_id:
-					arguments->entry_list_size = atoi(arg);
+					arguments->entry_list_size = parse_string(state, arg, 1, "Illegal size");
 					break;
 				case 'l':
-					arguments->spdlog_log_level = (enum spdlog::level::level_enum)(atoi(arg));
+					parsed = parse_string(state, arg, 0, 6, "Illegal log level");
+					arguments->spdlog_log_level = static_cast<enum spdlog::level::level_enum>(parsed);
 					break;
-
 				case ARGP_KEY_NO_ARGS:
 					argp_usage(state);
 					break;
-
 				case ARGP_KEY_ARG:
 					if (arguments->guest_path != nullptr) {
 						return ARGP_ERR_UNKNOWN;
