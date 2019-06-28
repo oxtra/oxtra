@@ -3,11 +3,11 @@
 
 using namespace arguments;
 
-Arguments::Arguments(int argc, char** argv) : _argp_parser{_options, parse_opt, _argument_description, _documentation,
-														   nullptr, nullptr, nullptr},
-											  _executable_path{argv[0]},
-											  _stored_arguments{nullptr, spdlog::level::level_enum::warn, 128, 128,
-																128} {
+Arguments::Arguments(int argc, char** argv) :
+		_argp_parser{_options, parse_opt, _argument_description, _documentation, nullptr, nullptr, nullptr},
+		_executable_path{argv[0]},
+		_stored_arguments{nullptr, spdlog::level::level_enum::warn, 128, 128, 128} {
+	
 	parse_arguments(argc, argv);
 }
 

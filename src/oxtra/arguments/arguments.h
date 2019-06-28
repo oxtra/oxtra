@@ -36,10 +36,11 @@ namespace arguments {
 				{"loffset-size",      _offset_list_size_id,      "SIZE",  0, "The size of the list containing offset. Limit for consecutive offsets.\nThe default is 128.",              0},
 				{"lentry-size",       _entry_list_size_id,       "SIZE",  0, "The size of the list containing block entires. Limit for consecutive block entries.\nThe default is 128.", 0},
 				{"log-level",         'l',                       "LEVEL", 0, "Specify the log level. 0=trace, 1=debug, 2=info, 3=warn, 4=error, 5=critical, 6=off.\nThe default is 3.",  0},
-				{nullptr,             0,                         nullptr, 0, nullptr,                                                                                                    0}    // This specifies the required x86 executable argument
+				// This specifies the required x86 executable argument
+				{nullptr,             0,                         nullptr, 0, nullptr,                                                                                                    0}
 		};
 
-		struct argp _argp_parser;
+		const struct argp _argp_parser;
 
 	private:
 		const char* _executable_path;
