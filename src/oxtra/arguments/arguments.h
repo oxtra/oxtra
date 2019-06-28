@@ -8,9 +8,9 @@ namespace arguments {
 	public:
 		Arguments(int argc, char** argv);
 
-		Arguments(const Arguments&) = delete;
+		Arguments(Arguments&) = delete;
 
-		Arguments(Arguments&&) = delete;
+		Arguments(const Arguments&&) = delete;
 
 	public:
 		const char* guest_path() const;
