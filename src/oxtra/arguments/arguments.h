@@ -8,19 +8,22 @@
 namespace arguments {
 	class Arguments {
 	private:
-		const char* _argp_program_version = "oxtra 0.1";
-		const char* _argp_program_bug_address = "https://gitlab.lrz.de/lrr-tum/students/eragp-x86emu-2019";
+		static constexpr const char* _argp_program_version = "oxtra 0.1";
+		static constexpr const char* _argp_program_bug_address = "https://gitlab.lrz.de/lrr-tum/students/eragp-x86emu-2019";
 
 		/**
 		 * The documentation that will be printed with the usage.
 		 */
-		const char* _documentation = "oxtra -- oxtra x86 translator \vThanks for your interest in oxtra :).";
+		static constexpr const char* _documentation = "oxtra -- oxtra x86 translator \vThanks for your interest in oxtra :).";
 
 		/**
 		 * A description of the parameter manually consumed by us.
 		 */
-		const char* _argument_description = "x86_EXECUTABLE";
+		static constexpr const char* _argument_description = "x86_EXECUTABLE";
 
+		/**
+		 * This struct contains the actual arguments that have been exctracted.
+		 */
 		struct StoredArguments {
 			char* guest_path;
 			enum spdlog::level::level_enum spdlog_log_level;
@@ -31,6 +34,10 @@ namespace arguments {
 		static constexpr char _offset_list_size_id = 2;
 		static constexpr char _entry_list_size_id = 3;
 
+		/**
+		 * This struct contains all options and their identifiers (+ definition strings).
+		 * Unprintable ASCII strings will not be able to be accessed (only long variant available).
+		 */
 		const struct argp_option _options[5] = {
 				{"linstruction-size", _instruction_list_size_id, "SIZE",  0, "The size of the list containing instructions. Limit for consecutive instructions.\nThe default is 128.",   0},
 				{"loffset-size",      _offset_list_size_id,      "SIZE",  0, "The size of the list containing offset. Limit for consecutive offsets.\nThe default is 128.",              0},
@@ -66,8 +73,18 @@ namespace arguments {
 		size_t get_entry_list_size() const;
 
 	private:
+		/**
+		 * This method will parse the specified arguments, sets the according fields in _stored_arguments and may even exit the program (if arguments are missing, help argument etc.)
+		 * @param argc The argument count
+		 * @param argv The array of arguments including the name of the executable at the 0th position.
+		 */
 		void parse_arguments(int argc, char** argv);
 
+		/**
+		 * This method parses a given string and ensures that it is >= the min_value.
+		 * If there was an error while parsing, the failure_string will be printed.
+		 * @return The parsed value. If there was an error, the application will be exited.
+		 */
 		static int parse_string(struct argp_state* state, char* str, int min_value, const char* failure_string) {
 			char* end_parse;
 			int parsed_value = strtol(str, &end_parse, 10);
@@ -78,6 +95,11 @@ namespace arguments {
 			return parsed_value;
 		}
 
+		/**
+ 		* This method parses a given string and ensures that it is >= the min_value and <= the max_value.
+ 		* If there was an error while parsing, the failure_string will be printed.
+ 		* @return The parsed value. If there was an error, the application will be exited.
+ 		*/
 		static int parse_string(struct argp_state* state, char* str,
 								int min_value, int max_value, const char* failure_string) {
 			int ret = parse_string(state, str, min_value, failure_string);
@@ -91,6 +113,7 @@ namespace arguments {
 
 		/**
 		 * This method parses a single argument for argp.
+		 * See here: https://www.gnu.org/software/libc/manual/html_node/Argp.html for more information.
 		 */
 		static error_t parse_opt(int key, char* arg, struct argp_state* state) {
 			auto* arguments = static_cast<struct StoredArguments*>(state->input);
