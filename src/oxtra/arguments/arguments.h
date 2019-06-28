@@ -57,9 +57,9 @@ namespace arguments {
 	public:
 		Arguments(int argc, char** argv);
 
-		Arguments(const Arguments&) = delete;
+		Arguments(Arguments&) = delete;
 
-		Arguments(Arguments&&rtPengu) = delete;
+		Arguments(const Arguments&&) = delete;
 
 	public:
 		const char* get_guest_path() const;
