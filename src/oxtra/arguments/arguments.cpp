@@ -1,33 +1,39 @@
+#include <spdlog/spdlog.h>
 #include "arguments.h"
 
 using namespace arguments;
 
-Arguments::Arguments(int argc, char** argv) {
+Arguments::Arguments(int argc, char** argv) : _executable_path{argv[0]}, _stored_arguments{},
+											  _argp_parser{_options, parse_opt, _argument_description, _documentation} {
+	_stored_arguments.spdlog_log_level = spdlog::level::level_enum::warn;
+	_stored_arguments.instruction_list_size = 128;
+	_stored_arguments.offset_list_size = 128;
+	_stored_arguments.entry_list_size = 128;
 
+	parse_arguments(argc, argv);
+	spdlog::info("{} {} {} {} {}", _stored_arguments.offset_list_size, _stored_arguments.entry_list_size, _stored_arguments.instruction_list_size, _stored_arguments.guest_path, (int) _stored_arguments.spdlog_log_level);
 }
 
-const char* Arguments::guest_path() const {
-	return "";
+const char* Arguments::get_guest_path() const {
+	return _stored_arguments.guest_path;
 }
 
-
-int Arguments::debug_level() const {
-	return 0;
-}
-
-bool Arguments::exit_run() const {
-	return false;
+enum spdlog::level::level_enum Arguments::get_log_level() const {
+	return _stored_arguments.spdlog_log_level;
 }
 
 size_t Arguments::get_instruction_list_size() const {
-	return 128;
+	return _stored_arguments.instruction_list_size;
 }
 
 size_t Arguments::get_offset_list_size() const {
-	return 128;
+	return _stored_arguments.offset_list_size;
 }
 
 size_t Arguments::get_entry_list_size() const {
-	return 128;
+	return _stored_arguments.entry_list_size;
 }
 
+void Arguments::parse_arguments(int argc, char** argv) {
+	argp_parse(&_argp_parser, argc, argv, 0, nullptr, &_stored_arguments);
+}
