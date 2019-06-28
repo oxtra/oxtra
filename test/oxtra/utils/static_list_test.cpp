@@ -4,8 +4,7 @@
 using namespace utils;
 
 TEST_CASE("static_list supports adding elements", "[static_list]") {
-	const size_t MAX_ELEMENTS = 16;
-	auto list = StaticList<uint64_t>(MAX_ELEMENTS);
+	auto list = StaticList<uint64_t>(16);
 
 	SECTION("add non-consecutive element") {
 		auto element = list.add(nullptr, 42);
@@ -53,14 +52,64 @@ TEST_CASE("static_list supports adding elements", "[static_list]") {
 
 		free(ptr);
 
-		for (int i = 0; i < 6; i++) {
+		for (uint8_t i = 0; i < 6; i++) {
 			REQUIRE(element[i] == (9 + i));
 		}
 	}
 }
 
 TEST_CASE("static_list supports copying elements", "[static_list]") {
-	//TODO: support check for overflow
+	auto list = StaticList<uint32_t>(2);
+	const auto list_head = list.add(nullptr, -1);
+
+	SECTION("add overflowing element (reallocation required)") {
+		auto start = list.add(nullptr, 42);
+		REQUIRE(*start == 42);
+
+		auto newStart = list.add(start, 43);
+
+		REQUIRE(start != newStart);
+		REQUIRE(list_head[0] == (uint32_t) -1);
+		REQUIRE(newStart[0] == 42);
+		REQUIRE(newStart[1] == 43);
+	}
+
+	SECTION("add too many consecutive elements") {
+		auto start = list.add(nullptr, 42);
+		REQUIRE(start[0] == 42);
+
+		REQUIRE(list.get_size_left() == 0);
+
+		start = list.add(start, 43);
+		REQUIRE(start[1] == 43);
+
+		REQUIRE_THROWS(list.add(start, 44));
+	}
 }
 
-//TODO: test allocate_entry
+TEST_CASE("static_list supports allocating entries", "[static_list]") {
+	auto list = StaticList<uint8_t>(3);
+	auto& start = list.allocate_entry();
+	start = 99;
+
+	SECTION("use allocate_entry as start") {
+		list.allocate_entry() = 100;
+		list.allocate_entry() = 200;
+
+		REQUIRE((&start)[0] == 99);
+		REQUIRE((&start)[1] == 100);
+		REQUIRE((&start)[2] == 200);
+
+		REQUIRE(list.get_size_left() == 0);
+
+		auto& new_entry = list.allocate_entry();
+		new_entry = 42;
+
+		REQUIRE(list.get_size_left() > 0);
+
+		REQUIRE((&start)[0] == 99);
+		REQUIRE((&start)[1] == 100);
+		REQUIRE((&start)[2] == 200);
+		REQUIRE(new_entry == 42);
+	}
+}
