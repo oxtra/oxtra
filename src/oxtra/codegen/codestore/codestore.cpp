@@ -88,7 +88,7 @@ void CodeStore::add_instruction(BlockEntry& block, const fadec::Instruction& x86
 		 * that the block has not been added to the new page yet, if the first entry of the overlapping page-array is
 		 * not equal to this block. This assumption should hold true, as the new block is coming from the lower
 		 * addresses and thus via the base-address of the page. */
-		auto page_array = _pages[get_page_index(block.x86_end)];
+		auto& page_array = _pages[get_page_index(block.x86_end)];
 		if (page_array.empty()) {
 			page_array.push_back(&block);
 		} else if (page_array[0] != &block) {
