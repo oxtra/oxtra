@@ -7,6 +7,7 @@ enable_testing()
 add_executable(${PROJECT_NAME}
 		oxtra/elf/elf_test.cpp
 		oxtra/utils/static_list_test.cpp
+		oxtra/encoding/encoding_test.cpp
 )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
