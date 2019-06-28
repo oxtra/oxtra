@@ -6,8 +6,7 @@ using namespace codegen::codestore;
 CodeStore::CodeStore(const arguments::Arguments& args, const elf::Elf& elf)
 		: _args{args}, _elf{elf}, _pages{elf.get_image_size() >> page_shift},
 		  _code_buffer{args.get_instruction_list_size()}, _block_entries{args.get_entry_list_size()},
-		  _instruction_offset_buffer{args.get_offset_list_size()} {
-}
+		  _instruction_offset_buffer{args.get_offset_list_size()} {}
 
 host_addr_t CodeStore::find(guest_addr_t x86_code) const {
 	// Index into the page table by shifting the address.
