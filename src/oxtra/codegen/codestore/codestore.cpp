@@ -3,6 +3,14 @@
 using namespace utils;
 using namespace codegen::codestore;
 
+BlockEntry::BlockEntry() {
+	x86_start = 0;
+	x86_end = 0;
+	instruction_count = 0;
+	riscv_start = 0;
+	offsets = nullptr;
+}
+
 CodeStore::CodeStore(const arguments::Arguments& args, const elf::Elf& elf)
 		: _args{args}, _elf{elf}, _pages{elf.get_image_size() >> page_shift},
 		  _code_buffer{args.get_instruction_list_size()}, _block_entries{args.get_entry_list_size()},
