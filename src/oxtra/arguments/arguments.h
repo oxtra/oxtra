@@ -74,83 +74,18 @@ namespace arguments {
 
 	private:
 		/**
-		 * This method will parse the specified arguments, sets the according fields in _stored_arguments and may even exit the program (if arguments are missing, help argument etc.)
+		 * This method will parse the specified arguments, sets the according fields in _stored_arguments and
+		 * may even terminate the application (if arguments are missing, help argument etc.)
 		 * @param argc The argument count
 		 * @param argv The array of arguments including the name of the executable at the 0th position.
 		 */
 		void parse_arguments(int argc, char** argv);
 
 		/**
-		 * This method parses a given string and ensures that it is >= the min_value.
-		 * If there was an error while parsing, the failure_string will be printed.
-		 * @return The parsed value. If there was an error, the application will be exited.
-		 */
-		static int parse_string(struct argp_state* state, char* str, int min_value, const char* failure_string) {
-			char* end_parse;
-			int parsed_value = strtol(str, &end_parse, 10);
-			if (*end_parse != '\0' || parsed_value < min_value) {
-				argp_failure(state, 1, 0, "%s: %s", failure_string, str);
-			}
-
-			return parsed_value;
-		}
-
-		/**
- 		* This method parses a given string and ensures that it is >= the min_value and <= the max_value.
- 		* If there was an error while parsing, the failure_string will be printed.
- 		* @return The parsed value. If there was an error, the application will be exited.
- 		*/
-		static int parse_string(struct argp_state* state, char* str,
-								int min_value, int max_value, const char* failure_string) {
-			int ret = parse_string(state, str, min_value, failure_string);
-
-			if (ret > max_value) {
-				argp_failure(state, 1, 0, "%s: %s", failure_string, str);
-			}
-
-			return ret;
-		}
-
-		/**
 		 * This method parses a single argument for argp.
 		 * See here: https://www.gnu.org/software/libc/manual/html_node/Argp.html for more information.
 		 */
-		static error_t parse_opt(int key, char* arg, struct argp_state* state) {
-			auto* arguments = static_cast<struct StoredArguments*>(state->input);
-			int parsed;
-
-			switch (key) {
-				case _instruction_list_size_id:
-					arguments->instruction_list_size = parse_string(state, arg, 1, "Illegal size");
-					break;
-				case _offset_list_size_id:
-					arguments->offset_list_size = parse_string(state, arg, 1, "Illegal size");
-					break;
-				case _entry_list_size_id:
-					arguments->entry_list_size = parse_string(state, arg, 1, "Illegal size");
-					break;
-				case 'l':
-					parsed = parse_string(state, arg, 0, 6, "Illegal log level");
-					arguments->spdlog_log_level = static_cast<enum spdlog::level::level_enum>(parsed);
-					break;
-				case ARGP_KEY_NO_ARGS:
-					argp_usage(state);
-					break;
-				case ARGP_KEY_ARG:
-					if (arguments->guest_path != nullptr) {
-						return ARGP_ERR_UNKNOWN;
-					}
-
-					arguments->guest_path = arg;
-
-					break;
-
-				default:
-					return ARGP_ERR_UNKNOWN;
-			}
-
-			return 0;
-		}
+		static error_t parse_opt(int key, char* arg, struct argp_state* state);
 	};
 }
 #endif //OXTRA_ARGUMENTS_H
