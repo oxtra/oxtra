@@ -32,11 +32,11 @@ namespace arguments {
 		static constexpr char _entry_list_size_id = 3;
 
 		const struct argp_option _options[5] = {
-				{"linstruction-size", _instruction_list_size_id, "SIZE",  0, "The size of the list containing instructions. Limit for consecutive instructions.\nThe default is 128."},
-				{"loffset-size",      _offset_list_size_id,      "SIZE",  0, "The size of the list containing offset. Limit for consecutive offsets.\nThe default is 128."},
-				{"lentry-size",       _entry_list_size_id,       "SIZE",  0, "The size of the list containing block entires. Limit for consecutive block entries.\nThe default is 128."},
-				{"log-level",         'l',                       "LEVEL", 0, "Specify the log level. 0=trace, 1=debug, 2=info, 3=warn, 4=error, 5=critical, 6=off.\nThe default is 3."},
-				{nullptr}    // This specifies the required x86 executable argument
+				{"linstruction-size", _instruction_list_size_id, "SIZE",  0, "The size of the list containing instructions. Limit for consecutive instructions.\nThe default is 128.",   0},
+				{"loffset-size",      _offset_list_size_id,      "SIZE",  0, "The size of the list containing offset. Limit for consecutive offsets.\nThe default is 128.",              0},
+				{"lentry-size",       _entry_list_size_id,       "SIZE",  0, "The size of the list containing block entires. Limit for consecutive block entries.\nThe default is 128.", 0},
+				{"log-level",         'l',                       "LEVEL", 0, "Specify the log level. 0=trace, 1=debug, 2=info, 3=warn, 4=error, 5=critical, 6=off.\nThe default is 3.",  0},
+				{nullptr,             0,                         nullptr, 0, nullptr,                                                                                                    0}    // This specifies the required x86 executable argument
 		};
 
 		struct argp _argp_parser;
@@ -89,6 +89,7 @@ namespace arguments {
 
 				case ARGP_KEY_NO_ARGS:
 					argp_usage(state);
+					break;
 
 				case ARGP_KEY_ARG:
 					if (arguments->guest_path != nullptr) {
