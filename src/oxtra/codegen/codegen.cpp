@@ -1,4 +1,3 @@
-#include <oxtra/codegen/encoding/encoding.h>
 #include "oxtra/codegen/codegen.h"
 #include <spdlog/spdlog.h>
 
@@ -7,6 +6,7 @@ using namespace utils;
 using namespace codestore;
 using namespace fadec;
 using namespace encoding;
+
 
 CodeGenerator::CodeGenerator(const arguments::Arguments& args, const elf::Elf& elf)
 		: _args{args}, _elf{elf}, _codestore{args, elf} {}
@@ -57,8 +57,7 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 		current_address += x86_instruction.get_size();
 		addr += x86_instruction.get_size();
 
-		if constexpr (SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE)
-		{
+		if constexpr (SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE) {
 			char formatted_string[512];
 			fadec::format(x86_instruction, formatted_string, sizeof(formatted_string));
 
@@ -77,7 +76,7 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 }
 
 bool CodeGenerator::translate_instruction(const fadec::Instruction& x86_instruction,
-		utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions) {
+										  utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions) {
 	switch (x86_instruction.get_type()) {
 		// at the moment we just insert a return for every instruction that modifies control flow.
 		case InstructionType::JMP:
@@ -106,12 +105,55 @@ bool CodeGenerator::translate_instruction(const fadec::Instruction& x86_instruct
 	return false;
 }
 
-size_t CodeGenerator::translate_mov(const fadec::Instruction& x86_instruction, utils::riscv_instruction_t* riscv_instruction) {
+
+void CodeGenerator::translate_memory_operand(const fadec::Instruction& x86_instruction,
+											 utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions,
+											 size_t index, RiscVRegister reg) {
+	if (x86_instruction.get_address_size() != 8)
+		throw std::runtime_error("invalid addressing-size");
+
+	const auto& operand = x86_instruction.get_operand(index);
+
+	// add the scale & index
+	if (x86_instruction.get_index_register() != fadec::Register::none) {
+		riscv_instructions[num_instructions++] = encoding::MV(reg, register_mapping[static_cast<uint16_t>(
+				x86_instruction.get_index_register())]);
+		riscv_instructions[num_instructions++] = encoding::SLLI(reg, reg, x86_instruction.get_index_scale());
+	}
+
+	// add the base-register
+	if (operand.get_register() != fadec::Register::none) {
+		riscv_instructions[num_instructions++] = encoding::ADD(reg, reg, register_mapping[static_cast<uint16_t>(
+				operand.get_register())]);
+	}
+
+	// add the displacement
+	if (x86_instruction.get_displacement() > 0) {
+		// less or equal than 12 bits
+		if (x86_instruction.get_displacement() < 0x1000) {
+			riscv_instructions[num_instructions++] = encoding::ADDI(reg, reg, static_cast<uint16_t>(
+					x86_instruction.get_displacement()));
+		} else {
+			riscv_instructions[num_instructions++] = encoding::LUI(RiscVRegister::t6,
+																   static_cast<uint32_t>(x86_instruction.get_displacement())
+																		   >> 12u);
+			riscv_instructions[num_instructions++] = encoding::ADDI(RiscVRegister::t6, RiscVRegister::t6,
+																	static_cast<uint16_t>(x86_instruction.get_displacement()) &
+																	0x0FFFu);
+			riscv_instructions[num_instructions++] = encoding::ADD(reg, reg, RiscVRegister::t6);
+		}
+	}
+}
+
+size_t
+CodeGenerator::translate_mov(const fadec::Instruction& x86_instruction, utils::riscv_instruction_t* riscv_instruction) {
+
 	riscv_instruction[0] = LUI(RiscVRegister::a0, static_cast<uint16_t>(x86_instruction.get_immediate()));
 	return 1;
 }
 
-size_t CodeGenerator::translate_ret(const fadec::Instruction& x86_instruction, utils::riscv_instruction_t* riscv_instruction) {
+size_t
+CodeGenerator::translate_ret(const fadec::Instruction& x86_instruction, utils::riscv_instruction_t* riscv_instruction) {
 	riscv_instruction[0] = JALR(RiscVRegister::zero, RiscVRegister::ra, 0);
 	return 1;
 }
