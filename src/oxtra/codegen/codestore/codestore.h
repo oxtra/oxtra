@@ -36,6 +36,8 @@ namespace codegen::codestore {
 		utils::host_addr_t riscv_start;
 		size_t instruction_count;
 		const InstructionOffset* offsets;
+
+		BlockEntry();
 	};
 
 	class CodeStore {
