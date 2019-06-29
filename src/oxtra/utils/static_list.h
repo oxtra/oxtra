@@ -81,10 +81,20 @@ namespace utils {
 				_buffer = allocate();
 				_size_left = _max_elements;
 			}
+			
+			_size_left--;
 
 			auto& new_entry = *_buffer;
 			_buffer++;
 			return new_entry;
+		}
+
+		size_t get_size_left() const {
+			return _size_left;
+		}
+
+		size_t get_max_elements() const {
+			return _max_elements;
 		}
 
 	protected:
