@@ -57,13 +57,12 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 		current_address += x86_instruction.get_size();
 		addr += x86_instruction.get_size();
 
-		// print this for debugging purposes mb
-		if constexpr (true)
+		if constexpr (SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE)
 		{
 			char formatted_string[512];
 			fadec::format(x86_instruction, formatted_string, sizeof(formatted_string));
 
-			spdlog::info("Fadec decoded instruction {}", formatted_string);
+			SPDLOG_TRACE("Fadec decoded instruction {}", formatted_string);
 		}
 
 		size_t num_instructions = 0;
