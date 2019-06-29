@@ -13,7 +13,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 		utils::riscv_instruction_t lui_encoded = LUI(RiscVRegister::t4, 2874);
 
 		system("/opt/riscv/bin/riscv64-unknown-linux-gnu-gcc lui.s -o lui -nostdlib");
-		system("objcopy -I elf64-little -j .text -O binary lui tmp");
+		system("objcopy -I elf64-little -j .text -O binary lui luidump");
 
 		char lui_compiled[5];
 		FILE* objdump = fopen("luidump", "r");
