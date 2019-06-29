@@ -247,7 +247,7 @@ namespace fadec {
 		 * @remark Only valid if an operand is of type OpType::mem and get_index_register() != Reg::none.
 		 */
 		uint8_t get_index_scale() const {
-			return 1 << idx_scale;
+			return idx_scale;
 		}
 
 		/**
