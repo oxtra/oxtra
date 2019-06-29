@@ -47,12 +47,11 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 
 	auto current_address = reinterpret_cast<const uint8_t*>(_elf.resolve_vaddr(addr));
 
-	while (true) {
-		const auto size_left = _elf.get_size(addr);
+	bool end_of_block;
 
+	do {
 		auto x86_instruction = Instruction{};
-		if (decode(current_address, size_left, DecodeMode::decode_64,
-				   addr, x86_instruction) <= 0)
+		if (decode(current_address, _elf.get_size(addr), DecodeMode::decode_64, addr, x86_instruction) <= 0)
 			throw std::runtime_error("Failed to decode the instruction");
 
 		current_address += x86_instruction.get_size();
@@ -70,17 +69,10 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 		size_t num_instructions = 0;
 		riscv_instruction_t riscv_instructions[max_riscv_instructions];
 
-		const auto end_of_block = translate_instruction(x86_instruction, riscv_instructions, num_instructions);
+		end_of_block = translate_instruction(x86_instruction, riscv_instructions, num_instructions);
 
-		/*if (num_instructions != 0)*/ {
-			_codestore.add_instruction(codeblock, x86_instruction, riscv_instructions, num_instructions);
-		}
-
-		if (end_of_block)
-			break;
-	}
-
-
+		_codestore.add_instruction(codeblock, x86_instruction, riscv_instructions, num_instructions);
+	} while (!end_of_block);
 
 	return codeblock.riscv_start;
 }
