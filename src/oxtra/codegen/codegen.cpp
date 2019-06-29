@@ -44,9 +44,7 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 	 */
 
 	auto& codeblock = _codestore.create_block();
-
 	auto current_address = reinterpret_cast<const uint8_t*>(_elf.resolve_vaddr(addr));
-
 	bool end_of_block;
 
 	do {
@@ -90,6 +88,17 @@ bool CodeGenerator::translate_instruction(const fadec::Instruction& x86_instruct
 		case InstructionType::POP:
 			break;
 
+		case InstructionType::LEA:
+			//[0x123 + 0x321*8 + 0x12345678]
+			riscv_instructions[num_instructions++] = encoding::MV(RiscVRegister::a1, RiscVRegister::zero);
+			riscv_instructions[num_instructions++] = encoding::ADDI(RiscVRegister::a1, RiscVRegister::zero, 0x123);
+			riscv_instructions[num_instructions++] = encoding::MV(RiscVRegister::a2, RiscVRegister::zero);
+			riscv_instructions[num_instructions++] = encoding::ADDI(RiscVRegister::a2, RiscVRegister::zero, 0x321);
+
+			translate_memory_operand(x86_instruction, riscv_instructions, num_instructions, 1, RiscVRegister::a0);
+			break;
+
+		case InstructionType::NOP:
 		case InstructionType::MOV:
 			break;
 
@@ -119,7 +128,10 @@ void CodeGenerator::translate_memory_operand(const fadec::Instruction& x86_instr
 		riscv_instructions[num_instructions++] = encoding::MV(reg, register_mapping[static_cast<uint16_t>(
 				x86_instruction.get_index_register())]);
 		riscv_instructions[num_instructions++] = encoding::SLLI(reg, reg, x86_instruction.get_index_scale());
+	} else {
+		riscv_instructions[num_instructions++] = encoding::MV(reg, RiscVRegister::zero);
 	}
+
 
 	// add the base-register
 	if (operand.get_register() != fadec::Register::none) {
