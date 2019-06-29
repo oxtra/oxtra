@@ -35,8 +35,6 @@ constexpr uint8_t instruction_offsets[] = {0x03, 0x01, 0x03, 0x07, 0x03, 0x08, 0
 constexpr const char* search_strings[] = {"./resources", "./test/resources", "../resources", "../test/resources",
 										  "../../resources", "../../test/resources"};
 constexpr size_t search_strings_count = 6;
-constexpr const char* test_path[] = {"/this/is/my/test/path"};
-constexpr size_t test_path_count = 1;
 
 /* These buffers represent random risc-v instructions.
  * They will be written alongside the instructions into the CodeStore. */
@@ -66,8 +64,10 @@ TEST_CASE("codestore test instruction-adding", "[codestore]") {
 		FAIL("couldn't find resource-directory");
 
 	// create the elf-object and the arguments-object
-	elf::Elf temp_elf = elf::Elf(base_path.c_str());
-	arguments::Arguments temp_args = arguments::Arguments(test_path_count, const_cast<char**>(test_path));
+	auto temp_elf = elf::Elf(base_path.c_str());
+
+	const char* test_path[] = {"./oxtra", base_path.c_str()};
+	auto temp_args = arguments::Arguments(2, const_cast<char**>(test_path));
 
 	// create the code-store object
 	CodeStore store = CodeStore(temp_args, temp_elf);
