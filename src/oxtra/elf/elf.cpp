@@ -298,6 +298,9 @@ size_t Elf::get_size(uintptr_t vaddr, size_t max_page) const {
 	size_t size = vaddr & 0x00000FFFu;
 	vaddr = (vaddr >> 12u) + (size > 0 ? 1 : 0);
 
+	// subtract the offset inside the page from the page size
+	size = 0x1000 - size;
+
 	//compute the page-index of the last page to check and clip the value
 	max_page += vaddr;
 	if (max_page > (_address_range >> 12u))

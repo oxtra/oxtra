@@ -28,13 +28,11 @@ namespace codegen::codestore {
 	};
 
 	struct BlockEntry {
-		utils::guest_addr_t x86_start;
-		utils::guest_addr_t x86_end;
-		utils::host_addr_t riscv_start;
-		size_t instruction_count;
-		const InstructionOffset* offsets;
-
-		BlockEntry();
+		utils::guest_addr_t x86_start = 0;
+		utils::guest_addr_t x86_end = 0;
+		utils::host_addr_t riscv_start = 0;
+		size_t instruction_count = 0;
+		const InstructionOffset* offsets = nullptr;
 	};
 
 	class CodeStore {

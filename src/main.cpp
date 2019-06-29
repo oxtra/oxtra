@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
 	SPDLOG_INFO("Finished parsing the arguments.");
 
 	//create the elf-object
-	const auto elf = elf::Elf("./test/resources/dump_me");
+	const auto elf = elf::Elf(arguments.get_guest_path());
 	SPDLOG_INFO("Finished reading and parsing elf file.");
 
 	//create the dispatcher
