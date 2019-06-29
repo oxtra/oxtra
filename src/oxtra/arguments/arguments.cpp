@@ -3,6 +3,9 @@
 
 using namespace arguments;
 
+const char* argp_program_version = "oxtra 0.1";
+const char* argp_program_bug_address = "https://gitlab.lrz.de/lrr-tum/students/eragp-x86emu-2019";
+
 Arguments::Arguments(int argc, char** argv) :
 		_argp_parser{_options, parse_opt, _argument_description, _documentation, nullptr, nullptr, nullptr},
 		_executable_path{argv[0]},

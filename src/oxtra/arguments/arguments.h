@@ -8,13 +8,10 @@
 namespace arguments {
 	class Arguments {
 	private:
-		static constexpr const char* _argp_program_version = "oxtra 0.1";
-		static constexpr const char* _argp_program_bug_address = "https://gitlab.lrz.de/lrr-tum/students/eragp-x86emu-2019";
-
 		/**
 		 * The documentation that will be printed with the usage.
 		 */
-		static constexpr const char* _documentation = "oxtra -- oxtra x86 translator \vThanks for your interest in oxtra :).";
+		static constexpr const char* _documentation = "oxtra -- oxtra x86 translator\vThanks for your interest in oxtra :).";
 
 		/**
 		 * A description of the parameter manually consumed by us.
@@ -22,7 +19,7 @@ namespace arguments {
 		static constexpr const char* _argument_description = "x86_EXECUTABLE";
 
 		/**
-		 * This struct contains the actual arguments that have been exctracted.
+		 * This struct contains the actual arguments that have been extracted.
 		 */
 		struct StoredArguments {
 			char* guest_path;
