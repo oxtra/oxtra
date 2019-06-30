@@ -6,6 +6,7 @@
 #include "oxtra/codegen/codestore/codestore.h"
 #include "oxtra/elf/elf.h"
 #include "oxtra/codegen/encoding/encoding.h"
+#include "oxtra/codegen/decoding/decoding.h"
 #include <fadec.h>
 
 namespace codegen {

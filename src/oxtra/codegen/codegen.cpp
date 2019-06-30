@@ -55,17 +55,21 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 		current_address += x86_instruction.get_size();
 		addr += x86_instruction.get_size();
 
+		size_t num_instructions = 0;
+		riscv_instruction_t riscv_instructions[max_riscv_instructions];
+
+		end_of_block = translate_instruction(x86_instruction, riscv_instructions, num_instructions);
+
+		// add tracing-information
 		if constexpr (SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE) {
 			char formatted_string[512];
 			fadec::format(x86_instruction, formatted_string, sizeof(formatted_string));
 
 			SPDLOG_TRACE("Fadec decoded instruction {}", formatted_string);
+
+			for(size_t i = 0; i < num_instructions; i++)
+				SPDLOG_TRACE(" - translated instruction[{}] = {}", i, decoding::parse_riscv(riscv_instructions[i]));
 		}
-
-		size_t num_instructions = 0;
-		riscv_instruction_t riscv_instructions[max_riscv_instructions];
-
-		end_of_block = translate_instruction(x86_instruction, riscv_instructions, num_instructions);
 
 		_codestore.add_instruction(codeblock, x86_instruction, riscv_instructions, num_instructions);
 	} while (!end_of_block);

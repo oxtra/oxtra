@@ -1,5 +1,5 @@
-#ifndef OXTRA_RISCV_DECODING_H
-#define OXTRA_RISCV_DECODING_H
+#ifndef OXTRA_DECODING_H
+#define OXTRA_DECODING_H
 
 #include <sstream>
 #include <string>
@@ -12,14 +12,8 @@
  *   - rv32m-standard-extension		(done)
  *   - rv64m-standard-extensions	(done)
  * */
-std::string parse_riscv(utils::riscv_instruction_t instruction);
+namespace decoding {
+	std::string parse_riscv(utils::riscv_instruction_t instruction);
+}
 
-
-/* possible parsed formats:
- * inst src1, src2 -> dest
- * inst src, imm -> dest
- * inst $[dest-address] ? src1, src2
- *
- * */
-
-#endif //OXTRA_RISCV_DECODING_H
+#endif //OXTRA_DECODING_H

@@ -1,4 +1,4 @@
-#include "oxtra/codegen/decoding/riscv_decoding.h"
+#include "oxtra/codegen/decoding/decoding.h"
 
 using namespace std;
 using namespace utils;
@@ -262,7 +262,7 @@ string parse_btype(RiscVOpcode opcode, riscv_instruction_t instruction) {
 }
 
 //implementation of the parsing-function
-string parse_riscv(riscv_instruction_t instruction) {
+string decoding::parse_riscv(riscv_instruction_t instruction) {
 	// split off the opcode and the functional-codes
 	uint8_t opcode = split_off(instruction, 0, 7);
 	uint8_t func3 = split_off(instruction, 12, 3);
