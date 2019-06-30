@@ -117,8 +117,7 @@ void CodeGenerator::translate_memory_operand(const fadec::Instruction& inst, siz
 
 	// add the scale & index
 	if (inst.get_index_register() != fadec::Register::none) {
-		riscv[count++] = encoding::MV(reg, register_mapping[static_cast<uint16_t>(
-				inst.get_index_register())]);
+		riscv[count++] = encoding::MV(reg, register_mapping[static_cast<uint16_t>( inst.get_index_register())]);
 		riscv[count++] = encoding::SLLI(reg, reg, inst.get_index_scale());
 	} else {
 		riscv[count++] = encoding::MV(reg, RiscVRegister::zero);
@@ -127,23 +126,18 @@ void CodeGenerator::translate_memory_operand(const fadec::Instruction& inst, siz
 
 	// add the base-register
 	if (operand.get_register() != fadec::Register::none) {
-		riscv[count++] = encoding::ADD(reg, reg, register_mapping[static_cast<uint16_t>(
-				operand.get_register())]);
+		riscv[count++] = encoding::ADD(reg, reg, register_mapping[static_cast<uint16_t>( operand.get_register())]);
 	}
 
 	// add the displacement
 	if (inst.get_displacement() > 0) {
 		// less or equal than 12 bits
 		if (inst.get_displacement() < 0x1000) {
-			riscv[count++] = encoding::ADDI(reg, reg, static_cast<uint16_t>(
-					inst.get_displacement()));
+			riscv[count++] = encoding::ADDI(reg, reg, static_cast<uint16_t>( inst.get_displacement()));
 		} else {
-			riscv[count++] = encoding::LUI(RiscVRegister::t6,
-										   static_cast<uint32_t>(inst.get_displacement())
-												   >> 12u);
+			riscv[count++] = encoding::LUI(RiscVRegister::t6, static_cast<uint32_t>(inst.get_displacement()) >> 12u);
 			riscv[count++] = encoding::ADDI(RiscVRegister::t6, RiscVRegister::t6,
-											static_cast<uint16_t>(inst.get_displacement()) &
-											0x0FFFu);
+											static_cast<uint16_t>(inst.get_displacement()) & 0x0FFFu);
 			riscv[count++] = encoding::ADD(reg, reg, RiscVRegister::t6);
 		}
 	}
