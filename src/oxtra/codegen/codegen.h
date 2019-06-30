@@ -78,12 +78,12 @@ namespace codegen {
 		 * t4 and t5 might be overriden.
 		 * @param dest register to be changed
 		 * @param src register to write
-		 * @param op_size operand-size (in bytes) [0 means 1-byte high register]
+		 * @param size operand-size (in bytes) [0 means 1-byte high register]
 		 * @param riscv An array of risc-v instructions
 		 * @param count current number of risc-v instructions.
 		 */
-		static void write_to_register(encoding::RiscVRegister dest, encoding::RiscVRegister src, uint8_t op_size,
-									  utils::riscv_instruction_t* riscv, size_t& count);
+		static void move_to_register(encoding::RiscVRegister dest, encoding::RiscVRegister src, uint8_t size,
+									 utils::riscv_instruction_t* riscv, size_t& count);
 
 		size_t translate_mov(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv);
 

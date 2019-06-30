@@ -143,9 +143,9 @@ void CodeGenerator::translate_memory_operand(const fadec::Instruction& inst, siz
 	}
 }
 
-void CodeGenerator::write_to_register(encoding::RiscVRegister dest, encoding::RiscVRegister src, uint8_t op_size,
-									  utils::riscv_instruction_t* riscv, size_t& count) {
-	switch (op_size) {
+void CodeGenerator::move_to_register(encoding::RiscVRegister dest, encoding::RiscVRegister src, uint8_t size,
+									 utils::riscv_instruction_t* riscv, size_t& count) {
+	switch (size) {
 		case 8:
 			riscv[count++] = encoding::ADD(dest, src, RiscVRegister::zero);
 			return;
