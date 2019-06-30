@@ -59,7 +59,7 @@ namespace codegen {
 
 		/**
 		 * Translates a x86-memory operand into risc-v instructions (resulting address in reg)
-		 * t6 might be overridden.
+		 * t6 might be overwritten.
 		 * @param inst The x86 instruction object.
 		 * @param riscv An array of risc-v instructions.
 		 * @param count current number of risc-v instructions.
@@ -75,14 +75,14 @@ namespace codegen {
 		/**
 		 * Writes a register with x86-style sub-manipulation to an existing register without
 		 * invalidating the rest of the value.
-		 * 
+		 *
 		 * for example:
 		 * 		- read x86:ah from riscv:a1
 		 * 		- manipulate riscv:a1
 		 * 		- store riscv:a1 to x86:eax
 		 *
 		 * The source-register will be preserved.
-		 * t5 and t6 might be overriden.
+		 * t5 and t6 might be overwritten.
 		 * @param dest register to be changed.
 		 * @param src register to write.
 		 * @param size operand-size (in bytes) [0 means 1-byte high register (e.g. ah)].
@@ -101,7 +101,7 @@ namespace codegen {
 		 * 		- store riscv:a1 to x86:eax
 		 *
 		 * The source-register will be preserved.
-		 * t5 aand t6 might be overriden.
+		 * t5 aand t6 might be overwritten.
 		 * @param dest register to be changed.
 		 * @param src register to read.
 		 * @param size operand-size (in bytes) [0 means 1-byte high register (e.g. ah)].
