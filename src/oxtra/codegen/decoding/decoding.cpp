@@ -45,14 +45,20 @@ void parse_number(stringstream& sstr, uint32_t nbr, bool sign) {
 	sstr << "0x" << hex << nbr << "(" << dec << nbr << ")";
 }
 
+// create the stream
+stringstream initialize_string(RiscVOpcode opcode){
+	// creaate the sstream with the opcode
+	stringstream sstr;
+	sstr << opcode_string[static_cast<uint8_t>(opcode)];
+	return sstr;
+}
+
 // register-register instructions
 string parse_rtype(RiscVOpcode opcode, riscv_instruction_t instruction) {
-	// create the sstream with the opcode
-	stringstream sstr;
-	sstr << opcode_string[static_cast<uint8_t>(opcode)] << " ";
+	stringstream sstr = initialize_string(opcode);
 
 	// parse the two source-registers
-	sstr << register_string[split_off(instruction, 15)];
+	sstr << " " << register_string[split_off(instruction, 15)];
 	sstr << ", " << register_string[split_off(instruction, 20)];
 
 	// parse the destination-register
@@ -62,12 +68,10 @@ string parse_rtype(RiscVOpcode opcode, riscv_instruction_t instruction) {
 
 // register-register instructions (with shifts)
 string parse_shift(RiscVOpcode opcode, riscv_instruction_t instruction) {
-	// create the sstream with the opcode
-	stringstream sstr;
-	sstr << opcode_string[static_cast<uint8_t>(opcode)] << " ";
+	stringstream sstr = initialize_string(opcode);
 
 	// parse the source-register
-	sstr << register_string[split_off(instruction, 15)];
+	sstr << " " << register_string[split_off(instruction, 15)];
 
 	// parse the shift
 	sstr << ", (shift:";
@@ -80,12 +84,10 @@ string parse_shift(RiscVOpcode opcode, riscv_instruction_t instruction) {
 
 //immediate-register instructions
 string parse_itype(RiscVOpcode opcode, riscv_instruction_t instruction) {
-	// create the sstream with the opcode
-	stringstream sstr;
-	sstr << opcode_string[static_cast<uint8_t>(opcode)] << " ";
+	stringstream sstr = initialize_string(opcode);
 
 	// parse the source-register
-	sstr << register_string[split_off(instruction, 15)] << ",";
+	sstr << " " << register_string[split_off(instruction, 15)] << ",";
 
 	// extract the immediate and parse it
 	uint16_t immediate = split_off(instruction, 20, 12);
@@ -103,9 +105,7 @@ string parse_itype(RiscVOpcode opcode, riscv_instruction_t instruction) {
 
 //upper-register-immediate instructions
 string parse_utype(RiscVOpcode opcode, riscv_instruction_t instruction) {
-	// create the sstream with the opcode
-	stringstream sstr;
-	sstr << opcode_string[static_cast<uint8_t>(opcode)];
+	stringstream sstr = initialize_string(opcode);
 
 	// parse the source-immediate
 	parse_number(sstr, split_off(instruction, 12, 20), false);
@@ -117,12 +117,10 @@ string parse_utype(RiscVOpcode opcode, riscv_instruction_t instruction) {
 
 //load instructions
 string parse_load(RiscVOpcode opcode, riscv_instruction_t instruction) {
-	// create the sstream with the opcode
-	stringstream sstr;
-	sstr << opcode_string[static_cast<uint8_t>(opcode)] << " ";
+	stringstream sstr = initialize_string(opcode);
 
 	// prase the base-register
-	sstr << "[" << register_string[split_off(instruction, 15)];
+	sstr << " [" << register_string[split_off(instruction, 15)];
 
 	// extract the offset
 	uint16_t offset = split_off(instruction, 20, 12);
@@ -145,12 +143,10 @@ string parse_load(RiscVOpcode opcode, riscv_instruction_t instruction) {
 
 //store instructions
 string parse_store(RiscVOpcode opcode, riscv_instruction_t instruction) {
-	// create the sstream with the opcode
-	stringstream sstr;
-	sstr << opcode_string[static_cast<uint8_t>(opcode)] << " ";
+	stringstream sstr = initialize_string(opcode);
 
 	// parse the source-register
-	sstr << register_string[split_off(instruction, 20)];
+	sstr << " " << register_string[split_off(instruction, 20)];
 
 	// prase the base-register
 	sstr << " -> [" << register_string[split_off(instruction, 15)];
@@ -173,16 +169,14 @@ string parse_store(RiscVOpcode opcode, riscv_instruction_t instruction) {
 
 //jump-type instructions
 string parse_jtype(RiscVOpcode opcode, riscv_instruction_t instruction) {
-	// create the sstream with the opcode
-	stringstream sstr;
-	sstr << opcode_string[static_cast<uint8_t>(opcode)] << " ";
+	stringstream sstr = initialize_string(opcode);
 
 	// extract the offset
 	uint32_t offset = (split_off(instruction, 21, 10) << 1u) | (split_off(instruction, 20, 1) << 11u) |
 					  (split_off(instruction, 12, 8) << 12u) | (split_off(instruction, 31, 1) << 20u);
 
 	// parse the offset
-	sstr << "$[pc";
+	sstr << " $[pc";
 	if (offset > 0) {
 		sstr << " +";
 		// sign-extend the offset
@@ -202,12 +196,10 @@ string parse_jtype(RiscVOpcode opcode, riscv_instruction_t instruction) {
 
 //relative-jump-type instructions
 string parse_relative(RiscVOpcode opcode, riscv_instruction_t instruction) {
-	// create the sstream with the opcode
-	stringstream sstr;
-	sstr << opcode_string[static_cast<uint8_t>(opcode)] << " ";
+	stringstream sstr = initialize_string(opcode);
 
 	// parse the base-register
-	sstr << "$[" << register_string[split_off(instruction, 15)];
+	sstr << " $[" << register_string[split_off(instruction, 15)];
 
 	// extract the offset
 	uint16_t offset = split_off(instruction, 20, 12);
@@ -232,12 +224,10 @@ string parse_relative(RiscVOpcode opcode, riscv_instruction_t instruction) {
 
 //branch-type instructions
 string parse_btype(RiscVOpcode opcode, riscv_instruction_t instruction) {
-	// create the sstream with the opcode
-	stringstream sstr;
-	sstr << opcode_string[static_cast<uint8_t>(opcode)] << " ";
+	stringstream sstr = initialize_string(opcode);
 
 	// parse the two source-registers
-	sstr << register_string[split_off(instruction, 15)];
+	sstr << " " << register_string[split_off(instruction, 15)];
 	sstr << ", " << register_string[split_off(instruction, 20)] << " ? ";
 
 	// extract the offset
