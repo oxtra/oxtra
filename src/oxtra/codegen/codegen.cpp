@@ -12,15 +12,6 @@ CodeGenerator::CodeGenerator(const arguments::Arguments& args, const elf::Elf& e
 		: _args{args}, _elf{elf}, _codestore{args, elf} {}
 
 host_addr_t CodeGenerator::translate(guest_addr_t addr) {
-	//const auto cached_code = _codestore.find(addr);
-	//if (cached_code)
-	//	return cached_code;
-
-	//const auto next_codeblock = _codestore.get_next_block(addr);
-	//if (next_codeblock == nullptr) {
-	//	next_codeblock =
-	//}
-
 	/*
 	 * max block size = min(next_codeblock.start, instruction offset limit)
 	 *
@@ -99,11 +90,13 @@ bool CodeGenerator::translate_instruction(const fadec::Instruction& x86_instruct
 			break;
 
 		case InstructionType::NOP:
-		case InstructionType::MOV:
 			break;
 
 		case InstructionType::MOV_IMM:
 		case InstructionType::MOVABS_IMM:
+		case InstructionType::MOV:
+		case InstructionType::MOVSX:
+		case InstructionType::MOVZX:
 			num_instructions += translate_mov(x86_instruction, riscv_instructions);
 			break;
 
@@ -115,57 +108,111 @@ bool CodeGenerator::translate_instruction(const fadec::Instruction& x86_instruct
 }
 
 
-void CodeGenerator::translate_memory_operand(const fadec::Instruction& x86_instruction,
-											 utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions,
-											 size_t index, RiscVRegister reg) {
-	if (x86_instruction.get_address_size() != 8)
+void CodeGenerator::translate_memory_operand(const fadec::Instruction& inst, size_t index, RiscVRegister reg,
+											 utils::riscv_instruction_t* riscv, size_t& count) {
+	if (inst.get_address_size() != 8)
 		throw std::runtime_error("invalid addressing-size");
 
-	const auto& operand = x86_instruction.get_operand(index);
+	const auto& operand = inst.get_operand(index);
 
 	// add the scale & index
-	if (x86_instruction.get_index_register() != fadec::Register::none) {
-		riscv_instructions[num_instructions++] = encoding::MV(reg, register_mapping[static_cast<uint16_t>(
-				x86_instruction.get_index_register())]);
-		riscv_instructions[num_instructions++] = encoding::SLLI(reg, reg, x86_instruction.get_index_scale());
+	if (inst.get_index_register() != fadec::Register::none) {
+		riscv[count++] = encoding::MV(reg, register_mapping[static_cast<uint16_t>(
+				inst.get_index_register())]);
+		riscv[count++] = encoding::SLLI(reg, reg, inst.get_index_scale());
 	} else {
-		riscv_instructions[num_instructions++] = encoding::MV(reg, RiscVRegister::zero);
+		riscv[count++] = encoding::MV(reg, RiscVRegister::zero);
 	}
 
 
 	// add the base-register
 	if (operand.get_register() != fadec::Register::none) {
-		riscv_instructions[num_instructions++] = encoding::ADD(reg, reg, register_mapping[static_cast<uint16_t>(
+		riscv[count++] = encoding::ADD(reg, reg, register_mapping[static_cast<uint16_t>(
 				operand.get_register())]);
 	}
 
 	// add the displacement
-	if (x86_instruction.get_displacement() > 0) {
+	if (inst.get_displacement() > 0) {
 		// less or equal than 12 bits
-		if (x86_instruction.get_displacement() < 0x1000) {
-			riscv_instructions[num_instructions++] = encoding::ADDI(reg, reg, static_cast<uint16_t>(
-					x86_instruction.get_displacement()));
+		if (inst.get_displacement() < 0x1000) {
+			riscv[count++] = encoding::ADDI(reg, reg, static_cast<uint16_t>(
+					inst.get_displacement()));
 		} else {
-			riscv_instructions[num_instructions++] = encoding::LUI(RiscVRegister::t6,
-																   static_cast<uint32_t>(x86_instruction.get_displacement())
-																		   >> 12u);
-			riscv_instructions[num_instructions++] = encoding::ADDI(RiscVRegister::t6, RiscVRegister::t6,
-																	static_cast<uint16_t>(x86_instruction.get_displacement()) &
-																	0x0FFFu);
-			riscv_instructions[num_instructions++] = encoding::ADD(reg, reg, RiscVRegister::t6);
+			riscv[count++] = encoding::LUI(RiscVRegister::t6,
+										   static_cast<uint32_t>(inst.get_displacement())
+												   >> 12u);
+			riscv[count++] = encoding::ADDI(RiscVRegister::t6, RiscVRegister::t6,
+											static_cast<uint16_t>(inst.get_displacement()) &
+											0x0FFFu);
+			riscv[count++] = encoding::ADD(reg, reg, RiscVRegister::t6);
 		}
 	}
 }
 
-size_t
-CodeGenerator::translate_mov(const fadec::Instruction& x86_instruction, utils::riscv_instruction_t* riscv_instruction) {
+void CodeGenerator::write_to_register(encoding::RiscVRegister dest, encoding::RiscVRegister src, uint8_t op_size,
+									  utils::riscv_instruction_t* riscv, size_t& count) {
+	switch (op_size) {
+		case 8:
+			riscv[count++] = encoding::ADD(dest, src, RiscVRegister::zero);
+			return;
+		case 4:
+			// load the and-mask into t4
+			riscv[count++] = encoding::LUI(RiscVRegister::t4, 0x0fffff);
+			riscv[count++] = encoding::ADDI(RiscVRegister::t4, RiscVRegister::t4, 0xfff);
 
-	riscv_instruction[0] = LUI(RiscVRegister::a0, static_cast<uint16_t>(x86_instruction.get_immediate()));
+			// clear the lower bits of the destination-register
+			riscv[count++] = encoding::AND(RiscVRegister::t5, RiscVRegister::t4, dest);
+			riscv[count++] = encoding::XOR(dest, dest, RiscVRegister::t5);
+
+			// extract the lower bits of the source-register and merge the registers
+			riscv[count++] = encoding::AND(RiscVRegister::t5, RiscVRegister::t4, src);
+			riscv[count++] = encoding::OR(dest, dest, RiscVRegister::t5);
+			return;
+		case 2:
+			// load the and-mask into t4
+			riscv[count++] = encoding::LUI(RiscVRegister::t4, 0x0f);
+			riscv[count++] = encoding::ADDI(RiscVRegister::t4, RiscVRegister::t4, 0xfff);
+
+			// clear the lower bits of the destination-register
+			riscv[count++] = encoding::AND(RiscVRegister::t5, RiscVRegister::t4, dest);
+			riscv[count++] = encoding::XOR(dest, dest, RiscVRegister::t5);
+
+			// extract the lower bits of the source-register and merge the registers
+			riscv[count++] = encoding::AND(RiscVRegister::t5, RiscVRegister::t4, src);
+			riscv[count++] = encoding::OR(dest, dest, RiscVRegister::t5);
+			return;
+		case 1:
+			// clear the lower bits of the destination-register
+			riscv[count++] = encoding::ANDI(RiscVRegister::t5, dest, 0xff);
+			riscv[count++] = encoding::XOR(dest, dest, RiscVRegister::t5);
+
+			// extract the lower bits of the source-register and merge the registers
+			riscv[count++] = encoding::ANDI(RiscVRegister::t5, src, 0xff);
+			riscv[count++] = encoding::OR(dest, dest, RiscVRegister::t5);
+			return;
+		case 0:
+			// load the and-mask into t4
+			riscv[count++] = encoding::LUI(RiscVRegister::t4, 0x0f);
+			riscv[count++] = encoding::ADDI(RiscVRegister::t4, RiscVRegister::t4, 0xf00);
+
+			// clear the lower bits of the destination-register
+			riscv[count++] = encoding::AND(RiscVRegister::t5, RiscVRegister::t4, dest);
+			riscv[count++] = encoding::XOR(dest, dest, RiscVRegister::t5);
+
+			// extract the lower bits of the source-register and merge the registers
+			riscv[count++] = encoding::ANDI(RiscVRegister::t5, src, 0xff);
+			riscv[count++] = encoding::SLLI(RiscVRegister::t5, RiscVRegister::t5, 8);
+			riscv[count++] = encoding::OR(dest, dest, RiscVRegister::t5);
+			return;
+	}
+}
+
+size_t CodeGenerator::translate_mov(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv) {
+	riscv[0] = LUI(RiscVRegister::a0, static_cast<uint16_t>(inst.get_immediate()));
 	return 1;
 }
 
-size_t
-CodeGenerator::translate_ret(const fadec::Instruction& x86_instruction, utils::riscv_instruction_t* riscv_instruction) {
-	riscv_instruction[0] = JALR(RiscVRegister::zero, RiscVRegister::ra, 0);
+size_t CodeGenerator::translate_ret(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv) {
+	riscv[0] = JALR(RiscVRegister::zero, RiscVRegister::ra, 0);
 	return 1;
 }

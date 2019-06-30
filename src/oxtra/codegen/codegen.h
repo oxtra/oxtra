@@ -12,22 +12,22 @@ namespace codegen {
 	class CodeGenerator {
 	private:
 		static constexpr encoding::RiscVRegister register_mapping[] = {
-			encoding::RiscVRegister::a0, //rax
-			encoding::RiscVRegister::a2, //rcx
-			encoding::RiscVRegister::a3, //rdx
-			encoding::RiscVRegister::a1, //rbx
-			encoding::RiscVRegister::sp, //rsp
-			encoding::RiscVRegister::s0, //rbp
-			encoding::RiscVRegister::a4, //rsi
-			encoding::RiscVRegister::a5, //rdi
-			encoding::RiscVRegister::a6, //r8
-			encoding::RiscVRegister::a7, //r9
-			encoding::RiscVRegister::s2, //r10
-			encoding::RiscVRegister::s3, //r11
-			encoding::RiscVRegister::s4, //r12
-			encoding::RiscVRegister::s5, //r13
-			encoding::RiscVRegister::s6, //r14
-			encoding::RiscVRegister::s7  //r15
+				encoding::RiscVRegister::a0, //rax
+				encoding::RiscVRegister::a2, //rcx
+				encoding::RiscVRegister::a3, //rdx
+				encoding::RiscVRegister::a1, //rbx
+				encoding::RiscVRegister::sp, //rsp
+				encoding::RiscVRegister::s0, //rbp
+				encoding::RiscVRegister::a4, //rsi
+				encoding::RiscVRegister::a5, //rdi
+				encoding::RiscVRegister::a6, //r8
+				encoding::RiscVRegister::a7, //r9
+				encoding::RiscVRegister::s2, //r10
+				encoding::RiscVRegister::s3, //r11
+				encoding::RiscVRegister::s4, //r12
+				encoding::RiscVRegister::s5, //r13
+				encoding::RiscVRegister::s6, //r14
+				encoding::RiscVRegister::s7  //r15
 		};
 
 	private:
@@ -60,19 +60,34 @@ namespace codegen {
 		/**
 		 * Translates a x86-memory operand into risc-v instructions (resulting address in reg)
 		 * t6 might be overridden.
-		 * @param x86_instruction The x86 instruction object.
-		 * @param riscv_instructions An array of risc-v instructions.
-		 * @param num_instructions current number of risc-v instructions.
+		 * @param inst The x86 instruction object.
+		 * @param riscv An array of risc-v instructions.
+		 * @param count current number of risc-v instructions.
 		 * @param index operand-index of instruction.
-		 * @param reg The resulting address will be returned in this register. (t6 may not be used)
+		 * @param reg The resulting address will be returned in this register.
 		 */
-		static void translate_memory_operand(const fadec::Instruction& x86_instruction,
-											 utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions,
-											 size_t index, encoding::RiscVRegister reg);
+		static void translate_memory_operand(const fadec::Instruction& inst, size_t index, encoding::RiscVRegister reg,
+											 utils::riscv_instruction_t* riscv, size_t& count);
 
-		size_t translate_mov(const fadec::Instruction& x86_instruction, utils::riscv_instruction_t* riscv_instruction);
+		static void load_immediate(uintptr_t immediate, encoding::RiscVRegister reg, utils::riscv_instruction_t* riscv,
+								   size_t& count);
 
-		size_t translate_ret(const fadec::Instruction& x86_instruction, utils::riscv_instruction_t* riscv_instruction);
+		/**
+		 * Writes a register of different size to an existing register without invalidating the rest of the value.
+		 * The source-register will be preserved.
+		 * t4 and t5 might be overriden.
+		 * @param dest register to be changed
+		 * @param src register to write
+		 * @param op_size operand-size (in bytes) [0 means 1-byte high register]
+		 * @param riscv An array of risc-v instructions
+		 * @param count current number of risc-v instructions.
+		 */
+		static void write_to_register(encoding::RiscVRegister dest, encoding::RiscVRegister src, uint8_t op_size,
+									  utils::riscv_instruction_t* riscv, size_t& count);
+
+		size_t translate_mov(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv);
+
+		size_t translate_ret(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv);
 	};
 }
 
