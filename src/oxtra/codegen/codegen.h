@@ -73,16 +73,42 @@ namespace codegen {
 								   size_t& count);
 
 		/**
-		 * Writes a register of different size to an existing register without invalidating the rest of the value.
+		 * Writes a register with x86-style sub-manipulation to an existing register without
+		 * invalidating the rest of the value.
+		 * 
+		 * for example:
+		 * 		- read x86:ah from riscv:a1
+		 * 		- manipulate riscv:a1
+		 * 		- store riscv:a1 to x86:eax
+		 *
 		 * The source-register will be preserved.
-		 * t4 and t5 might be overriden.
-		 * @param dest register to be changed
-		 * @param src register to write
-		 * @param size operand-size (in bytes) [0 means 1-byte high register]
-		 * @param riscv An array of risc-v instructions
+		 * t5 and t6 might be overriden.
+		 * @param dest register to be changed.
+		 * @param src register to write.
+		 * @param size operand-size (in bytes) [0 means 1-byte high register (e.g. ah)].
+		 * @param riscv An array of risc-v instructions.
 		 * @param count current number of risc-v instructions.
 		 */
 		static void move_to_register(encoding::RiscVRegister dest, encoding::RiscVRegister src, uint8_t size,
+									 utils::riscv_instruction_t* riscv, size_t& count);
+
+		/**
+		 * Reads a register with x86-style sub-manipulation from an existing register.
+		 *
+		 * for example:
+		 * 		- read x86:ah from riscv:a1
+		 * 		- manipulate riscv:a1
+		 * 		- store riscv:a1 to x86:eax
+		 *
+		 * The source-register will be preserved.
+		 * t5 aand t6 might be overriden.
+		 * @param dest register to be changed.
+		 * @param src register to read.
+		 * @param size operand-size (in bytes) [0 means 1-byte high register (e.g. ah)].
+		 * @param riscv An array of risc-v instructions.
+		 * @param count current number of risc-v instructions.
+		 */
+		static void get_from_register(encoding::RiscVRegister dest, encoding::RiscVRegister src, uint8_t size,
 									 utils::riscv_instruction_t* riscv, size_t& count);
 
 		size_t translate_mov(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv);

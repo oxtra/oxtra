@@ -150,53 +150,85 @@ void CodeGenerator::move_to_register(encoding::RiscVRegister dest, encoding::Ris
 			riscv[count++] = encoding::ADD(dest, src, RiscVRegister::zero);
 			return;
 		case 4:
-			// load the and-mask into t4
-			riscv[count++] = encoding::LUI(RiscVRegister::t4, 0x0fffff);
-			riscv[count++] = encoding::ADDI(RiscVRegister::t4, RiscVRegister::t4, 0xfff);
+			// load the and-mask into t5
+			riscv[count++] = encoding::LUI(RiscVRegister::t5, 0x0fffff);
+			riscv[count++] = encoding::ADDI(RiscVRegister::t5, RiscVRegister::t5, 0xfff);
 
 			// clear the lower bits of the destination-register
-			riscv[count++] = encoding::AND(RiscVRegister::t5, RiscVRegister::t4, dest);
-			riscv[count++] = encoding::XOR(dest, dest, RiscVRegister::t5);
+			riscv[count++] = encoding::AND(RiscVRegister::t6, RiscVRegister::t5, dest);
+			riscv[count++] = encoding::XOR(dest, dest, RiscVRegister::t6);
 
 			// extract the lower bits of the source-register and merge the registers
-			riscv[count++] = encoding::AND(RiscVRegister::t5, RiscVRegister::t4, src);
-			riscv[count++] = encoding::OR(dest, dest, RiscVRegister::t5);
+			riscv[count++] = encoding::AND(RiscVRegister::t6, RiscVRegister::t5, src);
+			riscv[count++] = encoding::OR(dest, dest, RiscVRegister::t6);
 			return;
 		case 2:
-			// load the and-mask into t4
-			riscv[count++] = encoding::LUI(RiscVRegister::t4, 0x0f);
-			riscv[count++] = encoding::ADDI(RiscVRegister::t4, RiscVRegister::t4, 0xfff);
+			// load the and-mask into t5
+			riscv[count++] = encoding::LUI(RiscVRegister::t5, 0x0f);
+			riscv[count++] = encoding::ADDI(RiscVRegister::t5, RiscVRegister::t5, 0xfff);
 
 			// clear the lower bits of the destination-register
-			riscv[count++] = encoding::AND(RiscVRegister::t5, RiscVRegister::t4, dest);
-			riscv[count++] = encoding::XOR(dest, dest, RiscVRegister::t5);
+			riscv[count++] = encoding::AND(RiscVRegister::t6, RiscVRegister::t5, dest);
+			riscv[count++] = encoding::XOR(dest, dest, RiscVRegister::t6);
 
 			// extract the lower bits of the source-register and merge the registers
-			riscv[count++] = encoding::AND(RiscVRegister::t5, RiscVRegister::t4, src);
-			riscv[count++] = encoding::OR(dest, dest, RiscVRegister::t5);
+			riscv[count++] = encoding::AND(RiscVRegister::t6, RiscVRegister::t5, src);
+			riscv[count++] = encoding::OR(dest, dest, RiscVRegister::t6);
 			return;
 		case 1:
 			// clear the lower bits of the destination-register
-			riscv[count++] = encoding::ANDI(RiscVRegister::t5, dest, 0xff);
-			riscv[count++] = encoding::XOR(dest, dest, RiscVRegister::t5);
+			riscv[count++] = encoding::ANDI(RiscVRegister::t6, dest, 0xff);
+			riscv[count++] = encoding::XOR(dest, dest, RiscVRegister::t6);
 
 			// extract the lower bits of the source-register and merge the registers
-			riscv[count++] = encoding::ANDI(RiscVRegister::t5, src, 0xff);
-			riscv[count++] = encoding::OR(dest, dest, RiscVRegister::t5);
+			riscv[count++] = encoding::ANDI(RiscVRegister::t6, src, 0xff);
+			riscv[count++] = encoding::OR(dest, dest, RiscVRegister::t6);
 			return;
 		case 0:
-			// load the and-mask into t4
-			riscv[count++] = encoding::LUI(RiscVRegister::t4, 0x0f);
-			riscv[count++] = encoding::ADDI(RiscVRegister::t4, RiscVRegister::t4, 0xf00);
+			// load the and-mask into t5
+			riscv[count++] = encoding::LUI(RiscVRegister::t5, 0x0f);
+			riscv[count++] = encoding::ADDI(RiscVRegister::t5, RiscVRegister::t5, 0xf00);
 
 			// clear the lower bits of the destination-register
-			riscv[count++] = encoding::AND(RiscVRegister::t5, RiscVRegister::t4, dest);
-			riscv[count++] = encoding::XOR(dest, dest, RiscVRegister::t5);
+			riscv[count++] = encoding::AND(RiscVRegister::t6, RiscVRegister::t5, dest);
+			riscv[count++] = encoding::XOR(dest, dest, RiscVRegister::t6);
 
 			// extract the lower bits of the source-register and merge the registers
-			riscv[count++] = encoding::ANDI(RiscVRegister::t5, src, 0xff);
-			riscv[count++] = encoding::SLLI(RiscVRegister::t5, RiscVRegister::t5, 8);
-			riscv[count++] = encoding::OR(dest, dest, RiscVRegister::t5);
+			riscv[count++] = encoding::ANDI(RiscVRegister::t6, src, 0xff);
+			riscv[count++] = encoding::SLLI(RiscVRegister::t6, RiscVRegister::t6, 8);
+			riscv[count++] = encoding::OR(dest, dest, RiscVRegister::t6);
+			return;
+	}
+}
+
+void CodeGenerator::get_from_register(encoding::RiscVRegister dest, encoding::RiscVRegister src, uint8_t size,
+									 utils::riscv_instruction_t* riscv, size_t& count) {
+	switch (size) {
+		case 8:
+			riscv[count++] = encoding::ADD(dest, src, RiscVRegister::zero);
+			return;
+		case 4:
+			// load the and-mask into t6
+			riscv[count++] = encoding::LUI(RiscVRegister::t6, 0x0fffff);
+			riscv[count++] = encoding::ADDI(RiscVRegister::t6, RiscVRegister::t6, 0xfff);
+
+			// extract the lower bits of the source-register
+			riscv[count++] = encoding::AND(dest, RiscVRegister::t6, src);
+			return;
+		case 2:
+			// load the and-mask into t6
+			riscv[count++] = encoding::LUI(RiscVRegister::t6, 0x0f);
+			riscv[count++] = encoding::ADDI(RiscVRegister::t6, RiscVRegister::t6, 0xfff);
+
+			// extract the lower bits of the source-register
+			riscv[count++] = encoding::AND(dest, RiscVRegister::t6, src);
+			return;
+		case 1:
+			riscv[count++] = encoding::ANDI(dest, src, 0xff);
+			return;
+		case 0:
+			riscv[count++] = encoding::SRLI(dest, src, 8);
+			riscv[count++] = encoding::ANDI(dest, dest, 0xff);
 			return;
 	}
 }
