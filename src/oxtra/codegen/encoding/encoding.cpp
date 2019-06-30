@@ -63,7 +63,7 @@ uint32_t jtype(uint8_t opcode, RiscVRegister rd, uint32_t imm) {
 	JType jtype;
 	jtype.opcode = opcode;
 	jtype.rd = static_cast<uint8_t>(rd);
-	jtype.imm_19_12 = (imm > 12) & 0xff;
+	jtype.imm_19_12 = (imm >> 12) & 0xff;
 	jtype.imm_11 = (imm >> 11) & 1;
 	jtype.imm_10_1 = (imm >> 1) & 0x3ff;
 	jtype.imm_20 = (imm >> 20) & 1;
@@ -81,7 +81,7 @@ riscv_instruction_t encoding::AUIPC(RiscVRegister rd, uint32_t imm) {
 }
 
 riscv_instruction_t encoding::JAL(RiscVRegister rd, uint32_t offset) {
-	return jtype(103, rd, offset);
+	return jtype(111, rd, offset);
 }
 
 riscv_instruction_t encoding::JALR(RiscVRegister rd, RiscVRegister rs1, uint16_t offset) {
