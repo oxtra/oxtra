@@ -67,12 +67,16 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 
 			SPDLOG_TRACE("Fadec decoded instruction {}", formatted_string);
 
-			for(size_t i = 0; i < num_instructions; i++)
+			for (size_t i = 0; i < num_instructions; i++)
 				SPDLOG_TRACE(" - translated instruction[{}] = {}", i, decoding::parse_riscv(riscv_instructions[i]));
 		}
 
 		_codestore.add_instruction(codeblock, x86_instruction, riscv_instructions, num_instructions);
 	} while (!end_of_block);
+
+	//add dynamic tracing-information for the basic-block
+	spdlog::trace("Basicblock translated: x86: [0x{0:x} - 0x{1:x}] riscv: 0x{2:x}", codeblock.x86_start, codeblock.x86_end,
+				  codeblock.riscv_start);
 
 	return codeblock.riscv_start;
 }
