@@ -86,7 +86,7 @@ bool CodeGenerator::translate_instruction(const fadec::Instruction& x86_instruct
 			riscv_instructions[num_instructions++] = encoding::MV(RiscVRegister::a2, RiscVRegister::zero);
 			riscv_instructions[num_instructions++] = encoding::ADDI(RiscVRegister::a2, RiscVRegister::zero, 0x321);
 
-			translate_memory_operand(x86_instruction, riscv_instructions, num_instructions, 1, RiscVRegister::a0);
+			translate_memory_operand(x86_instruction, 1, RiscVRegister::a0, riscv_instructions, num_instructions);
 			break;
 
 		case InstructionType::NOP:
