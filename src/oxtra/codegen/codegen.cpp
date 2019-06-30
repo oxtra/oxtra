@@ -188,9 +188,10 @@ size_t CodeGenerator::load_32bit_immediate(uint32_t immediate, encoding::RiscVRe
 size_t CodeGenerator::load_64bit_immediate(uint64_t immediate, encoding::RiscVRegister destination,
 										   encoding::RiscVRegister temp, utils::riscv_instruction_t* riscv_instructions,
 										   size_t num_instructions) {
+	// load upper 32bit into temp
 	num_instructions = load_32bit_immediate(
 			static_cast<uint32_t>((immediate & 0xFFFFFFFF00000000u) >> 32u),
-			temp, riscv_instructions, num_instructions
+			destination, riscv_instructions, num_instructions
 	);
 
 	riscv_instructions[num_instructions++] = encoding::SLLI(destination, destination, 32);
