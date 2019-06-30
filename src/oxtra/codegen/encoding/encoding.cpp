@@ -161,23 +161,23 @@ riscv_instruction_t encoding::ADDI(RiscVRegister rd, RiscVRegister rs1, uint16_t
 }
 
 riscv_instruction_t encoding::SLTI(RiscVRegister rd, RiscVRegister rs1, uint16_t imm) {
-	return itype(19, rd, 1, rs1, imm);
-}
-
-riscv_instruction_t encoding::SLTIU(RiscVRegister rd, RiscVRegister rs1, uint16_t imm) {
 	return itype(19, rd, 2, rs1, imm);
 }
 
-riscv_instruction_t encoding::XORI(RiscVRegister rd, RiscVRegister rs1, uint16_t imm) {
+riscv_instruction_t encoding::SLTIU(RiscVRegister rd, RiscVRegister rs1, uint16_t imm) {
 	return itype(19, rd, 3, rs1, imm);
 }
 
-riscv_instruction_t encoding::ORI(RiscVRegister rd, RiscVRegister rs1, uint16_t imm) {
+riscv_instruction_t encoding::XORI(RiscVRegister rd, RiscVRegister rs1, uint16_t imm) {
 	return itype(19, rd, 4, rs1, imm);
 }
 
+riscv_instruction_t encoding::ORI(RiscVRegister rd, RiscVRegister rs1, uint16_t imm) {
+	return itype(19, rd, 6, rs1, imm);
+}
+
 riscv_instruction_t encoding::ANDI(RiscVRegister rd, RiscVRegister rs1, uint16_t imm) {
-	return itype(19, rd, 5, rs1, imm);
+	return itype(19, rd, 7, rs1, imm);
 }
 
 riscv_instruction_t encoding::SLLI(RiscVRegister rd, RiscVRegister rs1, uint8_t shamt) {
