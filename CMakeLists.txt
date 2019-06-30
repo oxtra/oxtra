@@ -6,7 +6,7 @@ if (CMAKE_BUILD_TYPE_LOWER STREQUAL "release")
 	add_compile_definitions(RELEASE)
 else()
 	message(STATUS "This project has been created with a debug configuration.")
-	add_compile_definitions(SPDLOG_ACTIVE_LEVEL=1)
+	add_compile_definitions(SPDLOG_ACTIVE_LEVEL=0)
 	add_compile_definitions(DEBUG)
 endif()
 
