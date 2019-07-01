@@ -75,25 +75,33 @@ namespace codegen {
 
 		size_t translate_ret(const fadec::Instruction& x86_instruction, utils::riscv_instruction_t* riscv_instruction);
 
-		static size_t load_12bit_immediate(uint16_t immediate, encoding::RiscVRegister destination, utils::riscv_instruction_t* riscv_instructions, size_t num_instructions);
+		static size_t load_12bit_immediate(uint16_t immediate, encoding::RiscVRegister destination,
+										   utils::riscv_instruction_t* riscv_instructions, size_t num_instructions);
 
-		static size_t load_32bit_immediate(uint32_t immediate, encoding::RiscVRegister destination, utils::riscv_instruction_t* riscv_instructions, size_t num_instructions);
+		static size_t
+		load_32bit_immediate(uint32_t immediate, encoding::RiscVRegister destination,
+							 utils::riscv_instruction_t* riscv_instructions, size_t num_instructions);
 
-		static size_t load_64bit_immediate(uint64_t immediate, encoding::RiscVRegister destination, encoding::RiscVRegister temp, utils::riscv_instruction_t* riscv_instructions, size_t num_instructions);
+		static size_t
+		load_64bit_immediate(uint64_t immediate, encoding::RiscVRegister destination,
+							 utils::riscv_instruction_t* riscv_instructions, size_t num_instructions);
 
 		/**
 		 * Load an immediate of arbitrary size into the register. It will be automatically checked how long the immediate is.
 		 * If the immediate is <=32 bit it will be sign extended to 64 bit.
 		 * @param immediate The immediate that will be loaded.
 		 * @param destination The regiser in which the immediate will be loaded.
-		 * @param temp This register is used for 64 bit instruction to merge the two 32 bit parts.
 		 * @param riscv_instructions The pointer to the generated riscv instructions.
 		 * @param num_instructions The current length of the riscv instructions (i.e. the index of the next free position).
 		 * @return The index of the next free riscv instruction (i.e. new length).
 		 */
-		static size_t load_immediate(uintptr_t immediate, encoding::RiscVRegister destination, encoding::RiscVRegister temp, utils::riscv_instruction_t* riscv_instructions, size_t num_instructions);
+		static size_t
+		load_immediate(uintptr_t immediate, encoding::RiscVRegister destination,
+					   utils::riscv_instruction_t* riscv_instructions, size_t num_instructions);
 
-		static size_t load_unsigned_immediate(uintptr_t immediate, encoding::RiscVRegister destination, encoding::RiscVRegister temp, utils::riscv_instruction_t* riscv_instructions, size_t num_instructions);
+		static size_t
+		load_unsigned_immediate(uintptr_t immediate, encoding::RiscVRegister destination,
+								utils::riscv_instruction_t* riscv_instructions, size_t num_instructions);
 	};
 }
 
