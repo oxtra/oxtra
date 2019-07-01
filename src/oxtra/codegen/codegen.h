@@ -83,6 +83,7 @@ namespace codegen {
 
 		/**
 		 * Load an immediate of arbitrary size into the register. It will be automatically checked how long the immediate is.
+		 * If the immediate is <=32 bit it will be sign extended to 64 bit.
 		 * @param immediate The immediate that will be loaded.
 		 * @param destination The regiser in which the immediate will be loaded.
 		 * @param temp This register is used for 64 bit instruction to merge the two 32 bit parts.
@@ -92,6 +93,7 @@ namespace codegen {
 		 */
 		static size_t load_immediate(uintptr_t immediate, encoding::RiscVRegister destination, encoding::RiscVRegister temp, utils::riscv_instruction_t* riscv_instructions, size_t num_instructions);
 
+		static size_t load_unsigned_immediate(uintptr_t immediate, encoding::RiscVRegister destination, encoding::RiscVRegister temp, utils::riscv_instruction_t* riscv_instructions, size_t num_instructions);
 	};
 }
 
