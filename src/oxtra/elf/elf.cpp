@@ -299,7 +299,7 @@ Elf::Elf(uint8_t* ptr, size_t size, size_t exec_pages) {
 	// update the other attributes
 	_actual_base = reinterpret_cast<uintptr_t>(_image_ptr.get());
 	if(_actual_base & 0x00000FFFu)
-		_actual_base ^= ((_actual_base + 0x1000) & 0x00000FFFu);
+		_actual_base = (_actual_base ^ (_actual_base & 0x00000FFFu)) + 0x1000;
 	_base_address = 0;
 	_entry_point = _base_address;
 
