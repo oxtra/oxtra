@@ -140,7 +140,6 @@ void CodeGenerator::translate_memory_operand(const fadec::Instruction& x86_instr
 		load_12bit_immediate(0, reg, riscv_instructions, num_instructions);
 	}
 
-
 	// add the base-register
 	if (operand.get_register() != fadec::Register::none) {
 		riscv_instructions[num_instructions++] = encoding::ADD(reg, reg, register_mapping[static_cast<uint16_t>(
@@ -154,7 +153,6 @@ void CodeGenerator::translate_memory_operand(const fadec::Instruction& x86_instr
 			riscv_instructions[num_instructions++] = encoding::ADDI(reg, reg, static_cast<uint16_t>(
 					x86_instruction.get_displacement()));
 		} else {
-			//TODO: reserve t5?
 			load_unsigned_immediate(x86_instruction.get_displacement(), RiscVRegister::t6,
 									riscv_instructions, num_instructions);
 			riscv_instructions[num_instructions++] = encoding::ADD(reg, reg, RiscVRegister::t6);
@@ -162,7 +160,7 @@ void CodeGenerator::translate_memory_operand(const fadec::Instruction& x86_instr
 	}
 }
 
-//TODO: t4, t5 reserved
+//TODO: how to handle register reservation? constexpr? document it? where to document it? Load_IMM requires t4 and t5
 
 void CodeGenerator::load_12bit_immediate(uint16_t immediate, encoding::RiscVRegister destination,
 										 utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions) {
@@ -175,14 +173,16 @@ void CodeGenerator::load_12bit_immediate(uint16_t immediate, encoding::RiscVRegi
 	}
 }
 
-//TODO: const_expr for temps?
-
 void CodeGenerator::load_32bit_immediate(uint32_t immediate, encoding::RiscVRegister destination,
 										 utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions) {
+	// basically this method currently works by:
+	// loading the upper 20 bit into destination (sets the lower 12 bit to zero and sign extends)
+	// moving the lowest 12 bits into temp, and shifting out the sign
+	// or the two fields
+	// addi does not work if the lowest 12 bit are signed (have the 11th bit 1) because the add then carries a bit
+	//TODO: there has to be a better way ... ?
 	riscv_instructions[num_instructions++] = encoding::LUI(destination, static_cast<uint32_t>(immediate >> 12u));
 
-	//TODO: there has to be a better way ... for this complete function
-	//(ADDI is not enough, does not work if lowest 12 bit are signed)
 
 	riscv_instructions[num_instructions++] = encoding::ADDI(RiscVRegister::t4, RiscVRegister::zero,
 															static_cast<uint16_t>(immediate & 0x0FFFu));
@@ -208,6 +208,7 @@ void CodeGenerator::load_64bit_immediate(uint64_t immediate, encoding::RiscVRegi
 			static_cast<uint32_t>(immediate & 0xFFFFFFFFu), RiscVRegister::t5, riscv_instructions, num_instructions
 	);
 
+	// clear sign bit(s)
 	riscv_instructions[num_instructions++] = encoding::SLLI(RiscVRegister::t5, RiscVRegister::t5, 32);
 	riscv_instructions[num_instructions++] = encoding::SRLI(RiscVRegister::t5, RiscVRegister::t5, 32);
 
@@ -216,12 +217,11 @@ void CodeGenerator::load_64bit_immediate(uint64_t immediate, encoding::RiscVRegi
 
 void CodeGenerator::load_immediate(uintptr_t immediate, encoding::RiscVRegister destination,
 								   utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions) {
-	//TODO: how should we handle 12/32bit numbers? they will be put into the registers and sign extended
-	if (immediate < 0x1000) {
+	if (immediate < 0x1000) {	// 12 bit can be directly encoded
 		load_12bit_immediate(static_cast<uint16_t>(immediate), destination, riscv_instructions, num_instructions);
-	} else if (immediate < 0x100000000) {
+	} else if (immediate < 0x100000000) {	//32 bit have to be manually specified
 		load_32bit_immediate(static_cast<uint32_t>(immediate), destination, riscv_instructions, num_instructions);
-	} else {
+	} else { // 64 bit also have to be manually specified
 		load_64bit_immediate(static_cast<uint64_t>(immediate), destination, riscv_instructions, num_instructions);
 	}
 }
@@ -230,17 +230,13 @@ void CodeGenerator::load_unsigned_immediate(uintptr_t immediate, encoding::RiscV
 											utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions) {
 	uint8_t immediate_type = 2; // 0 means 12bit, 1 means 32 bit, >= 2 means 64 bit
 
-	//TODO: is first bit in riscv sign bit
-
 	// if it is a signed immediate we have to use the bigger type to ensure that it is padded with zeros.
 	// otherwise add methods may not work correctly
-	if (immediate < 0x1000) {
-		immediate_type = immediate & 0x0800u ? 1 : 0;
+	if (immediate < 0x1000) {	// 12 bits can be directly encoded
+		immediate_type = immediate & 0x0800u ? 1 : 0; // but only if it is a positive 12 bit (sign bit not set)
 	} else if (immediate < 0x100000000) {
-		immediate_type = immediate & 0x80000000 ? 2 : 1;
+		immediate_type = immediate & 0x80000000 ? 2 : 1; // same with 32 bit
 	}
-
-	spdlog::info("Loading immediate 0x{0:0x} with {1:0x}", immediate, immediate_type);
 
 	if (immediate_type == 0) {
 		load_12bit_immediate(static_cast<uint16_t>(immediate), destination, riscv_instructions, num_instructions);

@@ -75,28 +75,66 @@ namespace codegen {
 		translate_memory_operand(const fadec::Instruction& x86_instruction, size_t index, encoding::RiscVRegister reg,
 								 utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions);
 
+		/**
+		 * Loads a 12 bit immediate into the specified register. The value is sign extended to 64 bit,
+		 * so be careful when using this method to ensure that the value is <= 11 bits or negative numbers are desired.
+		 * Use load_unsigned_immediate otherwise.
+		 * @param immediate The immediate that will be stored. The highest 4 bits of uint16_t will be masked.
+		 * @param destination The register the immediate will be stored in.
+		 * @param riscv_instructions The pointer to the generated riscv instructions.
+		 * @param num_instructions A reference to the length of the instructions (has to point to the first free index)
+		 */
 		static void load_12bit_immediate(uint16_t immediate, encoding::RiscVRegister destination,
 										 utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions);
 
+		/**
+		 * Loads a 32 bit immediate into the specified register. This method overrides Temporary Register t4.
+		 * The value is sign extended to 64 bit, so be careful when using this method
+		 * to ensure that the value is <= 31 bits or negative numbers are desired.
+		 * Use load_unsigned_immediate otherwise.
+		 * @param immediate The immediate that will be stored. The highest 4 bits of uint16_t will be masked.
+		 * @param destination The register the immediate will be stored in.
+		 * @param riscv_instructions The pointer to the generated riscv instructions.
+		 * @param num_instructions A reference to the length of the instructions (has to point to the first free index)
+		 */
 		static void load_32bit_immediate(uint32_t immediate, encoding::RiscVRegister destination,
 										 utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions);
 
+		/**
+		 * Loads a 64 bit immediate into the specified register. This method overrides Temporary Register t4 and t5.
+		 * The only difference between this method and load_unsigned_immediate is that this one is slightly faster.
+		 * @param immediate The immediate that will be stored. The highest 4 bits of uint16_t will be masked.
+		 * @param destination The register the immediate will be stored in.
+		 * @param riscv_instructions The pointer to the generated riscv instructions.
+		 * @param num_instructions A reference to the length of the instructions (has to point to the first free index)
+		 */
 		static void load_64bit_immediate(uint64_t immediate, encoding::RiscVRegister destination,
 										 utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions);
 
 		/**
-		 * Load an immediate of arbitrary size into the register. It will be automatically checked how long the immediate is.
-		 * If the immediate is <=32 bit it will be sign extended to 64 bit.
+		 * Load an immediate up to 64 bit into the specified register.
+		 * This method overrides Temporary Register t4 for >= 32 bit and t5 for 64 bit.
+		 * It will be automatically checked how long the immediate is. If the immediate is <=32 bit it will always
+		 * be sign extended to 64 bit.
 		 * @param immediate The immediate that will be loaded.
 		 * @param destination The regiser in which the immediate will be loaded.
 		 * @param riscv_instructions The pointer to the generated riscv instructions.
 		 * @param num_instructions The current length of the riscv instructions (i.e. the index of the next free position).
-		 * @return The index of the next free riscv instruction (i.e. new length).
 		 */
-		static void load_immediate(const uintptr_t immediate, encoding::RiscVRegister destination,
+		static void load_immediate(uintptr_t immediate, encoding::RiscVRegister destination,
 								   utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions);
 
-		static void load_unsigned_immediate(const uintptr_t immediate, encoding::RiscVRegister destination,
+		/**
+		 * Load an immediate of up to 64 bit into the register.
+		 * This method overrides Temporary Register t4 for >= 31 bit and also  t5 for >= 32 bit.
+		 * The immediate will not be sign extended (i.e. treated as unsigned) unless it is 64 bit (where sign extension
+		 * never happens).
+		 * @param immediate The immediate that will be loaded.
+		 * @param destination The regiser in which the immediate will be loaded.
+		 * @param riscv_instructions The pointer to the generated riscv instructions.
+		 * @param num_instructions The current length of the riscv instructions (i.e. the index of the next free position).
+		 */
+		static void load_unsigned_immediate(uintptr_t immediate, encoding::RiscVRegister destination,
 											utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions);
 	};
 }
