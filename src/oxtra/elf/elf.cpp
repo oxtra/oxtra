@@ -277,6 +277,36 @@ Elf::Elf(const char* path) {
 	unpack_file();
 }
 
+Elf::Elf(uint8_t* ptr, size_t size, size_t exec_pages) {
+	//initialize the this object
+	_image_ptr = nullptr;
+	_page_flags = nullptr;
+	_base_address = 0;
+	_actual_base = 0;
+	_address_range = 0;
+	_entry_point = 0;
+
+	// compute the address_range
+	_address_range = (size & 0x00000FFFu) > 0 ? size + 0x1000 : size;
+	_address_range ^= (_address_range & 0x00000FFFu);
+
+	// allocate the buffers and initialize the pages
+	_image_ptr = std::make_unique<uint8_t[]>(_address_range + 0x1000);
+	_page_flags = std::make_unique<uint8_t[]>(_address_range >> 12u);
+	for(size_t i = 0; i < (_address_range >> 12u); i++)
+		_page_flags[i] = ((i < exec_pages) ? PAGE_EXECUTE : PAGE_WRITE) | PAGE_MAPPED | PAGE_READ;
+
+	// update the other attributes
+	_actual_base = reinterpret_cast<uintptr_t>(_image_ptr.get());
+	if(_actual_base & 0x00000FFFu)
+		_actual_base ^= ((_actual_base + 0x1000) & 0x00000FFFu);
+	_base_address = 0;
+	_entry_point = _base_address;
+
+	// write the buffer to the image
+	memcpy(reinterpret_cast<void*>(_actual_base), ptr, size);
+}
+
 uint8_t Elf::get_page_flags(uintptr_t vaddr) const {
 	//validate the address
 	vaddr -= _base_address;
