@@ -91,12 +91,9 @@ bool CodeGenerator::translate_instruction(const fadec::Instruction& x86_instruct
 		case InstructionType::LEA:
 			//TODO: reserve register? t5?
 			//[0xFFFFFFFF + 0x321*8 + 0x12345678] = 0x1_1234_6F7F
-			num_instructions = load_unsigned_immediate(static_cast<uintptr_t>(0xFFFFFFFF), RiscVRegister::a1,
-													riscv_instructions, num_instructions);
-			num_instructions = load_unsigned_immediate(static_cast<uintptr_t>(0x321), RiscVRegister::a2,
-													riscv_instructions, num_instructions);
-			num_instructions = translate_memory_operand(x86_instruction, riscv_instructions, num_instructions, 1,
-														RiscVRegister::a0);
+			load_unsigned_immediate(0xFFFFFFFF, RiscVRegister::a1, riscv_instructions, num_instructions);
+			load_unsigned_immediate(0x321, RiscVRegister::a2, riscv_instructions, num_instructions);
+			translate_memory_operand(x86_instruction, 1, RiscVRegister::a0, riscv_instructions, num_instructions);
 			break;
 
 		case InstructionType::NOP:
@@ -115,9 +112,20 @@ bool CodeGenerator::translate_instruction(const fadec::Instruction& x86_instruct
 	return false;
 }
 
-size_t CodeGenerator::translate_memory_operand(const fadec::Instruction& x86_instruction,
-											   utils::riscv_instruction_t* riscv_instructions, size_t num_instructions,
-											   size_t index, RiscVRegister reg) {
+size_t
+CodeGenerator::translate_mov(const fadec::Instruction& x86_instruction, utils::riscv_instruction_t* riscv_instruction) {
+	riscv_instruction[0] = LUI(RiscVRegister::a0, static_cast<uint16_t>(x86_instruction.get_immediate()));
+	return 1;
+}
+
+size_t
+CodeGenerator::translate_ret(const fadec::Instruction& x86_instruction, utils::riscv_instruction_t* riscv_instruction) {
+	riscv_instruction[0] = JALR(RiscVRegister::zero, RiscVRegister::ra, 0);
+	return 1;
+}
+
+void CodeGenerator::translate_memory_operand(const fadec::Instruction& x86_instruction, size_t index, RiscVRegister reg,
+											 utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions) {
 	if (x86_instruction.get_address_size() != 8)
 		throw std::runtime_error("invalid addressing-size");
 
@@ -129,7 +137,7 @@ size_t CodeGenerator::translate_memory_operand(const fadec::Instruction& x86_ins
 				x86_instruction.get_index_register())]);
 		riscv_instructions[num_instructions++] = encoding::SLLI(reg, reg, x86_instruction.get_index_scale());
 	} else {
-		num_instructions = load_12bit_immediate(0, reg, riscv_instructions, num_instructions);
+		load_12bit_immediate(0, reg, riscv_instructions, num_instructions);
 	}
 
 
@@ -147,31 +155,17 @@ size_t CodeGenerator::translate_memory_operand(const fadec::Instruction& x86_ins
 					x86_instruction.get_displacement()));
 		} else {
 			//TODO: reserve t5?
-			num_instructions = load_unsigned_immediate(x86_instruction.get_displacement(), RiscVRegister::t6,
-													   riscv_instructions, num_instructions);
+			load_unsigned_immediate(x86_instruction.get_displacement(), RiscVRegister::t6,
+									riscv_instructions, num_instructions);
 			riscv_instructions[num_instructions++] = encoding::ADD(reg, reg, RiscVRegister::t6);
 		}
 	}
-
-	return num_instructions;
-}
-
-size_t
-CodeGenerator::translate_mov(const fadec::Instruction& x86_instruction, utils::riscv_instruction_t* riscv_instruction) {
-	riscv_instruction[0] = LUI(RiscVRegister::a0, static_cast<uint16_t>(x86_instruction.get_immediate()));
-	return 1;
-}
-
-size_t
-CodeGenerator::translate_ret(const fadec::Instruction& x86_instruction, utils::riscv_instruction_t* riscv_instruction) {
-	riscv_instruction[0] = JALR(RiscVRegister::zero, RiscVRegister::ra, 0);
-	return 1;
 }
 
 //TODO: t4, t5 reserved
 
-size_t CodeGenerator::load_12bit_immediate(uint16_t immediate, encoding::RiscVRegister destination,
-										   utils::riscv_instruction_t* riscv_instructions, size_t num_instructions) {
+void CodeGenerator::load_12bit_immediate(uint16_t immediate, encoding::RiscVRegister destination,
+										 utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions) {
 	//TODO: is this worth the hassle?
 	if (immediate == 0) {
 		riscv_instructions[num_instructions++] = encoding::MV(destination, RiscVRegister::zero);
@@ -179,14 +173,12 @@ size_t CodeGenerator::load_12bit_immediate(uint16_t immediate, encoding::RiscVRe
 		riscv_instructions[num_instructions++] = encoding::ADDI(destination, RiscVRegister::zero,
 																static_cast<uint16_t>(immediate) & 0x0FFFu);
 	}
-	return num_instructions;
 }
 
 //TODO: const_expr for temps?
 
-size_t CodeGenerator::load_32bit_immediate(uint32_t immediate, encoding::RiscVRegister destination,
-										   utils::riscv_instruction_t* riscv_instructions,
-										   size_t num_instructions) {
+void CodeGenerator::load_32bit_immediate(uint32_t immediate, encoding::RiscVRegister destination,
+										 utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions) {
 	riscv_instructions[num_instructions++] = encoding::LUI(destination, static_cast<uint32_t>(immediate >> 12u));
 
 	//TODO: there has to be a better way ... for this complete function
@@ -199,14 +191,12 @@ size_t CodeGenerator::load_32bit_immediate(uint32_t immediate, encoding::RiscVRe
 	riscv_instructions[num_instructions++] = encoding::SRLI(RiscVRegister::t4, RiscVRegister::t4, 52);
 
 	riscv_instructions[num_instructions++] = encoding::OR(destination, destination, RiscVRegister::t4);
-	return num_instructions;
 }
 
-size_t CodeGenerator::load_64bit_immediate(uint64_t immediate, encoding::RiscVRegister destination,
-										   utils::riscv_instruction_t* riscv_instructions,
-										   size_t num_instructions) {
+void CodeGenerator::load_64bit_immediate(uint64_t immediate, encoding::RiscVRegister destination,
+										 utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions) {
 	// load upper 32bit into destination
-	num_instructions = load_32bit_immediate(
+	load_32bit_immediate(
 			static_cast<uint32_t>((immediate & 0xFFFFFFFF00000000u) >> 32u),
 			destination, riscv_instructions, num_instructions
 	);
@@ -214,7 +204,7 @@ size_t CodeGenerator::load_64bit_immediate(uint64_t immediate, encoding::RiscVRe
 	riscv_instructions[num_instructions++] = encoding::SLLI(destination, destination, 32);
 
 	// load lower 32 bit into temp
-	num_instructions = load_32bit_immediate(
+	load_32bit_immediate(
 			static_cast<uint32_t>(immediate & 0xFFFFFFFFu), RiscVRegister::t5, riscv_instructions, num_instructions
 	);
 
@@ -222,29 +212,22 @@ size_t CodeGenerator::load_64bit_immediate(uint64_t immediate, encoding::RiscVRe
 	riscv_instructions[num_instructions++] = encoding::SRLI(RiscVRegister::t5, RiscVRegister::t5, 32);
 
 	riscv_instructions[num_instructions++] = encoding::OR(destination, destination, RiscVRegister::t5);
-
-	return num_instructions;
 }
 
-size_t
-CodeGenerator::load_immediate(uintptr_t immediate, encoding::RiscVRegister destination,
-							  utils::riscv_instruction_t* riscv_instructions, size_t num_instructions) {
+void CodeGenerator::load_immediate(uintptr_t immediate, encoding::RiscVRegister destination,
+								   utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions) {
 	//TODO: how should we handle 12/32bit numbers? they will be put into the registers and sign extended
 	if (immediate < 0x1000) {
-		return load_12bit_immediate(static_cast<uint16_t>(immediate), destination, riscv_instructions,
-									num_instructions);
+		load_12bit_immediate(static_cast<uint16_t>(immediate), destination, riscv_instructions, num_instructions);
 	} else if (immediate < 0x100000000) {
-		return load_32bit_immediate(static_cast<uint32_t>(immediate), destination, riscv_instructions,
-									num_instructions);
+		load_32bit_immediate(static_cast<uint32_t>(immediate), destination, riscv_instructions, num_instructions);
 	} else {
-		return load_64bit_immediate(static_cast<uint64_t>(immediate), destination,
-									riscv_instructions, num_instructions);
+		load_64bit_immediate(static_cast<uint64_t>(immediate), destination, riscv_instructions, num_instructions);
 	}
 }
 
-size_t
-CodeGenerator::load_unsigned_immediate(uintptr_t immediate, encoding::RiscVRegister destination,
-									   utils::riscv_instruction_t* riscv_instructions, size_t num_instructions) {
+void CodeGenerator::load_unsigned_immediate(uintptr_t immediate, encoding::RiscVRegister destination,
+											utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions) {
 	uint8_t immediate_type = 2; // 0 means 12bit, 1 means 32 bit, >= 2 means 64 bit
 
 	//TODO: is first bit in riscv sign bit
@@ -260,13 +243,10 @@ CodeGenerator::load_unsigned_immediate(uintptr_t immediate, encoding::RiscVRegis
 	spdlog::info("Loading immediate 0x{0:0x} with {1:0x}", immediate, immediate_type);
 
 	if (immediate_type == 0) {
-		return load_12bit_immediate(static_cast<uint16_t>(immediate), destination, riscv_instructions,
-									num_instructions);
+		load_12bit_immediate(static_cast<uint16_t>(immediate), destination, riscv_instructions, num_instructions);
 	} else if (immediate_type == 1) {
-		return load_32bit_immediate(static_cast<uint32_t>(immediate), destination, riscv_instructions,
-									num_instructions);
+		load_32bit_immediate(static_cast<uint32_t>(immediate), destination, riscv_instructions, num_instructions);
 	} else {
-		return load_64bit_immediate(static_cast<uint64_t>(immediate), destination,
-									riscv_instructions, num_instructions);
+		load_64bit_immediate(static_cast<uint64_t>(immediate), destination, riscv_instructions, num_instructions);
 	}
 }

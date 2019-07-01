@@ -57,34 +57,32 @@ namespace codegen {
 		translate_instruction(const fadec::Instruction& x86_instruction, utils::riscv_instruction_t* riscv_instructions,
 							  size_t& num_instructions);
 
-		/**
-		 * Translates a x86-memory operand into risc-v instructions (resulting address in reg)
-		 * t6 might be overridden.
-		 * @param x86_instruction The x86 instruction object.
-		 * @param riscv_instructions An array of risc-v instructions.
-		 * @param num_instructions current number of risc-v instructions.
-		 * @param index operand-index of instruction.
-		 * @param reg The resulting address will be returned in this register. (t6 may not be used)
-		 * @return The index of the first free instruction (i.e. current number of instructions).
-		 */
-		static size_t translate_memory_operand(const fadec::Instruction& x86_instruction,
-											   utils::riscv_instruction_t* riscv_instructions, size_t num_instructions,
-											   size_t index, encoding::RiscVRegister reg);
-
 		size_t translate_mov(const fadec::Instruction& x86_instruction, utils::riscv_instruction_t* riscv_instruction);
 
 		size_t translate_ret(const fadec::Instruction& x86_instruction, utils::riscv_instruction_t* riscv_instruction);
 
-		static size_t load_12bit_immediate(uint16_t immediate, encoding::RiscVRegister destination,
-										   utils::riscv_instruction_t* riscv_instructions, size_t num_instructions);
+		/**
+		 * Translates a x86-memory operand into risc-v instructions (resulting address in reg)
+		 * t6 might be overridden.
+		 * @param x86_instruction The x86 instruction object.
+		 * @param index operand-index of instruction.
+		 * @param reg The resulting address will be returned in this register. (t6 may not be used)
+		 * @param riscv_instructions An array of risc-v instructions.
+		 * @param num_instructions current number of risc-v instructions.
+		 * @return The index of the first free instruction (i.e. current number of instructions).
+		 */
+		static void
+		translate_memory_operand(const fadec::Instruction& x86_instruction, size_t index, encoding::RiscVRegister reg,
+								 utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions);
 
-		static size_t
-		load_32bit_immediate(uint32_t immediate, encoding::RiscVRegister destination,
-							 utils::riscv_instruction_t* riscv_instructions, size_t num_instructions);
+		static void load_12bit_immediate(uint16_t immediate, encoding::RiscVRegister destination,
+										 utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions);
 
-		static size_t
-		load_64bit_immediate(uint64_t immediate, encoding::RiscVRegister destination,
-							 utils::riscv_instruction_t* riscv_instructions, size_t num_instructions);
+		static void load_32bit_immediate(uint32_t immediate, encoding::RiscVRegister destination,
+										 utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions);
+
+		static void load_64bit_immediate(uint64_t immediate, encoding::RiscVRegister destination,
+										 utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions);
 
 		/**
 		 * Load an immediate of arbitrary size into the register. It will be automatically checked how long the immediate is.
@@ -95,13 +93,11 @@ namespace codegen {
 		 * @param num_instructions The current length of the riscv instructions (i.e. the index of the next free position).
 		 * @return The index of the next free riscv instruction (i.e. new length).
 		 */
-		static size_t
-		load_immediate(uintptr_t immediate, encoding::RiscVRegister destination,
-					   utils::riscv_instruction_t* riscv_instructions, size_t num_instructions);
+		static void load_immediate(const uintptr_t immediate, encoding::RiscVRegister destination,
+								   utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions);
 
-		static size_t
-		load_unsigned_immediate(uintptr_t immediate, encoding::RiscVRegister destination,
-								utils::riscv_instruction_t* riscv_instructions, size_t num_instructions);
+		static void load_unsigned_immediate(const uintptr_t immediate, encoding::RiscVRegister destination,
+											utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions);
 	};
 }
 
