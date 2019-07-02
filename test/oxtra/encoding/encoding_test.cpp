@@ -73,7 +73,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("JALR") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "jalr t4, t5, 0xf47");
+		fprintf(assembly, "jalr zero, ra, 0xf47");
 		fclose(assembly);
 
 		utils::riscv_instruction_t encoded_ = JALR(RiscVRegister::zero, RiscVRegister::ra, 0xf47);
