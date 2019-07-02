@@ -76,7 +76,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 		fprintf(assembly, "jalr t4, t5, 0xf47");
 		fclose(assembly);
 
-		utils::riscv_instruction_t encoded_ = JAL(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
+		utils::riscv_instruction_t encoded_ = JALR(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
 		char* encoded = reinterpret_cast<char*>(&encoded_);
 
 		system("/opt/riscv/bin/riscv64-unknown-linux-gnu-gcc comp.s -o comp -nostdlib");
@@ -601,10 +601,10 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("SLLI") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "SLLI t4, t5, 0xf47");
+		fprintf(assembly, "SLLI t4, t5, 0xf1");
 		fclose(assembly);
 
-		utils::riscv_instruction_t encoded_ = SLLI(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
+		utils::riscv_instruction_t encoded_ = SLLI(RiscVRegister::t4, RiscVRegister::t5, 0xf1);
 		char* encoded = reinterpret_cast<char*>(&encoded_);
 
 		system("/opt/riscv/bin/riscv64-unknown-linux-gnu-gcc comp.s -o comp -nostdlib");
@@ -623,10 +623,10 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("SRLI") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "SRLI t4, t5, 0xf47");
+		fprintf(assembly, "SRLI t4, t5, 0xf1");
 		fclose(assembly);
 
-		utils::riscv_instruction_t encoded_ = SRLI(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
+		utils::riscv_instruction_t encoded_ = SRLI(RiscVRegister::t4, RiscVRegister::t5, 0xf1);
 		char* encoded = reinterpret_cast<char*>(&encoded_);
 
 		system("/opt/riscv/bin/riscv64-unknown-linux-gnu-gcc comp.s -o comp -nostdlib");
@@ -645,10 +645,10 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("SRAI") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "SRAI t4, t5, 0xf47");
+		fprintf(assembly, "SRAI t4, t5, 0xf1");
 		fclose(assembly);
 
-		utils::riscv_instruction_t encoded_ = SRAI(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
+		utils::riscv_instruction_t encoded_ = SRAI(RiscVRegister::t4, RiscVRegister::t5, 0xf1);
 		char* encoded = reinterpret_cast<char*>(&encoded_);
 
 		system("/opt/riscv/bin/riscv64-unknown-linux-gnu-gcc comp.s -o comp -nostdlib");
@@ -758,7 +758,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 		fprintf(assembly, "sltu t4, t5, t6");
 		fclose(assembly);
 
-		utils::riscv_instruction_t encoded_ = sltu(RiscVRegister::t4, RiscVRegister::t5, RiscVRegister::t6);
+		utils::riscv_instruction_t encoded_ = SLTU(RiscVRegister::t4, RiscVRegister::t5, RiscVRegister::t6);
 		char* encoded = reinterpret_cast<char*>(&encoded_);
 
 		system("/opt/riscv/bin/riscv64-unknown-linux-gnu-gcc comp.s -o comp -nostdlib");
