@@ -93,6 +93,8 @@ bool CodeGenerator::translate_instruction(const fadec::Instruction& x86_instruct
 			//[0xFFFFFFFF + 0x321*8 + 0x12345678] = 0x1_1234_6F7F
 			load_unsigned_immediate(0xFFFFFFFF, RiscVRegister::a1, riscv_instructions, num_instructions);
 			load_unsigned_immediate(0x321, RiscVRegister::a2, riscv_instructions, num_instructions);
+			//load_64bit_immediate(static_cast<uint64_t>(0xcafebabe), RiscVRegister::a0, riscv_instructions,
+			//					 num_instructions);
 			translate_memory_operand(x86_instruction, 1, RiscVRegister::a0, riscv_instructions, num_instructions);
 			break;
 
@@ -178,7 +180,7 @@ void CodeGenerator::load_32bit_immediate(uint32_t immediate, encoding::RiscVRegi
 	auto upper_immediate = static_cast<uint32_t>(immediate >> 12u);
 
 	// adding the lower bits is sign extended, so if the lower bits are signed we have to increase the upper immediate
-	if (immediate & 0x800)
+	if (immediate & 0x800u)
 		upper_immediate++;
 
 	riscv_instructions[num_instructions++] = encoding::LUI(destination, upper_immediate);
@@ -188,26 +190,41 @@ void CodeGenerator::load_32bit_immediate(uint32_t immediate, encoding::RiscVRegi
 
 void CodeGenerator::load_64bit_immediate(uint64_t immediate, encoding::RiscVRegister destination,
 										 utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions) {
-	//TODO: better way?
+	spdlog::info("Load immediate: 64bit 0x{0:0x}", immediate);
+
+	uint32_t high_bits = (immediate & 0xFFFFFFFF00000000u) >> 32u;
+
+	const uint32_t low_bits = immediate & 0xFFFFFFFF;
+	uint16_t low_bits_0 = low_bits & 0x000000FFu;
+	uint16_t low_bits_8 = (low_bits & 0x000FFF00u) >> 8u;
+	uint16_t low_bits_20 = (low_bits & 0xFFF00000u) >> 20u;
+
+	//TODO: test cascading to ensure that added correctly
+
+	if (low_bits_8 & 0x0800u) {
+		low_bits_20++;
+	}
+
+	if (low_bits_20 & 0x0800u) {
+		high_bits++;
+	}
+
+	// The last 2 byte cannot be negative (would require 12th bit set)
 
 	// load upper 32bit into destination
-	load_32bit_immediate(
-			static_cast<uint32_t>((immediate & 0xFFFFFFFF00000000u) >> 32u),
-			destination, riscv_instructions, num_instructions
-	);
+	load_32bit_immediate(high_bits, destination, riscv_instructions, num_instructions);
 
-	riscv_instructions[num_instructions++] = encoding::SLLI(destination, destination, 32);
+	// add the next 12bit
+	riscv_instructions[num_instructions++] = encoding::SLLI(destination, destination, 12);
+	riscv_instructions[num_instructions++] = encoding::ADDI(destination, destination, low_bits_20);
 
-	// load lower 32 bit into temp
-	load_32bit_immediate(
-			static_cast<uint32_t>(immediate & 0xFFFFFFFFu), RiscVRegister::t5, riscv_instructions, num_instructions
-	);
+	// add the next 12 bit
+	riscv_instructions[num_instructions++] = encoding::SLLI(destination, destination, 12);
+	riscv_instructions[num_instructions++] = encoding::ADDI(destination, destination, low_bits_8);
 
-	// clear sign bit(s)
-	riscv_instructions[num_instructions++] = encoding::SLLI(RiscVRegister::t5, RiscVRegister::t5, 32);
-	riscv_instructions[num_instructions++] = encoding::SRLI(RiscVRegister::t5, RiscVRegister::t5, 32);
-
-	riscv_instructions[num_instructions++] = encoding::OR(destination, destination, RiscVRegister::t5);
+	// add the last 8 bit
+	riscv_instructions[num_instructions++] = encoding::SLLI(destination, destination, 8);
+	riscv_instructions[num_instructions++] = encoding::ADDI(destination, destination, low_bits_0);
 }
 
 void CodeGenerator::load_immediate(uintptr_t immediate, encoding::RiscVRegister destination,
@@ -220,7 +237,6 @@ void CodeGenerator::load_immediate(uintptr_t immediate, encoding::RiscVRegister 
 	}
 
 	uintptr_t word_value = immediate & 0xFFFFFFFFu;
-
 	if (word_value & 0x80000000) {
 		word_value |= 0xFFFFFFFF00000000;
 	}
