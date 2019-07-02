@@ -7,10 +7,10 @@ using namespace encoding;
 TEST_CASE("instruction encoding is correct", "[encoding]") {
 	SECTION("LUI") {
 		FILE* assembly = fopen("lui.s", "w");
-		fprintf(assembly, "lui t4, 28");
+		fprintf(assembly, "lui t4, 0xf479e");
 		fclose(assembly);
 
-		utils::riscv_instruction_t lui_encoded_ = LUI(RiscVRegister::t4, 28);
+		utils::riscv_instruction_t lui_encoded_ = LUI(RiscVRegister::t4, 0xf479e);
 		char* lui_encoded = reinterpret_cast<char*>(&lui_encoded_);
 
 		system("/opt/riscv/bin/riscv64-unknown-linux-gnu-gcc lui.s -o lui -nostdlib");
@@ -21,9 +21,9 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 		fread(lui_compiled, 1, 4, objdump);
 		fclose(objdump);
 
-		REQUIRE(lui_compiled[0] == lui_encoded[0]);
-		REQUIRE(lui_compiled[1] == lui_encoded[1]);
-		REQUIRE(lui_compiled[2] == lui_encoded[2]);
-		REQUIRE(lui_compiled[3] == lui_encoded[3]);
+		REQUIRE(lui_compiled[3] == lui_encoded[0]);
+		REQUIRE(lui_compiled[2] == lui_encoded[1]);
+		REQUIRE(lui_compiled[1] == lui_encoded[2]);
+		REQUIRE(lui_compiled[0] == lui_encoded[3]);
 	}
 }
