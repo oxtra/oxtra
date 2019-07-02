@@ -76,7 +76,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 		fprintf(assembly, "jalr t4, t5, 0xf47");
 		fclose(assembly);
 
-		utils::riscv_instruction_t encoded_ = JALR(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
+		utils::riscv_instruction_t encoded_ = JALR(RiscVRegister::zero, RiscVRegister::ra, 0xf47);
 		char* encoded = reinterpret_cast<char*>(&encoded_);
 
 		system("/opt/riscv/bin/riscv64-unknown-linux-gnu-gcc comp.s -o comp -nostdlib");
