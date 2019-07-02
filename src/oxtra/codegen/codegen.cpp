@@ -225,16 +225,11 @@ void CodeGenerator::load_immediate(uintptr_t immediate, encoding::RiscVRegister 
 		word_value |= 0xFFFFFFFF00000000;
 	}
 
-	spdlog::info("values: 0x{0:0x} 0x{1:0x} 0x{2:0x}", immediate, short_value, word_value);
-
 	if (immediate == short_value) {    // 12 bit can be directly encoded
-		spdlog::info("loading 12 bit immediate");
 		load_12bit_immediate(static_cast<uint16_t>(immediate), destination, riscv_instructions, num_instructions);
 	} else if (immediate == word_value) {    //32 bit have to be manually specified
-		spdlog::info("loading 32 bit immediate");
 		load_32bit_immediate(static_cast<uint32_t>(immediate), destination, riscv_instructions, num_instructions);
 	} else { // 64 bit also have to be manually specified
-		spdlog::info("loading 64 bit immediate");
 		load_64bit_immediate(static_cast<uint64_t>(immediate), destination, riscv_instructions, num_instructions);
 	}
 }
