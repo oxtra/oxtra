@@ -101,7 +101,7 @@ namespace codegen {
 										 utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions);
 
 		/**
-		 * Loads a 64 bit immediate into the specified register. This method overrides Temporary Register t5.
+		 * Loads a 64 bit immediate into the specified register.
 		 * The only difference between this method and load_unsigned_immediate is that this one is slightly faster.
 		 * @param immediate The immediate that will be stored. The highest 4 bits of uint16_t will be masked.
 		 * @param destination The register the immediate will be stored in.
@@ -113,7 +113,6 @@ namespace codegen {
 
 		/**
 		 * Load an immediate up to 64 bit into the specified register.
-		 * This method overrides Temporary Register t5 for 64 bit.
 		 * It will be automatically checked how long the immediate is. If the immediate is <=32 bit it will always
 		 * be sign extended to 64 bit.
 		 * @param immediate The immediate that will be loaded.
@@ -126,7 +125,6 @@ namespace codegen {
 
 		/**
 		 * Load an immediate of up to 64 bit into the register.
-		 * This method overrides Temporary Register t5 for >= 32 bit.
 		 * The immediate will not be sign extended (i.e. treated as unsigned) unless it is 64 bit (where sign extension
 		 * never happens).
 		 * @param immediate The immediate that will be loaded.

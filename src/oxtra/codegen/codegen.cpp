@@ -90,7 +90,6 @@ bool CodeGenerator::translate_instruction(const fadec::Instruction& x86_instruct
 			break;
 
 		case InstructionType::LEA:
-			//TODO: reserve register? t5?
 			//[0xFFFFFFFF + 0x321*8 + 0x12345678] = 0x1_1234_6F7F
 			load_unsigned_immediate(0xFFFFFFFF, RiscVRegister::a1, riscv_instructions, num_instructions);
 			load_unsigned_immediate(0x321, RiscVRegister::a2, riscv_instructions, num_instructions);
@@ -161,7 +160,7 @@ void CodeGenerator::translate_memory_operand(const fadec::Instruction& x86_instr
 	}
 }
 
-//TODO: how to handle register reservation? constexpr? document it? where to document it? Load_IMM requires t5
+//TODO: how to handle register reservation? constexpr? document it? where to document it?
 
 void CodeGenerator::load_12bit_immediate(uint16_t immediate, encoding::RiscVRegister destination,
 										 utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions) {
