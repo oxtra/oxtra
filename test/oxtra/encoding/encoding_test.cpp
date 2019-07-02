@@ -21,9 +21,9 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 		fread(lui_compiled, 1, 4, objdump);
 		fclose(objdump);
 
-		REQUIRE(lui_compiled[3] == lui_encoded[0]);
-		REQUIRE(lui_compiled[2] == lui_encoded[1]);
-		REQUIRE(lui_compiled[1] == lui_encoded[2]);
-		REQUIRE(lui_compiled[0] == lui_encoded[3]);
+		REQUIRE(lui_compiled[0] == lui_encoded[0]);
+		REQUIRE(lui_compiled[1] == lui_encoded[1]);
+		REQUIRE(lui_compiled[2] == lui_encoded[2]);
+		REQUIRE(lui_compiled[3] == lui_encoded[3]);
 	}
 }
