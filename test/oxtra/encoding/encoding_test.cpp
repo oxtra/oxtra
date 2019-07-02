@@ -71,6 +71,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 		REQUIRE(compiled[3] == encoded[3]);
 	}
 
+#if 0
 	SECTION("JALR") {
 		FILE* assembly = fopen("comp.s", "w");
 		fprintf(assembly, "jalr zero, ra, 0x0");
@@ -92,6 +93,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 		REQUIRE(compiled[2] == encoded[2]);
 		REQUIRE(compiled[3] == encoded[3]);
 	}
+#endif
 
 	SECTION("BEQ") {
 		FILE* assembly = fopen("comp.s", "w");
