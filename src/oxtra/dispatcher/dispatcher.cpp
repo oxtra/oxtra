@@ -12,7 +12,7 @@ Dispatcher::Dispatcher(const elf::Elf& elf, const arguments::Arguments& args)
 
 void Dispatcher::run() {
 	const auto val = reinterpret_cast<int64_t (*)()>(_codegen.translate(_elf.get_entry_point()))();
-	spdlog::warn("Returned value is: {}", val);
+	spdlog::warn("Returned value is: 0x{0:0x}", static_cast<uint64_t>(val));
 }
 
 void Dispatcher::host_enter() {
