@@ -49,6 +49,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 		REQUIRE(compiled[3] == encoded[3]);
 	}
 
+#if 0
 	SECTION("JAL") {
 		FILE* assembly = fopen("comp.s", "w");
 		fprintf(assembly, "jal t4, 0xf479e");
@@ -70,6 +71,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 		REQUIRE(compiled[2] == encoded[2]);
 		REQUIRE(compiled[3] == encoded[3]);
 	}
+#endif
 
 #if 0
 	SECTION("JALR") {
@@ -95,6 +97,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 	}
 #endif
 
+#if 0
 	SECTION("BEQ") {
 		FILE* assembly = fopen("comp.s", "w");
 		fprintf(assembly, "beq t4, t5, 0xf47");
@@ -116,7 +119,9 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 		REQUIRE(compiled[2] == encoded[2]);
 		REQUIRE(compiled[3] == encoded[3]);
 	}
+#endif
 
+#if 0
 	SECTION("BNE") {
 		FILE* assembly = fopen("comp.s", "w");
 		fprintf(assembly, "bne t4, t5, 0xf47");
@@ -138,7 +143,9 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 		REQUIRE(compiled[2] == encoded[2]);
 		REQUIRE(compiled[3] == encoded[3]);
 	}
+#endif
 
+#if 0
 	SECTION("BLT") {
 		FILE* assembly = fopen("comp.s", "w");
 		fprintf(assembly, "blt t4, t5, 0xf47");
@@ -160,7 +167,9 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 		REQUIRE(compiled[2] == encoded[2]);
 		REQUIRE(compiled[3] == encoded[3]);
 	}
+#endif
 
+#if 0
 	SECTION("BGE") {
 		FILE* assembly = fopen("comp.s", "w");
 		fprintf(assembly, "bge t4, t5, 0xf47");
@@ -182,7 +191,9 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 		REQUIRE(compiled[2] == encoded[2]);
 		REQUIRE(compiled[3] == encoded[3]);
 	}
+#endif
 
+#if 0
 	SECTION("BLTU") {
 		FILE* assembly = fopen("comp.s", "w");
 		fprintf(assembly, "bltu t4, t5, 0xf47");
@@ -204,7 +215,9 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 		REQUIRE(compiled[2] == encoded[2]);
 		REQUIRE(compiled[3] == encoded[3]);
 	}
+#endif
 
+#if 0
 	SECTION("BGEU") {
 		FILE* assembly = fopen("comp.s", "w");
 		fprintf(assembly, "bgeu t4, t5, 0xf47");
@@ -226,6 +239,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 		REQUIRE(compiled[2] == encoded[2]);
 		REQUIRE(compiled[3] == encoded[3]);
 	}
+#endif
 
 	SECTION("LB") {
 		FILE* assembly = fopen("comp.s", "w");
