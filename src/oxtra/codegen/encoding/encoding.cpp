@@ -276,10 +276,6 @@ riscv_instruction_t encoding::NOP() {
 	return ADDI(RiscVRegister::zero, RiscVRegister::zero, 0);
 }
 
-void encoding::LI(RiscVRegister rd, uint32_t imm) {
-	// more than one instruction
-}
-
 riscv_instruction_t encoding::MV(RiscVRegister rd, RiscVRegister rs) {
 	return ADDI(rd, rs, 0);
 }
@@ -297,7 +293,7 @@ riscv_instruction_t encoding::SEQZ(RiscVRegister rd, RiscVRegister rs) {
 }
 
 riscv_instruction_t encoding::SNEZ(RiscVRegister rd, RiscVRegister rs) {
-	return SLTU(rd, RiscVRegister::zero, rd);
+	return SLTU(rd, RiscVRegister::zero, rs);
 }
 
 riscv_instruction_t encoding::SLTZ(RiscVRegister rd, RiscVRegister rs) {
