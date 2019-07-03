@@ -6,8 +6,8 @@ using namespace encoding;
 
 void refactor(utils::riscv_instruction_t encoded) {
 		char* enc = reinterpret_cast<char*>(&encoded);
-		system("/opt/riscv/bin/riscv-unknown-linux-gnu-as comp.s -o comp.o");
-		system("/opt/riscv/bin/riscv-unknown-linux-gnu-ld comp.o -o comp.elf");
+		system("/opt/riscv/bin/riscv64-unknown-linux-gnu-as comp.s -o comp.o");
+		system("/opt/riscv/bin/riscv64-unknown-linux-gnu-ld comp.o -o comp.elf");
 		system("objcopy -I elf64-little -j .text -O binary comp.elf dump");
 
 		char com[5] = {0};
