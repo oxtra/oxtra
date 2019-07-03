@@ -24,7 +24,7 @@ void refactor(utils::riscv_instruction_t encoded) {
 TEST_CASE("instruction encoding is correct", "[encoding]") {
 	SECTION("LUI") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "lui t4, 0xf479e");
+		fprintf(assembly, "_start:\n\tlui t4, 0xf479e\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = LUI(RiscVRegister::t4, 0xf479e);
 		refactor(encoded);
@@ -32,7 +32,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("AUIPC") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "auipc t4, 0xf479e");
+		fprintf(assembly, "_start:\n\tauipc t4, 0xf479e\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = AUIPC(RiscVRegister::t4, 0xf479e);
 		refactor(encoded);
@@ -40,7 +40,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("JAL") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "jal t4, 0xf479e");
+		fprintf(assembly, "_start:\n\tjal t4, 0xf479e\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = JAL(RiscVRegister::t4, 0xf479e);
 		refactor(encoded);
@@ -48,7 +48,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("JALR") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "jalr zero, ra, 0x0");
+		fprintf(assembly, "_start:\n\tjalr zero, ra, 0x0\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = JALR(RiscVRegister::zero, RiscVRegister::ra, 0x0);
 		refactor(encoded);
@@ -56,7 +56,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("BEQ") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "beq t4, t5, 0xf47");
+		fprintf(assembly, "_start:\n\tbeq t4, t5, 0xf47\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = BEQ(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
 		refactor(encoded);
@@ -64,7 +64,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("BNE") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "bne t4, t5, 0xf47");
+		fprintf(assembly, "_start:\n\tbne t4, t5, 0xf47\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = BNE(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
 		refactor(encoded);
@@ -72,7 +72,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("BLT") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "blt t4, t5, 0xf47");
+		fprintf(assembly, "_start:\n\tblt t4, t5, 0xf47\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = BLT(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
 		refactor(encoded);
@@ -80,7 +80,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("BGE") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "bge t4, t5, 0xf47");
+		fprintf(assembly, "_start:\n\tbge t4, t5, 0xf47\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = BGE(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
 		refactor(encoded);
@@ -88,7 +88,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("BLTU") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "bltu t4, t5, 0xf47");
+		fprintf(assembly, "_start:\n\tbltu t4, t5, 0xf47\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = BLTU(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
 		refactor(encoded);
@@ -96,7 +96,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("BGEU") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "bgeu t4, t5, 0xf47");
+		fprintf(assembly, "_start:\n\tbgeu t4, t5, 0xf47\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = BGEU(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
 		refactor(encoded);
@@ -104,7 +104,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("LB") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "lb t4, t5, 0xf47");
+		fprintf(assembly, "_start:\n\tlb t4, t5, 0xf47\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = LB(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
 		refactor(encoded);
@@ -112,7 +112,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("LH") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "lh t4, t5, 0xf47");
+		fprintf(assembly, "_start:\n\tlh t4, t5, 0xf47\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = LH(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
 		refactor(encoded);
@@ -120,7 +120,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("LW") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "lw t4, t5, 0xf47");
+		fprintf(assembly, "_start:\n\tlw t4, t5, 0xf47\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = LW(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
 		refactor(encoded);
@@ -128,7 +128,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("LD") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "ld t4, t5, 0xf47");
+		fprintf(assembly, "_start:\n\tld t4, t5, 0xf47\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = LD(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
 		refactor(encoded);
@@ -136,7 +136,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("LBU") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "lbu t4, t5, 0xf47");
+		fprintf(assembly, "_start:\n\tlbu t4, t5, 0xf47\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = LBU(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
 		refactor(encoded);
@@ -144,7 +144,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("LHU") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "lhu t4, t5, 0xf47");
+		fprintf(assembly, "_start:\n\tlhu t4, t5, 0xf47\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = LHU(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
 		refactor(encoded);
@@ -152,7 +152,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("LWU") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "lwu t4, t5, 0xf47");
+		fprintf(assembly, "_start:\n\tlwu t4, t5, 0xf47\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = LWU(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
 		refactor(encoded);
@@ -160,7 +160,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("SB") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "sb t4, t5, 0xf47");
+		fprintf(assembly, "_start:\n\tsb t4, t5, 0xf47\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = SB(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
 		refactor(encoded);
@@ -168,7 +168,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("SH") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "sh t4, t5, 0xf47");
+		fprintf(assembly, "_start:\n\tsh t4, t5, 0xf47\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = SH(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
 		refactor(encoded);
@@ -176,7 +176,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("SW") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "sw t4, t5, 0xf47");
+		fprintf(assembly, "_start:\n\tsw t4, t5, 0xf47\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = SW(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
 		refactor(encoded);
@@ -184,7 +184,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("SD") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "sd t4, t5, 0xf47");
+		fprintf(assembly, "_start:\n\tsd t4, t5, 0xf47\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = SD(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
 		refactor(encoded);
@@ -192,7 +192,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("ADDI") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "addi t4, t5, 0xf47");
+		fprintf(assembly, "_start:\n\taddi t4, t5, 0xf47\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = ADDI(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
 		refactor(encoded);
@@ -200,7 +200,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("SLTI") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "slti t4, t5, 0xf47");
+		fprintf(assembly, "_start:\n\tslti t4, t5, 0xf47\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = SLTI(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
 		refactor(encoded);
@@ -208,7 +208,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("SLTIU") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "sltiu t4, t5, 0xf47");
+		fprintf(assembly, "_start:\n\tsltiu t4, t5, 0xf47\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = SLTIU(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
 		refactor(encoded);
@@ -216,7 +216,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("XORI") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "xori t4, t5, 0xf47");
+		fprintf(assembly, "_start:\n\txori t4, t5, 0xf47\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = XORI(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
 		refactor(encoded);
@@ -224,7 +224,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("ORI") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "ori t4, t5, 0xf47");
+		fprintf(assembly, "_start:\n\tori t4, t5, 0xf47\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = ORI(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
 		refactor(encoded);
@@ -232,7 +232,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("ANDI") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "andi t4, t5, 0xf47");
+		fprintf(assembly, "_start:\n\tandi t4, t5, 0xf47\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = ANDI(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
 		refactor(encoded);
@@ -240,7 +240,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("SLLI") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "SLLI t4, t5, 0x11");
+		fprintf(assembly, "_start:\n\tSLLI t4, t5, 0x11\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = SLLI(RiscVRegister::t4, RiscVRegister::t5, 0x11);
 		refactor(encoded);
@@ -248,7 +248,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("SRLI") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "SRLI t4, t5, 0x11");
+		fprintf(assembly, "_start:\n\tSRLI t4, t5, 0x11\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = SRLI(RiscVRegister::t4, RiscVRegister::t5, 0x11);
 		refactor(encoded);
@@ -256,7 +256,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("SRAI") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "SRAI t4, t5, 0x11");
+		fprintf(assembly, "_start:\n\tSRAI t4, t5, 0x11\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = SRAI(RiscVRegister::t4, RiscVRegister::t5, 0x11);
 		refactor(encoded);
@@ -264,7 +264,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("ADD") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "add t4, t5, t6");
+		fprintf(assembly, "_start:\n\tadd t4, t5, t6\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = ADD(RiscVRegister::t4, RiscVRegister::t5, RiscVRegister::t6);
 		refactor(encoded);
@@ -272,7 +272,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("SUB") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "sub t4, t5, t6");
+		fprintf(assembly, "_start:\n\tsub t4, t5, t6\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = SUB(RiscVRegister::t4, RiscVRegister::t5, RiscVRegister::t6);
 		refactor(encoded);
@@ -280,7 +280,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("SLL") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "sll t4, t5, t6");
+		fprintf(assembly, "_start:\n\tsll t4, t5, t6\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = SLL(RiscVRegister::t4, RiscVRegister::t5, RiscVRegister::t6);
 		refactor(encoded);
@@ -288,7 +288,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("SLT") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "slt t4, t5, t6");
+		fprintf(assembly, "_start:\n\tslt t4, t5, t6\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = SLT(RiscVRegister::t4, RiscVRegister::t5, RiscVRegister::t6);
 		refactor(encoded);
@@ -296,7 +296,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("SLTU") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "sltu t4, t5, t6");
+		fprintf(assembly, "_start:\n\tsltu t4, t5, t6\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = SLTU(RiscVRegister::t4, RiscVRegister::t5, RiscVRegister::t6);
 		refactor(encoded);
@@ -304,7 +304,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("XOR") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "xor t4, t5, t6");
+		fprintf(assembly, "_start:\n\txor t4, t5, t6\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = XOR(RiscVRegister::t4, RiscVRegister::t5, RiscVRegister::t6);
 		refactor(encoded);
@@ -312,7 +312,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("SRL") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "srl t4, t5, t6");
+		fprintf(assembly, "_start:\n\tsrl t4, t5, t6\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = SRL(RiscVRegister::t4, RiscVRegister::t5, RiscVRegister::t6);
 		refactor(encoded);
@@ -320,7 +320,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("SRA") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "sra t4, t5, t6");
+		fprintf(assembly, "_start:\n\tsra t4, t5, t6\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = SRA(RiscVRegister::t4, RiscVRegister::t5, RiscVRegister::t6);
 		refactor(encoded);
@@ -328,7 +328,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("OR") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "or t4, t5, t6");
+		fprintf(assembly, "_start:\n\tor t4, t5, t6\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = OR(RiscVRegister::t4, RiscVRegister::t5, RiscVRegister::t6);
 		refactor(encoded);
@@ -336,7 +336,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("AND") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "and t4, t5, t6");
+		fprintf(assembly, "_start:\n\tand t4, t5, t6\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = AND(RiscVRegister::t4, RiscVRegister::t5, RiscVRegister::t6);
 		refactor(encoded);
@@ -344,7 +344,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("MUL") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "mul t4, t5, t6");
+		fprintf(assembly, "_start:\n\tmul t4, t5, t6\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = MUL(RiscVRegister::t4, RiscVRegister::t5, RiscVRegister::t6);
 		refactor(encoded);
@@ -352,7 +352,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("MULH") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "mulh t4, t5, t6");
+		fprintf(assembly, "_start:\n\tmulh t4, t5, t6\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = MULH(RiscVRegister::t4, RiscVRegister::t5, RiscVRegister::t6);
 		refactor(encoded);
@@ -360,7 +360,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("MULHSU") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "mulhsu t4, t5, t6");
+		fprintf(assembly, "_start:\n\tmulhsu t4, t5, t6\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = MULHSU(RiscVRegister::t4, RiscVRegister::t5, RiscVRegister::t6);
 		refactor(encoded);
@@ -368,7 +368,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("MULHU") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "mulhu t4, t5, t6");
+		fprintf(assembly, "_start:\n\tmulhu t4, t5, t6\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = MULHU(RiscVRegister::t4, RiscVRegister::t5, RiscVRegister::t6);
 		refactor(encoded);
@@ -376,7 +376,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("DIV") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "div t4, t5, t6");
+		fprintf(assembly, "_start:\n\tdiv t4, t5, t6\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = DIV(RiscVRegister::t4, RiscVRegister::t5, RiscVRegister::t6);
 		refactor(encoded);
@@ -384,7 +384,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("DIVU") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "divu t4, t5, t6");
+		fprintf(assembly, "_start:\n\tdivu t4, t5, t6\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = DIVU(RiscVRegister::t4, RiscVRegister::t5, RiscVRegister::t6);
 		refactor(encoded);
@@ -392,7 +392,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("REM") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "rem t4, t5, t6");
+		fprintf(assembly, "_start:\n\trem t4, t5, t6\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = REM(RiscVRegister::t4, RiscVRegister::t5, RiscVRegister::t6);
 		refactor(encoded);
@@ -400,7 +400,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 
 	SECTION("REMU") {
 		FILE* assembly = fopen("comp.s", "w");
-		fprintf(assembly, "remu t4, t5, t6");
+		fprintf(assembly, "_start:\n\tremu t4, t5, t6\n");
 		fclose(assembly);
 		utils::riscv_instruction_t encoded = REMU(RiscVRegister::t4, RiscVRegister::t5, RiscVRegister::t6);
 		refactor(encoded);
