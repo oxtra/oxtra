@@ -8,7 +8,7 @@ add_library(oxtra_libs
 		oxtra/dispatcher/dispatcher.cpp oxtra/utils/fixed_array.h
 		oxtra/codegen/encoding/encoding.cpp
 		oxtra/codegen/decoding/decoding.cpp
-)
+		oxtra/dispatcher/context.cpp)
 
 target_link_libraries(oxtra_libs
 		fadec

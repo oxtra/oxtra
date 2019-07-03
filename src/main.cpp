@@ -3,6 +3,7 @@
 #include <iostream>
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/fmt/bundled/ostream.h>
 
 #include "oxtra/arguments/arguments.h"
 #include "oxtra/elf/elf.h"
@@ -23,6 +24,14 @@ int main(int argc, char** argv) {
 	SPDLOG_INFO("Finished creating and initializing various runtime-objects.");
 
 	//startup the translation and execution of the source-code
-	dispatcher.run();
+	//dispatcher.run();
+
+	dispatcher::Context context;
+	dispatcher::Context::capture(&context);
+
+	spdlog::info("captured context: {}", context);
+
+	//dispatcher::Context::restore(&context);
+
 	return 0;
 }
