@@ -67,11 +67,21 @@ namespace elf {
 	public:
 
 		/**
- 		* Parses an elf-binary-file and unpacks the file
+ 		* Parses an elf-binary-file and unpacks the file.
  		* @param path path to the elf-binary-file
  		* @return returns false if already called before. Otherwise parses and returns true
  		*/
 		Elf(const char* path);
+		
+		/**
+		 * Creates a dummy-elf-object from a stream of bytes.
+		 * By Default it will mark the first exe_pages-number of pages es read/executable.
+		 * The rest of the pages will be flagged as read/writable.
+		 * @param ptr stream of bytes
+		 * @param size number of bytes in the stream
+		 * @param exe_pages number of initial pages flagged as executable
+		 */
+		Elf(uint8_t* ptr, size_t size, size_t exec_pages = 1);
 
 		Elf() = delete;
 
