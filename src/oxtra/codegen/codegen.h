@@ -12,6 +12,7 @@
 namespace codegen {
 	class CodeGenerator {
 	private:
+		// If these registers are changed, the documentation has to be updated
 		constexpr static encoding::RiscVRegister
 				memory_temp_register = encoding::RiscVRegister::t6,
 				read_temp_register = encoding::RiscVRegister::t6,
@@ -34,6 +35,14 @@ namespace codegen {
 				encoding::RiscVRegister::s5, //r13
 				encoding::RiscVRegister::s6, //r14
 				encoding::RiscVRegister::s7  //r15
+		};
+
+		enum class RegisterAccess : uint8_t {
+			QWORD,	//64bit
+			DWORD,	//32bit
+			WORD,	//16bit
+			HBYTE,
+			LBYTE
 		};
 
 	private:
@@ -66,6 +75,7 @@ namespace codegen {
 		size_t translate_ret(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv);
 
 		/**
+		 * Translates a x86-memory operand into risc-v instructions (resulting address in reg)
 		 * t6 might be overridden.
 		 * @param x86_instruction The x86 instruction object.
 		 * @param index operand-index of instruction.
@@ -90,11 +100,11 @@ namespace codegen {
 		 * t5 and t6 might be overwritten.
 		 * @param dest register to be changed.
 		 * @param src register to write.
-		 * @param size operand-size (in bytes) [0 means 1-byte high register (e.g. ah)].
+		 * @param access the operand-size of the register to write to.
 		 * @param riscv An array of risc-v instructions.
 		 * @param count current number of risc-v instructions.
 		 */
-		static void move_to_register(encoding::RiscVRegister dest, encoding::RiscVRegister src, uint8_t size,
+		static void move_to_register(encoding::RiscVRegister dest, encoding::RiscVRegister src, RegisterAccess access,
 									 utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
@@ -106,14 +116,14 @@ namespace codegen {
 		 * 		- store riscv:a1 to x86:eax
 		 *
 		 * The source-register will be preserved.
-		 * t5 aand t6 might be overwritten.
+		 * t5 and t6 might be overwritten.
 		 * @param dest register to be changed.
 		 * @param src register to read.
-		 * @param size operand-size (in bytes) [0 means 1-byte high register (e.g. ah)].
+		 * @param access the operand-size of the register to read from.
 		 * @param riscv An array of risc-v instructions.
 		 * @param count current number of risc-v instructions.
 		 */
-		static void get_from_register(encoding::RiscVRegister dest, encoding::RiscVRegister src, uint8_t size,
+		static void get_from_register(encoding::RiscVRegister dest, encoding::RiscVRegister src, RegisterAccess access,
 									  utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**

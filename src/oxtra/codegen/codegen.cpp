@@ -92,90 +92,85 @@ void CodeGenerator::translate_memory_operand(const Instruction& inst, size_t ind
 	}
 }
 
-void CodeGenerator::move_to_register(RiscVRegister dest, RiscVRegister src, uint8_t size, riscv_instruction_t* riscv,
-									 size_t& count) {
-	switch (size) {
-		case 8:
+void CodeGenerator::move_to_register(RiscVRegister dest, RiscVRegister src, RegisterAccess access,
+									 riscv_instruction_t* riscv, size_t& count) {
+	switch (access) {
+		case RegisterAccess::QWORD:
 			riscv[count++] = encoding::ADD(dest, src, RiscVRegister::zero);
 			return;
-		case 4:
-			// load the and-mask into t5
-			riscv[count++] = encoding::LUI(RiscVRegister::t5, 0x0fffff);
-			riscv[count++] = encoding::ADDI(RiscVRegister::t5, RiscVRegister::t5, 0xfff);
+		case RegisterAccess::DWORD:
+			// load the and-mask
+			load_unsigned_immediate(0xffffffff, mask_temp_register, riscv, count);
 
 			// clear the lower bits of the destination-register
-			riscv[count++] = encoding::AND(RiscVRegister::t6, RiscVRegister::t5, dest);
-			riscv[count++] = encoding::XOR(dest, dest, RiscVRegister::t6);
+			riscv[count++] = encoding::AND(read_temp_register, mask_temp_register, dest);
+			riscv[count++] = encoding::XOR(dest, dest, read_temp_register);
 
 			// extract the lower bits of the source-register and merge the registers
-			riscv[count++] = encoding::AND(RiscVRegister::t6, RiscVRegister::t5, src);
-			riscv[count++] = encoding::OR(dest, dest, RiscVRegister::t6);
+			riscv[count++] = encoding::AND(read_temp_register, mask_temp_register, src);
+			riscv[count++] = encoding::OR(dest, dest, read_temp_register);
 			return;
-		case 2:
-			// load the and-mask into t5
-			riscv[count++] = encoding::LUI(RiscVRegister::t5, 0x0f);
-			riscv[count++] = encoding::ADDI(RiscVRegister::t5, RiscVRegister::t5, 0xfff);
+		case RegisterAccess::WORD:
+			// load the and-mask
+			load_unsigned_immediate(0xffff, mask_temp_register, riscv, count);
 
 			// clear the lower bits of the destination-register
-			riscv[count++] = encoding::AND(RiscVRegister::t6, RiscVRegister::t5, dest);
-			riscv[count++] = encoding::XOR(dest, dest, RiscVRegister::t6);
+			riscv[count++] = encoding::AND(read_temp_register, mask_temp_register, dest);
+			riscv[count++] = encoding::XOR(dest, dest, read_temp_register);
 
 			// extract the lower bits of the source-register and merge the registers
-			riscv[count++] = encoding::AND(RiscVRegister::t6, RiscVRegister::t5, src);
-			riscv[count++] = encoding::OR(dest, dest, RiscVRegister::t6);
+			riscv[count++] = encoding::AND(read_temp_register, mask_temp_register, src);
+			riscv[count++] = encoding::OR(dest, dest, read_temp_register);
 			return;
-		case 1:
+		case RegisterAccess::LBYTE:
 			// clear the lower bits of the destination-register
-			riscv[count++] = encoding::ANDI(RiscVRegister::t6, dest, 0xff);
-			riscv[count++] = encoding::XOR(dest, dest, RiscVRegister::t6);
+			riscv[count++] = encoding::ANDI(read_temp_register, dest, 0xff);
+			riscv[count++] = encoding::XOR(dest, dest, read_temp_register);
 
 			// extract the lower bits of the source-register and merge the registers
-			riscv[count++] = encoding::ANDI(RiscVRegister::t6, src, 0xff);
-			riscv[count++] = encoding::OR(dest, dest, RiscVRegister::t6);
+			riscv[count++] = encoding::ANDI(read_temp_register, src, 0xff);
+			riscv[count++] = encoding::OR(dest, dest, read_temp_register);
 			return;
-		case 0:
-			// load the and-mask into t5
-			riscv[count++] = encoding::LUI(RiscVRegister::t5, 0x0f);
-			riscv[count++] = encoding::ADDI(RiscVRegister::t5, RiscVRegister::t5, 0xf00);
+		case RegisterAccess::HBYTE:
+			// load the and-mask
+			load_unsigned_immediate(0xff00, mask_temp_register, riscv, count);
 
 			// clear the lower bits of the destination-register
-			riscv[count++] = encoding::AND(RiscVRegister::t6, RiscVRegister::t5, dest);
-			riscv[count++] = encoding::XOR(dest, dest, RiscVRegister::t6);
+			riscv[count++] = encoding::AND(read_temp_register, mask_temp_register, dest);
+			riscv[count++] = encoding::XOR(dest, dest, read_temp_register);
 
 			// extract the lower bits of the source-register and merge the registers
-			riscv[count++] = encoding::ANDI(RiscVRegister::t6, src, 0xff);
-			riscv[count++] = encoding::SLLI(RiscVRegister::t6, RiscVRegister::t6, 8);
-			riscv[count++] = encoding::OR(dest, dest, RiscVRegister::t6);
+			riscv[count++] = encoding::ANDI(read_temp_register, src, 0xff);
+			riscv[count++] = encoding::SLLI(read_temp_register, read_temp_register, 8);
+			riscv[count++] = encoding::OR(dest, dest, read_temp_register);
 			return;
 	}
 }
 
-void CodeGenerator::get_from_register(RiscVRegister dest, RiscVRegister src, uint8_t size, riscv_instruction_t* riscv,
-									  size_t& count) {
-	switch (size) {
-		case 8:
+void CodeGenerator::get_from_register(RiscVRegister dest, RiscVRegister src, RegisterAccess access,
+									  riscv_instruction_t* riscv, size_t& count) {
+	switch (access) {
+		case RegisterAccess::QWORD:
 			riscv[count++] = encoding::ADD(dest, src, RiscVRegister::zero);
 			return;
-		case 4:
-			// load the and-mask into t6
-			riscv[count++] = encoding::LUI(RiscVRegister::t6, 0x0fffff);
-			riscv[count++] = encoding::ADDI(RiscVRegister::t6, RiscVRegister::t6, 0xfff);
+		case RegisterAccess::DWORD:
+			// load the and-mask
+			load_unsigned_immediate(0xffffffff, mask_temp_register, riscv, count);
 
 			// extract the lower bits of the source-register
-			riscv[count++] = encoding::AND(dest, RiscVRegister::t6, src);
+			riscv[count++] = encoding::AND(dest, mask_temp_register, src);
 			return;
-		case 2:
-			// load the and-mask into t6
-			riscv[count++] = encoding::LUI(RiscVRegister::t6, 0x0f);
-			riscv[count++] = encoding::ADDI(RiscVRegister::t6, RiscVRegister::t6, 0xfff);
+		case RegisterAccess::WORD:
+			// load the and-mask
+			load_unsigned_immediate(0xffff, mask_temp_register, riscv, count);
 
 			// extract the lower bits of the source-register
-			riscv[count++] = encoding::AND(dest, RiscVRegister::t6, src);
+			riscv[count++] = encoding::AND(dest, mask_temp_register, src);
 			return;
-		case 1:
+		case RegisterAccess::LBYTE:
 			riscv[count++] = encoding::ANDI(dest, src, 0xff);
 			return;
-		case 0:
+		case RegisterAccess::HBYTE:
 			riscv[count++] = encoding::SRLI(dest, src, 8);
 			riscv[count++] = encoding::ANDI(dest, dest, 0xff);
 			return;
