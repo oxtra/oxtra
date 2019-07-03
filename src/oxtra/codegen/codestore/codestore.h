@@ -12,30 +12,27 @@
 
 namespace codegen::codestore {
 
-	constexpr size_t max_riscv_instructions_bits = 4;
+	constexpr size_t max_riscv_instructions_bits = 10;
 	constexpr size_t max_riscv_instructions = (0x01u << max_riscv_instructions_bits) - 1;
 
 	struct InstructionOffset {
 		/**
 		 * number of bytes for the x86 instruction
 		 */
-		uint8_t x86 : 4;
+		uint16_t x86 : 6;
 
 		/**
 		 * number of risc-v instructions (every instruction is 4 bytes)
 		 */
-		uint8_t riscv : max_riscv_instructions_bits;
-
-		static_assert(max_riscv_instructions_bits <= 4,
-					  "max_riscv_instruction has been modified. Type of InstructionOffset::riscv probably has to be adapted.");
+		uint16_t riscv : max_riscv_instructions_bits;
 	};
 
 	struct BlockEntry {
-		utils::guest_addr_t x86_start;
-		utils::guest_addr_t x86_end;
-		utils::host_addr_t riscv_start;
-		size_t instruction_count;
-		const InstructionOffset* offsets;
+		utils::guest_addr_t x86_start = 0;
+		utils::guest_addr_t x86_end = 0;
+		utils::host_addr_t riscv_start = 0;
+		size_t instruction_count = 0;
+		const InstructionOffset* offsets = nullptr;
 	};
 
 	class CodeStore {

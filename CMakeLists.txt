@@ -1,5 +1,15 @@
 cmake_minimum_required(VERSION 3.11)
 
+string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_LOWER)
+if (CMAKE_BUILD_TYPE_LOWER STREQUAL "release")
+	add_compile_definitions(SPDLOG_ACTIVE_LEVEL=3)
+	add_compile_definitions(RELEASE)
+else()
+	message(STATUS "This project has been created with a debug configuration.")
+	add_compile_definitions(SPDLOG_ACTIVE_LEVEL=1)
+	add_compile_definitions(DEBUG)
+endif()
+
 project(oxtra)
 
 if (CMAKE_COMPILER_IS_GNUCC)

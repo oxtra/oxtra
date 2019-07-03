@@ -1,5 +1,8 @@
 #include "oxtra/codegen/codestore/codestore.h"
 
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/basic_file_sink.h>
+
 using namespace utils;
 using namespace codegen::codestore;
 
@@ -80,7 +83,7 @@ void CodeStore::add_instruction(BlockEntry& block, const fadec::Instruction& x86
 		 * that the block has not been added to the new page yet, if the first entry of the overlapping page-array is
 		 * not equal to this block. This assumption should hold true, as the new block is coming from the lower
 		 * addresses and thus via the base-address of the page. */
-		auto page_array = _pages[get_page_index(block.x86_end)];
+		auto& page_array = _pages[get_page_index(block.x86_end)];
 		if (page_array.empty()) {
 			page_array.push_back(&block);
 		} else if (page_array[0] != &block) {
@@ -90,7 +93,7 @@ void CodeStore::add_instruction(BlockEntry& block, const fadec::Instruction& x86
 }
 
 void CodeStore::insert_block(codegen::codestore::BlockEntry& block, utils::guest_addr_t x86_address) {
-	// If there's no x86 start address then this is the first instruction to add to the block.
+	// ff there's no x86 start address then this is the first instruction to add to the block
 	if (block.x86_start == 0) {
 		block.x86_start = x86_address;
 
@@ -105,7 +108,9 @@ void CodeStore::insert_block(codegen::codestore::BlockEntry& block, utils::guest
 
 		page_array.push_back(&block);
 
-	} else if (block.x86_end != x86_address) {
+	}
+
+	else if (block.x86_end != x86_address) {
 		// maybe do this for the debug build only?
 		throw std::runtime_error("Tried to add a non-consecutive instruction to a block.");
 	}
