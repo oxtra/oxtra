@@ -63,21 +63,32 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 
 void CodeGenerator::translate_memory_operand(const Instruction& inst, size_t index, RiscVRegister reg,
 											 riscv_instruction_t* riscv, size_t& count) {
-	if (inst.get_address_size() != 8)
+	if (inst.get_address_size() < 4)
 		throw std::runtime_error("invalid addressing-size");
 	const auto& operand = inst.get_operand(index);
 
 	// add the scale & index
 	if (inst.get_index_register() != fadec::Register::none) {
-		riscv[count++] = encoding::MV(reg, register_mapping[static_cast<uint16_t>( inst.get_index_register())]);
+		if (inst.get_address_size() == 8)
+			get_from_register(reg, register_mapping[static_cast<uint16_t>( inst.get_index_register())],
+							  RegisterAccess::QWORD, riscv, count);
+		else
+			get_from_register(reg, register_mapping[static_cast<uint16_t>( inst.get_index_register())],
+							  RegisterAccess::DWORD, riscv, count);
 		riscv[count++] = encoding::SLLI(reg, reg, inst.get_index_scale());
 	} else {
-		load_12bit_immediate(0, reg, riscv, count);
+		riscv[count++] = encoding::XOR(reg, reg, reg);
 	}
 
 	// add the base-register
 	if (operand.get_register() != fadec::Register::none) {
-		riscv[count++] = encoding::ADD(reg, reg, register_mapping[static_cast<uint16_t>( operand.get_register())]);
+		if (inst.get_address_size() == 8)
+			riscv[count++] = encoding::ADD(reg, reg, register_mapping[static_cast<uint16_t>( operand.get_register())]);
+		else {
+			get_from_register(memory_temp_register, register_mapping[static_cast<uint16_t>(operand.get_register())],
+							  RegisterAccess::DWORD, riscv, count);
+			riscv[count++] = encoding::ADD(reg, reg, memory_temp_register);
+		}
 	}
 
 	// add the displacement
