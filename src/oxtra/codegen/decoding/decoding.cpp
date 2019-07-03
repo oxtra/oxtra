@@ -17,10 +17,15 @@ enum class RiscVOpcode : uint8_t {
 };
 
 constexpr const char* register_string[32] = {
-		"zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2", "s0", "s1",
-		"a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7",
-		"s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11",
-		"t3", "t4", "t5", "t6"
+		//"zero", "ra", "sp", "gp", "tp", "t0", "t1", "t2", "s0", "s1",
+		//"a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7",
+		//"s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11",
+		//"t3", "t4", "t5", "t6"
+
+		"zero", "Vra", "rsp", "Vgp", "Vtp", "Vt0", "Vt1", "Vt2", "rbp",
+		"flags", "rax", "rbx", "rcx", "rdx", "rsi", "rdi", "r8", "r9",
+		"r10", "r11", "r12", "r13", "r14", "r15", "host_enter", "inline_translate",
+		"Vs10", "dispatcher", "Vt3", "Vt4", "Vt5", "Vt6"
 };
 constexpr const char* opcode_string[128] = {
 		"lui", "auipc", "lb", "lh", "lw", "lbu", "lhu", "lwu", "ld",
@@ -42,7 +47,7 @@ uint32_t split_off(riscv_instruction_t instruction, uint8_t offset, uint8_t size
 // add numbers
 void parse_number(stringstream& sstr, uint32_t nbr, bool sign) {
 	sstr << (sign ? " -" : " ");
-	sstr << "0x" << hex << nbr << "(" << dec << nbr << ")";
+	sstr << "0x" << hex << nbr << (sign ? "(-" : "(") << dec << nbr << ")";
 }
 
 // create the stream
