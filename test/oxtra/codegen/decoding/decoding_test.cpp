@@ -9,65 +9,65 @@ using namespace encoding;
 using namespace decoding;
 
 constexpr const char* expected_rtype[] = {
-		"sub a2, a3 -> a1",
-		"add t2, a3 -> a1",
-		"mul a2, sp -> a1",
-		"rem a2, gp -> a1"
+		"sub rcx, rdx -> rbx",
+		"add Vt2, rdx -> rbx",
+		"mul rcx, rsp -> rbx",
+		"rem rcx, Vgp -> rbx"
 };
 constexpr const char* expected_shift[] = {
-		"slli a2, (shift: 0x3f(63)) -> a1",
-		"srli a2, (shift: 0x1f(31)) -> a1",
-		"slli a2, (shift: 0x1(1)) -> a1",
-		"srai a2, (shift: 0x0(0)) -> a1"
+		"slli rcx, (shift: 0x3f(63)) -> rbx",
+		"srli rcx, (shift: 0x1f(31)) -> rbx",
+		"slli rcx, (shift: 0x1(1)) -> rbx",
+		"srai rcx, (shift: 0x0(0)) -> rbx"
 };
 constexpr const char* expected_itype[] = {
-		"addi zero, 0x7ff(2047) -> a1",
-		"andi zero, 0x2(2) -> a1",
-		"ori zero, 0x0(0) -> a1",
-		"xori zero, -0x2(2) -> a1",
-		"addi zero, -0x800(2048) -> a1"
+		"addi zero, 0x7ff(2047) -> rbx",
+		"andi zero, 0x2(2) -> rbx",
+		"ori zero, 0x0(0) -> rbx",
+		"xori zero, -0x2(-2) -> rbx",
+		"addi zero, -0x800(-2048) -> rbx"
 };
 constexpr const char* expected_utype[] = {
-		"lui 0x7ffff(524287) -> a1",
-		"lui 0x2(2) -> a1",
-		"lui 0x0(0) -> a1",
-		"lui 0xffffe(1048574) -> a1",
-		"lui 0x80000(524288) -> a1"
+		"lui 0x7ffff(524287) -> rbx",
+		"lui 0x2(2) -> rbx",
+		"lui 0x0(0) -> rbx",
+		"lui 0xffffe(1048574) -> rbx",
+		"lui 0x80000(524288) -> rbx"
 };
 constexpr const char* expected_load[] = {
-		"lb [a2 + 0x7ff(2047)] -> a1",
-		"lh [a2 + 0x2(2)] -> a1",
-		"lw [a2] -> a1",
-		"ld [a2 + -0x2(2)] -> a1",
-		"lhu [a2 + -0x800(2048)] -> a1"
+		"lb [rcx + 0x7ff(2047)] -> rbx",
+		"lh [rcx + 0x2(2)] -> rbx",
+		"lw [rcx] -> rbx",
+		"ld [rcx + -0x2(-2)] -> rbx",
+		"lhu [rcx + -0x800(-2048)] -> rbx"
 };
 constexpr const char* expected_store[] = {
-		"sb a2 -> [a1 + 0x7ff(2047)]",
-		"sh a2 -> [a1 + 0x2(2)]",
-		"sw a2 -> [a1]",
-		"sd a2 -> [a1 + -0x2(2)]",
-		"sw a2 -> [a1 + -0x800(2048)]"
+		"sb rcx -> [rbx + 0x7ff(2047)]",
+		"sh rcx -> [rbx + 0x2(2)]",
+		"sw rcx -> [rbx]",
+		"sd rcx -> [rbx + -0x2(-2)]",
+		"sw rcx -> [rbx + -0x800(-2048)]"
 };
 constexpr const char* expected_jtype[] = {
-		"jal $[pc + 0x7fffe(524286)] @ a1",
-		"jal $[pc + 0x2(2)] @ a1",
-		"jal $[pc] @ a1",
-		"jal $[pc + -0x2(2)] @ a1",
-		"jal $[pc + -0x80000(524288)] @ a1"
+		"jal $[pc + 0x7fffe(524286)] @ rbx",
+		"jal $[pc + 0x2(2)] @ rbx",
+		"jal $[pc] @ rbx",
+		"jal $[pc + -0x2(-2)] @ rbx",
+		"jal $[pc + -0x80000(-524288)] @ rbx"
 };
 constexpr const char* expected_relative[] = {
-		"jalr $[a2 + 0x7ff(2047)] @ a1",
-		"jalr $[a2 + 0x2(2)] @ a1",
-		"jalr $[a2] @ a1",
-		"jalr $[a2 + -0x2(2)] @ a1",
-		"jalr $[a2 + -0x800(2048)] @ a1"
+		"jalr $[rcx + 0x7ff(2047)] @ rbx",
+		"jalr $[rcx + 0x2(2)] @ rbx",
+		"jalr $[rcx] @ rbx",
+		"jalr $[rcx + -0x2(-2)] @ rbx",
+		"jalr $[rcx + -0x800(-2048)] @ rbx"
 };
 constexpr const char* expected_btype[] = {
-		"beq a1, a2 ? $[pc + 0x7fe(2046)]",
-		"bne a1, a2 ? $[pc + 0x2(2)]",
-		"blt a1, a2 ? $[pc]",
-		"bge a1, a2 ? $[pc + -0x2(2)]",
-		"bltu a1, a2 ? $[pc + -0x800(2048)]"
+		"beq rbx, rcx ? $[pc + 0x7fe(2046)]",
+		"bne rbx, rcx ? $[pc + 0x2(2)]",
+		"blt rbx, rcx ? $[pc]",
+		"bge rbx, rcx ? $[pc + -0x2(-2)]",
+		"bltu rbx, rcx ? $[pc + -0x800(-2048)]"
 };
 
 TEST_CASE("decoding-test", "[decoding::parse_riscv]") {
