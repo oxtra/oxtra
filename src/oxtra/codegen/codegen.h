@@ -11,6 +11,11 @@
 namespace codegen {
 	class CodeGenerator {
 	private:
+		constexpr static encoding::RiscVRegister
+				memory_temp_register = encoding::RiscVRegister::t6,
+				read_temp_register = encoding::RiscVRegister::t6,
+				mask_temp_register = encoding::RiscVRegister::t5;
+
 		static constexpr encoding::RiscVRegister register_mapping[] = {
 				encoding::RiscVRegister::a0, //rax
 				encoding::RiscVRegister::a2, //rcx

@@ -153,24 +153,17 @@ void CodeGenerator::translate_memory_operand(const fadec::Instruction& x86_instr
 			riscv_instructions[num_instructions++] = encoding::ADDI(reg, reg, static_cast<uint16_t>(
 					x86_instruction.get_displacement()));
 		} else {
-			load_unsigned_immediate(x86_instruction.get_displacement(), RiscVRegister::t6,
+			load_unsigned_immediate(x86_instruction.get_displacement(), memory_temp_register,
 									riscv_instructions, num_instructions);
-			riscv_instructions[num_instructions++] = encoding::ADD(reg, reg, RiscVRegister::t6);
+			riscv_instructions[num_instructions++] = encoding::ADD(reg, reg, memory_temp_register);
 		}
 	}
 }
 
-//TODO: how to handle register reservation? constexpr? document it? where to document it?
-
 void CodeGenerator::load_12bit_immediate(uint16_t immediate, encoding::RiscVRegister destination,
 										 utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions) {
-	//TODO: is this worth the hassle?
-	if (immediate == 0) {
-		riscv_instructions[num_instructions++] = encoding::MV(destination, RiscVRegister::zero);
-	} else {
-		riscv_instructions[num_instructions++] = encoding::ADDI(destination, RiscVRegister::zero,
-																static_cast<uint16_t>(immediate) & 0x0FFFu);
-	}
+	riscv_instructions[num_instructions++] = encoding::ADDI(destination, RiscVRegister::zero,
+															static_cast<uint16_t>(immediate) & 0x0FFFu);
 }
 
 void CodeGenerator::load_32bit_immediate(uint32_t immediate, encoding::RiscVRegister destination,
@@ -179,8 +172,9 @@ void CodeGenerator::load_32bit_immediate(uint32_t immediate, encoding::RiscVRegi
 	const auto lower_immediate = static_cast<uint16_t>(immediate & 0x0FFFu);
 
 	// adding the lower bits is sign extended, so if the lower bits are signed we have to increase the upper immediate
-	if (immediate & 0x800u)
+	if (immediate & 0x800u) {
 		upper_immediate++;
+	}
 
 	riscv_instructions[num_instructions++] = encoding::LUI(destination, upper_immediate);
 
@@ -191,14 +185,13 @@ void CodeGenerator::load_32bit_immediate(uint32_t immediate, encoding::RiscVRegi
 
 void CodeGenerator::load_64bit_immediate(uint64_t immediate, encoding::RiscVRegister destination,
 										 utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions) {
-	const uint32_t high_bits = (immediate & 0xFFFFFFFF00000000u) >> 32u;
+	const uint32_t high_bits = (immediate >> 32u) & 0xFFFFFFFF;
 	const uint32_t low_bits = immediate & 0xFFFFFFFF;
-	const size_t immediate_count = 4;
+	constexpr size_t immediate_count = 4;
 	uint32_t immediates[immediate_count] = {low_bits & 0x000000FFu, (low_bits & 0x000FFF00u) >> 8u,
 											(low_bits & 0xFFF00000u) >> 20u, high_bits};
 
-//	for (size_t i = 1; i < immediate_count - 1; i++) {
-	for (size_t i = immediate_count - 2; i >= 1 ; i--) {
+	for (size_t i = immediate_count - 2; i >= 1; i--) {
 		if (immediates[i] & 0x800u) {
 			immediates[i + 1]++;
 		}
