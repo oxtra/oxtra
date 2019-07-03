@@ -15,7 +15,7 @@ void refactor(const char *assembly, utils::riscv_instruction_t encoded) {
 	fprintf(assemblyf, "%s", assembly_);
 	fclose(assemblyf);
 	
-	system("/opt/riscv/bin/riscv64-unknown-linux-gnu-gcc comp.s -o comp.elf");
+	system("/opt/riscv/bin/riscv64-unknown-linux-gnu-gcc comp.s -o comp.elf -nostdlib");
 	system("objcopy -I elf64-little -j .text -O binary comp.elf dump");
 
 	char* enc = reinterpret_cast<char*>(&encoded);
