@@ -76,9 +76,8 @@ void CodeGenerator::translate_memory_operand(const Instruction& inst, size_t ind
 			get_from_register(reg, register_mapping[static_cast<uint16_t>( inst.get_index_register())],
 							  RegisterAccess::DWORD, riscv, count);
 		riscv[count++] = encoding::SLLI(reg, reg, inst.get_index_scale());
-	} else {
-		riscv[count++] = encoding::XOR(reg, reg, reg);
-	}
+	} else
+		load_unsigned_immediate(0, reg, riscv, count);
 
 	// add the base-register
 	if (operand.get_register() != fadec::Register::none) {
@@ -92,12 +91,13 @@ void CodeGenerator::translate_memory_operand(const Instruction& inst, size_t ind
 	}
 
 	// add the displacement
-	if (inst.get_displacement() > 0) {
+	if (inst.get_displacement() > 0 || _elf.get_address_delta() > 0) {
+		uintptr_t displacement = _elf.get_address_delta() + inst.get_displacement();
 		// less or equal than 12 bits
-		if (inst.get_displacement() < 0x800) {
-			riscv[count++] = encoding::ADDI(reg, reg, static_cast<uint16_t>(inst.get_displacement()));
+		if (displacement < 0x800) {
+			riscv[count++] = encoding::ADDI(reg, reg, static_cast<uint16_t>(displacement));
 		} else {
-			load_unsigned_immediate(inst.get_displacement(), memory_temp_register, riscv, count);
+			load_unsigned_immediate(displacement, memory_temp_register, riscv, count);
 			riscv[count++] = encoding::ADD(reg, reg, memory_temp_register);
 		}
 	}

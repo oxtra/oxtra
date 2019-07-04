@@ -96,7 +96,7 @@ namespace codegen {
 		 * @param num_instructions current number of risc-v instructions.
 		 * @return The index of the first free instruction (i.e. current number of instructions).
 		 */
-		static void translate_memory_operand(const fadec::Instruction& inst, size_t index, encoding::RiscVRegister reg,
+		void translate_memory_operand(const fadec::Instruction& inst, size_t index, encoding::RiscVRegister reg,
 											 utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
