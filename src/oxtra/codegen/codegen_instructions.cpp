@@ -77,12 +77,23 @@ void CodeGenerator::translate_mov(const Instruction& inst, riscv_instruction_t* 
 								  RegisterAccess::HBYTE, riscv, count);
 		} else
 			get_from_register(source_register, src_register, RegisterAccess::QWORD, riscv, count);
-	} else if (tp[1] == OperandType::imm) {
-		if (inst.get_type() == InstructionType::MOVSX)
-			load_signed_immediate(inst.get_immediate(), source_register, riscv, count);
-		else
-			load_unsigned_immediate(inst.get_immediate(), source_register, riscv, count);
-	} else {
+
+		/* if this in struction is a movsx/movzx instruction,
+		 * the input operands will vary in size. Thus they will have to be sign-extended/zero-extended.
+		 * Otherwise the optimization will fail (load full 8-byte register, and store the interesting parts).
+		 * [It will fail, because the interesting, stored parts, are larger than they should be]
+		 * With a simple hack of shifting all the way up, and down again, we can fill the space with the
+		 * highest bit. */
+		if(inst.get_type() == InstructionType::MOVSX || inst.get_type() == InstructionType::MOVZX) {
+			riscv[count++] = encoding::SLLI(source_register, source_register, 64 - 8 * source_operand.get_size());
+			if(inst.get_type() == InstructionType::MOVSX)
+				riscv[count++]= encoding::SRAI(source_register, source_register, 64 - 8 * source_operand.get_size());
+			else
+				riscv[count++]= encoding::SRLI(source_register, source_register, 64 - 8 * source_operand.get_size());
+		}
+	} else if (tp[1] == OperandType::imm)
+		load_unsigned_immediate(inst.get_immediate(), source_register, riscv, count);
+	else {
 		// read the value from memory
 		translate_memory_operand(inst, 1, source_register, riscv, count);
 		switch (source_operand.get_size()) {
