@@ -14,7 +14,7 @@ void refactor(const char *assembly, utils::riscv_instruction_t encoded) {
 	FILE *assemblyf = fopen("comp.s", "w");
 	fprintf(assemblyf, "%s", assembly_);
 	fclose(assemblyf);
-	
+
 	system("/opt/riscv/bin/riscv64-unknown-linux-gnu-gcc comp.s -o comp.elf -nostdlib");
 	system("objcopy -I elf64-little -j .text -O binary comp.elf dump");
 
@@ -33,18 +33,18 @@ void refactor(const char *assembly, utils::riscv_instruction_t encoded) {
 
 TEST_CASE("instruction encoding is correct", "[encoding]") {
 	SECTION("LUI") {
-		utils::riscv_instruction_t encoded = LUI(RiscVRegister::t4, 0xf479e);
-		refactor("lui t4, 0xf479e", encoded);
+		utils::riscv_instruction_t encoded = LUI(RiscVRegister::t4, 0xf48);
+		refactor("lui t4, 0xf48", encoded);
 	}
 
 	SECTION("AUIPC") {
-		utils::riscv_instruction_t encoded = AUIPC(RiscVRegister::t4, 0xf479e);
-		refactor("auipc t4, 0xf479e", encoded);
+		utils::riscv_instruction_t encoded = AUIPC(RiscVRegister::t4, 0xf48);
+		refactor("auipc t4, 0xf48", encoded);
 	}
 
 	SECTION("JAL") {
-		utils::riscv_instruction_t encoded = JAL(RiscVRegister::t4, 0xf479e);
-		refactor("jal t4, 0xf479e", encoded);
+		utils::riscv_instruction_t encoded = JAL(RiscVRegister::t4, 0xf48);
+		refactor("jal t4, 0xf48", encoded);
 	}
 
 	SECTION("JALR") {
@@ -53,118 +53,118 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 	}
 
 	SECTION("BEQ") {
-		utils::riscv_instruction_t encoded = BEQ(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
-		refactor("beq t4, t5, 0xf47", encoded);
+		utils::riscv_instruction_t encoded = BEQ(RiscVRegister::t4, RiscVRegister::t5, 0xf48);
+		refactor("beq t4, t5, 0xf48", encoded);
 	}
 
 	SECTION("BNE") {
-		utils::riscv_instruction_t encoded = BNE(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
-		refactor("bne t4, t5, 0xf47", encoded);
+		utils::riscv_instruction_t encoded = BNE(RiscVRegister::t4, RiscVRegister::t5, 0xf48);
+		refactor("bne t4, t5, 0xf48", encoded);
 	}
 
 	SECTION("BLT") {
-		utils::riscv_instruction_t encoded = BLT(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
-		refactor("blt t4, t5, 0xf47", encoded);
+		utils::riscv_instruction_t encoded = BLT(RiscVRegister::t4, RiscVRegister::t5, 0xf48);
+		refactor("blt t4, t5, 0xf48", encoded);
 	}
 
 	SECTION("BGE") {
-		utils::riscv_instruction_t encoded = BGE(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
-		refactor("bge t4, t5, 0xf47", encoded);
+		utils::riscv_instruction_t encoded = BGE(RiscVRegister::t4, RiscVRegister::t5, 0xf48);
+		refactor("bge t4, t5, 0xf48", encoded);
 	}
 
 	SECTION("BLTU") {
-		utils::riscv_instruction_t encoded = BLTU(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
-		refactor("bltu t4, t5, 0xf47", encoded);
+		utils::riscv_instruction_t encoded = BLTU(RiscVRegister::t4, RiscVRegister::t5, 0xf48);
+		refactor("bltu t4, t5, 0xf48", encoded);
 	}
 
 	SECTION("BGEU") {
-		utils::riscv_instruction_t encoded = BGEU(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
-		refactor("bgeu t4, t5, 0xf47", encoded);
+		utils::riscv_instruction_t encoded = BGEU(RiscVRegister::t4, RiscVRegister::t5, 0xf48);
+		refactor("bgeu t4, t5, 0xf48", encoded);
 	}
 
 	SECTION("LB") {
-		utils::riscv_instruction_t encoded = LB(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
-		refactor("lb t4, t5, 0xf47", encoded);
+		utils::riscv_instruction_t encoded = LB(RiscVRegister::t4, RiscVRegister::t5, 0xf48);
+		refactor("lb t4, 0xf48(t5)", encoded);
 	}
 
 	SECTION("LH") {
-		utils::riscv_instruction_t encoded = LH(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
-		refactor("lh t4, t5, 0xf47", encoded);
+		utils::riscv_instruction_t encoded = LH(RiscVRegister::t4, RiscVRegister::t5, 0xf48);
+		refactor("lh t4, 0xf48(t5)", encoded);
 	}
 
 	SECTION("LW") {
-		utils::riscv_instruction_t encoded = LW(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
-		refactor("lw t4, t5, 0xf47", encoded);
+		utils::riscv_instruction_t encoded = LW(RiscVRegister::t4, RiscVRegister::t5, 0xf48);
+		refactor("lw t4, 0xf48(t5)", encoded);
 	}
 
 	SECTION("LD") {
-		utils::riscv_instruction_t encoded = LD(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
-		refactor("ld t4, t5, 0xf47", encoded);
+		utils::riscv_instruction_t encoded = LD(RiscVRegister::t4, RiscVRegister::t5, 0xf48);
+		refactor("ld t4, 0xf48(t5)", encoded);
 	}
 
 	SECTION("LBU") {
-		utils::riscv_instruction_t encoded = LBU(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
-		refactor("lbu t4, t5, 0xf47", encoded);
+		utils::riscv_instruction_t encoded = LBU(RiscVRegister::t4, RiscVRegister::t5, 0xf48);
+		refactor("lbu t4, 0xf48(t5)", encoded);
 	}
 
 	SECTION("LHU") {
-		utils::riscv_instruction_t encoded = LHU(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
-		refactor("lhu t4, t5, 0xf47", encoded);
+		utils::riscv_instruction_t encoded = LHU(RiscVRegister::t4, RiscVRegister::t5, 0xf48);
+		refactor("lhu t4, 0xf48(t5)", encoded);
 	}
 
 	SECTION("LWU") {
-		utils::riscv_instruction_t encoded = LWU(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
-		refactor("lwu t4, t5, 0xf47", encoded);
+		utils::riscv_instruction_t encoded = LWU(RiscVRegister::t4, RiscVRegister::t5, 0xf48);
+		refactor("lwu t4, 0xf48(t5)", encoded);
 	}
 
 	SECTION("SB") {
-		utils::riscv_instruction_t encoded = SB(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
-		refactor("sb t4, t5, 0xf47", encoded);
+		utils::riscv_instruction_t encoded = SB(RiscVRegister::t4, RiscVRegister::t5, 0xf48);
+		refactor("sb t4, 0xf48(t5)", encoded);
 	}
 
 	SECTION("SH") {
-		utils::riscv_instruction_t encoded = SH(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
-		refactor("sh t4, t5, 0xf47", encoded);
+		utils::riscv_instruction_t encoded = SH(RiscVRegister::t4, RiscVRegister::t5, 0xf48);
+		refactor("sh t4, 0xf48(t5)", encoded);
 	}
 
 	SECTION("SW") {
-		utils::riscv_instruction_t encoded = SW(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
-		refactor("sw t4, t5, 0xf47", encoded);
+		utils::riscv_instruction_t encoded = SW(RiscVRegister::t4, RiscVRegister::t5, 0xf48);
+		refactor("sw t4, 0xf48(t5)", encoded);
 	}
 
 	SECTION("SD") {
-		utils::riscv_instruction_t encoded = SD(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
-		refactor("sd t4, t5, 0xf47", encoded);
+		utils::riscv_instruction_t encoded = SD(RiscVRegister::t4, RiscVRegister::t5, 0xf48);
+		refactor("sd t4, 0xf48(t5)", encoded);
 	}
 
 	SECTION("ADDI") {
-		utils::riscv_instruction_t encoded = ADDI(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
-		refactor("addi t4, t5, 0xf47", encoded);
+		utils::riscv_instruction_t encoded = ADDI(RiscVRegister::t4, RiscVRegister::t5, 0xf48);
+		refactor("addi t4, t5, 0xf48", encoded);
 	}
 
 	SECTION("SLTI") {
-		utils::riscv_instruction_t encoded = SLTI(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
-		refactor("slti t4, t5, 0xf47", encoded);
+		utils::riscv_instruction_t encoded = SLTI(RiscVRegister::t4, RiscVRegister::t5, 0xf48);
+		refactor("slti t4, t5, 0xf48", encoded);
 	}
 
 	SECTION("SLTIU") {
-		utils::riscv_instruction_t encoded = SLTIU(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
-		refactor("sltiu t4, t5, 0xf47", encoded);
+		utils::riscv_instruction_t encoded = SLTIU(RiscVRegister::t4, RiscVRegister::t5, 0xf48);
+		refactor("sltiu t4, t5, 0xf48", encoded);
 	}
 
 	SECTION("XORI") {
-		utils::riscv_instruction_t encoded = XORI(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
-		refactor("xori t4, t5, 0xf47", encoded);
+		utils::riscv_instruction_t encoded = XORI(RiscVRegister::t4, RiscVRegister::t5, 0xf48);
+		refactor("xori t4, t5, 0xf48", encoded);
 	}
 
 	SECTION("ORI") {
-		utils::riscv_instruction_t encoded = ORI(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
-		refactor("ori t4, t5, 0xf47", encoded);
+		utils::riscv_instruction_t encoded = ORI(RiscVRegister::t4, RiscVRegister::t5, 0xf48);
+		refactor("ori t4, t5, 0xf48", encoded);
 	}
 
 	SECTION("ANDI") {
-		utils::riscv_instruction_t encoded = ANDI(RiscVRegister::t4, RiscVRegister::t5, 0xf47);
-		refactor("andi t4, t5, 0xf47", encoded);
+		utils::riscv_instruction_t encoded = ANDI(RiscVRegister::t4, RiscVRegister::t5, 0xf48);
+		refactor("andi t4, t5, 0xf48", encoded);
 	}
 
 	SECTION("SLLI") {

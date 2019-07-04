@@ -81,7 +81,7 @@ riscv_instruction_t encoding::AUIPC(RiscVRegister rd, uint32_t imm) {
 }
 
 riscv_instruction_t encoding::JAL(RiscVRegister rd, uint32_t offset) {
-	return jtype(111, rd, offset);
+	return jtype(111, rd, offset << 1);
 }
 
 riscv_instruction_t encoding::JALR(RiscVRegister rd, RiscVRegister rs1, uint16_t offset) {
