@@ -230,7 +230,7 @@ void CodeGenerator::load_64bit_immediate(uint64_t imm, RiscVRegister dest, riscv
 	}
 }
 
-void CodeGenerator::load_immediate(uintptr_t imm, RiscVRegister dest, riscv_instruction_t* riscv, size_t& count) {
+void CodeGenerator::load_signed_immediate(uintptr_t imm, RiscVRegister dest, riscv_instruction_t* riscv, size_t& count) {
 	uintptr_t short_value = (imm & 0xFFFu);
 	if (short_value & 0x800u) {
 		short_value |= 0xFFFFFFFFFFFFF000;

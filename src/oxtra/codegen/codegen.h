@@ -188,7 +188,8 @@ namespace codegen {
 		 * @param count The current length of the riscv instructions (i.e. the index of the next free position).
 		 */
 		static void
-		load_immediate(uintptr_t imm, encoding::RiscVRegister dest, utils::riscv_instruction_t* riscv, size_t& count);
+		load_signed_immediate(uintptr_t imm, encoding::RiscVRegister dest, utils::riscv_instruction_t* riscv,
+							  size_t& count);
 
 		/**
 		 * Load an immediate of up to 64 bit into the register.
