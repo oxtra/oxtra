@@ -45,10 +45,10 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 			char formatted_string[512];
 			fadec::format(x86_instruction, formatted_string, sizeof(formatted_string));
 
-			SPDLOG_TRACE("Fadec decoded instruction {}", formatted_string);
+			SPDLOG_TRACE("decoded {}", formatted_string);
 
 			for (size_t i = 0; i < num_instructions; i++)
-				SPDLOG_TRACE(" - translated instruction[{}] = {}", i, decoding::parse_riscv(riscv_instructions[i]));
+				SPDLOG_TRACE(" - instruction[{}] = {}", i, decoding::parse_riscv(riscv_instructions[i]));
 		}
 
 		_codestore.add_instruction(codeblock, x86_instruction, riscv_instructions, num_instructions);

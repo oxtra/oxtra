@@ -86,9 +86,9 @@ namespace codegen {
 		 */
 		bool translate_instruction(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
-		size_t translate_mov(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv);
+		void translate_mov(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
-		size_t translate_ret(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv);
+		void translate_ret(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
 		 * Translates a x86-memory operand into risc-v instructions (resulting address in reg)
