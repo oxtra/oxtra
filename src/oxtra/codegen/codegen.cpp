@@ -110,27 +110,27 @@ void CodeGenerator::move_to_register(RiscVRegister dest, RiscVRegister src, Regi
 			riscv[count++] = encoding::ADD(dest, src, RiscVRegister::zero);
 			return;
 		case RegisterAccess::DWORD:
-			// load the and-mask
-			load_unsigned_immediate(0xffffffff, mask_temp_register, riscv, count);
+			// clear the lower bits of the destination-register by shifting
+			riscv[count++] = encoding::SRLI(dest, dest, 32);
+			riscv[count++] = encoding::SLLI(dest, dest, 32);
 
-			// clear the lower bits of the destination-register
-			riscv[count++] = encoding::AND(read_temp_register, mask_temp_register, dest);
-			riscv[count++] = encoding::XOR(dest, dest, read_temp_register);
+			// copy the source-register and clear the upper bits by shifting
+			riscv[count++] = encoding::SLLI(read_temp_register, src, 32);
+			riscv[count++] = encoding::SRLI(read_temp_register, read_temp_register, 32);
 
-			// extract the lower bits of the source-register and merge the registers
-			riscv[count++] = encoding::AND(read_temp_register, mask_temp_register, src);
+			// combine the registers
 			riscv[count++] = encoding::OR(dest, dest, read_temp_register);
 			return;
 		case RegisterAccess::WORD:
-			// load the and-mask
-			load_unsigned_immediate(0xffff, mask_temp_register, riscv, count);
+			// clear the lower bits of the destination-register by shifting
+			riscv[count++] = encoding::SRLI(dest, dest, 16);
+			riscv[count++] = encoding::SLLI(dest, dest, 16);
 
-			// clear the lower bits of the destination-register
-			riscv[count++] = encoding::AND(read_temp_register, mask_temp_register, dest);
-			riscv[count++] = encoding::XOR(dest, dest, read_temp_register);
+			// copy the source-register and clear the upper bits by shifting
+			riscv[count++] = encoding::SLLI(read_temp_register, src, 48);
+			riscv[count++] = encoding::SRLI(read_temp_register, read_temp_register, 48);
 
-			// extract the lower bits of the source-register and merge the registers
-			riscv[count++] = encoding::AND(read_temp_register, mask_temp_register, src);
+			// combine the registers
 			riscv[count++] = encoding::OR(dest, dest, read_temp_register);
 			return;
 		case RegisterAccess::LBYTE:
@@ -144,10 +144,10 @@ void CodeGenerator::move_to_register(RiscVRegister dest, RiscVRegister src, Regi
 			return;
 		case RegisterAccess::HBYTE:
 			// load the and-mask
-			load_unsigned_immediate(0xff00, mask_temp_register, riscv, count);
+			load_unsigned_immediate(0xff00, read_temp_register, riscv, count);
 
 			// clear the lower bits of the destination-register
-			riscv[count++] = encoding::AND(read_temp_register, mask_temp_register, dest);
+			riscv[count++] = encoding::AND(read_temp_register, read_temp_register, dest);
 			riscv[count++] = encoding::XOR(dest, dest, read_temp_register);
 
 			// extract the lower bits of the source-register and merge the registers
@@ -165,18 +165,16 @@ void CodeGenerator::get_from_register(RiscVRegister dest, RiscVRegister src, Reg
 			riscv[count++] = encoding::ADD(dest, src, RiscVRegister::zero);
 			return;
 		case RegisterAccess::DWORD:
-			// load the and-mask
-			load_unsigned_immediate(0xffffffff, mask_temp_register, riscv, count);
-
-			// extract the lower bits of the source-register
-			riscv[count++] = encoding::AND(dest, mask_temp_register, src);
+			// load copy the register and shift-clear it
+			riscv[count++] = encoding::ADD(dest, src, RiscVRegister::zero);
+			riscv[count++] = encoding::SLLI(dest, dest, 32);
+			riscv[count++] = encoding::SRLI(dest, dest, 32);
 			return;
 		case RegisterAccess::WORD:
-			// load the and-mask
-			load_unsigned_immediate(0xffff, mask_temp_register, riscv, count);
-
-			// extract the lower bits of the source-register
-			riscv[count++] = encoding::AND(dest, mask_temp_register, src);
+			// load copy the register and shift-clear it
+			riscv[count++] = encoding::ADD(dest, src, RiscVRegister::zero);
+			riscv[count++] = encoding::SLLI(dest, dest, 48);
+			riscv[count++] = encoding::SRLI(dest, dest, 48);
 			return;
 		case RegisterAccess::LBYTE:
 			riscv[count++] = encoding::ANDI(dest, src, 0xff);

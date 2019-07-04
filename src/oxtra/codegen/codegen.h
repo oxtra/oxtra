@@ -15,8 +15,7 @@ namespace codegen {
 		// If these registers are changed, the documentation has to be updated
 		constexpr static encoding::RiscVRegister
 				memory_temp_register = encoding::RiscVRegister::t6,
-				read_temp_register = encoding::RiscVRegister::t6,
-				mask_temp_register = encoding::RiscVRegister::t5;
+				read_temp_register = encoding::RiscVRegister::t6;
 		constexpr static encoding::RiscVRegister
 				temp0_register = encoding::RiscVRegister::t0,
 				temp1_register = encoding::RiscVRegister::t1,
