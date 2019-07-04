@@ -7,7 +7,7 @@
 #include <time.h>
 
 TEST_CASE("static Elf-Parser unpacking", "[elf::Elf]") {
-	SECTION("Defautlt constructor test") {
+	SECTION("Default constructor test") {
 		WARN("Expects resources to be in '.', '..', '../..' or './test', '../test', '../../test' - directory");
 
 		//extract the base-path to use
