@@ -19,22 +19,34 @@ namespace codegen {
 				mask_temp_register = encoding::RiscVRegister::t5;
 
 		static constexpr encoding::RiscVRegister register_mapping[] = {
-				encoding::RiscVRegister::a0, //rax
-				encoding::RiscVRegister::a2, //rcx
-				encoding::RiscVRegister::a3, //rdx
-				encoding::RiscVRegister::a1, //rbx
-				encoding::RiscVRegister::sp, //rsp
-				encoding::RiscVRegister::s0, //rbp
-				encoding::RiscVRegister::a4, //rsi
-				encoding::RiscVRegister::a5, //rdi
-				encoding::RiscVRegister::a6, //r8
-				encoding::RiscVRegister::a7, //r9
-				encoding::RiscVRegister::s2, //r10
-				encoding::RiscVRegister::s3, //r11
-				encoding::RiscVRegister::s4, //r12
-				encoding::RiscVRegister::s5, //r13
-				encoding::RiscVRegister::s6, //r14
-				encoding::RiscVRegister::s7  //r15
+				encoding::RiscVRegister::a0, // rax
+				encoding::RiscVRegister::a2, // rcx
+				encoding::RiscVRegister::a3, // rdx
+				encoding::RiscVRegister::a1, // rbx
+				encoding::RiscVRegister::sp, // rsp
+				encoding::RiscVRegister::s0, // rbp
+				encoding::RiscVRegister::a4, // rsi
+				encoding::RiscVRegister::a5, // rdi
+				encoding::RiscVRegister::a6, // r8
+				encoding::RiscVRegister::a7, // r9
+				encoding::RiscVRegister::s2, // r10
+				encoding::RiscVRegister::s3, // r11
+				encoding::RiscVRegister::s4, // r12
+				encoding::RiscVRegister::s5, // r13
+				encoding::RiscVRegister::s6, // r14
+				encoding::RiscVRegister::s7  // r15
+
+				/*
+				 * ra, gp, tp : reserved
+				 * t0, t1, t2 : always temporary
+				 * t4, t5, t6 : reserved for helper functions
+				 * t3 : reserved
+				 * s1 : flags
+				 * s8 : host_enter address
+				 * s9 : inline_translate address
+				 * s10 : reserved for system calls
+				 * s11 : dispatcher address
+				 */
 		};
 
 		enum class RegisterAccess : uint8_t {
