@@ -24,14 +24,7 @@ int main(int argc, char** argv) {
 	SPDLOG_INFO("Finished creating and initializing various runtime-objects.");
 
 	//startup the translation and execution of the source-code
-	//dispatcher.run();
-
-	dispatcher::Context context;
-	dispatcher::Context::capture(&context);
-
-	spdlog::info("captured context: {}", context);
-
-	//dispatcher::Context::restore(&context);
+	dispatcher.run();
 
 	return 0;
 }

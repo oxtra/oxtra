@@ -30,7 +30,7 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 	 * - translate instruction
 	 * - add risc-v instructions into code store
 	 *
-	 * add jump to dispatcher::host_enter
+	 * add jump to dispatcher::host_call
 	 * return address to translated code
 	 */
 
