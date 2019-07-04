@@ -79,11 +79,11 @@ string parse_shift(RiscVOpcode opcode, riscv_instruction_t instruction) {
 	sstr << " " << register_string[split_off(instruction, 15)];
 
 	// parse the shift
-	sstr << ", (shift:";
+	sstr << ",";
 	parse_number(sstr, split_off(instruction, 20, 6), false);
 
 	// parse the destination-register
-	sstr << ") -> " << register_string[split_off(instruction, 7)];
+	sstr << " -> " << register_string[split_off(instruction, 7)];
 	return sstr.str();
 }
 
