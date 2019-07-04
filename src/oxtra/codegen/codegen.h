@@ -17,6 +17,10 @@ namespace codegen {
 				memory_temp_register = encoding::RiscVRegister::t6,
 				read_temp_register = encoding::RiscVRegister::t6,
 				mask_temp_register = encoding::RiscVRegister::t5;
+		constexpr static encoding::RiscVRegister
+				temp0_register = encoding::RiscVRegister::t0,
+				temp1_register = encoding::RiscVRegister::t1,
+				temp2_register = encoding::RiscVRegister::t2;
 
 		static constexpr encoding::RiscVRegister register_mapping[] = {
 				encoding::RiscVRegister::a0, // rax
@@ -42,7 +46,7 @@ namespace codegen {
 				 * t4, t5, t6 : reserved for helper functions
 				 * t3 : reserved
 				 * s1 : flags
-				 * s8 : host_enter address
+				 * s8 : host_call address
 				 * s9 : inline_translate address
 				 * s10 : reserved for system calls
 				 * s11 : dispatcher address
@@ -50,9 +54,9 @@ namespace codegen {
 		};
 
 		enum class RegisterAccess : uint8_t {
-			QWORD,	//64bit
-			DWORD,	//32bit
-			WORD,	//16bit
+			QWORD,    //64bit
+			DWORD,    //32bit
+			WORD,    //16bit
 			HBYTE,
 			LBYTE
 		};
@@ -97,7 +101,7 @@ namespace codegen {
 		 * @return The index of the first free instruction (i.e. current number of instructions).
 		 */
 		void translate_memory_operand(const fadec::Instruction& inst, size_t index, encoding::RiscVRegister reg,
-											 utils::riscv_instruction_t* riscv, size_t& count);
+									  utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
 		 * Writes a register with x86-style sub-manipulation to an existing register without
