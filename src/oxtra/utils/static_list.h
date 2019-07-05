@@ -18,10 +18,9 @@ namespace utils {
 
 	public:
 		StaticList(size_t num_elements) {
-			_size_left = num_elements;
+			_buffer = nullptr;
+			_size_left = 0;
 			_max_elements = num_elements;
-
-			_buffer = allocate();
 		}
 
 		/**
