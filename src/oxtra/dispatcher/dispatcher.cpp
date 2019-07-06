@@ -31,8 +31,8 @@ int Dispatcher::run() {
 	_guest_context.tp = tp_reg;
 	_guest_context.sp = reinterpret_cast<uintptr_t>(new uint8_t[0x3200000]) + 0x3200000;
 	_guest_context.fp = sp_reg;
-	_guest_context.s8 = reinterpret_cast<uintptr_t>(Dispatcher::host_call);
-	_guest_context.s9 = reinterpret_cast<uintptr_t>(Dispatcher::inline_translate);
+	_guest_context.s8 = reinterpret_cast<uintptr_t>(Dispatcher::reroute_static);
+	_guest_context.s9 = reinterpret_cast<uintptr_t>(Dispatcher::reroute_dynamic);
 	_guest_context.s11 = reinterpret_cast<uintptr_t>(&_guest_context);
 
 	// translate the first basic block and execute it
@@ -44,57 +44,48 @@ int Dispatcher::run() {
 #pragma GCC diagnostic pop
 }
 
-void Dispatcher::host_call() {
+void Dispatcher::reroute_static() {
 	static_assert(CodeGenerator::address_destination == encoding::RiscVRegister::t3,
-				  "dispatcher::host_call requires t3");
+				  "dispatcher::reroute_static requires t3");
 	static_assert(CodeGenerator::context_address == encoding::RiscVRegister::s11,
-				  "dispatcher::host_call requires s11");
+				  "dispatcher::reroute_static requires s11");
 
 	// capture the guest context
-	capture_context_s11;
+	capture_context_s11
+	{
+		printf("reroute_static!\n");
 
-	// extract dispatcher
-	register uintptr_t s11_register asm("s11");
-	const auto _this = reinterpret_cast<Dispatcher*>((s11_register - offsetof(Dispatcher, _guest_context)));
+		// extract dispatcher
+		register uintptr_t s11_register asm("s11");
+		const auto _this = reinterpret_cast<Dispatcher*>(s11_register);
 
-	// translate address
-	utils::host_addr_t translated_address = _this->_codegen.translate(_this->_guest_context.t3);
-	if (translated_address != 0) {
+		// translate address
+		const auto translated_address = _this->_codegen.translate(_this->_guest_context.t3);
+
+		// write new absolute address
+		_this->_codegen.update_basic_block_address(_this->_guest_context.ra, translated_address);
 		_this->_guest_context.t3 = translated_address;
-		restore_context_s11;
-		asm("JALR zero, t3, 0");
 	}
-	translated_address = _this->_codegen.translate(_this->_guest_context.t3);
-
-	// write new absolute address
-	_this->_codegen.update_basic_block_address(_this->_guest_context.ra, translated_address);
-	_this->_guest_context.t3 = translated_address;
-	restore_context_s11;
-	asm("JALR zero, t3, 0");
+	restore_context_s11
 }
 
-void Dispatcher::inline_translate() {
+void Dispatcher::reroute_dynamic() {
 	static_assert(CodeGenerator::address_destination == encoding::RiscVRegister::t3,
-				  "dispatcher::inline_translate requires t3");
+				  "dispatcher::reroute_dynamic requires t3");
 	static_assert(CodeGenerator::context_address == encoding::RiscVRegister::s11,
-				  "dispatcher::inline_translate requires s11");
+				  "dispatcher::reroute_dynamic requires s11");
 
 	// capture the guest context
-	capture_context_s11;
+	capture_context_s11
+	{
+		printf("reroute_dynamic!\n");
 
-	// extract dispatcher
-	register uintptr_t s11_register asm("s11");
-	const auto _this = reinterpret_cast<Dispatcher*>((s11_register - offsetof(Dispatcher, _guest_context)));
+		// extract dispatcher
+		register uintptr_t s11_register asm("s11");
+		const auto _this = reinterpret_cast<Dispatcher*>(s11_register);
 
-	// translate address
-	utils::host_addr_t translated_address = _this->_codegen.translate(_this->_guest_context.t3);
-	if (translated_address != 0) {
-		_this->_guest_context.t3 = translated_address;
-		restore_context_s11;
-		asm("JALR zero, t3, 0");
+		// translate address
+		_this->_guest_context.t3 = _this->_codegen.translate(_this->_guest_context.t3);
 	}
-	translated_address = _this->_codegen.translate(_this->_guest_context.t3);
-	_this->_guest_context.t3 = translated_address;
-	restore_context_s11;
-	asm("JALR zero, t3, 0");
+	restore_context_s11
 }

@@ -10,10 +10,10 @@
 namespace dispatcher {
 	class Dispatcher {
 	private:
+		Context _guest_context, _host_context;
 		const elf::Elf& _elf;
 		const arguments::Arguments& _args;
 		codegen::CodeGenerator _codegen;
-		Context _guest_context, _host_context;
 
 	public:
 		Dispatcher(const elf::Elf& elf, const arguments::Arguments& args);
@@ -26,9 +26,17 @@ namespace dispatcher {
 		int run();
 
 	private:
-		static void host_call();
+		/**
+		 * Translates a guest branch address and reroutes the control flow to the branch target
+		 * by rewriting the branch instruction.
+		 */
+		static void reroute_static();
 
-		static void inline_translate();
+		/**
+		 * Translates a guest branch address and reroutes the control flow to the branch target
+		 * by jumping to the target in software.
+		 */
+		static void reroute_dynamic();
 	};
 }
 

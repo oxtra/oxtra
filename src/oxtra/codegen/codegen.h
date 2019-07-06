@@ -16,14 +16,14 @@ namespace codegen {
 		// If these registers are changed, the documentation has to be updated
 		constexpr static encoding::RiscVRegister
 				memory_temp_register = encoding::RiscVRegister::t6,
-				read_temp_register = encoding::RiscVRegister::t6;
-		constexpr static encoding::RiscVRegister
+				read_temp_register = encoding::RiscVRegister::t6,
 				temp0_register = encoding::RiscVRegister::t0,
 				temp1_register = encoding::RiscVRegister::t1,
-				temp2_register = encoding::RiscVRegister::t2;
-		constexpr static encoding::RiscVRegister
+				temp2_register = encoding::RiscVRegister::t2,
 				address_destination = encoding::RiscVRegister::t3,
-				context_address = encoding::RiscVRegister::s11;
+				context_address = encoding::RiscVRegister::s11,
+				reroute_static_address = encoding::RiscVRegister::s8,
+				reroute_dynamic_address = encoding::RiscVRegister::s9;
 
 	private:
 		static constexpr encoding::RiscVRegister register_mapping[] = {
@@ -50,19 +50,19 @@ namespace codegen {
 				 * t4, t5, t6 : reserved for helper functions
 				 * t3 : address_destination
 				 * s1 : flags
-				 * s8 : host_call address
-				 * s9 : inline_translate address
+				 * s8 : reroute_static address
+				 * s9 : reroute_dynamic address
 				 * s10 : reserved for system calls
 				 * s11 : context address
 				 */
 		};
 
 		enum class RegisterAccess : uint8_t {
-			QWORD,    //64bit
-			DWORD,    //32bit
-			WORD,    //16bit
-			HBYTE,
-			LBYTE
+			QWORD,	// 64bit
+			DWORD,	// 32bit
+			WORD,	// 16bit
+			HBYTE,	// high byte
+			LBYTE	// low byte
 		};
 
 	private:

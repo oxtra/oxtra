@@ -12,17 +12,21 @@ CodeGenerator::CodeGenerator(const arguments::Arguments& args, const elf::Elf& e
 		: _args{args}, _elf{elf}, _codestore{args, elf} {}
 
 host_addr_t CodeGenerator::translate(guest_addr_t addr) {
+	if (const auto riscv_code = _codestore.find(addr))
+		return riscv_code;
+
 	/*
-	 * max block size = min(next_codeblock.start, instruction offset limit)
+	 * max block size = min(next_codeblock.start, instruction offset limit - padding)
 	 *
 	 * loop over instructions and decode
 	 * - big switch for each instruction type
 	 * - translate instruction
 	 * - add risc-v instructions into code store
 	 *
-	 * add jump to dispatcher::host_call
+	 * add jump to dispatcher::reroute_static
 	 * return address to translated code
 	 */
+
 	auto& codeblock = _codestore.create_block();
 	auto current_address = reinterpret_cast<const uint8_t*>(_elf.resolve_vaddr(addr));
 	bool end_of_block;

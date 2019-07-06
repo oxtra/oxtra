@@ -36,7 +36,7 @@
 "sd t5, 0xE8(s11);" \
 "sd t6, 0xF0(s11);" \
 "sd s11, 0xD0(s11);" \
-)
+);
 
 #define restore_context_s11 asm( \
 "ld ra, 0x00(s11);" \
@@ -70,7 +70,7 @@
 "ld t5, 0xE8(s11);" \
 "ld t6, 0xF0(s11);" \
 "ld s11, 0xD0(s11);" \
-)
+);
 
 namespace dispatcher {
 	class Context {
