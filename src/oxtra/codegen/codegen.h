@@ -15,8 +15,11 @@ namespace codegen {
 		// If these registers are changed, the documentation has to be updated
 		constexpr static encoding::RiscVRegister
 				memory_temp_register = encoding::RiscVRegister::t6,
-				read_temp_register = encoding::RiscVRegister::t6,
-				mask_temp_register = encoding::RiscVRegister::t5;
+				read_temp_register = encoding::RiscVRegister::t6;
+		constexpr static encoding::RiscVRegister
+				temp0_register = encoding::RiscVRegister::t0,
+				temp1_register = encoding::RiscVRegister::t1,
+				temp2_register = encoding::RiscVRegister::t2;
 
 		static constexpr encoding::RiscVRegister register_mapping[] = {
 				encoding::RiscVRegister::a0, // rax
@@ -42,7 +45,7 @@ namespace codegen {
 				 * t4, t5, t6 : reserved for helper functions
 				 * t3 : reserved
 				 * s1 : flags
-				 * s8 : host_enter address
+				 * s8 : host_call address
 				 * s9 : inline_translate address
 				 * s10 : reserved for system calls
 				 * s11 : dispatcher address
@@ -50,9 +53,9 @@ namespace codegen {
 		};
 
 		enum class RegisterAccess : uint8_t {
-			QWORD,	//64bit
-			DWORD,	//32bit
-			WORD,	//16bit
+			QWORD,    //64bit
+			DWORD,    //32bit
+			WORD,    //16bit
 			HBYTE,
 			LBYTE
 		};
@@ -82,9 +85,9 @@ namespace codegen {
 		 */
 		bool translate_instruction(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
-		size_t translate_mov(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv);
+		void translate_mov(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
-		size_t translate_ret(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv);
+		void translate_ret(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
 		 * Translates a x86-memory operand into risc-v instructions (resulting address in reg)
@@ -96,8 +99,8 @@ namespace codegen {
 		 * @param num_instructions current number of risc-v instructions.
 		 * @return The index of the first free instruction (i.e. current number of instructions).
 		 */
-		static void translate_memory_operand(const fadec::Instruction& inst, size_t index, encoding::RiscVRegister reg,
-											 utils::riscv_instruction_t* riscv, size_t& count);
+		void translate_memory_operand(const fadec::Instruction& inst, size_t index, encoding::RiscVRegister reg,
+									  utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
 		 * Writes a register with x86-style sub-manipulation to an existing register without
@@ -184,7 +187,8 @@ namespace codegen {
 		 * @param count The current length of the riscv instructions (i.e. the index of the next free position).
 		 */
 		static void
-		load_immediate(uintptr_t imm, encoding::RiscVRegister dest, utils::riscv_instruction_t* riscv, size_t& count);
+		load_signed_immediate(uintptr_t imm, encoding::RiscVRegister dest, utils::riscv_instruction_t* riscv,
+							  size_t& count);
 
 		/**
 		 * Load an immediate of up to 64 bit into the register.
