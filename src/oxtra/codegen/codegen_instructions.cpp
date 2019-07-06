@@ -8,24 +8,7 @@ using namespace fadec;
 using namespace encoding;
 using namespace dispatcher;
 
-int CodeGenerator::exit_guest(void* empty) {
-
-	register Context* s11_register asm("s11");
-	s11_register++;
-	//s11_register->fp = s11_register->sp;
-	restore_context_s11;
-
-	// print the stack
-	register uint64_t* sp_register asm("sp");
-	for(size_t i = 0; i < 64; i++)
-		printf("stack[sp + 0x%lx]: 0x%llx\n", i * 8, sp_register[i]);
-	fflush(stdout);
-	size_t i[2] = { 50, 100 };
-
-
-
-	return static_cast<int>(65536);
-}
+extern "C" int guest_exit();
 
 bool CodeGenerator::translate_instruction(const Instruction& inst, riscv_instruction_t* riscv, size_t& count) {
 	switch (inst.get_type()) {
@@ -199,6 +182,6 @@ void CodeGenerator::translate_mov(const Instruction& inst, riscv_instruction_t* 
 }
 
 void CodeGenerator::translate_ret(const Instruction& inst, riscv_instruction_t* riscv, size_t& count) {
-	load_64bit_immediate(reinterpret_cast<uint64_t>(CodeGenerator::exit_guest), temp0_register, riscv, count, false);
+	load_64bit_immediate(reinterpret_cast<uint64_t>(guest_exit), temp0_register, riscv, count, false);
 	riscv[count++] = JALR(RiscVRegister::zero, temp0_register, 0);
 }

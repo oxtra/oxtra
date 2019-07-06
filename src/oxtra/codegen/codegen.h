@@ -83,8 +83,6 @@ namespace codegen {
 		void update_basic_block_address(utils::host_addr_t addr, utils::host_addr_t absolute_address);
 
 	private:
-		static int exit_guest(void* empty);
-
 		/**
 		 * Translates a x86 instruction into multiple risc-v instructions.
 		 * @param inst The x86 instruction object.

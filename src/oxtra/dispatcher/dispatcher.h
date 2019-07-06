@@ -15,11 +15,6 @@ namespace dispatcher {
 		codegen::CodeGenerator _codegen;
 		Context _guest_context, _host_context;
 
-		void(*_init)();
-
-		//static_assert(offset_of<Dispatcher, Dispatcher::Context, &Dispatcher::_context>() == 0xA0,
-		//        "Changing this value requires changing the assembly of Context::capture");
-
 	public:
 		Dispatcher(const elf::Elf& elf, const arguments::Arguments& args);
 

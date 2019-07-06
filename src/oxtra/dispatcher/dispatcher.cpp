@@ -5,6 +5,7 @@ using namespace dispatcher;
 using namespace codegen;
 using namespace utils;
 
+extern "C" int guest_enter(Context* context, utils::host_addr_t entry);
 
 Dispatcher::Dispatcher(const elf::Elf& elf, const arguments::Arguments& args)
 		: _elf(elf), _args(args), _codegen(args, elf) {
@@ -17,34 +18,28 @@ int Dispatcher::run() {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
 
-	// capture the host-context
-	register uintptr_t s11_register asm("s11") = reinterpret_cast<uintptr_t>(&_host_context);
-	capture_context_s11;
-
 	//TODO: add argument for stack-size (default: 0x3200000)
 	//TODO: initialize registers (ABI-conform)
 	//TODO: initialize stack (ABI-Conform)
 
+	register uintptr_t gp_reg asm("gp");
+	register uintptr_t tp_reg asm("tp");
+	register uintptr_t sp_reg asm("sp");
+
 	// initialize guest-context
-	_guest_context.gp = _host_context.gp;
-	_guest_context.tp = _host_context.tp;
+	_guest_context.gp = gp_reg;
+	_guest_context.tp = tp_reg;
 	_guest_context.sp = reinterpret_cast<uintptr_t>(new uint8_t[0x3200000]) + 0x3200000;
-	_guest_context.fp = _guest_context.sp;
+	_guest_context.fp = sp_reg;
 	_guest_context.s8 = reinterpret_cast<uintptr_t>(Dispatcher::host_call);
 	_guest_context.s9 = reinterpret_cast<uintptr_t>(Dispatcher::inline_translate);
 	_guest_context.s11 = reinterpret_cast<uintptr_t>(&_guest_context);
 
-	// load the new context
-	s11_register = reinterpret_cast<uintptr_t>(&_guest_context);
-	restore_context_s11;
+	// translate the first basic block and execute it
+	const auto init_address = _codegen.translate(_elf.get_entry_point());
 
 	// translate the first basic block and execute it
-	const auto _this = reinterpret_cast<Dispatcher*>((s11_register - offsetof(Dispatcher, _guest_context)));
-	register uintptr_t init_address asm("t0") = _this->_codegen.translate(_this->_elf.get_entry_point());
-
-	// translate the first basic block and execute it
-	asm("JALR zero, t0, 0");
-	throw std::runtime_error("This should not be reachable!");
+	return guest_enter(&_guest_context, init_address);
 
 #pragma GCC diagnostic pop
 }
