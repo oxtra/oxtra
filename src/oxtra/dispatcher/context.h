@@ -1,80 +1,81 @@
 #ifndef OXTRA_CONTEXT_H
 #define OXTRA_CONTEXT_H
 
-#include <cstdlib>
+#include <cstdint>
+#include <spdlog/fmt/bundled/ostream.h>
 
-#define capture_context(reg) asm( \
-"sd ra, 0x00("#reg");" \
-"sd sp, 0x08("#reg");" \
-"sd gp, 0x10("#reg");" \
-"sd tp, 0x18("#reg");" \
-"sd t0, 0x20("#reg");" \
-"sd t1, 0x28("#reg");" \
-"sd t2, 0x30("#reg");" \
-"sd fp, 0x38("#reg");" \
-"sd s1, 0x40("#reg");" \
-"sd a0, 0x48("#reg");" \
-"sd a1, 0x50("#reg");" \
-"sd a2, 0x58("#reg");" \
-"sd a3, 0x60("#reg");" \
-"sd a4, 0x68("#reg");" \
-"sd a5, 0x70("#reg");" \
-"sd a6, 0x78("#reg");" \
-"sd a7, 0x80("#reg");" \
-"sd s2, 0x88("#reg");" \
-"sd s3, 0x90("#reg");" \
-"sd s4, 0x98("#reg");" \
-"sd s5, 0xA0("#reg");" \
-"sd s6, 0xA8("#reg");" \
-"sd s7, 0xB0("#reg");" \
-"sd s8, 0xB8("#reg");" \
-"sd s9, 0xC0("#reg");" \
-"sd s10, 0xC8("#reg");" \
-"sd s11, 0xD0("#reg");" \
-"sd t3, 0xD8("#reg");" \
-"sd t4, 0xE0("#reg");" \
-"sd t5, 0xE8("#reg");" \
-"sd t6, 0xF0("#reg");" \
+#define capture_context_s11 asm( \
+"sd ra, 0x00(s11);" \
+"sd sp, 0x08(s11);" \
+"sd gp, 0x10(s11);" \
+"sd tp, 0x18(s11);" \
+"sd t0, 0x20(s11);" \
+"sd t1, 0x28(s11);" \
+"sd t2, 0x30(s11);" \
+"sd fp, 0x38(s11);" \
+"sd s1, 0x40(s11);" \
+"sd a0, 0x48(s11);" \
+"sd a1, 0x50(s11);" \
+"sd a2, 0x58(s11);" \
+"sd a3, 0x60(s11);" \
+"sd a4, 0x68(s11);" \
+"sd a5, 0x70(s11);" \
+"sd a6, 0x78(s11);" \
+"sd a7, 0x80(s11);" \
+"sd s2, 0x88(s11);" \
+"sd s3, 0x90(s11);" \
+"sd s4, 0x98(s11);" \
+"sd s5, 0xA0(s11);" \
+"sd s6, 0xA8(s11);" \
+"sd s7, 0xB0(s11);" \
+"sd s8, 0xB8(s11);" \
+"sd s9, 0xC0(s11);" \
+"sd s10, 0xC8(s11);" \
+"sd t3, 0xD8(s11);" \
+"sd t4, 0xE0(s11);" \
+"sd t5, 0xE8(s11);" \
+"sd t6, 0xF0(s11);" \
+"sd s11, 0xD0(s11);" \
 )
 
-#define restore_context(reg) asm( \
-"ld ra, 0x00("#reg");" \
-"ld sp, 0x08("#reg");" \
-"ld gp, 0x10("#reg");" \
-"ld tp, 0x18("#reg");" \
-"ld t0, 0x20("#reg");" \
-"ld t1, 0x28("#reg");" \
-"ld t2, 0x30("#reg");" \
-"ld fp, 0x38("#reg");" \
-"ld s1, 0x40("#reg");" \
-"ld a0, 0x48("#reg");" \
-"ld a1, 0x50("#reg");" \
-"ld a2, 0x58("#reg");" \
-"ld a3, 0x60("#reg");" \
-"ld a4, 0x68("#reg");" \
-"ld a5, 0x70("#reg");" \
-"ld a6, 0x78("#reg");" \
-"ld a7, 0x80("#reg");" \
-"ld s2, 0x88("#reg");" \
-"ld s3, 0x90("#reg");" \
-"ld s4, 0x98("#reg");" \
-"ld s5, 0xA0("#reg");" \
-"ld s6, 0xA8("#reg");" \
-"ld s7, 0xB0("#reg");" \
-"ld s8, 0xB8("#reg");" \
-"ld s9, 0xC0("#reg");" \
-"ld s10, 0xC8("#reg");" \
-"ld s11, 0xD0("#reg");" \
-"ld t3, 0xD8("#reg");" \
-"ld t4, 0xE0("#reg");" \
-"ld t5, 0xE8("#reg");" \
-"ld t6, 0xF0("#reg");" \
+#define restore_context_s11 asm( \
+"ld ra, 0x00(s11);" \
+"ld sp, 0x08(s11);" \
+"ld gp, 0x10(s11);" \
+"ld tp, 0x18(s11);" \
+"ld t0, 0x20(s11);" \
+"ld t1, 0x28(s11);" \
+"ld t2, 0x30(s11);" \
+"ld fp, 0x38(s11);" \
+"ld s1, 0x40(s11);" \
+"ld a0, 0x48(s11);" \
+"ld a1, 0x50(s11);" \
+"ld a2, 0x58(s11);" \
+"ld a3, 0x60(s11);" \
+"ld a4, 0x68(s11);" \
+"ld a5, 0x70(s11);" \
+"ld a6, 0x78(s11);" \
+"ld a7, 0x80(s11);" \
+"ld s2, 0x88(s11);" \
+"ld s3, 0x90(s11);" \
+"ld s4, 0x98(s11);" \
+"ld s5, 0xA0(s11);" \
+"ld s6, 0xA8(s11);" \
+"ld s7, 0xB0(s11);" \
+"ld s8, 0xB8(s11);" \
+"ld s9, 0xC0(s11);" \
+"ld s10, 0xC8(s11);" \
+"ld t3, 0xD8(s11);" \
+"ld t4, 0xE0(s11);" \
+"ld t5, 0xE8(s11);" \
+"ld t6, 0xF0(s11);" \
+"ld s11, 0xD0(s11);" \
 )
 
 namespace dispatcher {
 	class Context {
 	public:
-		size_t
+		uintptr_t
 			ra = 0,
 			sp = 0,
 			gp = 0,
@@ -110,7 +111,7 @@ namespace dispatcher {
 		// spdlog
 		template <class OStream>
 		friend OStream& operator<<(OStream& os, const Context& c) {
-			return os << "{\n\tra: " << c.ra
+			return os << "{\n\tra: " << std::hex << c.ra
 				<< "\n\tsp: " << c.sp
 				<< "\n\tgp: " << c.gp
 				<< "\n\ttp: " << c.tp

@@ -6,14 +6,33 @@ using namespace utils;
 using namespace codestore;
 using namespace fadec;
 using namespace encoding;
+using namespace dispatcher;
+
+int CodeGenerator::exit_guest(void* _empty) {
+
+	register Context* s11_register asm("s11");
+	s11_register++;
+	restore_context_s11;
+
+	spdlog::info("old context: {}", s11_register[0]);
+
+	printf("Hello World");
+	fflush(stdout);
+
+	return static_cast<int>(s11_register->a0);
+}
 
 bool CodeGenerator::translate_instruction(const Instruction& inst, riscv_instruction_t* riscv, size_t& count) {
 	switch (inst.get_type()) {
 		// at the moment we just insert a return for every instruction that modifies control flow.
 		case InstructionType::CALL:
-			break;
+
+			return true;
 		case InstructionType::JMP:
-			break;
+
+			//riscv[count++] = encoding::JALR(RiscVRegister::zero, RiscVRegister::s9, )
+
+			return true;
 		case InstructionType::LEA:
 			//[0xFFFFFFFF + 0x321*8 + 0x12345678] = 0x1_1234_6F7F
 			load_unsigned_immediate(0xFFFFFFFF, RiscVRegister::a1, riscv, count);
@@ -86,12 +105,12 @@ void CodeGenerator::translate_mov(const Instruction& inst, riscv_instruction_t* 
 		 * [It will fail, because the interesting, stored parts, are larger than they should be]
 		 * With a simple hack of shifting all the way up, and down again, we can fill the space with the
 		 * highest bit. */
-		if(inst.get_type() == InstructionType::MOVSX || inst.get_type() == InstructionType::MOVZX) {
+		if (inst.get_type() == InstructionType::MOVSX || inst.get_type() == InstructionType::MOVZX) {
 			riscv[count++] = encoding::SLLI(source_register, source_register, 64 - 8 * source_operand.get_size());
-			if(inst.get_type() == InstructionType::MOVSX)
-				riscv[count++]= encoding::SRAI(source_register, source_register, 64 - 8 * source_operand.get_size());
+			if (inst.get_type() == InstructionType::MOVSX)
+				riscv[count++] = encoding::SRAI(source_register, source_register, 64 - 8 * source_operand.get_size());
 			else
-				riscv[count++]= encoding::SRLI(source_register, source_register, 64 - 8 * source_operand.get_size());
+				riscv[count++] = encoding::SRLI(source_register, source_register, 64 - 8 * source_operand.get_size());
 		}
 	} else if (tp[1] == OperandType::imm)
 		load_unsigned_immediate(inst.get_immediate(), source_register, riscv, count);
@@ -175,5 +194,6 @@ void CodeGenerator::translate_mov(const Instruction& inst, riscv_instruction_t* 
 }
 
 void CodeGenerator::translate_ret(const Instruction& inst, riscv_instruction_t* riscv, size_t& count) {
-	riscv[count++] = JALR(RiscVRegister::zero, RiscVRegister::ra, 0);
+	load_64bit_immediate(reinterpret_cast<uint64_t>(CodeGenerator::exit_guest), temp0_register, riscv, count, false);
+	riscv[count++] = JALR(RiscVRegister::zero, temp0_register, 0);
 }

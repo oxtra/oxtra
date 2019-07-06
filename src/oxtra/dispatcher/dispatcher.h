@@ -26,7 +26,7 @@ namespace dispatcher {
 		Dispatcher(Dispatcher&&) = delete;
 
 	public:
-		void run();
+		int run();
 
 	private:
 		static void host_call();
