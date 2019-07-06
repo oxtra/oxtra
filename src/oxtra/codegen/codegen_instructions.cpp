@@ -8,18 +8,23 @@ using namespace fadec;
 using namespace encoding;
 using namespace dispatcher;
 
-int CodeGenerator::exit_guest(void* _empty) {
+int CodeGenerator::exit_guest(void* empty) {
 
 	register Context* s11_register asm("s11");
 	s11_register++;
+	//s11_register->fp = s11_register->sp;
 	restore_context_s11;
 
-	spdlog::info("old context: {}", s11_register[0]);
-
-	printf("Hello World");
+	// print the stack
+	register uint64_t* sp_register asm("sp");
+	for(size_t i = 0; i < 64; i++)
+		printf("stack[sp + 0x%lx]: 0x%llx\n", i * 8, sp_register[i]);
 	fflush(stdout);
+	size_t i[2] = { 50, 100 };
 
-	return static_cast<int>(s11_register->a0);
+
+
+	return static_cast<int>(65536);
 }
 
 bool CodeGenerator::translate_instruction(const Instruction& inst, riscv_instruction_t* riscv, size_t& count) {

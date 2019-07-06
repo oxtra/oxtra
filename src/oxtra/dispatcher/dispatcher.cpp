@@ -8,7 +8,6 @@ using namespace utils;
 
 Dispatcher::Dispatcher(const elf::Elf& elf, const arguments::Arguments& args)
 		: _elf(elf), _args(args), _codegen(args, elf) {
-
 }
 
 int Dispatcher::run() {
@@ -21,8 +20,6 @@ int Dispatcher::run() {
 	// capture the host-context
 	register uintptr_t s11_register asm("s11") = reinterpret_cast<uintptr_t>(&_host_context);
 	capture_context_s11;
-
-	spdlog::info("old context: {}", _host_context);
 
 	//TODO: add argument for stack-size (default: 0x3200000)
 	//TODO: initialize registers (ABI-conform)

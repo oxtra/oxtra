@@ -7,6 +7,9 @@
 #include "oxtra/elf/elf.h"
 #include "oxtra/dispatcher/dispatcher.h"
 
+#include <iostream>
+using namespace std;
+
 int main(int argc, char** argv) {
 	//parse the arguments
 	const auto arguments = arguments::Arguments(argc, argv);
@@ -26,19 +29,27 @@ int main(int argc, char** argv) {
 	SPDLOG_INFO("Finished creating and initializing various runtime-objects.");
 
 	dispatcher::Context context;
+	register uintptr_t stack_ptr asm("sp");
+	register uintptr_t frame_ptr asm("s0");
 	register uintptr_t s11_register asm("s11") = reinterpret_cast<uintptr_t>(&context);
 	capture_context_s11;
-
-	spdlog::info("old context: {}", context);
+	printf("stack_ptr: %llx\n", stack_ptr);
+	printf("frame_ptr: %llx\n", frame_ptr);
+	printf("dispatcher: %llx\n", &dispatcher);
+	fflush(stdout);
 
 	//startup the translation and execution of the source-code
-	dispatcher.run();
+	printf("returned: %llx\n", dispatcher.run());
 
-	int* test = (int*)0;
-	test[0] = 0;
 
-	printf("Hello World-a");
+	printf("stack_ptr: %llx\n", stack_ptr);
+	printf("frame_ptr: %llx\n", frame_ptr);
+	printf("Hello World-a\n");
 	fflush(stdout);
+
+	//stack_ptr = 0x40007ffc20;
+	//frame_ptr = 0x40008001e0;
+	//asm("li fp, 0x40008001e0");
 
 	return 0;
 }
