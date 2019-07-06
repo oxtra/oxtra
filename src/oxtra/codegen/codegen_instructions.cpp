@@ -10,25 +10,15 @@ using namespace encoding;
 bool CodeGenerator::translate_instruction(const Instruction& inst, riscv_instruction_t* riscv, size_t& count) {
 	switch (inst.get_type()) {
 		// at the moment we just insert a return for every instruction that modifies control flow.
-		case InstructionType::JMP:
 		case InstructionType::CALL:
-		case InstructionType::RET:
-		case InstructionType::RET_IMM:
-			translate_ret(inst, riscv, count);
-			return true;
-
-		case InstructionType::PUSH:
-		case InstructionType::POP:
 			break;
-
+		case InstructionType::JMP:
+			break;
 		case InstructionType::LEA:
 			//[0xFFFFFFFF + 0x321*8 + 0x12345678] = 0x1_1234_6F7F
 			load_unsigned_immediate(0xFFFFFFFF, RiscVRegister::a1, riscv, count);
 			load_unsigned_immediate(0x321, RiscVRegister::a2, riscv, count);
 			translate_memory_operand(inst, 1, RiscVRegister::a0, riscv, count);
-			break;
-
-		case InstructionType::NOP:
 			break;
 
 		case InstructionType::MOV_IMM:
@@ -38,6 +28,18 @@ bool CodeGenerator::translate_instruction(const Instruction& inst, riscv_instruc
 		case InstructionType::MOVZX:
 			translate_mov(inst, riscv, count);
 			break;
+
+		case InstructionType::NOP:
+			break;
+
+		case InstructionType::PUSH:
+		case InstructionType::POP:
+			break;
+
+		case InstructionType::RET:
+		case InstructionType::RET_IMM:
+			translate_ret(inst, riscv, count);
+			return true;
 
 		default:
 			throw std::runtime_error("Unsupported instruction used.");
