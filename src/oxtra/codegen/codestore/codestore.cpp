@@ -93,8 +93,8 @@ void CodeStore::add_instruction(BlockEntry& block, const fadec::Instruction& x86
 }
 
 void CodeStore::insert_block(codegen::codestore::BlockEntry& block, utils::guest_addr_t x86_address) {
-	// ff there's no x86 start address then this is the first instruction to add to the block
-	if (block.x86_start == 0) {
+	// if there's no x86 instruction then this is the first instruction to add to the block
+	if (block.instruction_count == 0) {
 		block.x86_start = x86_address;
 
 		// sort the block by its address into the current page (ascending)

@@ -15,10 +15,10 @@ constexpr const char* expected_rtype[] = {
 		"rem rcx, Vgp -> rbx"
 };
 constexpr const char* expected_shift[] = {
-		"slli rcx, (shift: 0x3f(63)) -> rbx",
-		"srli rcx, (shift: 0x1f(31)) -> rbx",
-		"slli rcx, (shift: 0x1(1)) -> rbx",
-		"srai rcx, (shift: 0x0(0)) -> rbx"
+		"slli rcx, 0x3f(63) -> rbx",
+		"srli rcx, 0x1f(31) -> rbx",
+		"slli rcx, 0x1(1) -> rbx",
+		"srai rcx, 0x0(0) -> rbx"
 };
 constexpr const char* expected_itype[] = {
 		"addi zero, 0x7ff(2047) -> rbx",

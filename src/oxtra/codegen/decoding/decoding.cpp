@@ -24,7 +24,7 @@ constexpr const char* register_string[32] = {
 
 		"zero", "Vra", "rsp", "Vgp", "Vtp", "Vt0", "Vt1", "Vt2", "rbp",
 		"flags", "rax", "rbx", "rcx", "rdx", "rsi", "rdi", "r8", "r9",
-		"r10", "r11", "r12", "r13", "r14", "r15", "host_enter", "inline_translate",
+		"r10", "r11", "r12", "r13", "r14", "r15", "host_call", "inline_translate",
 		"Vs10", "dispatcher", "Vt3", "Vt4", "Vt5", "Vt6"
 };
 constexpr const char* opcode_string[128] = {
@@ -79,11 +79,11 @@ string parse_shift(RiscVOpcode opcode, riscv_instruction_t instruction) {
 	sstr << " " << register_string[split_off(instruction, 15)];
 
 	// parse the shift
-	sstr << ", (shift:";
+	sstr << ",";
 	parse_number(sstr, split_off(instruction, 20, 6), false);
 
 	// parse the destination-register
-	sstr << ") -> " << register_string[split_off(instruction, 7)];
+	sstr << " -> " << register_string[split_off(instruction, 7)];
 	return sstr.str();
 }
 
