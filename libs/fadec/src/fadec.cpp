@@ -103,12 +103,15 @@ int fadec::decode_prefixes(const uint8_t *buffer, size_t len, DecodeMode mode, i
 				break;
 			case 0x67:
 				prefixes |= prefix_addrsz;
+				off++;
 				break;
 			case 0xf0:
 				prefixes |= prefix_lock;
+				off++;
 				break;
 			case 0x66:
 				prefixes |= prefix_opsz;
+				off++;
 				break;
 				// From REP/REPE and REPNZ, the last one wins; and for mandatory
 				// prefixes they have a higher priority than 66h (handled below).

@@ -1,6 +1,5 @@
 #include <fadec.h>
 
-#include <iostream>
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/fmt/bundled/ostream.h>
