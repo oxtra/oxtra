@@ -61,6 +61,138 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 	return codeblock.riscv_start;
 }
 
+void CodeGenerator::apply_operation(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count,
+									void(* callback)(fadec::InstructionType, encoding::RiscVRegister,
+													 encoding::RiscVRegister, utils::riscv_instruction_t*, size_t&)) {
+	// extract the source-operand
+	translate_operand(inst, 1, source_temp_register, riscv, count);
+
+	// extract the register for the destination-value
+	RiscVRegister dest_register = dest_temp_register;
+	if (inst.get_operand(0).get_type() == OperandType::reg && inst.get_operand(0).get_size() == 8)
+		dest_register = register_mapping[static_cast<uint16_t>(inst.get_operand(0).get_register())];
+
+	// extract the destination-operand
+	RiscVRegister address = translate_operand(inst, 1, dest_register, riscv, count);
+
+	// call the callback to apply the changes
+	callback(inst.get_type(), dest_register, source_temp_register, riscv, count);
+
+	// write the value back to the destination
+	translate_destination(inst, dest_temp_register, address, riscv, count);
+}
+
+encoding::RiscVRegister
+CodeGenerator::translate_operand(const fadec::Instruction& inst, size_t index, encoding::RiscVRegister reg,
+								 utils::riscv_instruction_t* riscv, size_t& count) {
+	// extract the operand
+	auto& operand = inst.get_operand(index);
+
+	// load the source-operand into the temporary-register
+	if (operand.get_type() == OperandType::reg) {
+		/* read the value from the register (read the whole register
+		 * (unless HBYTE is required), and just cut the rest when writing the register */
+		if (operand.get_register_type() == RegisterType::gph) {
+			if (operand.get_register() == Register::ah)
+				get_from_register(reg, register_mapping[static_cast<uint16_t>(Register::rax)],
+								  RegisterAccess::HBYTE, riscv, count);
+			else if (operand.get_register() == Register::bh)
+				get_from_register(reg, register_mapping[static_cast<uint16_t>(Register::rbx)],
+								  RegisterAccess::HBYTE, riscv, count);
+			else if (operand.get_register() == Register::ch)
+				get_from_register(reg, register_mapping[static_cast<uint16_t>(Register::rcx)],
+								  RegisterAccess::HBYTE, riscv, count);
+			else
+				get_from_register(reg, register_mapping[static_cast<uint16_t>(Register::rdx)],
+								  RegisterAccess::HBYTE, riscv, count);
+		} else
+			get_from_register(reg, register_mapping[static_cast<uint16_t>(operand.get_register())],
+							  RegisterAccess::QWORD, riscv, count);
+	} else if (operand.get_type() == OperandType::imm)
+		load_unsigned_immediate(inst.get_immediate(), reg, riscv, count);
+	else {
+		// read the value from memory
+		translate_memory_operand(inst, 1, address_temp_register, riscv, count);
+		switch (operand.get_size()) {
+			case 8:
+				riscv[count++] = encoding::LD(address_temp_register, reg, 0);
+				break;
+			case 4:
+				riscv[count++] = encoding::LW(address_temp_register, reg, 0);
+				break;
+			case 2:
+				riscv[count++] = encoding::LH(address_temp_register, reg, 0);
+				break;
+			case 1:
+				riscv[count++] = encoding::LB(address_temp_register, reg, 0);
+				break;
+		}
+		return address_temp_register;
+	}
+	return encoding::RiscVRegister::zero;
+}
+
+void CodeGenerator::translate_destination(const fadec::Instruction& inst, encoding::RiscVRegister reg,
+										  encoding::RiscVRegister address, utils::riscv_instruction_t* riscv,
+										  size_t& count) {
+	auto& operand = inst.get_operand(0);
+
+	// check if the destination is a register
+	if (operand.get_type() == OperandType::reg) {
+		RiscVRegister temp_reg = register_mapping[static_cast<uint16_t>(operand.get_register())];
+		switch (operand.get_size()) {
+			case 8:
+				if (temp_reg != reg)
+					move_to_register(temp_reg, reg, RegisterAccess::QWORD, riscv, count);
+				break;
+			case 4:
+				move_to_register(temp_reg, reg, RegisterAccess::DWORD, riscv, count);
+				break;
+			case 2:
+				move_to_register(temp_reg, reg, RegisterAccess::WORD, riscv, count);
+				break;
+			case 1:
+				if (operand.get_register_type() == RegisterType::gph) {
+					if (operand.get_register() == Register::ah)
+						move_to_register(register_mapping[static_cast<uint16_t>(Register::rax)], reg,
+										 RegisterAccess::HBYTE, riscv, count);
+					else if (operand.get_register() == Register::bh)
+						move_to_register(register_mapping[static_cast<uint16_t>(Register::rbx)], reg,
+										 RegisterAccess::HBYTE, riscv, count);
+					else if (operand.get_register() == Register::ch)
+						move_to_register(register_mapping[static_cast<uint16_t>(Register::rcx)], reg,
+										 RegisterAccess::HBYTE, riscv, count);
+					else
+						move_to_register(register_mapping[static_cast<uint16_t>(Register::rdx)], reg,
+										 RegisterAccess::HBYTE, riscv, count);
+				} else
+					move_to_register(temp_reg, reg, RegisterAccess::LBYTE, riscv, count);
+				break;
+		}
+		return;
+	}
+
+	// translate the memory-address and write the value to it
+	if(address == encoding::RiscVRegister::zero) {
+		translate_memory_operand(inst, 0, temp1_register, riscv, count);
+		address = temp1_register;
+	}
+	switch (operand.get_size()) {
+		case 8:
+			riscv[count++] = encoding::SD(address, reg, 0);
+			break;
+		case 4:
+			riscv[count++] = encoding::SW(address, reg, 0);
+			break;
+		case 2:
+			riscv[count++] = encoding::SH(address, reg, 0);
+			break;
+		case 1:
+			riscv[count++] = encoding::SB(address, reg, 0);
+			break;
+	}
+}
+
 void CodeGenerator::translate_memory_operand(const Instruction& inst, size_t index, RiscVRegister reg,
 											 riscv_instruction_t* riscv, size_t& count) {
 	if (inst.get_address_size() < 4)
@@ -228,7 +360,8 @@ void CodeGenerator::load_64bit_immediate(uint64_t imm, RiscVRegister dest, riscv
 	}
 }
 
-void CodeGenerator::load_signed_immediate(uintptr_t imm, RiscVRegister dest, riscv_instruction_t* riscv, size_t& count) {
+void
+CodeGenerator::load_signed_immediate(uintptr_t imm, RiscVRegister dest, riscv_instruction_t* riscv, size_t& count) {
 	uintptr_t short_value = (imm & 0xFFFu);
 	if (short_value & 0x800u) {
 		short_value |= 0xFFFFFFFFFFFFF000;
