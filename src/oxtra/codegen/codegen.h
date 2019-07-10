@@ -78,6 +78,14 @@ namespace codegen {
 		utils::host_addr_t translate(utils::guest_addr_t addr);
 
 	private:
+		static void translate_mov_ext(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
+
+		static void translate_mov(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+									  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
+
+		void translate_ret(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
+
 		/**
 		 * Translates a x86 instruction into multiple risc-v instructions.
 		 * @param inst The x86 instruction object.
@@ -87,21 +95,19 @@ namespace codegen {
 		 */
 		bool translate_instruction(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
-		void translate_mov(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
-
-		void translate_ret(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
-
 		/**
 		 * extracts the two operands out of the instruction, and calls the callback,
 		 * which then implements the corresponding operation.
+		 * The source-register must not be changed. For optimization-purposes, it might be the actual source-register.
+		 * If the operand-size is not 64 bits, the registers might still have some undefined high bits.
 		 * @param inst x86 decoded instruction.
 		 * @param riscv Array of riscv-instructions.
 		 * @param count Number of riscv-instructions.
 		 * @param callback Callback, which will apply the instruction.
 		 */
 		void apply_operation(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count,
-							 void(* callback)(fadec::InstructionType, encoding::RiscVRegister, encoding::RiscVRegister,
-											  utils::riscv_instruction_t*, size_t&));
+							 void(* callback)(const fadec::Instruction&, encoding::RiscVRegister,
+											  encoding::RiscVRegister, utils::riscv_instruction_t*, size_t&));
 
 		/**
 		 * Translates a single operand (either register, or memory or immediate value)
@@ -118,6 +124,7 @@ namespace codegen {
 
 		/**
 		 * Writes the value in the register to the destination-operand of the instruction
+		 * The register will be preserved.
 		 * @param inst The x86 instruction object.
 		 * @param reg This value will be written to the destination.
 		 * @param address If the destination is a memory address, this address will be used as destination.

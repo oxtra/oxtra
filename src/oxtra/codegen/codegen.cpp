@@ -62,24 +62,29 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 }
 
 void CodeGenerator::apply_operation(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count,
-									void(* callback)(fadec::InstructionType, encoding::RiscVRegister,
+									void(* callback)(const fadec::Instruction&, encoding::RiscVRegister,
 													 encoding::RiscVRegister, utils::riscv_instruction_t*, size_t&)) {
 	// extract the source-operand
-	translate_operand(inst, 1, source_temp_register, riscv, count);
+	RiscVRegister source_register = source_temp_register;
+	if (inst.get_operand(1).get_type() == OperandType::reg &&
+		inst.get_operand(1).get_register_type() != RegisterType::gph)
+		source_register = register_mapping[static_cast<uint16_t>(inst.get_operand(1).get_register())];
+	else
+		translate_operand(inst, 1, source_register, riscv, count);
 
 	// extract the register for the destination-value
 	RiscVRegister dest_register = dest_temp_register;
+	RiscVRegister address = RiscVRegister::zero;
 	if (inst.get_operand(0).get_type() == OperandType::reg && inst.get_operand(0).get_size() == 8)
 		dest_register = register_mapping[static_cast<uint16_t>(inst.get_operand(0).get_register())];
-
-	// extract the destination-operand
-	RiscVRegister address = translate_operand(inst, 1, dest_register, riscv, count);
+	else
+		address = translate_operand(inst, 0, dest_register, riscv, count);
 
 	// call the callback to apply the changes
-	callback(inst.get_type(), dest_register, source_temp_register, riscv, count);
+	callback(inst, dest_register, source_register, riscv, count);
 
 	// write the value back to the destination
-	translate_destination(inst, dest_temp_register, address, riscv, count);
+	translate_destination(inst, dest_register, address, riscv, count);
 }
 
 encoding::RiscVRegister
@@ -173,7 +178,7 @@ void CodeGenerator::translate_destination(const fadec::Instruction& inst, encodi
 	}
 
 	// translate the memory-address and write the value to it
-	if(address == encoding::RiscVRegister::zero) {
+	if (address == encoding::RiscVRegister::zero) {
 		translate_memory_operand(inst, 0, temp1_register, riscv, count);
 		address = temp1_register;
 	}
