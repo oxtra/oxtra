@@ -7,8 +7,8 @@ using namespace codestore;
 using namespace fadec;
 using namespace encoding;
 
-void CodeGenerator::translate_memory_operand(const Instruction& inst, size_t index, RiscVRegister reg,
-											 riscv_instruction_t* riscv, size_t& count) {
+void CodeGenerator::memory_operand(const Instruction& inst, size_t index, RiscVRegister reg, riscv_instruction_t* riscv,
+								   size_t& count) {
 	if (inst.get_address_size() < 4)
 		throw std::runtime_error("invalid addressing-size");
 	const auto& operand = inst.get_operand(index);
@@ -49,8 +49,8 @@ void CodeGenerator::translate_memory_operand(const Instruction& inst, size_t ind
 	}
 }
 
-void CodeGenerator::move_to_register(RiscVRegister dest, RiscVRegister src, RegisterAccess access,
-									 riscv_instruction_t* riscv, size_t& count) {
+void CodeGenerator::move_to_register(RiscVRegister dest, RiscVRegister src, RegisterAccess access, riscv_instruction_t* riscv,
+									 size_t& count) {
 	switch (access) {
 		case RegisterAccess::QWORD:
 			riscv[count++] = encoding::ADD(dest, src, RiscVRegister::zero);
@@ -104,8 +104,8 @@ void CodeGenerator::move_to_register(RiscVRegister dest, RiscVRegister src, Regi
 	}
 }
 
-void CodeGenerator::get_from_register(RiscVRegister dest, RiscVRegister src, RegisterAccess access,
-									  riscv_instruction_t* riscv, size_t& count) {
+void CodeGenerator::get_from_register(RiscVRegister dest, RiscVRegister src, RegisterAccess access, riscv_instruction_t* riscv,
+									  size_t& count) {
 	switch (access) {
 		case RegisterAccess::QWORD:
 			riscv[count++] = encoding::ADD(dest, src, RiscVRegister::zero);
@@ -174,8 +174,7 @@ void CodeGenerator::load_64bit_immediate(uint64_t imm, RiscVRegister dest, riscv
 	}
 }
 
-void
-CodeGenerator::load_signed_immediate(uintptr_t imm, RiscVRegister dest, riscv_instruction_t* riscv, size_t& count) {
+void CodeGenerator::load_signed_immediate(uintptr_t imm, RiscVRegister dest, riscv_instruction_t* riscv, size_t& count) {
 	uintptr_t short_value = (imm & 0xFFFu);
 	if (short_value & 0x800u) {
 		short_value |= 0xFFFFFFFFFFFFF000;
@@ -195,8 +194,7 @@ CodeGenerator::load_signed_immediate(uintptr_t imm, RiscVRegister dest, riscv_in
 	}
 }
 
-void
-CodeGenerator::load_unsigned_immediate(uintptr_t imm, RiscVRegister dest, riscv_instruction_t* riscv, size_t& count) {
+void CodeGenerator::load_unsigned_immediate(uintptr_t imm, RiscVRegister dest, riscv_instruction_t* riscv, size_t& count) {
 	uint8_t immediate_type = 2; // 0 means 12bit, 1 means 32 bit, >= 2 means 64 bit
 
 	// if it is a signed immediate we have to use the bigger type to ensure that it is padded with zeros.

@@ -23,83 +23,114 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 	 * add jump to dispatcher::host_enter
 	 * return address to translated code
 	 */
-	auto& codeblock = _codestore.create_block();
-	auto current_address = reinterpret_cast<const uint8_t*>(_elf.resolve_vaddr(addr));
-	bool end_of_block;
 
-	do {
-		auto x86_instruction = Instruction{};
-		if (decode(current_address, _elf.get_size(addr), DecodeMode::decode_64, addr, x86_instruction) <= 0)
+	// iterate through the instructions and query all information about the flags
+	std::vector<InstructionEntry> instructions;
+	auto address = reinterpret_cast<const uint8_t*>(_elf.resolve_vaddr(addr));
+	while (true) {
+		// decode the fadec-instruction
+		InstructionEntry entry{};
+		if (fadec::decode(address, _elf.get_size(addr), DecodeMode::decode_64, addr, entry.instruction) <= 0)
 			throw std::runtime_error("Failed to decode the instruction");
 
-		current_address += x86_instruction.get_size();
-		addr += x86_instruction.get_size();
+		// query all of the information about the instruction
+		size_t group_flags = translate_instruction(entry, nullptr, nullptr);
+		if (group_flags == Group::error)
+			throw std::runtime_error("Unsupported instruction used.");
 
-		size_t num_instructions = 0;
-		riscv_instruction_t riscv_instructions[max_riscv_instructions];
+		// parse the group-flags
+		entry.require_flags = (group_flags & Group::require_all);
+		entry.update_flags = (group_flags & Group::update_all);
 
-		end_of_block = translate_instruction(x86_instruction, riscv_instructions, num_instructions);
+		// update the addresses
+		addr += entry.instruction.get_size();
+		address += entry.instruction.get_size();
 
-		// add tracing-information
+		// add the instruction to the array and check if the instruction would end the block
+		instructions.push_back(entry);
+		if ((group_flags & Group::end_of_block) == Group::end_of_block)
+			break;
+	}
+
+	// iterate through the instructions backwards and check where the instructions have to be up-to-date
+	size_t required = 0;
+	for (size_t i = instructions.size(); i > 0; i--) {
+		// compute the flags, which this instruction has to update, and clear them from the required flags
+		instructions[i - 1].update_flags &= required;
+		required ^= instructions[i - 1].update_flags;
+
+		// add the requirements of this instruction to the search-requirements, to indicate to previous instructions, that
+		// the flags are needed
+		required |= instructions[i - 1].require_flags;
+	}
+
+	// iterate through the instructions and translate them to riscv-code
+	auto& codeblock = _codestore.create_block();
+	riscv_instruction_t riscv[max_riscv_instructions];
+	for (auto& entry : instructions) {
+		// translate the instruction
+		size_t count = 0;
+		translate_instruction(entry, riscv, &count);
+
+		// print tracing-information
 		if constexpr (SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE) {
 			char formatted_string[512];
-			fadec::format(x86_instruction, formatted_string, sizeof(formatted_string));
-
+			fadec::format(entry.instruction, formatted_string, sizeof(formatted_string));
 			SPDLOG_TRACE("decoded {}", formatted_string);
-
-			for (size_t i = 0; i < num_instructions; i++)
-				SPDLOG_TRACE(" - instruction[{}] = {}", i, decoding::parse_riscv(riscv_instructions[i]));
+			for (size_t i = 0; i < count; i++)
+				SPDLOG_TRACE(" - instruction[{}] = {}", i, decoding::parse_riscv(riscv[i]));
 		}
 
-		_codestore.add_instruction(codeblock, x86_instruction, riscv_instructions, num_instructions);
-	} while (!end_of_block);
+		// add the instruction to the store
+		_codestore.add_instruction(codeblock, entry.instruction, riscv, count);
+	}
 
 	//add dynamic tracing-information for the basic-block
-	spdlog::trace("Basicblock translated: x86: [0x{0:x} - 0x{1:x}] riscv: 0x{2:x}", codeblock.x86_start,
-				  codeblock.x86_end, codeblock.riscv_start);
-
+	spdlog::trace("Basicblock translated: x86: [0x{0:x} - 0x{1:x}] riscv: 0x{2:x}", codeblock.x86_start, codeblock.x86_end,
+				  codeblock.riscv_start);
 	return codeblock.riscv_start;
 }
 
-bool CodeGenerator::translate_instruction(const Instruction& inst, riscv_instruction_t* riscv, size_t& count) {
-	switch (inst.get_type()) {
-		// at the moment we just insert a return for every instruction that modifies control flow.
+size_t CodeGenerator::translate_instruction(InstructionEntry& inst, utils::riscv_instruction_t* riscv, size_t* count) {
+	switch (inst.instruction.get_type()) {
 		case InstructionType::CALL:
-			break;
+			return Group::end_of_block;
 		case InstructionType::JMP:
-			break;
+			return Group::end_of_block;
 		case InstructionType::LEA:
-			//[0xFFFFFFFF + 0x321*8 + 0x12345678] = 0x1_1234_6F7F
-			load_unsigned_immediate(0xFFFFFFFF, RiscVRegister::a1, riscv, count);
-			load_unsigned_immediate(0x321, RiscVRegister::a2, riscv, count);
-			translate_memory_operand(inst, 1, RiscVRegister::a0, riscv, count);
-			break;
+			if (riscv != nullptr) {
+				load_unsigned_immediate(0xFFFFFFFF, RiscVRegister::a1, riscv, count[0]);
+				load_unsigned_immediate(0x321, RiscVRegister::a2, riscv, count[0]);
+				memory_operand(inst.instruction, 1, RiscVRegister::a0, riscv, count[0]);
+			}
+			return Group::none;
 
 		case InstructionType::MOV_IMM:
 		case InstructionType::MOVABS_IMM:
 		case InstructionType::MOV:
 		case InstructionType::MOVSX:
 		case InstructionType::MOVZX:
-			translate_mov(inst, riscv, count);
-			break;
+			if (riscv != nullptr) {
+				translate_mov(inst.instruction, riscv, count[0]);
+			}
+			return Group::none;
 
 		case InstructionType::NOP:
-			break;
+			return Group::none;
 
 		case InstructionType::PUSH:
 		case InstructionType::POP:
-			break;
+			return Group::none;
 
 		case InstructionType::RET:
 		case InstructionType::RET_IMM:
-			translate_ret(inst, riscv, count);
-			return true;
-
+			if (riscv != nullptr) {
+				translate_ret(inst.instruction, riscv, count[0]);
+			}
+			return Group::end_of_block;
 		default:
-			throw std::runtime_error("Unsupported instruction used.");
+			return Group::error;
 	}
-
-	return false;
 }
 
 void CodeGenerator::translate_mov(const Instruction& inst, riscv_instruction_t* riscv, size_t& count) {
@@ -140,18 +171,18 @@ void CodeGenerator::translate_mov(const Instruction& inst, riscv_instruction_t* 
 		 * [It will fail, because the interesting, stored parts, are larger than they should be]
 		 * With a simple hack of shifting all the way up, and down again, we can fill the space with the
 		 * highest bit. */
-		if(inst.get_type() == InstructionType::MOVSX || inst.get_type() == InstructionType::MOVZX) {
+		if (inst.get_type() == InstructionType::MOVSX || inst.get_type() == InstructionType::MOVZX) {
 			riscv[count++] = encoding::SLLI(source_register, source_register, 64 - 8 * source_operand.get_size());
-			if(inst.get_type() == InstructionType::MOVSX)
-				riscv[count++]= encoding::SRAI(source_register, source_register, 64 - 8 * source_operand.get_size());
+			if (inst.get_type() == InstructionType::MOVSX)
+				riscv[count++] = encoding::SRAI(source_register, source_register, 64 - 8 * source_operand.get_size());
 			else
-				riscv[count++]= encoding::SRLI(source_register, source_register, 64 - 8 * source_operand.get_size());
+				riscv[count++] = encoding::SRLI(source_register, source_register, 64 - 8 * source_operand.get_size());
 		}
 	} else if (tp[1] == OperandType::imm)
 		load_unsigned_immediate(inst.get_immediate(), source_register, riscv, count);
 	else {
 		// read the value from memory
-		translate_memory_operand(inst, 1, source_register, riscv, count);
+		memory_operand(inst, 1, source_register, riscv, count);
 		switch (source_operand.get_size()) {
 			case 8:
 				riscv[count++] = encoding::LD(source_register, source_register, 0);
@@ -211,7 +242,7 @@ void CodeGenerator::translate_mov(const Instruction& inst, riscv_instruction_t* 
 	}
 
 	// write the source-operand to memory
-	translate_memory_operand(inst, 0, temp1_register, riscv, count);
+	memory_operand(inst, 0, temp1_register, riscv, count);
 	switch (dest_operand.get_size()) {
 		case 8:
 			riscv[count++] = encoding::SD(temp1_register, source_register, 0);

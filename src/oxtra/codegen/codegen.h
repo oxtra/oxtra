@@ -60,6 +60,37 @@ namespace codegen {
 			LBYTE
 		};
 
+		// define the instruction-flag-groups (basic-flags: ZERO;SIGN;CARRY;OVERFLOW)
+		struct Group {
+			constexpr static size_t none = 0x0000u;
+			constexpr static size_t require_zero = 0x0001u;
+			constexpr static size_t require_sign = 0x0002u;
+			constexpr static size_t require_carry = 0x0004u;
+			constexpr static size_t require_overflow = 0x0008u;
+			constexpr static size_t require_basic = require_zero | require_sign | require_carry | require_overflow;
+			constexpr static size_t require_parity = 0x0010u;
+			constexpr static size_t require_auxiliary = 0x0020u;
+			constexpr static size_t require_direction = 0x0040u;
+			constexpr static size_t require_all = require_basic | require_parity | require_auxiliary | require_direction;
+
+			constexpr static size_t update_zero = 0x0100u;
+			constexpr static size_t update_sign = 0x0200u;
+			constexpr static size_t update_carry = 0x0400u;
+			constexpr static size_t update_overflow = 0x0800u;
+			constexpr static size_t update_basic = update_zero | update_sign | update_carry | update_overflow;
+			constexpr static size_t update_parity = 0x1000u;
+			constexpr static size_t update_auxiliary = 0x2000u;
+			constexpr static size_t update_direction = 0x4000u;
+			constexpr static size_t update_all = update_basic | update_parity | update_auxiliary | update_direction;
+
+			constexpr static size_t end_of_block = 0x8000u | require_all;
+			constexpr static size_t error = 0xffffffffu;
+		};
+		struct InstructionEntry {
+			fadec::Instruction instruction;
+			size_t require_flags;
+			size_t update_flags;
+		};
 	private:
 		const arguments::Arguments& _args;
 		const elf::Elf& _elf;
@@ -73,20 +104,37 @@ namespace codegen {
 		CodeGenerator(CodeGenerator&&) = delete;
 
 	public:
+		/**
+		 * Translates a basic block to riscv-instructions, and returns the starting address of that riscv-block.
+		 * @param addr beginning of the basic block as x86-address.
+		 * @return translated riscv-starting address.
+		 */
 		utils::host_addr_t translate(utils::guest_addr_t addr);
 
 	private:
 		/**
-		 * Translates a x86 instruction into multiple risc-v instructions.
+		 * Translates a x86 instruction into multiple risc-v instructions. Or Queries information about the given instruction
+		 * @param inst instruction-object, which either has to be parsed, or filled.
+		 * @param riscv Array of riscv instructions. (If null, only query information)
+		 * @param count Number of riscv instructions. (If null, only query information)
+		 * @return The Group-information about the instruction.
+		 */
+		size_t translate_instruction(InstructionEntry& inst, utils::riscv_instruction_t* riscv, size_t* count);
+
+		/**
+		 * Translates MOV-instructions (MOV;MOVABS;MOVIMM;MOVSX;MOVZX)
 		 * @param inst The x86 instruction object.
 		 * @param riscv An array of riscv instructions.
 		 * @param count Reference to the number of instructions that were written to the array.
-		 * @return Returns whether the this instruction ends the basic block.
 		 */
-		bool translate_instruction(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
-
 		void translate_mov(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
+		/**
+		 * Translates a RET-instruction
+		 * @param inst The x86 instruction object.
+		 * @param riscv An array of riscv instructions.
+		 * @param count Reference to the number of instructions that were written to the array.
+		 */
 		void translate_ret(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
@@ -99,8 +147,8 @@ namespace codegen {
 		 * @param num_instructions current number of risc-v instructions.
 		 * @return The index of the first free instruction (i.e. current number of instructions).
 		 */
-		void translate_memory_operand(const fadec::Instruction& inst, size_t index, encoding::RiscVRegister reg,
-									  utils::riscv_instruction_t* riscv, size_t& count);
+		void memory_operand(const fadec::Instruction& inst, size_t index, encoding::RiscVRegister reg,
+							utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
 		 * Writes a register with x86-style sub-manipulation to an existing register without
@@ -187,8 +235,7 @@ namespace codegen {
 		 * @param count The current length of the riscv instructions (i.e. the index of the next free position).
 		 */
 		static void
-		load_signed_immediate(uintptr_t imm, encoding::RiscVRegister dest, utils::riscv_instruction_t* riscv,
-							  size_t& count);
+		load_signed_immediate(uintptr_t imm, encoding::RiscVRegister dest, utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
 		 * Load an immediate of up to 64 bit into the register.
@@ -200,8 +247,7 @@ namespace codegen {
 		 * @param count The current length of the riscv instructions (i.e. the index of the next free position).
 		 */
 		static void
-		load_unsigned_immediate(uintptr_t imm, encoding::RiscVRegister dest, utils::riscv_instruction_t* riscv,
-								size_t& count);
+		load_unsigned_immediate(uintptr_t imm, encoding::RiscVRegister dest, utils::riscv_instruction_t* riscv, size_t& count);
 	};
 }
 
