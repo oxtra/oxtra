@@ -34,13 +34,9 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 			throw std::runtime_error("Failed to decode the instruction");
 
 		// query all of the information about the instruction
-		size_t group_flags = translate_instruction(entry, nullptr, nullptr);
-		if (group_flags == Group::error)
+		entry.update_flags = translate_instruction(entry, nullptr, nullptr);
+		if (entry.update_flags == Group::error)
 			throw std::runtime_error("Unsupported instruction used.");
-
-		// parse the group-flags
-		entry.require_flags = (group_flags & Group::require_all);
-		entry.update_flags = (group_flags & Group::update_all);
 
 		// update the addresses
 		addr += entry.instruction.get_size();
@@ -48,20 +44,21 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 
 		// add the instruction to the array and check if the instruction would end the block
 		instructions.push_back(entry);
-		if ((group_flags & Group::end_of_block) == Group::end_of_block)
+		if ((entry.update_flags & Group::end_of_block) == Group::end_of_block)
 			break;
 	}
 
 	// iterate through the instructions backwards and check where the instructions have to be up-to-date
-	size_t required = 0;
+	size_t required_updates = 0;
 	for (size_t i = instructions.size(); i > 0; i--) {
-		// compute the flags, which this instruction has to update, and clear them from the required flags
-		instructions[i - 1].update_flags &= required;
-		required ^= instructions[i - 1].update_flags;
+		// extract the flags the instruction has to update
+		size_t need_update = (instructions[i - 1].update_flags & required_updates);
+		required_updates ^= need_update;
 
-		// add the requirements of this instruction to the search-requirements, to indicate to previous instructions, that
-		// the flags are needed
-		required |= instructions[i - 1].require_flags;
+		// add the requirements of this instruction to the search-requirements,
+		// to indicate to previous instructions, that the flags are needed, and update its update-flags
+		required_updates |= (instructions[i - 1].update_flags & Group::require_all) << Group::require_to_update_lshift;
+		instructions[i - 1].update_flags = need_update;
 	}
 
 	// iterate through the instructions and translate them to riscv-code

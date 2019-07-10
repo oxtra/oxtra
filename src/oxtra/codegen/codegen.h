@@ -85,10 +85,10 @@ namespace codegen {
 
 			constexpr static size_t end_of_block = 0x8000u | require_all;
 			constexpr static size_t error = 0xffffffffu;
+			constexpr static size_t require_to_update_lshift = 16u;
 		};
 		struct InstructionEntry {
 			fadec::Instruction instruction;
-			size_t require_flags;
 			size_t update_flags;
 		};
 	private:
