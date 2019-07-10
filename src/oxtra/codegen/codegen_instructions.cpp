@@ -60,8 +60,6 @@ void CodeGenerator::translate_mov(const Instruction& inst, riscv_instruction_t* 
 
 	// load the source-operand into the temporary-register
 	if (tp[1] == OperandType::reg) {
-		RiscVRegister src_register = register_mapping[static_cast<uint16_t>(source_operand.get_register())];
-
 		/* read the value from the register (read the whole register
 		 * (unless HBYTE is required), and just cut the rest when writing the register */
 		if (source_operand.get_register_type() == RegisterType::gph) {
@@ -77,8 +75,10 @@ void CodeGenerator::translate_mov(const Instruction& inst, riscv_instruction_t* 
 			else
 				get_from_register(source_register, register_mapping[static_cast<uint16_t>(Register::rdx)],
 								  RegisterAccess::HBYTE, riscv, count);
-		} else
-			get_from_register(source_register, src_register, RegisterAccess::QWORD, riscv, count);
+		} else {
+			get_from_register(source_register, register_mapping[static_cast<uint16_t>(source_operand.get_register())],
+							  RegisterAccess::QWORD, riscv, count);
+		}
 
 		/* if this in struction is a movsx/movzx instruction,
 		 * the input operands will vary in size. Thus they will have to be sign-extended/zero-extended.
@@ -86,12 +86,12 @@ void CodeGenerator::translate_mov(const Instruction& inst, riscv_instruction_t* 
 		 * [It will fail, because the interesting, stored parts, are larger than they should be]
 		 * With a simple hack of shifting all the way up, and down again, we can fill the space with the
 		 * highest bit. */
-		if(inst.get_type() == InstructionType::MOVSX || inst.get_type() == InstructionType::MOVZX) {
+		if (inst.get_type() == InstructionType::MOVSX || inst.get_type() == InstructionType::MOVZX) {
 			riscv[count++] = encoding::SLLI(source_register, source_register, 64 - 8 * source_operand.get_size());
-			if(inst.get_type() == InstructionType::MOVSX)
-				riscv[count++]= encoding::SRAI(source_register, source_register, 64 - 8 * source_operand.get_size());
+			if (inst.get_type() == InstructionType::MOVSX)
+				riscv[count++] = encoding::SRAI(source_register, source_register, 64 - 8 * source_operand.get_size());
 			else
-				riscv[count++]= encoding::SRLI(source_register, source_register, 64 - 8 * source_operand.get_size());
+				riscv[count++] = encoding::SRLI(source_register, source_register, 64 - 8 * source_operand.get_size());
 		}
 	} else if (tp[1] == OperandType::imm)
 		load_unsigned_immediate(inst.get_immediate(), source_register, riscv, count);
