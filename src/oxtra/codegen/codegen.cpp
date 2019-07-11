@@ -31,8 +31,13 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 
 		// query all of the information about the instruction
 		entry.update_flags = group_instruction(entry.instruction.get_type());
-		if (entry.update_flags == Group::error)
-			throw std::runtime_error("Unsupported instruction used.");
+		if (entry.update_flags == Group::error) {
+			char formatted_string[256];
+			fadec::format(entry.instruction, formatted_string, sizeof(formatted_string));
+			char exception_buffer[512];
+			snprintf(exception_buffer, sizeof(exception_buffer), "Unsupported instruction used. %s", formatted_string);
+			throw std::runtime_error(exception_buffer);
+		}
 
 		// update the addresses
 		addr += entry.instruction.get_size();
@@ -46,15 +51,15 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 
 	// iterate through the instructions backwards and check where the instructions have to be up-to-date
 	size_t required_updates = 0;
-	for (size_t i = instructions.size(); i > 0; i--) {
+	for (auto it = instructions.rbegin(); it != instructions.rend(); ++it) {
 		// extract the flags the instruction has to update
-		size_t need_update = (instructions[i - 1].update_flags & required_updates);
+		size_t need_update = (it->update_flags & required_updates);
 		required_updates ^= need_update;
 
 		// add the requirements of this instruction to the search-requirements,
 		// to indicate to previous instructions, that the flags are needed, and update its update-flags
-		required_updates |= (instructions[i - 1].update_flags & Group::require_all) << Group::require_to_update_lshift;
-		instructions[i - 1].update_flags = need_update;
+		required_updates |= (it->update_flags & Group::require_all) << Group::require_to_update_lshift;
+		it->update_flags = need_update;
 	}
 
 	// iterate through the instructions and translate them to riscv-code
