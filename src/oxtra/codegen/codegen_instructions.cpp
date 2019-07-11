@@ -1,5 +1,6 @@
 #include "oxtra/codegen/codegen.h"
 #include <spdlog/spdlog.h>
+#include <oxtra/dispatcher/dispatcher.h>
 
 using namespace codegen;
 using namespace utils;
@@ -13,14 +14,6 @@ extern "C" int guest_exit();
 bool CodeGenerator::translate_instruction(const Instruction& inst, riscv_instruction_t* riscv, size_t& count) {
 	switch (inst.get_type()) {
 		// at the moment we just insert a return for every instruction that modifies control flow.
-		case InstructionType::CALL:
-
-			return true;
-		case InstructionType::JMP:
-
-			//riscv[count++] = encoding::JALR(RiscVRegister::zero, RiscVRegister::s9, )
-
-			return true;
 		case InstructionType::LEA:
 			//[0xFFFFFFFF + 0x321*8 + 0x12345678] = 0x1_1234_6F7F
 			load_unsigned_immediate(0xFFFFFFFF, RiscVRegister::a1, riscv, count);
@@ -46,6 +39,13 @@ bool CodeGenerator::translate_instruction(const Instruction& inst, riscv_instruc
 		case InstructionType::POP:
 			break;
 
+		case InstructionType::CALL:
+
+			return true;
+		case InstructionType::JMP:
+		case InstructionType::JMP_IND:
+			translate_jmp(inst, riscv, count);
+			return true;
 		case InstructionType::RET:
 		case InstructionType::RET_IMM:
 			translate_ret(inst, riscv, count);
@@ -79,12 +79,22 @@ void CodeGenerator::translate_mov(const fadec::Instruction& inst, utils::riscv_i
 	if (inst.get_operand(1).get_type() == OperandType::reg &&
 		inst.get_operand(1).get_register_type() != RegisterType::gph) {
 		source_operand = register_mapping[static_cast<uint16_t>(inst.get_operand(1).get_register())];
-	}
-	else
+	} else
 		translate_operand(inst, 1, source_operand, riscv, count);
 
 	// write the value to the destination-register
 	translate_destination(inst, source_operand, RiscVRegister::zero, riscv, count);
+}
+
+void CodeGenerator::translate_jmp(const Instruction& inst, riscv_instruction_t* riscv, size_t& count) {
+	if (inst.get_operand(0).get_type() == OperandType::imm) {
+		load_64bit_immediate(inst.get_immediate(), address_destination, riscv, count, false);
+		riscv[count++] = JALR(RiscVRegister::ra, reroute_static_address, 0);
+	} else {
+		translate_operand(inst, 0, address_destination, riscv, count);
+		riscv[count++] = JALR(RiscVRegister::ra, reroute_dynamic_address, 0);
+	}
+	riscv[count++] = JALR(RiscVRegister::zero, address_destination, 0);
 }
 
 void CodeGenerator::translate_ret(const Instruction& inst, riscv_instruction_t* riscv, size_t& count) {

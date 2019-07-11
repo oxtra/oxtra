@@ -95,6 +95,8 @@ namespace codegen {
 
 		void translate_mov(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
+		void translate_jmp(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
+
 		void translate_ret(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
