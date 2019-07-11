@@ -11,6 +11,33 @@
 #include "oxtra/dispatcher/context.h"
 
 namespace codegen {
+	namespace Group {
+		enum : uint32_t {
+			none = 0x0000u,
+			require_zero = 0x0001u,
+			require_sign = 0x0002u,
+			require_carry = 0x0004u,
+			require_overflow = 0x0008u,
+			require_basic = require_zero | require_sign | require_carry | require_overflow,
+			require_parity = 0x0010u,
+			require_auxiliary = 0x0020u,
+			require_direction = 0x0040u,
+			require_all = require_basic | require_parity | require_auxiliary | require_direction,
+			update_zero = 0x0100u,
+			update_sign = 0x0200u,
+			update_carry = 0x0400u,
+			update_overflow = 0x0800u,
+			update_basic = update_zero | update_sign | update_carry | update_overflow,
+			update_parity = 0x1000u,
+			update_auxiliary = 0x2000u,
+			update_direction = 0x4000u,
+			update_all = update_basic | update_parity | update_auxiliary | update_direction,
+			end_of_block = 0x8000u | require_all,
+			error = 0xffffffffu,
+			require_to_update_lshift = 8u
+		};
+	}
+
 	class CodeGenerator {
 	public:
 		// If these registers are changed, the documentation has to be updated
@@ -61,17 +88,21 @@ namespace codegen {
 		};
 
 		enum class RegisterAccess : uint8_t {
-			QWORD,	// 64bit
-			DWORD,	// 32bit
-			WORD,	// 16bit
-			HBYTE,	// high byte
-			LBYTE	// low byte
+			QWORD,    // 64bit
+			DWORD,    // 32bit
+			WORD,    // 16bit
+			HBYTE,    // high byte
+			LBYTE    // low byte
 		};
 
 		using OperationCallback = void (*)(const fadec::Instruction& inst, encoding::RiscVRegister dest,
 										   encoding::RiscVRegister source, utils::riscv_instruction_t* riscv,
 										   size_t& count);
 
+		struct InstructionEntry {
+			fadec::Instruction instruction;
+			uint32_t update_flags;
+		};
 	private:
 		const arguments::Arguments& _args;
 		const elf::Elf& _elf;
@@ -90,8 +121,8 @@ namespace codegen {
 		void update_basic_block_address(utils::host_addr_t addr, utils::host_addr_t absolute_address);
 
 	private:
-		static void translate_mov_ext(const fadec::Instruction& inst, encoding::RiscVRegister dest,
-									  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
+		static void translate_mov_ext(const fadec::Instruction& inst, encoding::RiscVRegister dest, encoding::RiscVRegister src,
+									  utils::riscv_instruction_t* riscv, size_t& count);
 
 		void translate_mov(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
@@ -107,6 +138,21 @@ namespace codegen {
 		 * @return Returns whether the this instruction ends the basic block.
 		 */
 		bool translate_instruction(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
+
+		/**
+		 * Extracts all of the grouping information out of the instruction.
+		 * @param type The type of instructions
+		 * @return the group-flags of the instruction
+		 */
+		size_t group_instruction(const fadec::InstructionType type);
+
+		/**
+		 * Translates a single x86 instruction into an array of riscv-instructions.
+		 * @param inst Instruction-object containig flag-information.
+		 * @param riscv Array of riscv-instructions.
+		 * @param count Number of riscv-instructions.
+		 */
+		void translate_instruction(InstructionEntry& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
 		 * extracts the two operands out of the instruction, and calls the callback,
