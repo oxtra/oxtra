@@ -12,6 +12,12 @@ CodeGenerator::CodeGenerator(const arguments::Arguments& args, const elf::Elf& e
 		: _args{args}, _elf{elf}, _codestore{args, elf} {}
 
 host_addr_t CodeGenerator::translate(guest_addr_t addr) {
+	/* Validate the page-protection for the new basic block.
+	 * Code-block-size will continue the check for the upcoming instructions.
+	 * This check will also validate, that the address won't corrupt the page-array. */
+	if ((_elf.get_page_flags(addr) & (elf::PAGE_EXECUTE | elf::PAGE_READ)) != (elf::PAGE_EXECUTE | elf::PAGE_READ))
+		throw std::runtime_error("virtual segmentation fault");
+
 	if (const auto riscv_code = _codestore.find(addr))
 		return riscv_code;
 
@@ -74,7 +80,7 @@ void CodeGenerator::update_basic_block_address(utils::host_addr_t addr, utils::h
 	size_t count = 0;
 	load_64bit_immediate(absolute_address, address_destination, riscv, count, false);
 #ifdef DEBUG
-	if(count != 8)
+	if (count != 8)
 		throw std::runtime_error("load_64bit_immediate did not generate 8 instructions");
 #endif
 	riscv[count++] = encoding::JALR(RiscVRegister::zero, address_destination, 0);
