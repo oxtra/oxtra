@@ -10,6 +10,7 @@ add_executable(${PROJECT_NAME}
 		oxtra/utils/static_list_test.cpp
 		oxtra/codegen/codestore/codestore_test.cpp
 		oxtra/codegen/decoding/decoding_test.cpp
+		oxtra/utils/fixed_array_test.cpp
 )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
