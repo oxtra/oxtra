@@ -60,6 +60,10 @@ namespace codegen {
 			LBYTE
 		};
 
+		//TODO: change type to 16-bit & use namespace
+		//TODO: require_to_update_lshift = 8
+		//TODO: move core-flags into fadec
+
 		// define the instruction-flag-groups (basic-flags: ZERO;SIGN;CARRY;OVERFLOW)
 		struct Group {
 			constexpr static size_t none = 0x0000u;
