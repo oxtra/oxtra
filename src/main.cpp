@@ -7,6 +7,10 @@
 #include "oxtra/elf/elf.h"
 #include "oxtra/dispatcher/dispatcher.h"
 
+#include <iostream>
+
+using namespace std;
+
 int main(int argc, char** argv) {
 	//parse the arguments
 	const auto arguments = arguments::Arguments(argc, argv);
@@ -22,6 +26,9 @@ int main(int argc, char** argv) {
 	SPDLOG_INFO("Finished creating and initializing various runtime-objects.");
 
 	//startup the translation and execution of the source-code
-	dispatcher.run();
-	return 0;
+	const auto return_value = dispatcher.run();
+	spdlog::info("Returned: 0x{0:0x}", return_value);
+	spdlog::info("Returned adjusted: 0x{0:0x}", return_value - elf.get_address_delta());
+
+	return return_value;
 }
