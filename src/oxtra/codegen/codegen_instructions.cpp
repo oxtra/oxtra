@@ -24,7 +24,7 @@ bool CodeGenerator::translate_instruction(const Instruction& inst, riscv_instruc
 		case InstructionType::MOV_IMM:
 		case InstructionType::MOVABS_IMM:
 		case InstructionType::MOV:
-			apply_operation(inst, riscv, count, translate_mov);
+			translate_mov(inst, riscv, count);
 			break;
 
 		case InstructionType::MOVSX:
@@ -66,9 +66,18 @@ void CodeGenerator::translate_mov_ext(const fadec::Instruction& inst, encoding::
 		riscv[count++] = encoding::SRLI(dest, src, 64 - 8 * inst.get_operand(1).get_size());
 }
 
-void CodeGenerator::translate_mov(const fadec::Instruction& inst, encoding::RiscVRegister dest,
-									  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count) {
-	riscv[count++] = encoding::ADD(dest, src, RiscVRegister::zero);
+void CodeGenerator::translate_mov(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
+	// extract the source-operand
+	RiscVRegister source_operand = temp0_register;
+	if (inst.get_operand(1).get_type() == OperandType::reg &&
+		inst.get_operand(1).get_register_type() != RegisterType::gph) {
+		source_operand = register_mapping[static_cast<uint16_t>(inst.get_operand(1).get_register())];
+	}
+	else
+		translate_operand(inst, 1, source_operand, riscv, count);
+
+	// write the value to the destination-register
+	translate_destination(inst, source_operand, RiscVRegister::zero, riscv, count);
 }
 
 void CodeGenerator::translate_ret(const Instruction& inst, riscv_instruction_t* riscv, size_t& count) {
