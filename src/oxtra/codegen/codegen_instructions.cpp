@@ -14,6 +14,18 @@ extern "C" int guest_exit();
 bool CodeGenerator::translate_instruction(const Instruction& inst, riscv_instruction_t* riscv, size_t& count) {
 	switch (inst.get_type()) {
 		// at the moment we just insert a return for every instruction that modifies control flow.
+		case InstructionType::ADD:
+		case InstructionType::ADD_IMM:
+			apply_operation(inst, riscv, count, translate_add);
+			break;
+		//case InstructionType::IMUL:
+		case InstructionType::IMUL2:
+			apply_operation(inst, riscv, count, translate_imul);
+			break;
+		case InstructionType::SHR_CL:
+		case InstructionType::SHR_IMM:
+			apply_operation(inst, riscv, count, translate_shr);
+			break;
 		case InstructionType::LEA:
 			//[0xFFFFFFFF + 0x321*8 + 0x12345678] = 0x1_1234_6F7F
 			load_unsigned_immediate(0xFFFFFFFF, RiscVRegister::a1, riscv, count);
@@ -71,6 +83,21 @@ void CodeGenerator::translate_mov_ext(const fadec::Instruction& inst, encoding::
 		riscv[count++] = encoding::SRAI(dest, src, 64 - 8 * inst.get_operand(1).get_size());
 	else
 		riscv[count++] = encoding::SRLI(dest, src, 64 - 8 * inst.get_operand(1).get_size());
+}
+
+void CodeGenerator::translate_add(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count) {
+	riscv[count++] = encoding::ADD(dest, src, dest);
+}
+
+void CodeGenerator::translate_imul(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count) {
+	riscv[count++] = encoding::MUL(dest, src, dest);
+}
+
+void CodeGenerator::translate_shr(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count) {
+	riscv[count++] = encoding::SRL(dest, dest, src);
 }
 
 void CodeGenerator::translate_mov(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
