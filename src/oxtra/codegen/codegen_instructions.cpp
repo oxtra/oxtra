@@ -6,14 +6,21 @@ using namespace utils;
 using namespace codestore;
 using namespace fadec;
 using namespace encoding;
+using namespace dispatcher;
+
+extern "C" int guest_exit();
 
 bool CodeGenerator::translate_instruction(const Instruction& inst, riscv_instruction_t* riscv, size_t& count) {
 	switch (inst.get_type()) {
 		// at the moment we just insert a return for every instruction that modifies control flow.
 		case InstructionType::CALL:
-			break;
+
+			return true;
 		case InstructionType::JMP:
-			break;
+
+			//riscv[count++] = encoding::JALR(RiscVRegister::zero, RiscVRegister::s9, )
+
+			return true;
 		case InstructionType::LEA:
 			//[0xFFFFFFFF + 0x321*8 + 0x12345678] = 0x1_1234_6F7F
 			load_unsigned_immediate(0xFFFFFFFF, RiscVRegister::a1, riscv, count);
@@ -81,5 +88,6 @@ void CodeGenerator::translate_mov(const fadec::Instruction& inst, utils::riscv_i
 }
 
 void CodeGenerator::translate_ret(const Instruction& inst, riscv_instruction_t* riscv, size_t& count) {
-	riscv[count++] = JALR(RiscVRegister::zero, RiscVRegister::ra, 0);
+	load_64bit_immediate(reinterpret_cast<uint64_t>(guest_exit), temp0_register, riscv, count, false);
+	riscv[count++] = JALR(RiscVRegister::zero, temp0_register, 0);
 }

@@ -18,20 +18,25 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 	if ((_elf.get_page_flags(addr) & (elf::PAGE_EXECUTE | elf::PAGE_READ)) != (elf::PAGE_EXECUTE | elf::PAGE_READ))
 		throw std::runtime_error("virtual segmentation fault");
 
+	if (const auto riscv_code = _codestore.find(addr))
+		return riscv_code;
+
 	/*
-	 * max block size = min(next_codeblock.start, instruction offset limit)
+	 * max block size = min(next_codeblock.start, instruction offset limit - padding)
 	 *
 	 * loop over instructions and decode
 	 * - big switch for each instruction type
 	 * - translate instruction
 	 * - add risc-v instructions into code store
 	 *
-	 * add jump to dispatcher::host_enter
+	 * add jump to dispatcher::reroute_static
 	 * return address to translated code
 	 */
+
 	auto& codeblock = _codestore.create_block();
 	auto current_address = reinterpret_cast<const uint8_t*>(_elf.resolve_vaddr(addr));
 	bool end_of_block;
+	riscv_instruction_t riscv_instructions[max_riscv_instructions];
 
 	do {
 		auto x86_instruction = Instruction{};
@@ -42,8 +47,6 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 		addr += x86_instruction.get_size();
 
 		size_t num_instructions = 0;
-		riscv_instruction_t riscv_instructions[max_riscv_instructions];
-
 		end_of_block = translate_instruction(x86_instruction, riscv_instructions, num_instructions);
 
 		// add tracing-information
@@ -65,6 +68,22 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 				  codeblock.x86_end, codeblock.riscv_start);
 
 	return codeblock.riscv_start;
+}
+
+void CodeGenerator::update_basic_block_address(utils::host_addr_t addr, utils::host_addr_t absolute_address) {
+	// compute new base-address where the new absolute address will be written to t0
+	// 9 = 8 [load_64bit_immediate] + 1 [JALR]
+	addr -= 9 * sizeof(riscv_instruction_t);
+
+	// write the new instructions
+	auto riscv = reinterpret_cast<riscv_instruction_t*>(addr);
+	size_t count = 0;
+	load_64bit_immediate(absolute_address, address_destination, riscv, count, false);
+#ifdef DEBUG
+	if (count != 8)
+		throw std::runtime_error("load_64bit_immediate did not generate 8 instructions");
+#endif
+	riscv[count++] = encoding::JALR(RiscVRegister::zero, address_destination, 0);
 }
 
 void CodeGenerator::apply_operation(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count,
@@ -273,7 +292,8 @@ void CodeGenerator::load_12bit_immediate(uint16_t imm, RiscVRegister dest, riscv
 	riscv[count++] = encoding::ADDI(dest, RiscVRegister::zero, static_cast<uint16_t>(imm) & 0x0FFFu);
 }
 
-void CodeGenerator::load_32bit_immediate(uint32_t imm, RiscVRegister dest, riscv_instruction_t* riscv, size_t& count) {
+void CodeGenerator::load_32bit_immediate(uint32_t imm, RiscVRegister dest, riscv_instruction_t* riscv, size_t& count,
+										 bool optimize) {
 	auto upper_immediate = static_cast<uint32_t>(imm >> 12u);
 	const auto lower_immediate = static_cast<uint16_t>(imm & 0x0FFFu);
 
@@ -283,12 +303,13 @@ void CodeGenerator::load_32bit_immediate(uint32_t imm, RiscVRegister dest, riscv
 
 	riscv[count++] = encoding::LUI(dest, upper_immediate);
 
-	if (lower_immediate != 0x0000) {
+	if (!optimize || lower_immediate != 0x0000) {
 		riscv[count++] = encoding::ADDI(dest, dest, lower_immediate);
 	}
 }
 
-void CodeGenerator::load_64bit_immediate(uint64_t imm, RiscVRegister dest, riscv_instruction_t* riscv, size_t& count) {
+void CodeGenerator::load_64bit_immediate(uint64_t imm, RiscVRegister dest, riscv_instruction_t* riscv, size_t& count,
+										 bool optimize) {
 	const uint32_t high_bits = (imm >> 32u) & 0xFFFFFFFF;
 	const uint32_t low_bits = imm & 0xFFFFFFFF;
 	constexpr size_t immediate_count = 4;
@@ -300,12 +321,12 @@ void CodeGenerator::load_64bit_immediate(uint64_t imm, RiscVRegister dest, riscv
 			immediates[i + 1]++;
 	}
 	// load upper 32bit into destination
-	load_32bit_immediate(immediates[immediate_count - 1], dest, riscv, count);
+	load_32bit_immediate(immediates[immediate_count - 1], dest, riscv, count, optimize);
 
 	for (int8_t i = immediate_count - 2; i >= 0; i--) {
 		// add the next 12bit (8 bit for the last one)
 		riscv[count++] = encoding::SLLI(dest, dest, (i == 0) ? 8 : 12);
-		if (immediates[i] != 0) {
+		if (!optimize || immediates[i] != 0) {
 			riscv[count++] = encoding::ADDI(dest, dest, immediates[i]);
 		}
 	}
@@ -326,9 +347,9 @@ CodeGenerator::load_signed_immediate(uintptr_t imm, RiscVRegister dest, riscv_in
 	if (imm == short_value) {    // 12 bit can be directly encoded
 		load_12bit_immediate(static_cast<uint16_t>(imm), dest, riscv, count);
 	} else if (imm == word_value) {    //32 bit have to be manually specified
-		load_32bit_immediate(static_cast<uint32_t>(imm), dest, riscv, count);
+		load_32bit_immediate(static_cast<uint32_t>(imm), dest, riscv, count, true);
 	} else { // 64 bit also have to be manually specified
-		load_64bit_immediate(static_cast<uint64_t>(imm), dest, riscv, count);
+		load_64bit_immediate(static_cast<uint64_t>(imm), dest, riscv, count, true);
 	}
 }
 
@@ -347,8 +368,8 @@ CodeGenerator::load_unsigned_immediate(uintptr_t imm, RiscVRegister dest, riscv_
 	if (immediate_type == 0) {
 		load_12bit_immediate(static_cast<uint16_t>(imm), dest, riscv, count);
 	} else if (immediate_type == 1) {
-		load_32bit_immediate(static_cast<uint32_t>(imm), dest, riscv, count);
+		load_32bit_immediate(static_cast<uint32_t>(imm), dest, riscv, count, true);
 	} else {
-		load_64bit_immediate(static_cast<uint64_t>(imm), dest, riscv, count);
+		load_64bit_immediate(static_cast<uint64_t>(imm), dest, riscv, count, true);
 	}
 }

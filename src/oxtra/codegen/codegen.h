@@ -8,22 +8,27 @@
 #include "oxtra/codegen/encoding/encoding.h"
 #include "oxtra/codegen/decoding/decoding.h"
 #include <fadec.h>
+#include "oxtra/dispatcher/context.h"
 
 namespace codegen {
 	class CodeGenerator {
-	private:
+	public:
 		// If these registers are changed, the documentation has to be updated
 		constexpr static encoding::RiscVRegister
 				memory_temp_register = encoding::RiscVRegister::t6,
 				move_to_temp_register = encoding::RiscVRegister::t6,
 				dest_temp_register = encoding::RiscVRegister::t5,
 				source_temp_register = encoding::RiscVRegister::t4,
-				address_temp_register = encoding::RiscVRegister::t3;
-		constexpr static encoding::RiscVRegister
+				address_temp_register = encoding::RiscVRegister::t3,
+				address_destination = encoding::RiscVRegister::t3,
+				context_address = encoding::RiscVRegister::s11,
+				reroute_static_address = encoding::RiscVRegister::s8,
+				reroute_dynamic_address = encoding::RiscVRegister::s9,
 				temp0_register = encoding::RiscVRegister::t0,
 				temp1_register = encoding::RiscVRegister::t1,
 				temp2_register = encoding::RiscVRegister::t2;
 
+	private:
 		static constexpr encoding::RiscVRegister register_mapping[] = {
 				encoding::RiscVRegister::a0, // rax
 				encoding::RiscVRegister::a2, // rcx
@@ -46,20 +51,21 @@ namespace codegen {
 				 * ra, gp, tp : reserved
 				 * t0, t1, t2 : always temporary
 				 * t3, t4, t5, t6 : reserved for helper functions
+				 * t3 : address_destination [doubled with reserved for helper-functions]
 				 * s1 : flags
-				 * s8 : host_call address
-				 * s9 : inline_translate address
+				 * s8 : reroute_static address
+				 * s9 : reroute_dynamic address
 				 * s10 : reserved for system calls
 				 * s11 : context address
 				 */
 		};
 
 		enum class RegisterAccess : uint8_t {
-			QWORD,    //64bit
-			DWORD,    //32bit
-			WORD,    //16bit
-			HBYTE,
-			LBYTE
+			QWORD,	// 64bit
+			DWORD,	// 32bit
+			WORD,	// 16bit
+			HBYTE,	// high byte
+			LBYTE	// low byte
 		};
 
 		using OperationCallback = void (*)(const fadec::Instruction& inst, encoding::RiscVRegister dest,
@@ -80,6 +86,8 @@ namespace codegen {
 
 	public:
 		utils::host_addr_t translate(utils::guest_addr_t addr);
+
+		void update_basic_block_address(utils::host_addr_t addr, utils::host_addr_t absolute_address);
 
 	private:
 		static void translate_mov_ext(const fadec::Instruction& inst, encoding::RiscVRegister dest,
@@ -190,25 +198,29 @@ namespace codegen {
 		 * @param dest The register the immediate will be stored in.
 		 * @param riscv The pointer to the generated riscv instructions.
 		 * @param count A reference to the length of the instructions (has to point to the first free index)
+		 * @param optimize When set to true, this method tries to minimize the number of generated instructions.
 		 */
 		static void load_32bit_immediate(uint32_t imm, encoding::RiscVRegister dest, utils::riscv_instruction_t* riscv,
-										 size_t& count);
+										 size_t& count, bool optimize);
 
 		/**
 		 * Loads a 64 bit immediate into the specified register.
 		 * The only difference between this method and load_unsigned_immediate is that this one is slightly faster.
+		 * Unoptimized this function must generate 8-riscv-instructions. Otherwise update_basic_block_address will fail.
 		 * @param imm The immediate that will be stored. The highest 4 bits of uint16_t will be masked.
 		 * @param dest The register the immediate will be stored in.
 		 * @param riscv The pointer to the generated riscv instructions.
 		 * @param count A reference to the length of the instructions (has to point to the first free index)
+		 * @param optimize When set to true, this method tries to minimize the number of generated instructions.
 		 */
 		static void load_64bit_immediate(uint64_t imm, encoding::RiscVRegister dest, utils::riscv_instruction_t* riscv,
-										 size_t& count);
+										 size_t& count, bool optimize);
 
 		/**
 		 * Load an immediate up to 64 bit into the specified register.
 		 * It will be automatically checked how long the immediate is. If the immediate is <=32 bit it will always
 		 * be sign extended to 64 bit.
+		 * This function always optimizes the number of instructions generated.
 		 * @param imm The immediate that will be loaded.
 		 * @param dest The regiser in which the immediate will be loaded.
 		 * @param riscv The pointer to the generated riscv instructions.
@@ -222,6 +234,7 @@ namespace codegen {
 		 * Load an immediate of up to 64 bit into the register.
 		 * The immediate will not be sign extended (i.e. treated as unsigned) unless it is 64 bit (where sign extension
 		 * never happens).
+		 * This function always optimizes the number of instructions generated.
 		 * @param imm The immediate that will be loaded.
 		 * @param dest The regiser in which the immediate will be loaded.
 		 * @param riscv The pointer to the generated riscv instructions.
