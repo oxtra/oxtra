@@ -706,7 +706,7 @@ void fadec::format(const Instruction &instr, char *buffer, size_t len) {
 			break;
 
 		auto op_type_name = "reg\0imm\0mem" + static_cast<uintptr_t>(op_type) * 4 - 4;
-		fmt_concat(" %s%u:", op_type_name, operand.get_size());
+		fmt_concat(" %s%u:", op_type_name, operand.get_size())
 
 		switch (op_type) {
 			case OperandType::reg: {
@@ -743,7 +743,7 @@ void fadec::format(const Instruction &instr, char *buffer, size_t len) {
 				}
 
 				if (idx != Register::none) {
-					fmt_concat("%u*r%u", instr.get_index_scale(), static_cast<unsigned int>(instr.get_index_register()))
+					fmt_concat("%u*r%u", 1 << instr.get_index_scale(), static_cast<unsigned int>(instr.get_index_register()))
 
 					if (disp != 0) fmt_concat("+")
 				}
