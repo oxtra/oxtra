@@ -7,7 +7,6 @@ using namespace codestore;
 using namespace fadec;
 using namespace encoding;
 
-
 CodeGenerator::CodeGenerator(const arguments::Arguments& args, const elf::Elf& elf)
 		: _args{args}, _elf{elf}, _codestore{args, elf} {}
 
@@ -161,5 +160,4 @@ void CodeGenerator::translate_instruction(InstructionEntry& inst, utils::riscv_i
 		default:
 			break;
 	}
-	return;
 }

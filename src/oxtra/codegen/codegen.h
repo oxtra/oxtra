@@ -103,7 +103,6 @@ namespace codegen {
 			fadec::Instruction instruction;
 			uint32_t update_flags;
 		};
-
 	private:
 		const arguments::Arguments& _args;
 		const elf::Elf& _elf;
@@ -130,6 +129,15 @@ namespace codegen {
 		void translate_jmp(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
 		void translate_ret(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
+
+		/**
+		 * Translates a x86 instruction into multiple risc-v instructions.
+		 * @param inst The x86 instruction object.
+		 * @param riscv An array of riscv instructions.
+		 * @param count Reference to the number of instructions that were written to the array.
+		 * @return Returns whether the this instruction ends the basic block.
+		 */
+		bool translate_instruction(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
 		 * Extracts all of the grouping information out of the instruction.

@@ -16,7 +16,8 @@ add_library(oxtra_libs
 		oxtra/codegen/decoding/decoding.cpp
 		oxtra/dispatcher/context.cpp
 		oxtra/codegen/codegen_instructions.cpp
-		oxtra/codegen/codegen_helper.cpp)
+		oxtra/codegen/codegen_helper.cpp
+)
 
 target_link_libraries(oxtra_libs
 		fadec
