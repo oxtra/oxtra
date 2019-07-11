@@ -81,7 +81,7 @@ namespace elf {
 		 * @param size number of bytes in the stream
 		 * @param exe_pages number of initial pages flagged as executable
 		 */
-		Elf(uint8_t* ptr, size_t size, size_t exec_pages = 1);
+		Elf(const uint8_t* ptr, size_t size, size_t exec_pages = 1);
 
 		Elf() = delete;
 
