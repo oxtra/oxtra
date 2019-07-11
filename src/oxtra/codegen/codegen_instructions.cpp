@@ -13,25 +13,48 @@ extern "C" int guest_exit();
 
 void CodeGenerator::translate_mov_ext(const fadec::Instruction& inst, encoding::RiscVRegister dest, encoding::RiscVRegister src,
 									  utils::riscv_instruction_t* riscv, size_t& count) {
-	/* if this in struction is a movsx/movzx instruction,
-	 * the input operands will vary in size. Thus they will have to be sign-extended/zero-extended.
+	/* Thus they will have to be sign-extended/zero-extended.
 	 * Otherwise the optimization will fail (load full 8-byte register, and store the interesting parts).
 	 * [It will fail, because the interesting, stored parts, are larger than they should be]
 	 * With a simple hack of shifting all the way up, and down again, we can fill the space with the
 	 * highest bit. */
-	riscv[count++] = encoding::SLLI(src, src, 64 - 8 * inst.get_operand(1).get_size());
+	const auto shift_amount = 64 - 8 * inst.get_operand(1).get_size();
+	riscv[count++] = encoding::SLLI(dest, src, shift_amount);
 	if (inst.get_type() == InstructionType::MOVSX)
-		riscv[count++] = encoding::SRAI(dest, src, 64 - 8 * inst.get_operand(1).get_size());
+		riscv[count++] = encoding::SRAI(dest, dest, shift_amount);
 	else
-		riscv[count++] = encoding::SRLI(dest, src, 64 - 8 * inst.get_operand(1).get_size());
+		riscv[count++] = encoding::SRLI(dest, dest, shift_amount);
 }
 
 void CodeGenerator::translate_mov(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
+	const auto& dst_operand = inst.get_operand(0);
+	const auto& src_operand = inst.get_operand(1);
+
+	if (dst_operand.get_type() == OperandType::reg) {
+		const auto dst_register = register_mapping[static_cast<uint16_t>(dst_operand.get_register())];
+
+		// if the destination operand is a 8-byte register then we can move the source operand result directly into it
+		if (dst_operand.get_size() == 8) {
+			translate_operand(inst, 1, dst_register, riscv, count);
+			return;
+		}
+
+		/*
+		 * if the destination operand is a 4-byte register then we can move the source operand result into it
+		 * and clear the upper 32 bits (saves 1 instruction)
+		 */
+		else if (dst_operand.get_size() == 4) {
+			translate_operand(inst, 1, dst_register, riscv, count);
+			riscv[count++] = encoding::SLLI(dst_register, dst_register, 32);
+			riscv[count++] = encoding::SRLI(dst_register, dst_register, 32);
+			return;
+		}
+	}
+
 	// extract the source-operand
 	RiscVRegister source_operand = temp0_register;
-	if (inst.get_operand(1).get_type() == OperandType::reg &&
-		inst.get_operand(1).get_register_type() != RegisterType::gph) {
-		source_operand = register_mapping[static_cast<uint16_t>(inst.get_operand(1).get_register())];
+	if (src_operand.get_type() == OperandType::reg && src_operand.get_register_type() != RegisterType::gph) {
+		source_operand = register_mapping[static_cast<uint16_t>(src_operand.get_register())];
 	} else
 		translate_operand(inst, 1, source_operand, riscv, count);
 

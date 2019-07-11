@@ -20,7 +20,7 @@ void CodeGenerator::apply_operation(const fadec::Instruction& inst, utils::riscv
 	// extract the register for the destination-value
 	RiscVRegister dest_register = dest_temp_register;
 	RiscVRegister address = RiscVRegister::zero;
-	if (inst.get_operand(0).get_type() == OperandType::reg && inst.get_operand(0).get_size() == 8)
+	if (inst.get_operand(0).get_type() == OperandType::reg && inst.get_operand(0).get_size() >= 4)
 		dest_register = register_mapping[static_cast<uint16_t>(inst.get_operand(0).get_register())];
 	else
 		address = translate_operand(inst, 0, dest_register, riscv, count);
