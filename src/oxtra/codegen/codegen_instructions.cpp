@@ -18,7 +18,7 @@ bool CodeGenerator::translate_instruction(const Instruction& inst, riscv_instruc
 			//[0xFFFFFFFF + 0x321*8 + 0x12345678] = 0x1_1234_6F7F
 			load_unsigned_immediate(0xFFFFFFFF, RiscVRegister::a1, riscv, count);
 			load_unsigned_immediate(0x321, RiscVRegister::a2, riscv, count);
-			translate_memory_operand(inst, 1, RiscVRegister::a0, riscv, count);
+			translate_memory(inst, 1, RiscVRegister::a0, riscv, count);
 			break;
 
 		case InstructionType::MOV_IMM:

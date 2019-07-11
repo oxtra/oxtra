@@ -15,7 +15,7 @@ namespace codegen {
 		// If these registers are changed, the documentation has to be updated
 		constexpr static encoding::RiscVRegister
 				memory_temp_register = encoding::RiscVRegister::t6,
-				read_temp_register = encoding::RiscVRegister::t6,
+				move_to_temp_register = encoding::RiscVRegister::t6,
 				dest_temp_register = encoding::RiscVRegister::t5,
 				source_temp_register = encoding::RiscVRegister::t4,
 				address_temp_register = encoding::RiscVRegister::t3;
@@ -50,7 +50,7 @@ namespace codegen {
 				 * s8 : host_call address
 				 * s9 : inline_translate address
 				 * s10 : reserved for system calls
-				 * s11 : dispatcher address
+				 * s11 : context address
 				 */
 		};
 
@@ -61,6 +61,10 @@ namespace codegen {
 			HBYTE,
 			LBYTE
 		};
+
+		using OperationCallback = void (*)(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+										   encoding::RiscVRegister source, utils::riscv_instruction_t* riscv,
+										   size_t& count);
 
 	private:
 		const arguments::Arguments& _args;
@@ -79,7 +83,7 @@ namespace codegen {
 
 	private:
 		static void translate_mov_ext(const fadec::Instruction& inst, encoding::RiscVRegister dest,
-								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
+									  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
 
 		void translate_mov(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
@@ -97,7 +101,8 @@ namespace codegen {
 		/**
 		 * extracts the two operands out of the instruction, and calls the callback,
 		 * which then implements the corresponding operation.
-		 * The source-register must not be changed. For optimization-purposes, it might be the actual source-register.
+		 * The value of the source-register must not be changed. For optimization-purposes,
+		 * it might be the actual source-register.
 		 * If the operand-size is not 64 bits, the registers might still have some undefined high bits.
 		 * @param inst x86 decoded instruction.
 		 * @param riscv Array of riscv-instructions.
@@ -105,8 +110,7 @@ namespace codegen {
 		 * @param callback Callback, which will apply the instruction.
 		 */
 		void apply_operation(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count,
-							 void(* callback)(const fadec::Instruction&, encoding::RiscVRegister,
-											  encoding::RiscVRegister, utils::riscv_instruction_t*, size_t&));
+							 OperationCallback callback);
 
 		/**
 		 * Translates a single operand (either register, or memory or immediate value)
@@ -142,8 +146,8 @@ namespace codegen {
 		 * @param riscv_instructions An array of risc-v instructions.
 		 * @param num_instructions current number of risc-v instructions.
 		 */
-		void translate_memory_operand(const fadec::Instruction& inst, size_t index, encoding::RiscVRegister reg,
-									  utils::riscv_instruction_t* riscv, size_t& count);
+		void translate_memory(const fadec::Instruction& inst, size_t index, encoding::RiscVRegister reg,
+							  utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
 		 * Writes a register with x86-style sub-manipulation to an existing register without
@@ -164,25 +168,6 @@ namespace codegen {
 		 */
 		static void move_to_register(encoding::RiscVRegister dest, encoding::RiscVRegister src, RegisterAccess access,
 									 utils::riscv_instruction_t* riscv, size_t& count);
-
-		/**
-		 * Reads a register with x86-style sub-manipulation from an existing register.
-		 *
-		 * for example:
-		 * 		- read x86:ah from riscv:a1
-		 * 		- manipulate riscv:a1
-		 * 		- store riscv:a1 to x86:eax
-		 *
-		 * The source-register will be preserved.
-		 * t5 and t6 might be overwritten.
-		 * @param dest register to be changed.
-		 * @param src register to read.
-		 * @param access the operand-size of the register to read from.
-		 * @param riscv An array of risc-v instructions.
-		 * @param count current number of risc-v instructions.
-		 */
-		static void get_from_register(encoding::RiscVRegister dest, encoding::RiscVRegister src, RegisterAccess access,
-									  utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
 		 * Loads a 12 bit immediate into the specified register. The value is sign extended to 64 bit,
