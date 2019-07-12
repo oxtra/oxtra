@@ -16,13 +16,14 @@ namespace arguments {
 		/**
 		 * A description of the parameter manually consumed by us.
 		 */
-		static constexpr const char* _argument_description = "x86_EXECUTABLE";
+		static constexpr const char* _argument_description = "x86_EXECUTABLE [-a \"ARGUMENTS...\"]";
 
 		/**
 		 * This struct contains the actual arguments that have been extracted.
 		 */
 		struct StoredArguments {
 			char* guest_path;
+			std::vector<std::string> guest_arguments;
 			enum spdlog::level::level_enum spdlog_log_level;
 			size_t instruction_list_size, offset_list_size, entry_list_size;
 		};
@@ -35,7 +36,8 @@ namespace arguments {
 		 * This struct contains all options and their identifiers (+ definition strings).
 		 * Unprintable ASCII strings will not be able to be accessed (only long variant available).
 		 */
-		const struct argp_option _options[5] = {
+		const struct argp_option _options[6] = {
+				{"arguments", 'a', "ARGUMENTS", 0, "Specify the arguments that will be passed to the x86 executable. The default is no arguments", 0},
 				{"linstruction-size", _instruction_list_size_id, "SIZE",  0, "The size of the list containing instructions. Limit for consecutive instructions.\nThe default is 128.",   0},
 				{"loffset-size",      _offset_list_size_id,      "SIZE",  0, "The size of the list containing offset. Limit for consecutive offsets.\nThe default is 128.",              0},
 				{"lentry-size",       _entry_list_size_id,       "SIZE",  0, "The size of the list containing block entires. Limit for consecutive block entries.\nThe default is 128.", 0},
@@ -60,6 +62,8 @@ namespace arguments {
 
 	public:
 		const char* get_guest_path() const;
+
+		std::vector<std::string> get_guest_arguments() const;
 
 		enum spdlog::level::level_enum get_log_level() const;
 
