@@ -277,7 +277,7 @@ Elf::Elf(const char* path) {
 	unpack_file();
 }
 
-Elf::Elf(uint8_t* ptr, size_t size, size_t exec_pages) {
+Elf::Elf(const uint8_t* ptr, size_t size, size_t exec_pages) {
 	//initialize the this object
 	_image_ptr = nullptr;
 	_page_flags = nullptr;

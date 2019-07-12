@@ -7,9 +7,6 @@
 #include "oxtra/elf/elf.h"
 #include "oxtra/dispatcher/dispatcher.h"
 
-#include <iostream>
-using namespace std;
-
 int main(int argc, char** argv) {
 	//parse the arguments
 	const auto arguments = arguments::Arguments(argc, argv);

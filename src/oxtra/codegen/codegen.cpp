@@ -1,12 +1,13 @@
 #include "oxtra/codegen/codegen.h"
 #include <spdlog/spdlog.h>
+#include <oxtra/dispatcher/dispatcher.h>
 
 using namespace codegen;
 using namespace utils;
 using namespace codestore;
 using namespace fadec;
 using namespace encoding;
-
+using namespace dispatcher;
 
 CodeGenerator::CodeGenerator(const arguments::Arguments& args, const elf::Elf& elf)
 		: _args{args}, _elf{elf}, _codestore{args, elf} {}
@@ -16,360 +17,165 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 	 * Code-block-size will continue the check for the upcoming instructions.
 	 * This check will also validate, that the address won't corrupt the page-array. */
 	if ((_elf.get_page_flags(addr) & (elf::PAGE_EXECUTE | elf::PAGE_READ)) != (elf::PAGE_EXECUTE | elf::PAGE_READ))
-		throw std::runtime_error("virtual segmentation fault");
-
+		Dispatcher::fault_exit("virtual segmentation fault");
 	if (const auto riscv_code = _codestore.find(addr))
 		return riscv_code;
 
-	/*
-	 * max block size = min(next_codeblock.start, instruction offset limit - padding)
-	 *
-	 * loop over instructions and decode
-	 * - big switch for each instruction type
-	 * - translate instruction
-	 * - add risc-v instructions into code store
-	 *
-	 * add jump to dispatcher::reroute_static
-	 * return address to translated code
-	 */
+	// iterate through the instructions and query all information about the flags
+	std::vector<InstructionEntry> instructions;
+	auto address = reinterpret_cast<const uint8_t*>(_elf.resolve_vaddr(addr));
+	while (true) {
+		// decode the fadec-instruction
+		InstructionEntry entry{};
+		if (fadec::decode(address, _elf.get_size(addr), DecodeMode::decode_64, addr, entry.instruction) <= 0)
+			Dispatcher::fault_exit("Failed to decode the instruction");
 
-	auto& codeblock = _codestore.create_block();
-	auto current_address = reinterpret_cast<const uint8_t*>(_elf.resolve_vaddr(addr));
-	bool end_of_block;
-	riscv_instruction_t riscv_instructions[max_riscv_instructions];
-
-	do {
-		auto x86_instruction = Instruction{};
-		if (decode(current_address, _elf.get_size(addr), DecodeMode::decode_64, addr, x86_instruction) <= 0)
-			throw std::runtime_error("Failed to decode the instruction");
-
-		current_address += x86_instruction.get_size();
-		addr += x86_instruction.get_size();
-
-		size_t num_instructions = 0;
-		end_of_block = translate_instruction(x86_instruction, riscv_instructions, num_instructions);
-
-		// add tracing-information
-		if constexpr (SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE) {
-			char formatted_string[512];
-			fadec::format(x86_instruction, formatted_string, sizeof(formatted_string));
-
-			SPDLOG_TRACE("decoded {}", formatted_string);
-
-			for (size_t i = 0; i < num_instructions; i++)
-				SPDLOG_TRACE(" - instruction[{}] = {}", i, decoding::parse_riscv(riscv_instructions[i]));
+		// query all of the information about the instruction
+		entry.update_flags = group_instruction(entry.instruction.get_type());
+		if (entry.update_flags == Group::error) {
+			char formatted_string[256];
+			fadec::format(entry.instruction, formatted_string, sizeof(formatted_string));
+			char exception_buffer[512];
+			snprintf(exception_buffer, sizeof(exception_buffer), "Unsupported instruction used. %s", formatted_string);
+			Dispatcher::fault_exit(exception_buffer);
 		}
 
-		_codestore.add_instruction(codeblock, x86_instruction, riscv_instructions, num_instructions);
-	} while (!end_of_block);
+		// update the addresses
+		addr += entry.instruction.get_size();
+		address += entry.instruction.get_size();
+
+		// add the instruction to the array and check if the instruction would end the block
+		instructions.push_back(entry);
+		if ((entry.update_flags & Group::end_of_block) == Group::end_of_block)
+			break;
+	}
+
+	// iterate through the instructions backwards and check where the instructions have to be up-to-date
+	size_t required_updates = 0;
+	for (auto it = instructions.rbegin(); it != instructions.rend(); ++it) {
+		// extract the flags the instruction has to update
+		size_t need_update = (it->update_flags & required_updates);
+		required_updates ^= need_update;
+
+		// add the requirements of this instruction to the search-requirements,
+		// to indicate to previous instructions, that the flags are needed, and update its update-flags
+		required_updates |= (it->update_flags & Group::require_all) << Group::require_to_update_lshift;
+		it->update_flags = need_update;
+	}
+
+	// iterate through the instructions and translate them to riscv-code
+	auto& codeblock = _codestore.create_block();
+	riscv_instruction_t riscv[max_riscv_instructions];
+	for (auto& entry : instructions) {
+		// translate the instruction
+		size_t count = 0;
+		translate_instruction(entry, riscv, count);
+
+		// print tracing-information
+		if constexpr (SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE) {
+			char formatted_string[512];
+			fadec::format(entry.instruction, formatted_string, sizeof(formatted_string));
+			SPDLOG_TRACE("decoded {}", formatted_string);
+			for (size_t i = 0; i < count; i++)
+				SPDLOG_TRACE(" - instruction[{}] = {}", i, decoding::parse_riscv(riscv[i]));
+		}
+
+		// add the instruction to the store
+		_codestore.add_instruction(codeblock, entry.instruction, riscv, count);
+	}
 
 	//add dynamic tracing-information for the basic-block
-	spdlog::trace("Basicblock translated: x86: [0x{0:x} - 0x{1:x}] riscv: 0x{2:x}", codeblock.x86_start,
-				  codeblock.x86_end, codeblock.riscv_start);
-
+	spdlog::trace("Basicblock translated: x86: [0x{0:x} - 0x{1:x}] riscv: 0x{2:x}", codeblock.x86_start, codeblock.x86_end,
+				  codeblock.riscv_start);
 	return codeblock.riscv_start;
 }
 
-void CodeGenerator::update_basic_block_address(utils::host_addr_t addr, utils::host_addr_t absolute_address) {
+void CodeGenerator::update_basic_block(utils::host_addr_t addr, utils::host_addr_t absolute_address) {
 	// compute new base-address where the new absolute address will be written to t0
 	// 9 = 8 [load_64bit_immediate] + 1 [JALR]
-	addr -= 9 * sizeof(riscv_instruction_t);
+	auto riscv = reinterpret_cast<riscv_instruction_t*>(addr - 9 * sizeof(riscv_instruction_t));
+	size_t count = 0;
 
 	// write the new instructions
-	auto riscv = reinterpret_cast<riscv_instruction_t*>(addr);
-	size_t count = 0;
 	load_64bit_immediate(absolute_address, address_destination, riscv, count, false);
 #ifdef DEBUG
 	if (count != 8)
-		throw std::runtime_error("load_64bit_immediate did not generate 8 instructions");
+		Dispatcher::fault_exit("load_64bit_immediate did not generate 8 instructions");
 #endif
 	riscv[count++] = encoding::JALR(RiscVRegister::zero, address_destination, 0);
 }
 
-void CodeGenerator::apply_operation(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count,
-									OperationCallback callback) {
-	// extract the source-operand
-	RiscVRegister source_register = source_temp_register;
-	if (inst.get_operand(1).get_type() == OperandType::reg &&
-		inst.get_operand(1).get_register_type() != RegisterType::gph)
-		source_register = register_mapping[static_cast<uint16_t>(inst.get_operand(1).get_register())];
-	else
-		translate_operand(inst, 1, source_register, riscv, count);
-
-	// extract the register for the destination-value
-	RiscVRegister dest_register = dest_temp_register;
-	RiscVRegister address = RiscVRegister::zero;
-	if (inst.get_operand(0).get_type() == OperandType::reg && inst.get_operand(0).get_size() == 8)
-		dest_register = register_mapping[static_cast<uint16_t>(inst.get_operand(0).get_register())];
-	else
-		address = translate_operand(inst, 0, dest_register, riscv, count);
-
-	// call the callback to apply the changes
-	callback(inst, dest_register, source_register, riscv, count);
-
-	// write the value back to the destination
-	translate_destination(inst, dest_register, address, riscv, count);
+size_t CodeGenerator::group_instruction(const fadec::InstructionType type) {
+	switch (type) {
+		case InstructionType::ADD:
+		case InstructionType::ADD_IMM:
+		case InstructionType::IMUL2:
+		case InstructionType::SHR_CL:
+		case InstructionType::SHR_IMM:
+			return Group::update_arithmetic;
+		case InstructionType::MOV_IMM:
+		case InstructionType::MOVABS_IMM:
+		case InstructionType::MOV:
+		case InstructionType::MOVSX:
+		case InstructionType::MOVZX:
+		case InstructionType::NOP:
+		case InstructionType::PUSH:
+		case InstructionType::POP:
+			return Group::none;
+		case InstructionType::JMP:
+		case InstructionType::JMP_IND:
+		case InstructionType::RET:
+		case InstructionType::RET_IMM:
+		case InstructionType::CALL:
+			return Group::end_of_block;
+		default:
+			return Group::error;
+	}
 }
 
-encoding::RiscVRegister
-CodeGenerator::translate_operand(const fadec::Instruction& inst, size_t index, encoding::RiscVRegister reg,
-								 utils::riscv_instruction_t* riscv, size_t& count) {
-	// extract the operand
-	auto& operand = inst.get_operand(index);
-
-	// load the source-operand into the temporary-register
-	if (operand.get_type() == OperandType::reg) {
-		/* read the value from the register (read the whole register
-		 * (unless HBYTE is required), and just cut the rest when writing the register */
-		if (operand.get_register_type() == RegisterType::gph) {
-			riscv[count++] = encoding::SRLI(reg,
-											register_mapping[static_cast<uint16_t>(operand.get_register()) - 4], 8);
-		} else
-			riscv[count++] = encoding::ADD(reg, register_mapping[static_cast<uint16_t>(operand.get_register())],
-										   RiscVRegister::zero);
-	} else if (operand.get_type() == OperandType::imm)
-		load_unsigned_immediate(inst.get_immediate(), reg, riscv, count);
-	else {
-		// read the value from memory
-		translate_memory(inst, 1, address_temp_register, riscv, count);
-		switch (operand.get_size()) {
-			case 8:
-				riscv[count++] = encoding::LD(address_temp_register, reg, 0);
-				break;
-			case 4:
-				riscv[count++] = encoding::LW(address_temp_register, reg, 0);
-				break;
-			case 2:
-				riscv[count++] = encoding::LH(address_temp_register, reg, 0);
-				break;
-			case 1:
-				riscv[count++] = encoding::LB(address_temp_register, reg, 0);
-				break;
-		}
-		return address_temp_register;
-	}
-	return encoding::RiscVRegister::zero;
-}
-
-void CodeGenerator::translate_destination(const fadec::Instruction& inst, encoding::RiscVRegister reg,
-										  encoding::RiscVRegister address, utils::riscv_instruction_t* riscv,
-										  size_t& count) {
-	auto& operand = inst.get_operand(0);
-
-	// check if the destination is a register
-	if (operand.get_type() == OperandType::reg) {
-		RiscVRegister temp_reg = register_mapping[static_cast<uint16_t>(operand.get_register())];
-		switch (operand.get_size()) {
-			case 8:
-				if (temp_reg != reg)
-					move_to_register(temp_reg, reg, RegisterAccess::QWORD, riscv, count);
-				break;
-			case 4:
-				move_to_register(temp_reg, reg, RegisterAccess::DWORD, riscv, count);
-				break;
-			case 2:
-				move_to_register(temp_reg, reg, RegisterAccess::WORD, riscv, count);
-				break;
-			case 1:
-				if (operand.get_register_type() == RegisterType::gph) {
-					move_to_register(register_mapping[static_cast<uint16_t>(operand.get_register()) - 4], reg,
-									 RegisterAccess::HBYTE, riscv, count);
-				} else
-					move_to_register(temp_reg, reg, RegisterAccess::LBYTE, riscv, count);
-				break;
-		}
-		return;
-	}
-
-	// translate the memory-address and write the value to it
-	if (address == encoding::RiscVRegister::zero) {
-		translate_memory(inst, 0, address_temp_register, riscv, count);
-		address = address_temp_register;
-	}
-	switch (operand.get_size()) {
-		case 8:
-			riscv[count++] = encoding::SD(address, reg, 0);
+void CodeGenerator::translate_instruction(InstructionEntry& inst, utils::riscv_instruction_t* riscv, size_t& count) {
+	switch (inst.instruction.get_type()) {
+		case InstructionType::ADD:
+		case InstructionType::ADD_IMM:
+			apply_operation(inst.instruction, riscv, count, translate_add);
 			break;
-		case 4:
-			riscv[count++] = encoding::SW(address, reg, 0);
+		case InstructionType::IMUL2:
+			apply_operation(inst.instruction, riscv, count, translate_imul);
 			break;
-		case 2:
-			riscv[count++] = encoding::SH(address, reg, 0);
+		case InstructionType::SHR_CL:
+		case InstructionType::SHR_IMM:
+			apply_operation(inst.instruction, riscv, count, translate_shr);
 			break;
-		case 1:
-			riscv[count++] = encoding::SB(address, reg, 0);
+		case InstructionType::MOV_IMM:
+		case InstructionType::MOVABS_IMM:
+		case InstructionType::MOV:
+			translate_mov(inst.instruction, riscv, count);
 			break;
-	}
-}
 
-void CodeGenerator::translate_memory(const Instruction& inst, size_t index, RiscVRegister reg,
-									 riscv_instruction_t* riscv, size_t& count) {
-	if (inst.get_address_size() < 4)
-		throw std::runtime_error("invalid addressing-size");
-	const auto& operand = inst.get_operand(index);
+		case InstructionType::MOVSX:
+		case InstructionType::MOVZX:
+			apply_operation(inst.instruction, riscv, count, translate_mov_ext);
+			break;
 
-	// add the scale & index
-	if (inst.get_index_register() != fadec::Register::none) {
-		encoding::ADD(reg, register_mapping[static_cast<uint16_t>(inst.get_index_register())], RiscVRegister::zero);
-		riscv[count++] = encoding::SLLI(reg, reg, inst.get_index_scale());
-	} else
-		load_unsigned_immediate(0, reg, riscv, count);
+		case InstructionType::NOP:
+			break;
 
-	// add the base-register
-	if (operand.get_register() != fadec::Register::none) {
-		riscv[count++] = encoding::ADD(reg, reg, register_mapping[static_cast<uint16_t>( operand.get_register())]);
-	}
+		case InstructionType::PUSH:
+		case InstructionType::POP:
+			break;
 
-	// add the displacement
-	if (inst.get_displacement() > 0 || _elf.get_address_delta() > 0) {
-		uintptr_t displacement = _elf.get_address_delta() + inst.get_displacement();
-		// less or equal than 12 bits
-		if (displacement < 0x800) {
-			riscv[count++] = encoding::ADDI(reg, reg, static_cast<uint16_t>(displacement));
-		} else {
-			load_unsigned_immediate(displacement, memory_temp_register, riscv, count);
-			riscv[count++] = encoding::ADD(reg, reg, memory_temp_register);
-		}
-	}
-}
+		case InstructionType::CALL:
 
-void CodeGenerator::move_to_register(RiscVRegister dest, RiscVRegister src, RegisterAccess access,
-									 riscv_instruction_t* riscv, size_t& count) {
-	switch (access) {
-		case RegisterAccess::QWORD:
-			riscv[count++] = encoding::ADD(dest, src, RiscVRegister::zero);
-			return;
-		case RegisterAccess::DWORD:
-			// clear the lower bits of the destination-register by shifting
-			riscv[count++] = encoding::SRLI(dest, dest, 32);
-			riscv[count++] = encoding::SLLI(dest, dest, 32);
-
-			// copy the source-register and clear the upper bits by shifting
-			riscv[count++] = encoding::SLLI(move_to_temp_register, src, 32);
-			riscv[count++] = encoding::SRLI(move_to_temp_register, move_to_temp_register, 32);
-
-			// combine the registers
-			riscv[count++] = encoding::OR(dest, dest, move_to_temp_register);
-			return;
-		case RegisterAccess::WORD:
-			// clear the lower bits of the destination-register by shifting
-			riscv[count++] = encoding::SRLI(dest, dest, 16);
-			riscv[count++] = encoding::SLLI(dest, dest, 16);
-
-			// copy the source-register and clear the upper bits by shifting
-			riscv[count++] = encoding::SLLI(move_to_temp_register, src, 48);
-			riscv[count++] = encoding::SRLI(move_to_temp_register, move_to_temp_register, 48);
-
-			// combine the registers
-			riscv[count++] = encoding::OR(dest, dest, move_to_temp_register);
-			return;
-		case RegisterAccess::LBYTE:
-			// clear the lower bits of the destination-register
-			riscv[count++] = encoding::ANDI(move_to_temp_register, dest, 0xff);
-			riscv[count++] = encoding::XOR(dest, dest, move_to_temp_register);
-
-			// extract the lower bits of the source-register and merge the registers
-			riscv[count++] = encoding::ANDI(move_to_temp_register, src, 0xff);
-			riscv[count++] = encoding::OR(dest, dest, move_to_temp_register);
-			return;
-		case RegisterAccess::HBYTE:
-			// load the and-mask
-			load_unsigned_immediate(0xff00, move_to_temp_register, riscv, count);
-
-			// clear the lower bits of the destination-register
-			riscv[count++] = encoding::AND(move_to_temp_register, move_to_temp_register, dest);
-			riscv[count++] = encoding::XOR(dest, dest, move_to_temp_register);
-
-			// extract the lower bits of the source-register and merge the registers
-			riscv[count++] = encoding::ANDI(move_to_temp_register, src, 0xff);
-			riscv[count++] = encoding::SLLI(move_to_temp_register, move_to_temp_register, 8);
-			riscv[count++] = encoding::OR(dest, dest, move_to_temp_register);
-			return;
-	}
-}
-
-void CodeGenerator::load_12bit_immediate(uint16_t imm, RiscVRegister dest, riscv_instruction_t* riscv, size_t& count) {
-	riscv[count++] = encoding::ADDI(dest, RiscVRegister::zero, static_cast<uint16_t>(imm) & 0x0FFFu);
-}
-
-void CodeGenerator::load_32bit_immediate(uint32_t imm, RiscVRegister dest, riscv_instruction_t* riscv, size_t& count,
-										 bool optimize) {
-	auto upper_immediate = static_cast<uint32_t>(imm >> 12u);
-	const auto lower_immediate = static_cast<uint16_t>(imm & 0x0FFFu);
-
-	// adding the lower bits is sign extended, so if the lower bits are signed we have to increase the upper immediate
-	if (imm & 0x800u)
-		upper_immediate++;
-
-	riscv[count++] = encoding::LUI(dest, upper_immediate);
-
-	if (!optimize || lower_immediate != 0x0000) {
-		riscv[count++] = encoding::ADDI(dest, dest, lower_immediate);
-	}
-}
-
-void CodeGenerator::load_64bit_immediate(uint64_t imm, RiscVRegister dest, riscv_instruction_t* riscv, size_t& count,
-										 bool optimize) {
-	const uint32_t high_bits = (imm >> 32u) & 0xFFFFFFFF;
-	const uint32_t low_bits = imm & 0xFFFFFFFF;
-	constexpr size_t immediate_count = 4;
-	uint32_t immediates[immediate_count] = {low_bits & 0x000000FFu, (low_bits & 0x000FFF00u) >> 8u,
-											(low_bits & 0xFFF00000u) >> 20u, high_bits};
-
-	for (size_t i = immediate_count - 2; i >= 1; i--) {
-		if (immediates[i] & 0x800u)
-			immediates[i + 1]++;
-	}
-	// load upper 32bit into destination
-	load_32bit_immediate(immediates[immediate_count - 1], dest, riscv, count, optimize);
-
-	for (int8_t i = immediate_count - 2; i >= 0; i--) {
-		// add the next 12bit (8 bit for the last one)
-		riscv[count++] = encoding::SLLI(dest, dest, (i == 0) ? 8 : 12);
-		if (!optimize || immediates[i] != 0) {
-			riscv[count++] = encoding::ADDI(dest, dest, immediates[i]);
-		}
-	}
-}
-
-void
-CodeGenerator::load_signed_immediate(uintptr_t imm, RiscVRegister dest, riscv_instruction_t* riscv, size_t& count) {
-	uintptr_t short_value = (imm & 0xFFFu);
-	if (short_value & 0x800u) {
-		short_value |= 0xFFFFFFFFFFFFF000;
-	}
-
-	uintptr_t word_value = imm & 0xFFFFFFFFu;
-	if (word_value & 0x80000000) {
-		word_value |= 0xFFFFFFFF00000000;
-	}
-
-	if (imm == short_value) {    // 12 bit can be directly encoded
-		load_12bit_immediate(static_cast<uint16_t>(imm), dest, riscv, count);
-	} else if (imm == word_value) {    //32 bit have to be manually specified
-		load_32bit_immediate(static_cast<uint32_t>(imm), dest, riscv, count, true);
-	} else { // 64 bit also have to be manually specified
-		load_64bit_immediate(static_cast<uint64_t>(imm), dest, riscv, count, true);
-	}
-}
-
-void
-CodeGenerator::load_unsigned_immediate(uintptr_t imm, RiscVRegister dest, riscv_instruction_t* riscv, size_t& count) {
-	uint8_t immediate_type = 2; // 0 means 12bit, 1 means 32 bit, >= 2 means 64 bit
-
-	// if it is a signed immediate we have to use the bigger type to ensure that it is padded with zeros.
-	// otherwise add methods may not work correctly
-	if (imm < 0x1000) {    // 12 bits can be directly encoded
-		immediate_type = imm & 0x0800u ? 1 : 0; // but only if it is a positive 12 bit (sign bit not set)
-	} else if (imm < 0x100000000) {
-		immediate_type = imm & 0x80000000 ? 2 : 1; // same with 32 bit
-	}
-
-	if (immediate_type == 0) {
-		load_12bit_immediate(static_cast<uint16_t>(imm), dest, riscv, count);
-	} else if (immediate_type == 1) {
-		load_32bit_immediate(static_cast<uint32_t>(imm), dest, riscv, count, true);
-	} else {
-		load_64bit_immediate(static_cast<uint64_t>(imm), dest, riscv, count, true);
+			break;
+		case InstructionType::JMP:
+		case InstructionType::JMP_IND:
+			translate_jmp(inst.instruction, riscv, count);
+			break;
+		case InstructionType::RET:
+		case InstructionType::RET_IMM:
+			translate_ret(inst.instruction, riscv, count);
+			break;
+		default:
+			break;
 	}
 }
