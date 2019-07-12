@@ -1,6 +1,7 @@
 .section .text
-.global guest_enter
-.global guest_exit
+.global _ZN10dispatcher10Dispatcher11guest_enterEPNS_7ContextEm # guest_enter
+.global _ZN10dispatcher10Dispatcher10guest_exitEv # guest_exit
+.global _ZN10dispatcher10Dispatcher10fault_exitEPKc # fault_exit
 
 # address of the context in reg
 .macro capture_context reg
@@ -65,7 +66,8 @@
 	ld s11, 0xD0(\reg)
 .endm
 
-guest_exit:
+# guest_exit
+_ZN10dispatcher10Dispatcher10guest_exitEv:
 	# move the exit code into t1
 	mv t1, a0
 
@@ -79,10 +81,11 @@ guest_exit:
 	mv a0, t1
 	jalr zero, ra, 0
 
-guest_enter:
+# guest_enter
+_ZN10dispatcher10Dispatcher11guest_enterEPNS_7ContextEm:
 	# store a pointer to the guest context
 	mv t0, a0
-	mv t1, a1
+	mv t3, a1
 
 	# a0 = host_context (guest_context + sizeof(Context))
 	addi a0, a0, 248
@@ -93,4 +96,7 @@ guest_enter:
 	# load guest context
 	restore_context t0
 
-	jalr zero, t1, 0
+	# call reroute_dynamic to translate the address in t3
+	jalr ra, s9, 0
+
+	jalr zero, t3, 0

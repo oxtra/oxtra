@@ -9,8 +9,6 @@ using namespace fadec;
 using namespace encoding;
 using namespace dispatcher;
 
-extern "C" int guest_exit();
-
 void CodeGenerator::translate_mov_ext(const fadec::Instruction& inst, encoding::RiscVRegister dest, encoding::RiscVRegister src,
 									  utils::riscv_instruction_t* riscv, size_t& count) {
 	/* Thus they will have to be sign-extended/zero-extended.
@@ -74,6 +72,6 @@ void CodeGenerator::translate_jmp(const Instruction& inst, riscv_instruction_t* 
 }
 
 void CodeGenerator::translate_ret(const Instruction& inst, riscv_instruction_t* riscv, size_t& count) {
-	load_64bit_immediate(reinterpret_cast<uint64_t>(guest_exit), temp0_register, riscv, count, false);
+	load_64bit_immediate(reinterpret_cast<uint64_t>(Dispatcher::guest_exit), temp0_register, riscv, count, false);
 	riscv[count++] = JALR(RiscVRegister::zero, temp0_register, 0);
 }
