@@ -1,7 +1,9 @@
-.section .text
 .global _ZN10dispatcher10Dispatcher11guest_enterEPNS_7ContextEmPPKc # guest_enter
 .global _ZN10dispatcher10Dispatcher10guest_exitEl # guest_exit
 .global _ZN10dispatcher10Dispatcher10fault_exitEPKcl # fault_exit
+.global _ZN10dispatcher10Dispatcher14reroute_staticEv # reroute_static
+.global _ZN10dispatcher10Dispatcher15reroute_dynamicEv # reroute_dynamic
+
 
 # address of the context in reg
 .macro capture_context reg
@@ -9,9 +11,6 @@
 	sd sp, 0x08(\reg)
 	sd gp, 0x10(\reg)
 	sd tp, 0x18(\reg)
-	sd t0, 0x20(\reg)
-	sd t1, 0x28(\reg)
-	sd t2, 0x30(\reg)
 	sd fp, 0x38(\reg)
 	sd s1, 0x40(\reg)
 	sd a0, 0x48(\reg)
@@ -32,11 +31,8 @@
 	sd s9, 0xC0(\reg)
 	sd s10, 0xC8(\reg)
 	sd s11, 0xD0(\reg)
-	sd t3, 0xD8(\reg)
-	sd t4, 0xE0(\reg)
-	sd t5, 0xE8(\reg)
-	sd t6, 0xF0(\reg)
 .endm
+
 
 # address of the context in reg (has to be a temporary register)
 .macro restore_context reg
@@ -66,6 +62,12 @@
 	ld s11, 0xD0(\reg)
 .endm
 
+.section .data
+reroute_static_fmt: .string "reroute_static: %lx\n"
+reroute_dynamic_fmt: .string "reroute_dynamic: %lx\n"
+
+.section .text
+
 # guest_enter
 _ZN10dispatcher10Dispatcher11guest_enterEPNS_7ContextEmPPKc:
 	# store a pointer to the guest context
@@ -86,6 +88,7 @@ _ZN10dispatcher10Dispatcher11guest_enterEPNS_7ContextEmPPKc:
 
 	jalr zero, t3, 0
 
+
 # guest_exit
 _ZN10dispatcher10Dispatcher10guest_exitEl:
 	# move the exit code into t1
@@ -102,24 +105,89 @@ _ZN10dispatcher10Dispatcher10guest_exitEl:
 	sd t2, 0(a2)
 
 	# move the exit-code into a0 and return to the point where guest_enter was called
-    mv a0, t1
+	mv a0, t1
 	jalr zero, ra, 0
+
 
 # fault_exit
 _ZN10dispatcher10Dispatcher10fault_exitEPKcl:
 	# move the string-pointer into t1 and the exit-code to t2
-    mv t1, a0
-    mv t2, a1
+	mv t1, a0
+	mv t2, a1
 
-    # t0 (host_context) = s11 (guest_context) + sizeof(Context)
-    addi t0, s11, 248
+	# t0 (host_context) = s11 (guest_context) + sizeof(Context)
+	addi t0, s11, 248
 
-    # restore the host context
-    restore_context t0
+	# restore the host context
+	restore_context t0
 
-    # move the string-pointer to the address-pointer in argument 2
-    sd t1, 0(a2)
+	# move the string-pointer to the address-pointer in argument 2
+	sd t1, 0(a2)
 
-    # move the exit-code into a0 and return to the point where guest_enter was called
-    mv a0, t2
-    jalr zero, ra, 0
+	# move the exit-code into a0 and return to the point where guest_enter was called
+	mv a0, t2
+	jalr zero, ra, 0
+
+
+# reroute_static
+_ZN10dispatcher10Dispatcher14reroute_staticEv:
+	# capture the guest context
+	capture_context s11
+
+	# store the callers address (needed for update_basic_block)
+	mv s1, ra
+
+	# t3 might be changed by upcoming function calls, which is why we back it up
+	mv s0, t3
+
+	# printf("reroute_static: %lx\n", t3)
+	la a0, reroute_static_fmt
+	mv a1, s0
+	jal ra, _IO_printf
+
+	# _codegen.translate(t3)
+	addi a0, s11, 512
+	mv a1, s0
+	jal ra, _ZN7codegen13CodeGenerator9translateEm
+
+	# write the new address into s0
+	mv s0, a0
+
+	# _codegen.update_basic_block(ra, translated_address);
+	addi a0, s11, 512
+	mv a1, s1
+	mv a2, s0
+	jal ra, _ZN7codegen13CodeGenerator18update_basic_blockEmm
+
+	# s0 will be overridden by restore_context so we have to save the translated address
+	mv t3, s0
+
+	# restore the guest context
+	restore_context s11
+	jalr zero, t3, 0
+
+
+# reroute_dynamic
+_ZN10dispatcher10Dispatcher15reroute_dynamicEv:
+	# capture the guest context
+    capture_context s11
+
+    # t3 might be changed by upcoming function calls, which is why we back it up
+    mv s0, t3
+
+	# printf("reroute_dynamic: %lx\n", t3)
+    la a0, reroute_dynamic_fmt
+    mv a1, s0
+    jal ra, _IO_printf
+
+    # _codegen.translate(t3)
+    addi a0, s11, 512
+    mv a1, s0
+    jal ra, _ZN7codegen13CodeGenerator9translateEm
+
+	# a0 will be overridden by restore_context so we have to save the translated address
+    mv t3, a0
+
+    # restore the guest context
+    restore_context s11
+    jalr zero, t3, 0

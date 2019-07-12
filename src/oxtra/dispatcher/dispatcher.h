@@ -19,6 +19,10 @@ namespace dispatcher {
 
 	class Dispatcher {
 	private:
+		/**
+		 * The order and size of these attributes must not be changed!
+		 * (dispatcher.s requires these offsets)
+		 */
 		Context _guest_context, _host_context;
 		const elf::Elf& _elf;
 		const arguments::Arguments& _args;

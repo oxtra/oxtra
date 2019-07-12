@@ -68,7 +68,6 @@ void CodeGenerator::translate_jmp(const Instruction& inst, riscv_instruction_t* 
 		translate_operand(inst, 0, address_destination, riscv, count);
 		riscv[count++] = JALR(RiscVRegister::ra, reroute_dynamic_address, 0);
 	}
-	riscv[count++] = JALR(RiscVRegister::zero, address_destination, 0);
 }
 
 void CodeGenerator::translate_ret(const Instruction& inst, riscv_instruction_t* riscv, size_t& count) {

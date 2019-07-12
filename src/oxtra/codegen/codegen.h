@@ -118,7 +118,7 @@ namespace codegen {
 	public:
 		utils::host_addr_t translate(utils::guest_addr_t addr);
 
-		void update_basic_block_address(utils::host_addr_t addr, utils::host_addr_t absolute_address);
+		void update_basic_block(utils::host_addr_t addr, utils::host_addr_t absolute_address);
 
 	private:
 		static void translate_mov_ext(const fadec::Instruction& inst, encoding::RiscVRegister dest, encoding::RiscVRegister src,
@@ -254,7 +254,7 @@ namespace codegen {
 		/**
 		 * Loads a 64 bit immediate into the specified register.
 		 * The only difference between this method and load_unsigned_immediate is that this one is slightly faster.
-		 * Unoptimized this function must generate 8-riscv-instructions. Otherwise update_basic_block_address will fail.
+		 * Unoptimized this function must generate 8-riscv-instructions. Otherwise update_basic_block will fail.
 		 * @param imm The immediate that will be stored. The highest 4 bits of uint16_t will be masked.
 		 * @param dest The register the immediate will be stored in.
 		 * @param riscv The pointer to the generated riscv instructions.

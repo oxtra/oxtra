@@ -40,37 +40,3 @@ long Dispatcher::run() {
 
 #pragma GCC diagnostic pop
 }
-
-void Dispatcher::reroute_static() {
-	// capture the guest context
-	capture_context_s11
-	{
-		// extract dispatcher
-		register uintptr_t s11_register asm("s11");
-		const auto _this = reinterpret_cast<Dispatcher*>(s11_register);
-
-		printf("reroute_static %lx\n", _this->_guest_context.t3);
-
-		// translate address
-		const auto translated_address = _this->_codegen.translate(_this->_guest_context.t3);
-
-		// write new absolute address
-		_this->_codegen.update_basic_block_address(_this->_guest_context.ra, translated_address);
-		_this->_guest_context.t3 = translated_address;
-	}
-	restore_context_s11
-}
-
-void Dispatcher::reroute_dynamic() {
-	// capture the guest context
-	capture_context_s11
-	{
-		// extract dispatcher
-		register uintptr_t s11_register asm("s11");
-		const auto _this = reinterpret_cast<Dispatcher*>(s11_register);
-
-		// translate address
-		_this->_guest_context.t3 = _this->_codegen.translate(_this->_guest_context.t3);
-	}
-	restore_context_s11
-}

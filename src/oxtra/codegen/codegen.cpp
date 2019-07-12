@@ -90,14 +90,13 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 	return codeblock.riscv_start;
 }
 
-void CodeGenerator::update_basic_block_address(utils::host_addr_t addr, utils::host_addr_t absolute_address) {
+void CodeGenerator::update_basic_block(utils::host_addr_t addr, utils::host_addr_t absolute_address) {
 	// compute new base-address where the new absolute address will be written to t0
 	// 9 = 8 [load_64bit_immediate] + 1 [JALR]
-	addr -= 9 * sizeof(riscv_instruction_t);
+	auto riscv = reinterpret_cast<riscv_instruction_t*>(addr - 9 * sizeof(riscv_instruction_t));
+	size_t count = 0;
 
 	// write the new instructions
-	auto riscv = reinterpret_cast<riscv_instruction_t*>(addr);
-	size_t count = 0;
 	load_64bit_immediate(absolute_address, address_destination, riscv, count, false);
 #ifdef DEBUG
 	if (count != 8)
