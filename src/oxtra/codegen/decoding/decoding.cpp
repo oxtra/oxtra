@@ -13,7 +13,9 @@ enum class RiscVOpcode : uint8_t {
 	SLTU, XOR, SRL, SRA, OR, AND, MULW, DIVW, DIVUW, REMW, REMUW, ADDW,
 	SUBW, SLLW, SRLW, SRAW,
 
-	JAL, JALR, BEQ, BNE, BLT, BGE, BLTU, BGEU
+	JAL, JALR, BEQ, BNE, BLT, BGE, BLTU, BGEU,
+	
+	ECALL
 };
 
 constexpr const char* register_string[32] = {
@@ -35,7 +37,7 @@ constexpr const char* opcode_string[128] = {
 		"rem", "remu", "add", "sub", "sll", "slt", "sltu", "xor", "srl",
 		"sra", "or", "and", "mulw", "divw", "divuw", "remw", "remuw",
 		"addw", "subw", "sllw", "srlw", "sraw", "jal", "jalr", "beq",
-		"bne", "blt", "bge", "bltu", "bgeu"
+		"bne", "blt", "bge", "bltu", "bgeu", "ecall"
 };
 constexpr const char* error_string = "unknown instruction";
 
@@ -376,7 +378,11 @@ string decoding::parse_riscv(riscv_instruction_t instruction) {
 					return error_string;
 			}
 			return error_string;
-
+		case 0x73:
+			if (split_off(instruction, 7, 25) == 0)
+				return opcode_string[static_cast<uint16_t>(RiscVOpcode::ECALL)];
+			return error_string;
+			
 			/* the following are all of the rtype-instructions */
 		case 0x33:
 			if (func7 == 0x01) {
