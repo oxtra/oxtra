@@ -135,15 +135,15 @@ namespace fadec {
 	};
 
 	class Operand {
-		friend int decode(const uint8_t *, size_t, DecodeMode, uintptr_t, class Instruction &);
+		friend int decode(const uint8_t*, size_t, DecodeMode, uintptr_t, class Instruction&);
 
-		friend void format(const class Instruction &, char *, size_t);
-
-		friend int
-		decode_modrm(const uint8_t *, size_t, DecodeMode, Instruction &, int, bool, Operand *, Operand *);
+		friend void format(const class Instruction&, char*, size_t);
 
 		friend int
-		decode_prefixes(const uint8_t *, size_t, DecodeMode, int &, uint8_t &, Register &, uint8_t &, int &);
+		decode_modrm(const uint8_t*, size_t, DecodeMode, Instruction&, int, bool, Operand*, Operand*);
+
+		friend int
+		decode_prefixes(const uint8_t*, size_t, DecodeMode, int&, uint8_t&, Register&, uint8_t&, int&);
 
 	public:
 		/**
@@ -188,15 +188,15 @@ namespace fadec {
 	};
 
 	class Instruction {
-		friend int decode(const uint8_t *, size_t, DecodeMode, uintptr_t, class Instruction &);
+		friend int decode(const uint8_t*, size_t, DecodeMode, uintptr_t, class Instruction&);
 
-		friend void format(const class Instruction &, char *, size_t);
-
-		friend int
-		decode_modrm(const uint8_t *, size_t, DecodeMode, Instruction &, int, bool, Operand *, Operand *);
+		friend void format(const class Instruction&, char*, size_t);
 
 		friend int
-		decode_prefixes(const uint8_t *, size_t, DecodeMode, int &, uint8_t &, Register &, uint8_t &, int &);
+		decode_modrm(const uint8_t*, size_t, DecodeMode, Instruction&, int, bool, Operand*, Operand*);
+
+		friend int
+		decode_prefixes(const uint8_t*, size_t, DecodeMode, int&, uint8_t&, Register&, uint8_t&, int&);
 
 	public:
 		/**
@@ -220,7 +220,7 @@ namespace fadec {
 		 * @param idx The index of the operand.
 		 * @return The Operand at the index.
 		 */
-		const Operand &get_operand(size_t idx) const {
+		const Operand& get_operand(size_t idx) const {
 			return operands[idx];
 		}
 
@@ -351,7 +351,7 @@ namespace fadec {
 	 * @param instr Reference to the instruction buffer.
 	 * @return The number of bytes consumed by the instruction or a negative number indicating an error.
 	 */
-	int decode(const uint8_t *buffer, size_t len_sz, DecodeMode mode, uintptr_t address, Instruction &instr);
+	int decode(const uint8_t* buffer, size_t len_sz, DecodeMode mode, uintptr_t address, Instruction& instr);
 
 	/**
 	 *
@@ -359,13 +359,13 @@ namespace fadec {
 	 * @param buffer Buffer holding the formatted instruction.
 	 * @param len Length of the buffer.
 	 */
-	void format(const Instruction &instr, char *buffer, size_t len);
+	void format(const Instruction& instr, char* buffer, size_t len);
 
-	int decode_modrm(const uint8_t *buffer, size_t len, DecodeMode mode, Instruction &instr, int prefixes, bool vsib,
-					 Operand *o1, Operand *o2);
+	int decode_modrm(const uint8_t* buffer, size_t len, DecodeMode mode, Instruction& instr, int prefixes, bool vsib,
+					 Operand* o1, Operand* o2);
 
-	int decode_prefixes(const uint8_t *buffer, size_t len, DecodeMode mode, int &prefixes,
-						uint8_t &mandatory, Register &segment, uint8_t &vex_operand, int &opcode_escape);
+	int decode_prefixes(const uint8_t* buffer, size_t len, DecodeMode mode, int& prefixes,
+						uint8_t& mandatory, Register& segment, uint8_t& vex_operand, int& opcode_escape);
 }
 
 #endif

@@ -11,7 +11,7 @@ using namespace dispatcher;
 
 extern "C" int guest_exit();
 
-void CodeGenerator::translate_mov_ext(const fadec::Instruction& inst, encoding::RiscVRegister dest, encoding::RiscVRegister src,
+void CodeGenerator::translate_mov_ext(const ContextInstruction& inst, encoding::RiscVRegister dest, encoding::RiscVRegister src,
 									  utils::riscv_instruction_t* riscv, size_t& count) {
 	/* Thus they will have to be sign-extended/zero-extended.
 	 * Otherwise the optimization will fail (load full 8-byte register, and store the interesting parts).
@@ -26,7 +26,7 @@ void CodeGenerator::translate_mov_ext(const fadec::Instruction& inst, encoding::
 		riscv[count++] = encoding::SRLI(dest, dest, shift_amount);
 }
 
-void CodeGenerator::translate_mov(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
+void CodeGenerator::translate_mov(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
 	const auto& dst_operand = inst.get_operand(0);
 	const auto& src_operand = inst.get_operand(1);
 
@@ -62,7 +62,7 @@ void CodeGenerator::translate_mov(const fadec::Instruction& inst, utils::riscv_i
 	translate_destination(inst, source_operand, RiscVRegister::zero, riscv, count);
 }
 
-void CodeGenerator::translate_jmp(const Instruction& inst, riscv_instruction_t* riscv, size_t& count) {
+void CodeGenerator::translate_jmp(const ContextInstruction& inst, riscv_instruction_t* riscv, size_t& count) {
 	if (inst.get_operand(0).get_type() == OperandType::imm) {
 		load_64bit_immediate(inst.get_immediate(), address_destination, riscv, count, false);
 		riscv[count++] = JALR(RiscVRegister::ra, reroute_static_address, 0);
@@ -73,7 +73,7 @@ void CodeGenerator::translate_jmp(const Instruction& inst, riscv_instruction_t* 
 	riscv[count++] = JALR(RiscVRegister::zero, address_destination, 0);
 }
 
-void CodeGenerator::translate_ret(const Instruction& inst, riscv_instruction_t* riscv, size_t& count) {
+void CodeGenerator::translate_ret(const ContextInstruction& inst, riscv_instruction_t* riscv, size_t& count) {
 	load_64bit_immediate(reinterpret_cast<uint64_t>(guest_exit), temp0_register, riscv, count, false);
 	riscv[count++] = JALR(RiscVRegister::zero, temp0_register, 0);
 }

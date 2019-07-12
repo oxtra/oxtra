@@ -20,27 +20,27 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 		return riscv_code;
 
 	// iterate through the instructions and query all information about the flags
-	std::vector<InstructionEntry> instructions;
+	std::vector<ContextInstruction> instructions;
 	auto address = reinterpret_cast<const uint8_t*>(_elf.resolve_vaddr(addr));
 	while (true) {
 		// decode the fadec-instruction
-		InstructionEntry entry{};
-		if (fadec::decode(address, _elf.get_size(addr), DecodeMode::decode_64, addr, entry.instruction) <= 0)
+		ContextInstruction entry{};
+		if (fadec::decode(address, _elf.get_size(addr), DecodeMode::decode_64, addr, entry) <= 0)
 			throw std::runtime_error("Failed to decode the instruction");
 
 		// query all of the information about the instruction
-		entry.update_flags = group_instruction(entry.instruction.get_type());
+		entry.update_flags = group_instruction(entry.get_type());
 		if (entry.update_flags == Group::error) {
 			char formatted_string[256];
-			fadec::format(entry.instruction, formatted_string, sizeof(formatted_string));
+			fadec::format(entry, formatted_string, sizeof(formatted_string));
 			char exception_buffer[512];
 			snprintf(exception_buffer, sizeof(exception_buffer), "Unsupported instruction used. %s", formatted_string);
 			throw std::runtime_error(exception_buffer);
 		}
 
 		// update the addresses
-		addr += entry.instruction.get_size();
-		address += entry.instruction.get_size();
+		addr += entry.get_size();
+		address += entry.get_size();
 
 		// add the instruction to the array and check if the instruction would end the block
 		instructions.push_back(entry);
@@ -72,14 +72,14 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 		// print tracing-information
 		if constexpr (SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE) {
 			char formatted_string[512];
-			fadec::format(entry.instruction, formatted_string, sizeof(formatted_string));
+			fadec::format(entry, formatted_string, sizeof(formatted_string));
 			SPDLOG_TRACE("decoded {}", formatted_string);
 			for (size_t i = 0; i < count; i++)
 				SPDLOG_TRACE(" - instruction[{}] = {}", i, decoding::parse_riscv(riscv[i]));
 		}
 
 		// add the instruction to the store
-		_codestore.add_instruction(codeblock, entry.instruction, riscv, count);
+		_codestore.add_instruction(codeblock, entry, riscv, count);
 	}
 
 	//add dynamic tracing-information for the basic-block
@@ -126,17 +126,17 @@ size_t CodeGenerator::group_instruction(const fadec::InstructionType type) {
 	}
 }
 
-void CodeGenerator::translate_instruction(InstructionEntry& inst, utils::riscv_instruction_t* riscv, size_t& count) {
-	switch (inst.instruction.get_type()) {
+void CodeGenerator::translate_instruction(ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
+	switch (inst.get_type()) {
 		case InstructionType::MOV_IMM:
 		case InstructionType::MOVABS_IMM:
 		case InstructionType::MOV:
-			translate_mov(inst.instruction, riscv, count);
+			translate_mov(inst, riscv, count);
 			break;
 
 		case InstructionType::MOVSX:
 		case InstructionType::MOVZX:
-			apply_operation(inst.instruction, riscv, count, translate_mov_ext);
+			apply_operation(inst, riscv, count, translate_mov_ext);
 			break;
 
 		case InstructionType::NOP:
@@ -151,11 +151,11 @@ void CodeGenerator::translate_instruction(InstructionEntry& inst, utils::riscv_i
 			break;
 		case InstructionType::JMP:
 		case InstructionType::JMP_IND:
-			translate_jmp(inst.instruction, riscv, count);
+			translate_jmp(inst, riscv, count);
 			break;
 		case InstructionType::RET:
 		case InstructionType::RET_IMM:
-			translate_ret(inst.instruction, riscv, count);
+			translate_ret(inst, riscv, count);
 			break;
 		default:
 			break;

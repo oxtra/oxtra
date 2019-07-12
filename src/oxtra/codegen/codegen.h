@@ -12,7 +12,8 @@
 
 namespace codegen {
 	namespace Group {
-		enum : uint32_t {
+		using Type = uint32_t;
+		enum : Type {
 			none = 0x0000u,
 			require_zero = 0x0001u,
 			require_sign = 0x0002u,
@@ -95,14 +96,17 @@ namespace codegen {
 			LBYTE    // low byte
 		};
 
-		using OperationCallback = void (*)(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+		/**
+		 * An instruction that contains information based on the context.
+		 */
+		struct ContextInstruction : public fadec::Instruction {
+			Group::Type update_flags = 0;
+		};
+
+		using OperationCallback = void (*)(const ContextInstruction& inst, encoding::RiscVRegister dest,
 										   encoding::RiscVRegister source, utils::riscv_instruction_t* riscv,
 										   size_t& count);
 
-		struct InstructionEntry {
-			fadec::Instruction instruction;
-			uint32_t update_flags;
-		};
 	private:
 		const arguments::Arguments& _args;
 		const elf::Elf& _elf;
@@ -121,14 +125,14 @@ namespace codegen {
 		void update_basic_block_address(utils::host_addr_t addr, utils::host_addr_t absolute_address);
 
 	private:
-		static void translate_mov_ext(const fadec::Instruction& inst, encoding::RiscVRegister dest, encoding::RiscVRegister src,
+		static void translate_mov_ext(const ContextInstruction& inst, encoding::RiscVRegister dest, encoding::RiscVRegister src,
 									  utils::riscv_instruction_t* riscv, size_t& count);
 
-		void translate_mov(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
+		void translate_mov(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
-		void translate_jmp(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
+		void translate_jmp(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
-		void translate_ret(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
+		void translate_ret(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
 		 * Translates a x86 instruction into multiple risc-v instructions.
@@ -137,14 +141,14 @@ namespace codegen {
 		 * @param count Reference to the number of instructions that were written to the array.
 		 * @return Returns whether the this instruction ends the basic block.
 		 */
-		bool translate_instruction(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
+		bool translate_instruction(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
 		 * Extracts all of the grouping information out of the instruction.
 		 * @param type The type of instructions
 		 * @return the group-flags of the instruction
 		 */
-		size_t group_instruction(const fadec::InstructionType type);
+		static size_t group_instruction(const fadec::InstructionType type);
 
 		/**
 		 * Translates a single x86 instruction into an array of riscv-instructions.
@@ -152,7 +156,7 @@ namespace codegen {
 		 * @param riscv Array of riscv-instructions.
 		 * @param count Number of riscv-instructions.
 		 */
-		void translate_instruction(InstructionEntry& inst, utils::riscv_instruction_t* riscv, size_t& count);
+		void translate_instruction(ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
 		 * extracts the two operands out of the instruction, and calls the callback,
@@ -165,7 +169,7 @@ namespace codegen {
 		 * @param count Number of riscv-instructions.
 		 * @param callback Callback, which will apply the instruction.
 		 */
-		void apply_operation(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count,
+		void apply_operation(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count,
 							 OperationCallback callback);
 
 		/**

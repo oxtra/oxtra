@@ -7,7 +7,7 @@ using namespace codestore;
 using namespace fadec;
 using namespace encoding;
 
-void CodeGenerator::apply_operation(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count,
+void CodeGenerator::apply_operation(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count,
 									OperationCallback callback) {
 	// extract the source-operand
 	RiscVRegister source_register = source_temp_register;
