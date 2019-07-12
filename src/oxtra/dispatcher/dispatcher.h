@@ -36,9 +36,6 @@ namespace dispatcher {
 		Dispatcher(Dispatcher&&) = delete;
 
 	public:
-
-		//TODO: implement reroute_static & reroute_dynamic in asm?
-
 		/**
 		 * Initializes execution of the program.
 		 * @return exit_code of the program
