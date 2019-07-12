@@ -32,20 +32,27 @@ namespace dispatcher {
 		Dispatcher(Dispatcher&&) = delete;
 
 	public:
-		int run();
+
+		//TODO: implement reroute_static & reroute_dynamic in asm?
 
 		/**
-		 * exits the guest-program with the given exit-code
+		 * Initializes execution of the program.
+		 * @return exit_code of the program
+		 */
+		long run();
+
+		/**
+		 * Exits the guest-program with the given exit-code
 		 * @param exit_code the exit-code to be returned
 		 */
-		static void guest_exit(int exit_code);
+		static void guest_exit(long exit_code);
 
 		/**
-		 * exits the guest-program with a given fault-string and exit-code
+		 * Exits the guest-program with a given fault-string and exit-code
 		 * @param fault_string the fault-string to be thrown
 		 * @param exit_code the exit-code to be returned
 		 */
-		static void fault_exit(const char* fault_string, int exit_code = -1);
+		static void fault_exit(const char* fault_string, long exit_code = -1);
 	private:
 		/**
 		 * Translates a guest branch address and reroutes the control flow to the branch target
@@ -66,7 +73,7 @@ namespace dispatcher {
 		 * @param fault_string A pointer, which might store the address to the fault_string, or zero
 		 * @return The exit_code parameter.
 		 */
-		static int guest_enter(Context* context, utils::guest_addr_t entry, const char** fault_string);
+		static long guest_enter(Context* context, utils::guest_addr_t entry, const char** fault_string);
 	};
 }
 

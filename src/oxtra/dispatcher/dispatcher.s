@@ -1,7 +1,7 @@
 .section .text
 .global _ZN10dispatcher10Dispatcher11guest_enterEPNS_7ContextEmPPKc # guest_enter
-.global _ZN10dispatcher10Dispatcher10guest_exitEi # guest_exit
-.global _ZN10dispatcher10Dispatcher10fault_exitEPKci # fault_exit
+.global _ZN10dispatcher10Dispatcher10guest_exitEl # guest_exit
+.global _ZN10dispatcher10Dispatcher10fault_exitEPKcl # fault_exit
 
 # address of the context in reg
 .macro capture_context reg
@@ -87,7 +87,7 @@ _ZN10dispatcher10Dispatcher11guest_enterEPNS_7ContextEmPPKc:
 	jalr zero, t3, 0
 
 # guest_exit
-_ZN10dispatcher10Dispatcher10guest_exitEi:
+_ZN10dispatcher10Dispatcher10guest_exitEl:
 	# move the exit code into t1
 	mv t1, a0
 
@@ -106,7 +106,7 @@ _ZN10dispatcher10Dispatcher10guest_exitEi:
 	jalr zero, ra, 0
 
 # fault_exit
-_ZN10dispatcher10Dispatcher10fault_exitEPKci:
+_ZN10dispatcher10Dispatcher10fault_exitEPKcl:
 	# move the string-pointer into t1 and the exit-code to t2
     mv t1, a0
     mv t2, a1

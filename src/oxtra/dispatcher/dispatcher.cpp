@@ -9,7 +9,7 @@ Dispatcher::Dispatcher(const elf::Elf& elf, const arguments::Arguments& args)
 		: _elf(elf), _args(args), _codegen(args, elf) {
 }
 
-int Dispatcher::run() {
+long Dispatcher::run() {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
 
@@ -31,7 +31,7 @@ int Dispatcher::run() {
 
 	// switch the context and begin translation
 	const char* error_string = nullptr;
-	int exit_code = guest_enter(&_guest_context, _elf.get_entry_point(), &error_string);
+	const auto exit_code = guest_enter(&_guest_context, _elf.get_entry_point(), &error_string);
 
 	// check if the guest has ended with and error
 	if (error_string != nullptr)
