@@ -1,4 +1,5 @@
 #include "oxtra/codegen/codestore/codestore.h"
+#include "oxtra/dispatcher/dispatcher.h"
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
@@ -36,7 +37,7 @@ host_addr_t CodeStore::find(guest_addr_t x86_code) const {
 			 * That means that the x86_code points inside of an instruction. We could just start translating the block from that point onwards,
 			 * but usually only obfuscated programs require this.
 			 */
-			throw std::runtime_error("Jump inside instruction.");
+			throw_exception("Jump inside instruction.", -1);
 		}
 	}
 	return 0;
@@ -112,7 +113,7 @@ void CodeStore::insert_block(codegen::codestore::BlockEntry& block, utils::guest
 
 	else if (block.x86_end != x86_address) {
 		// maybe do this for the debug build only?
-		throw std::runtime_error("Tried to add a non-consecutive instruction to a block.");
+		throw_exception("Tried to add a non-consecutive instruction to a block.", -1);
 	}
 
 }

@@ -127,7 +127,7 @@ void CodeGenerator::translate_destination(const fadec::Instruction& inst, encodi
 void CodeGenerator::translate_memory(const Instruction& inst, size_t index, RiscVRegister reg, riscv_instruction_t* riscv,
 									 size_t& count) {
 	if (inst.get_address_size() < 4)
-		Dispatcher::fault_exit("invalid addressing-size");
+		throw_exception("invalid addressing-size", -1);
 	const auto& operand = inst.get_operand(index);
 
 	// add the scale & index

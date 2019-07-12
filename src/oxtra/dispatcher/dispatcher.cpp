@@ -78,6 +78,6 @@ long Dispatcher::virtualize_syscall() {
 	// we will only reach this if the system call is not supported
 	char fault_message[256];
 	snprintf(fault_message, sizeof(fault_message), "Guest tried to call an unsupported syscall (%li).", guest_index);
-	fault_exit(fault_message);
+	throw_exception(fault_message, -1);
 	return -1;
 }

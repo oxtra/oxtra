@@ -1,3 +1,6 @@
+/* define FAKE_GUEST to use a default throw and not Dispatcher::fault_exit */
+#define FAKE_GUEST
+
 #include "../../../catch2/catch.hpp"
 #include "oxtra/codegen/codestore/codestore.h"
 #include <string>
