@@ -114,6 +114,7 @@ size_t CodeGenerator::group_instruction(const fadec::InstructionType type) {
 		case InstructionType::MOVZX:
 		case InstructionType::NOP:
 		case InstructionType::PUSH:
+		case InstructionType::PUSHF:
 		case InstructionType::POP:
 		case InstructionType::SYSCALL:
 			return Group::none;
@@ -142,6 +143,13 @@ void CodeGenerator::translate_instruction(InstructionEntry& inst, utils::riscv_i
 			break;
 
 		case InstructionType::NOP:
+			break;
+
+		case InstructionType::PUSH:
+			translate_push(inst.instruction, riscv, count);
+			break;
+		case InstructionType::PUSHF:
+			translate_pushf(inst.instruction, riscv, count);
 			break;
 
 		case InstructionType::SYSCALL:

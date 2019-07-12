@@ -14,7 +14,8 @@ int main(int argc, char** argv) {
 	SPDLOG_INFO("Finished parsing the arguments.");
 
 	//create the elf-object
-	const auto elf = elf::Elf(arguments.get_guest_path());
+	//const auto elf = elf::Elf(arguments.get_guest_path());
+	const auto elf = elf::Elf(reinterpret_cast<const uint8_t*>("\x68\x78\x56\x34\x12\x50\xFF\x74\x24\x08\x9c\x66\x9c\xc3"), 14);
 	SPDLOG_INFO("Finished reading and parsing elf file.");
 
 	//create the dispatcher
@@ -24,7 +25,6 @@ int main(int argc, char** argv) {
 	//startup the translation and execution of the source-code
 	const auto return_value = dispatcher.run();
 	spdlog::info("Returned: 0x{0:0x}", return_value);
-	spdlog::info("Returned adjusted: 0x{0:0x}", return_value - elf.get_address_delta());
 
 	return return_value;
 }

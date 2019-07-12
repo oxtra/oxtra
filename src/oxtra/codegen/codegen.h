@@ -54,7 +54,8 @@ namespace codegen {
 				context_address = encoding::RiscVRegister::s11,
 				temp0_register = encoding::RiscVRegister::t0,
 				temp1_register = encoding::RiscVRegister::t1,
-				temp2_register = encoding::RiscVRegister::t2;
+				temp2_register = encoding::RiscVRegister::t2,
+				flag_register = encoding::RiscVRegister::s1;
 
 	private:
 		static constexpr encoding::RiscVRegister register_mapping[] = {
@@ -133,6 +134,10 @@ namespace codegen {
 		static void translate_ret(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
 		static void translate_syscall(utils::riscv_instruction_t* riscv, size_t& count);
+
+		static void translate_push(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
+
+		static void translate_pushf(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
 		 * Translates a x86 instruction into multiple risc-v instructions.
@@ -294,6 +299,13 @@ namespace codegen {
 		static void
 		load_unsigned_immediate(uintptr_t imm, encoding::RiscVRegister dest,
 								utils::riscv_instruction_t* riscv, size_t& count);
+
+		/**
+		 * Returns the riscv-register, which maps to the x86-register.
+		 * @param reg The x86-register.
+		 * @return The riscv-register.
+		 */
+		static encoding::RiscVRegister map_reg(const fadec::Register reg);
 	};
 }
 
