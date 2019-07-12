@@ -302,7 +302,12 @@ namespace encoding {
 	*/
 	utils::riscv_instruction_t AND(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2);
 
-	// probably not needed: FENCE, FENCE.I, ECALL, EBREAK, CSRRW, CSRRS, CSRRC, CSRRWI, CSRRSI, CSRRCI
+	/**
+	 * system call
+	 */
+	 utils::riscv_instruction_t ECALL();
+
+	// probably not needed: FENCE, FENCE.I, EBREAK, CSRRW, CSRRS, CSRRC, CSRRWI, CSRRSI, CSRRCI
 
 	/* --- RV64I Base Integer Instructions --- */
 	//*W instructions maybe necessary
@@ -360,11 +365,6 @@ namespace encoding {
 	/**
 	*/
 	utils::riscv_instruction_t NOP();
-
-	/**
-	* rd = imm
-	*/
-	void LI(RiscVRegister rd, uint32_t imm);
 
 	/**
 	* rd = rs

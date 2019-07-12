@@ -1,11 +1,13 @@
 #include "oxtra/codegen/codegen.h"
 #include <spdlog/spdlog.h>
+#include <oxtra/dispatcher/dispatcher.h>
 
 using namespace codegen;
 using namespace utils;
 using namespace codestore;
 using namespace fadec;
 using namespace encoding;
+using namespace dispatcher;
 
 void CodeGenerator::apply_operation(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count,
 									OperationCallback callback) {
@@ -125,7 +127,7 @@ void CodeGenerator::translate_destination(const fadec::Instruction& inst, encodi
 void CodeGenerator::translate_memory(const Instruction& inst, size_t index, RiscVRegister reg, riscv_instruction_t* riscv,
 									 size_t& count) {
 	if (inst.get_address_size() < 4)
-		throw std::runtime_error("invalid addressing-size");
+		Dispatcher::fault_exit("invalid addressing-size");
 	const auto& operand = inst.get_operand(index);
 
 	// add the scale & index
@@ -136,12 +138,12 @@ void CodeGenerator::translate_memory(const Instruction& inst, size_t index, Risc
 
 	// add the base-register
 	if (operand.get_register() != fadec::Register::none) {
-		riscv[count++] = encoding::ADD(reg, reg, register_mapping[static_cast<uint16_t>( operand.get_register())]);
+		riscv[count++] = encoding::ADD(reg, reg, register_mapping[static_cast<uint16_t>(operand.get_register())]);
 	}
 
 	// add the displacement
-	if (inst.get_displacement() > 0 || _elf.get_address_delta() > 0) {
-		uintptr_t displacement = _elf.get_address_delta() + inst.get_displacement();
+	if (inst.get_displacement() > 0) {
+		const auto displacement = inst.get_displacement();
 		// less or equal than 12 bits
 		if (displacement < 0x800) {
 			riscv[count++] = encoding::ADDI(reg, reg, static_cast<uint16_t>(displacement));

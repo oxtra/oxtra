@@ -1,20 +1,17 @@
 #include "oxtra/dispatcher/dispatcher.h"
+#include "oxtra/dispatcher/syscall_map.h"
+#include "context.h"
 #include <spdlog/spdlog.h>
 
 using namespace dispatcher;
 using namespace codegen;
 using namespace utils;
 
-extern "C" int guest_enter(Context* context, utils::host_addr_t entry);
-
 Dispatcher::Dispatcher(const elf::Elf& elf, const arguments::Arguments& args)
 		: _elf(elf), _args(args), _codegen(args, elf) {
 }
 
-int Dispatcher::run() {
-	static_assert(CodeGenerator::context_address == encoding::RiscVRegister::s11,
-				  "dispatcher::run requires s11");
-
+long Dispatcher::run() {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
 
@@ -24,68 +21,63 @@ int Dispatcher::run() {
 
 	register uintptr_t gp_reg asm("gp");
 	register uintptr_t tp_reg asm("tp");
-	register uintptr_t sp_reg asm("sp");
 
 	// initialize guest-context
 	_guest_context.gp = gp_reg;
 	_guest_context.tp = tp_reg;
-	_guest_context.sp = reinterpret_cast<uintptr_t>(new uint8_t[0x3200000]) + 0x3200000;
-	_guest_context.fp = sp_reg;
-	_guest_context.s8 = reinterpret_cast<uintptr_t>(Dispatcher::reroute_static);
-	_guest_context.s9 = reinterpret_cast<uintptr_t>(Dispatcher::reroute_dynamic);
-	_guest_context.s11 = reinterpret_cast<uintptr_t>(&_guest_context);
+	_guest_context.map.rsp = reinterpret_cast<uintptr_t>(new uint8_t[0x3200000]) + 0x3200000;
+	_guest_context.map.rbp = _guest_context.map.rsp;
+	_guest_context.map.reroute_static = reinterpret_cast<uintptr_t>(Dispatcher::reroute_static);
+	_guest_context.map.reroute_dynamic = reinterpret_cast<uintptr_t>(Dispatcher::reroute_dynamic);
+	_guest_context.map.syscall_handler = reinterpret_cast<uintptr_t>(Dispatcher::syscall_handler);
+	_guest_context.map.context = reinterpret_cast<uintptr_t>(&_guest_context);
 
-	// translate the first basic block and execute it
-	const auto init_address = _codegen.translate(_elf.get_entry_point());
+	// switch the context and begin translation
+	const char* error_string = nullptr;
+	const auto exit_code = guest_enter(&_guest_context, _elf.get_entry_point(), &error_string);
 
-	// translate the first basic block and execute it
-	return guest_enter(&_guest_context, init_address);
+	// check if the guest has ended with and error
+	if (error_string != nullptr)
+		throw std::runtime_error(error_string);
+	return exit_code;
 
 #pragma GCC diagnostic pop
 }
 
-void Dispatcher::reroute_static() {
-	static_assert(CodeGenerator::address_destination == encoding::RiscVRegister::t3,
-				  "dispatcher::reroute_static requires t3");
-	static_assert(CodeGenerator::context_address == encoding::RiscVRegister::s11,
-				  "dispatcher::reroute_static requires s11");
+long Dispatcher::virtualize_syscall() {
+	using namespace internal;
 
-	// capture the guest context
-	capture_context_s11
-	{
-		printf("reroute_static!\n");
+	// the x86 syscall index
+	const auto guest_index = _guest_context.map.rax;
 
-		// extract dispatcher
-		register uintptr_t s11_register asm("s11");
-		const auto _this = reinterpret_cast<Dispatcher*>(s11_register);
-
-		// translate address
-		const auto translated_address = _this->_codegen.translate(_this->_guest_context.t3);
-
-		// write new absolute address
-		_this->_codegen.update_basic_block_address(_this->_guest_context.ra, translated_address);
-		_this->_guest_context.t3 = translated_address;
+	// we emulate exit
+	if (guest_index == 60) {
+		guest_exit(_guest_context.map.rdi);
+		return -1;
 	}
-	restore_context_s11
-}
 
-void Dispatcher::reroute_dynamic() {
-	static_assert(CodeGenerator::address_destination == encoding::RiscVRegister::t3,
-				  "dispatcher::reroute_dynamic requires t3");
-	static_assert(CodeGenerator::context_address == encoding::RiscVRegister::s11,
-				  "dispatcher::reroute_dynamic requires s11");
+	/**
+	 * if the syscall is handled write the return value to _guest_context.a0.
+	 */
 
-	// capture the guest context
-	capture_context_s11
-	{
-		printf("reroute_dynamic!\n");
+	// is this an invalid index?
+	if (guest_index < syscall_map.size()) {
+		const auto syscall_index = syscall_map[guest_index];
 
-		// extract dispatcher
-		register uintptr_t s11_register asm("s11");
-		const auto _this = reinterpret_cast<Dispatcher*>(s11_register);
+		// only print the system call with it's arguments if debug trace is enabled
+		if constexpr (SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE) {
+			SPDLOG_TRACE("syscall: {}({}, {}, {}, {}, {}, {})", syscall_index,
+						 _guest_context.map.rdi, _guest_context.map.rsi, _guest_context.map.rdx,
+						 _guest_context.map.r10, _guest_context.map.r8, _guest_context.map.r9);
+		}
 
-		// translate address
-		_this->_guest_context.t3 = _this->_codegen.translate(_this->_guest_context.t3);
+		if (syscall_index >= 0)
+			return syscall_index;
 	}
-	restore_context_s11
+
+	// we will only reach this if the system call is not supported
+	char fault_message[256];
+	snprintf(fault_message, sizeof(fault_message), "Guest tried to call an unsupported syscall (%li).", guest_index);
+	fault_exit(fault_message);
+	return -1;
 }

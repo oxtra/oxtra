@@ -49,9 +49,10 @@ namespace codegen {
 				source_temp_register = encoding::RiscVRegister::t4,
 				address_temp_register = encoding::RiscVRegister::t3,
 				address_destination = encoding::RiscVRegister::t3,
-				context_address = encoding::RiscVRegister::s11,
 				reroute_static_address = encoding::RiscVRegister::s8,
 				reroute_dynamic_address = encoding::RiscVRegister::s9,
+				syscall_address = encoding::RiscVRegister::s10,
+				context_address = encoding::RiscVRegister::s11,
 				temp0_register = encoding::RiscVRegister::t0,
 				temp1_register = encoding::RiscVRegister::t1,
 				temp2_register = encoding::RiscVRegister::t2;
@@ -122,17 +123,20 @@ namespace codegen {
 	public:
 		utils::host_addr_t translate(utils::guest_addr_t addr);
 
-		void update_basic_block_address(utils::host_addr_t addr, utils::host_addr_t absolute_address);
+		void update_basic_block(utils::host_addr_t addr, utils::host_addr_t absolute_address);
 
 	private:
 		static void translate_mov_ext(const ContextInstruction& inst, encoding::RiscVRegister dest, encoding::RiscVRegister src,
 									  utils::riscv_instruction_t* riscv, size_t& count);
 
-		void translate_mov(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
+		static void translate_mov(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
-		void translate_jmp(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
+		static void translate_jmp(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
-		void translate_ret(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
+		// TODO: implement this properly
+		static void translate_ret(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
+
+		static void translate_syscall(utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
 		 * Translates a x86 instruction into multiple risc-v instructions.
@@ -141,7 +145,7 @@ namespace codegen {
 		 * @param count Reference to the number of instructions that were written to the array.
 		 * @return Returns whether the this instruction ends the basic block.
 		 */
-		bool translate_instruction(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
+		static bool translate_instruction(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
 		 * Extracts all of the grouping information out of the instruction.
@@ -156,7 +160,7 @@ namespace codegen {
 		 * @param riscv Array of riscv-instructions.
 		 * @param count Number of riscv-instructions.
 		 */
-		void translate_instruction(ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
+		static void translate_instruction(ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
 		 * extracts the two operands out of the instruction, and calls the callback,
@@ -169,7 +173,7 @@ namespace codegen {
 		 * @param count Number of riscv-instructions.
 		 * @param callback Callback, which will apply the instruction.
 		 */
-		void apply_operation(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count,
+		static void apply_operation(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count,
 							 OperationCallback callback);
 
 		/**
@@ -181,9 +185,9 @@ namespace codegen {
 		 * @param count current number of risc-v instructions.
 		 * @return if this operation was a memory-operation, the return-register will contain the address.
 		 */
-		encoding::RiscVRegister
-		translate_operand(const fadec::Instruction& inst, size_t index, encoding::RiscVRegister reg,
-						  utils::riscv_instruction_t* riscv, size_t& count);
+		static encoding::RiscVRegister translate_operand(const fadec::Instruction& inst, size_t index,
+														 encoding::RiscVRegister reg, utils::riscv_instruction_t* riscv,
+														 size_t& count);
 
 		/**
 		 * Writes the value in the register to the destination-operand of the instruction
@@ -194,8 +198,8 @@ namespace codegen {
 		 * @param riscv An array of risc-v instructions.
 		 * @param count current number of risc-v instructions.
 		 */
-		void translate_destination(const fadec::Instruction& inst, encoding::RiscVRegister reg,
-								   encoding::RiscVRegister address, utils::riscv_instruction_t* riscv, size_t& count);
+		static void translate_destination(const fadec::Instruction& inst, encoding::RiscVRegister reg,
+										  encoding::RiscVRegister address, utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
 		 * Translates a x86-memory operand into risc-v instructions (resulting address in reg)
@@ -206,8 +210,8 @@ namespace codegen {
 		 * @param riscv_instructions An array of risc-v instructions.
 		 * @param num_instructions current number of risc-v instructions.
 		 */
-		void translate_memory(const fadec::Instruction& inst, size_t index, encoding::RiscVRegister reg,
-							  utils::riscv_instruction_t* riscv, size_t& count);
+		static void translate_memory(const fadec::Instruction& inst, size_t index, encoding::RiscVRegister reg,
+									 utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
 		 * Writes a register with x86-style sub-manipulation to an existing register without
@@ -258,7 +262,7 @@ namespace codegen {
 		/**
 		 * Loads a 64 bit immediate into the specified register.
 		 * The only difference between this method and load_unsigned_immediate is that this one is slightly faster.
-		 * Unoptimized this function must generate 8-riscv-instructions. Otherwise update_basic_block_address will fail.
+		 * Unoptimized this function must generate 8-riscv-instructions. Otherwise update_basic_block will fail.
 		 * @param imm The immediate that will be stored. The highest 4 bits of uint16_t will be masked.
 		 * @param dest The register the immediate will be stored in.
 		 * @param riscv The pointer to the generated riscv instructions.
@@ -278,9 +282,8 @@ namespace codegen {
 		 * @param riscv The pointer to the generated riscv instructions.
 		 * @param count The current length of the riscv instructions (i.e. the index of the next free position).
 		 */
-		static void
-		load_signed_immediate(uintptr_t imm, encoding::RiscVRegister dest, utils::riscv_instruction_t* riscv,
-							  size_t& count);
+		static void load_signed_immediate(uintptr_t imm, encoding::RiscVRegister dest,
+										  utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
 		 * Load an immediate of up to 64 bit into the register.
@@ -293,8 +296,8 @@ namespace codegen {
 		 * @param count The current length of the riscv instructions (i.e. the index of the next free position).
 		 */
 		static void
-		load_unsigned_immediate(uintptr_t imm, encoding::RiscVRegister dest, utils::riscv_instruction_t* riscv,
-								size_t& count);
+		load_unsigned_immediate(uintptr_t imm, encoding::RiscVRegister dest,
+								utils::riscv_instruction_t* riscv, size_t& count);
 	};
 }
 

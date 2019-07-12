@@ -69,6 +69,7 @@ constexpr const char* expected_btype[] = {
 		"bge rbx, rcx ? $[pc + -0x2(-2)]",
 		"bltu rbx, rcx ? $[pc + -0x800(-2048)]"
 };
+constexpr const char* expected_ecall = "ecall";
 
 TEST_CASE("decoding-test", "[decoding::parse_riscv]") {
 	utils::riscv_instruction_t instruction[5];
@@ -142,5 +143,9 @@ TEST_CASE("decoding-test", "[decoding::parse_riscv]") {
 		instruction[4] = encoding::BLTU(encoding::RiscVRegister::a1, encoding::RiscVRegister::a2, -0x800);
 		for (size_t i = 0; i < 5; i++)
 			REQUIRE(parse_riscv(instruction[i]) == expected_btype[i]);
+	}
+	SECTION("ecall test") {
+		instruction[0] = encoding::ECALL();
+		REQUIRE(parse_riscv(instruction[0]) == expected_ecall);
 	}
 }

@@ -7,7 +7,7 @@
 #include <oxtra/codegen/encoding/encoding.h>
 
 /* implemented:
- *   - base-instruction-set			(ignoring FENCE, ECALL, EBREAK and CSRR-instructions)
+ *   - base-instruction-set			(ignoring FENCE, EBREAK and CSRR-instructions)
  *   - rv64i-base-instruction-set	(done)
  *   - rv32m-standard-extension		(done)
  *   - rv64m-standard-extensions	(done)
