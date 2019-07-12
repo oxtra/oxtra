@@ -138,12 +138,12 @@ void CodeGenerator::translate_memory(const Instruction& inst, size_t index, Risc
 
 	// add the base-register
 	if (operand.get_register() != fadec::Register::none) {
-		riscv[count++] = encoding::ADD(reg, reg, register_mapping[static_cast<uint16_t>( operand.get_register())]);
+		riscv[count++] = encoding::ADD(reg, reg, register_mapping[static_cast<uint16_t>(operand.get_register())]);
 	}
 
 	// add the displacement
-	if (inst.get_displacement() > 0 || _elf.get_address_delta() > 0) {
-		uintptr_t displacement = _elf.get_address_delta() + inst.get_displacement();
+	if (inst.get_displacement() > 0) {
+		const auto displacement = inst.get_displacement();
 		// less or equal than 12 bits
 		if (displacement < 0x800) {
 			riscv[count++] = encoding::ADDI(reg, reg, static_cast<uint16_t>(displacement));

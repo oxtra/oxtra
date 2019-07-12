@@ -3,6 +3,7 @@
 .global _ZN10dispatcher10Dispatcher10fault_exitEPKcl # fault_exit
 .global _ZN10dispatcher10Dispatcher14reroute_staticEv # reroute_static
 .global _ZN10dispatcher10Dispatcher15reroute_dynamicEv # reroute_dynamic
+.global _ZN10dispatcher10Dispatcher15syscall_handlerEv # syscall_handler
 
 
 # address of the context in reg
@@ -85,7 +86,6 @@ _ZN10dispatcher10Dispatcher11guest_enterEPNS_7ContextEmPPKc:
 
 	# call reroute_dynamic to translate the address in t3
 	jalr ra, s9, 0
-
 	jalr zero, t3, 0
 
 
@@ -106,7 +106,7 @@ _ZN10dispatcher10Dispatcher10guest_exitEl:
 
 	# move the exit-code into a0 and return to the point where guest_enter was called
 	mv a0, t1
-	jalr zero, ra, 0
+	ret
 
 
 # fault_exit
@@ -126,7 +126,7 @@ _ZN10dispatcher10Dispatcher10fault_exitEPKcl:
 
 	# move the exit-code into a0 and return to the point where guest_enter was called
 	mv a0, t2
-	jalr zero, ra, 0
+	ret
 
 
 # reroute_static
@@ -191,3 +191,32 @@ _ZN10dispatcher10Dispatcher15reroute_dynamicEv:
     # restore the guest context
     restore_context s11
     jalr zero, t3, 0
+
+
+# syscall_handler
+_ZN10dispatcher10Dispatcher15syscall_handlerEv:
+	# capture the guest context
+	capture_context s11
+
+	# invoke virtualize_syscall and check if it should be forwarded
+    mv a0, s11
+    jal ra, _ZN10dispatcher10Dispatcher18virtualize_syscallEv
+    bltz a0, syscall_handled
+
+    # arguments
+    mv a7, a0 # syscall index -> a7
+	ld a0, 0x70(s11) # arg0 (rdi)
+	ld a1, 0x68(s11) # arg1 (rsi)
+	ld a2, 0x60(s11) # arg2 (rdx)
+	ld a3, 0x88(s11) # arg3 (r10)
+	ld a4, 0x78(s11) # arg4 (r8)
+	ld a5, 0x80(s11) # arg5 (r9)
+
+    # execute the syscall and write the return value into _guest_context.a0
+    ecall
+    sd a0, 0x48(s11)
+
+	# restore the guest context and return to caller
+syscall_handled:
+    restore_context s11
+    ret
