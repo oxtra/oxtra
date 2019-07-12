@@ -9,13 +9,9 @@
 
 namespace dispatcher {
 	static_assert(codegen::CodeGenerator::address_destination == encoding::RiscVRegister::t3,
-				  "dispatcher::reroute_static, reroute_dynamic, run requires t3");
+				  "dispatcher::reroute_static, reroute_dynamic requires t3");
 	static_assert(codegen::CodeGenerator::context_address == encoding::RiscVRegister::s11,
-				  "dispatcher::reroute_static, reroute_dynamic, run requires s11");
-	static_assert(codegen::CodeGenerator::reroute_dynamic_address == encoding::RiscVRegister::s9,
-				  "dispatcher::run requires s9");
-	static_assert(codegen::CodeGenerator::reroute_static_address == encoding::RiscVRegister::s8,
-				  "dispatcher::run requires s8");
+				  "dispatcher::reroute_static, reroute_dynamic requires s11");
 
 	class Dispatcher {
 	private:
@@ -54,7 +50,20 @@ namespace dispatcher {
 		 * @param exit_code the exit-code to be returned
 		 */
 		static void fault_exit(const char* fault_string, long exit_code = -1);
+
 	private:
+		/**
+		 * Called instead of a syscall instruction.
+		 * Either handles the syscall or forwards it to the kernel.
+		 */
+		static void syscall_handler();
+
+		/**
+		 * Checks if the syscall has to be emulated and emulates it or forwards it otherwise.
+		 * @return Index of the riscv syscall or -1 if it was emulated.
+		 */
+		long virtualize_syscall();
+
 		/**
 		 * Translates a guest branch address and reroutes the control flow to the branch target
 		 * by rewriting the branch instruction.

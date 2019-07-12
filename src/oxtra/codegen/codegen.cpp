@@ -115,6 +115,7 @@ size_t CodeGenerator::group_instruction(const fadec::InstructionType type) {
 		case InstructionType::NOP:
 		case InstructionType::PUSH:
 		case InstructionType::POP:
+		case InstructionType::SYSCALL:
 			return Group::none;
 		case InstructionType::JMP:
 		case InstructionType::JMP_IND:
@@ -143,13 +144,10 @@ void CodeGenerator::translate_instruction(InstructionEntry& inst, utils::riscv_i
 		case InstructionType::NOP:
 			break;
 
-		case InstructionType::PUSH:
-		case InstructionType::POP:
+		case InstructionType::SYSCALL:
+			translate_syscall(riscv, count);
 			break;
 
-		case InstructionType::CALL:
-
-			break;
 		case InstructionType::JMP:
 		case InstructionType::JMP_IND:
 			translate_jmp(inst.instruction, riscv, count);

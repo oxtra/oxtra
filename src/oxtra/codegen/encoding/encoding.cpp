@@ -232,7 +232,11 @@ riscv_instruction_t encoding::AND(RiscVRegister rd, RiscVRegister rs1, RiscVRegi
 	return rtype(51, rd, 7, rs1, rs2, 0);
 }
 
-// probably not needed: FENCE, FENCE.I, ECALL, EBREAK, CSRRW, CSRRS, CSRRC, CSRRWI, CSRRSI, CSRRCI
+riscv_instruction_t encoding::ECALL() {
+	return itype(115, RiscVRegister::zero, 0, RiscVRegister::zero, 0);
+}
+
+// probably not needed: FENCE, FENCE.I, EBREAK, CSRRW, CSRRS, CSRRC, CSRRWI, CSRRSI, CSRRCI
 
 /* --- M Standard Extensions --- */
 
@@ -276,10 +280,6 @@ riscv_instruction_t encoding::NOP() {
 	return ADDI(RiscVRegister::zero, RiscVRegister::zero, 0);
 }
 
-void encoding::LI(RiscVRegister rd, uint32_t imm) {
-	// more than one instruction
-}
-
 riscv_instruction_t encoding::MV(RiscVRegister rd, RiscVRegister rs) {
 	return ADDI(rd, rs, 0);
 }
@@ -297,7 +297,8 @@ riscv_instruction_t encoding::SEQZ(RiscVRegister rd, RiscVRegister rs) {
 }
 
 riscv_instruction_t encoding::SNEZ(RiscVRegister rd, RiscVRegister rs) {
-	return SLTU(rd, RiscVRegister::zero, rd);
+
+	return SLTU(rd, RiscVRegister::zero, rs);
 }
 
 riscv_instruction_t encoding::SLTZ(RiscVRegister rd, RiscVRegister rs) {

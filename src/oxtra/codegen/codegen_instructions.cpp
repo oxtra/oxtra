@@ -74,3 +74,7 @@ void CodeGenerator::translate_ret(const Instruction& inst, riscv_instruction_t* 
 	load_64bit_immediate(reinterpret_cast<uint64_t>(Dispatcher::guest_exit), temp0_register, riscv, count, false);
 	riscv[count++] = JALR(RiscVRegister::zero, temp0_register, 0);
 }
+
+void CodeGenerator::translate_syscall(utils::riscv_instruction_t* riscv, size_t& count) {
+	riscv[count++] = JALR(RiscVRegister::ra, syscall_address, 0);
+}

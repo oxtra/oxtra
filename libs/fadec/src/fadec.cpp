@@ -640,9 +640,14 @@ int fadec::decode(const uint8_t *buffer, size_t len_sz, DecodeMode mode, uintptr
 		return -1;
 
 	for (auto i = 0; i < 4; i++) {
-		auto &op = instr.operands[i];
+		auto& op = instr.operands[i];
 
-		if (op.type != OperandType::reg)
+		if (op.type == OperandType::mem && op.reg == Register::ip) {
+			op.reg = Register::none;
+			instr.disp += instr.address + off;
+		}
+
+		else if (op.type != OperandType::reg)
 			continue;
 
 		auto reg_type = static_cast<RegisterType>((desc->reg_types >> 4 * i) & 0xf);
