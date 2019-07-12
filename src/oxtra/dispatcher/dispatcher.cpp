@@ -29,8 +29,14 @@ int Dispatcher::run() {
 	_guest_context.s9 = reinterpret_cast<uintptr_t>(Dispatcher::reroute_dynamic);
 	_guest_context.s11 = reinterpret_cast<uintptr_t>(&_guest_context);
 
-	// translate the first basic block and execute it
-	return guest_enter(&_guest_context, _elf.get_entry_point());
+	// switch the context and begin translation
+	const char* error_string = nullptr;
+	int exit_code = guest_enter(&_guest_context, _elf.get_entry_point(), &error_string);
+
+	// check if the guest has ended with and error
+	if (error_string != nullptr)
+		throw std::runtime_error(error_string);
+	return exit_code;
 
 #pragma GCC diagnostic pop
 }

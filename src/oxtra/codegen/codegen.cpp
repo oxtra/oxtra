@@ -1,11 +1,13 @@
 #include "oxtra/codegen/codegen.h"
 #include <spdlog/spdlog.h>
+#include <oxtra/dispatcher/dispatcher.h>
 
 using namespace codegen;
 using namespace utils;
 using namespace codestore;
 using namespace fadec;
 using namespace encoding;
+using namespace dispatcher;
 
 CodeGenerator::CodeGenerator(const arguments::Arguments& args, const elf::Elf& elf)
 		: _args{args}, _elf{elf}, _codestore{args, elf} {}
@@ -15,7 +17,7 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 	 * Code-block-size will continue the check for the upcoming instructions.
 	 * This check will also validate, that the address won't corrupt the page-array. */
 	if ((_elf.get_page_flags(addr) & (elf::PAGE_EXECUTE | elf::PAGE_READ)) != (elf::PAGE_EXECUTE | elf::PAGE_READ))
-		throw std::runtime_error("virtual segmentation fault");
+		Dispatcher::fault_exit("virtual segmentation fault");
 	if (const auto riscv_code = _codestore.find(addr))
 		return riscv_code;
 
@@ -26,7 +28,7 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 		// decode the fadec-instruction
 		InstructionEntry entry{};
 		if (fadec::decode(address, _elf.get_size(addr), DecodeMode::decode_64, addr, entry.instruction) <= 0)
-			throw std::runtime_error("Failed to decode the instruction");
+			Dispatcher::fault_exit("Failed to decode the instruction");
 
 		// query all of the information about the instruction
 		entry.update_flags = group_instruction(entry.instruction.get_type());
@@ -35,7 +37,7 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 			fadec::format(entry.instruction, formatted_string, sizeof(formatted_string));
 			char exception_buffer[512];
 			snprintf(exception_buffer, sizeof(exception_buffer), "Unsupported instruction used. %s", formatted_string);
-			throw std::runtime_error(exception_buffer);
+			Dispatcher::fault_exit(exception_buffer);
 		}
 
 		// update the addresses
@@ -99,7 +101,7 @@ void CodeGenerator::update_basic_block_address(utils::host_addr_t addr, utils::h
 	load_64bit_immediate(absolute_address, address_destination, riscv, count, false);
 #ifdef DEBUG
 	if (count != 8)
-		throw std::runtime_error("load_64bit_immediate did not generate 8 instructions");
+		Dispatcher::fault_exit("load_64bit_immediate did not generate 8 instructions");
 #endif
 	riscv[count++] = encoding::JALR(RiscVRegister::zero, address_destination, 0);
 }

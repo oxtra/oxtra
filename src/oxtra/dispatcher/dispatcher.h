@@ -35,10 +35,17 @@ namespace dispatcher {
 		int run();
 
 		/**
-		 * Emulates a exit syscall by switching back to the host context. (Reverses changes of guest_enter).
-		 * @return The exit_code parameter.
+		 * exits the guest-program with the given exit-code
+		 * @param exit_code the exit-code to be returned
 		 */
-		static int guest_exit();
+		static void guest_exit(int exit_code);
+
+		/**
+		 * exits the guest-program with a given fault-string and exit-code
+		 * @param fault_string the fault-string to be thrown
+		 * @param exit_code the exit-code to be returned
+		 */
+		static void fault_exit(const char* fault_string, int exit_code = -1);
 	private:
 		/**
 		 * Translates a guest branch address and reroutes the control flow to the branch target
@@ -53,12 +60,13 @@ namespace dispatcher {
 		static void reroute_dynamic();
 
 		/**
-		 * Entry into the guest context. (Reversed by guest_exit).
+		 * Entry into the guest context. (Reversed by guest_exit or fault_exit).
 		 * @param context A pointer to {guest context, host context}.
 		 * @param entry The riscv entry point.
+		 * @param fault_string A pointer, which might store the address to the fault_string, or zero
 		 * @return The exit_code parameter.
 		 */
-		static int guest_enter(Context* context, utils::guest_addr_t entry);
+		static int guest_enter(Context* context, utils::guest_addr_t entry, const char** fault_string);
 	};
 }
 

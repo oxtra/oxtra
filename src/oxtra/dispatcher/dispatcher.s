@@ -1,7 +1,7 @@
 .section .text
-.global _ZN10dispatcher10Dispatcher11guest_enterEPNS_7ContextEm # guest_enter
-.global _ZN10dispatcher10Dispatcher10guest_exitEv # guest_exit
-.global _ZN10dispatcher10Dispatcher10fault_exitEPKc # fault_exit
+.global _ZN10dispatcher10Dispatcher11guest_enterEPNS_7ContextEmPPKc # guest_enter
+.global _ZN10dispatcher10Dispatcher10guest_exitEi # guest_exit
+.global _ZN10dispatcher10Dispatcher10fault_exitEPKci # fault_exit
 
 # address of the context in reg
 .macro capture_context reg
@@ -66,23 +66,8 @@
 	ld s11, 0xD0(\reg)
 .endm
 
-# guest_exit
-_ZN10dispatcher10Dispatcher10guest_exitEv:
-	# move the exit code into t1
-	mv t1, a0
-
-	# t0 (host_context) = s11 (guest_context) + sizeof(Context)
-	addi t0, s11, 248
-
-	# restore the host context
-	restore_context t0
-
-	# move the exit code into the return value register and return
-	mv a0, t1
-	jalr zero, ra, 0
-
 # guest_enter
-_ZN10dispatcher10Dispatcher11guest_enterEPNS_7ContextEm:
+_ZN10dispatcher10Dispatcher11guest_enterEPNS_7ContextEmPPKc:
 	# store a pointer to the guest context
 	mv t0, a0
 	mv t3, a1
@@ -100,3 +85,41 @@ _ZN10dispatcher10Dispatcher11guest_enterEPNS_7ContextEm:
 	jalr ra, s9, 0
 
 	jalr zero, t3, 0
+
+# guest_exit
+_ZN10dispatcher10Dispatcher10guest_exitEi:
+	# move the exit code into t1
+	mv t1, a0
+
+	# t0 (host_context) = s11 (guest_context) + sizeof(Context)
+	addi t0, s11, 248
+
+	# restore the host context
+	restore_context t0
+
+	# clear the string-pointer in argument 2
+	xor t2, t2, t2
+	sd t2, 0(a2)
+
+	# move the exit-code into a0 and return to the point where guest_enter was called
+    mv a0, t1
+	jalr zero, ra, 0
+
+# fault_exit
+_ZN10dispatcher10Dispatcher10fault_exitEPKci:
+	# move the string-pointer into t1 and the exit-code to t2
+    mv t1, a0
+    mv t2, a1
+
+    # t0 (host_context) = s11 (guest_context) + sizeof(Context)
+    addi t0, s11, 248
+
+    # restore the host context
+    restore_context t0
+
+    # move the string-pointer to the address-pointer in argument 2
+    sd t1, 0(a2)
+
+    # move the exit-code into a0 and return to the point where guest_enter was called
+    mv a0, t2
+    jalr zero, ra, 0
