@@ -13,7 +13,7 @@ endif()
 project(oxtra)
 
 if (CMAKE_COMPILER_IS_GNUCC)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wl,-Ttext-segment=0x7F000000")
 endif ()
 if (MSVC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
