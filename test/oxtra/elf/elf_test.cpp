@@ -71,19 +71,19 @@ TEST_CASE("static Elf-Parser unpacking", "[elf::Elf]") {
 			random_buffer[i] = static_cast<uint8_t>(rand());
 
 		// create the elf-object
-		elf::Elf elf = elf::Elf(random_buffer, sizeof(random_buffer), 3);
+		elf::Elf elf = elf::Elf(random_buffer, sizeof(random_buffer), 0x400000, 3);
 
 		// validate the parameters
-		REQUIRE(elf.get_base_vaddr() == 0);
-		REQUIRE(elf.get_entry_point() == 0);
+		REQUIRE(elf.get_base_vaddr() == 0x400000);
+		REQUIRE(elf.get_entry_point() == 0x400000);
 		REQUIRE(elf.get_image_size() == 0x4000);
-		REQUIRE(elf.get_page_flags(0) == (elf::PAGE_EXECUTE | elf::PAGE_MAPPED | elf::PAGE_READ));
-		REQUIRE(elf.get_page_flags(0x1000) == elf.get_page_flags(0));
-		REQUIRE(elf.get_page_flags(0x2000) == elf.get_page_flags(0));
-		REQUIRE(elf.get_page_flags(0x3000) == (elf::PAGE_WRITE | elf::PAGE_MAPPED | elf::PAGE_READ));
-		REQUIRE(elf.get_size(50, 1) == 0x2000 - 50);
-		REQUIRE(elf.get_size(50, 4) == 0x3000 - 50);
-		REQUIRE(elf.get_size(0x3100) == 0xf00);
+		REQUIRE(elf.get_page_flags(0x400000) == (elf::PAGE_EXECUTE | elf::PAGE_MAPPED | elf::PAGE_READ));
+		REQUIRE(elf.get_page_flags(0x401000) == elf.get_page_flags(0x400000));
+		REQUIRE(elf.get_page_flags(0x402000) == elf.get_page_flags(0x400000));
+		REQUIRE(elf.get_page_flags(0x403000) == (elf::PAGE_WRITE | elf::PAGE_MAPPED | elf::PAGE_READ));
+		REQUIRE(elf.get_size(0x400050, 1) == 0x2000 - 0x50);
+		REQUIRE(elf.get_size(0x400050, 4) == 0x3000 - 0x50);
+		REQUIRE(elf.get_size(0x403100) == 0xf00);
 		REQUIRE(memcmp(reinterpret_cast<void*>(elf.get_base_vaddr()), random_buffer, sizeof(random_buffer)) == 0);
 	}
 }
