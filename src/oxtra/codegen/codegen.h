@@ -57,38 +57,19 @@ namespace codegen {
 				temp2_register = encoding::RiscVRegister::t2,
 				flag_register = encoding::RiscVRegister::s1;
 
+		/*
+		 * ra, gp, tp : reserved
+		 * t0, t1, t2 : always temporary
+		 * t3, t4, t5, t6 : reserved for helper functions
+		 * t3 : address_destination [doubled with reserved for helper-functions]
+		 * s1 : flags
+		 * s8 : reroute_static address
+		 * s9 : reroute_dynamic address
+		 * s10 : reserved for system calls
+		 * s11 : context address
+		 */
+
 	private:
-		static constexpr encoding::RiscVRegister register_mapping[] = {
-				encoding::RiscVRegister::a0, // rax
-				encoding::RiscVRegister::a2, // rcx
-				encoding::RiscVRegister::a3, // rdx
-				encoding::RiscVRegister::a1, // rbx
-				encoding::RiscVRegister::sp, // rsp
-				encoding::RiscVRegister::s0, // rbp
-				encoding::RiscVRegister::a4, // rsi
-				encoding::RiscVRegister::a5, // rdi
-				encoding::RiscVRegister::a6, // r8
-				encoding::RiscVRegister::a7, // r9
-				encoding::RiscVRegister::s2, // r10
-				encoding::RiscVRegister::s3, // r11
-				encoding::RiscVRegister::s4, // r12
-				encoding::RiscVRegister::s5, // r13
-				encoding::RiscVRegister::s6, // r14
-				encoding::RiscVRegister::s7  // r15
-
-				/*
-				 * ra, gp, tp : reserved
-				 * t0, t1, t2 : always temporary
-				 * t3, t4, t5, t6 : reserved for helper functions
-				 * t3 : address_destination [doubled with reserved for helper-functions]
-				 * s1 : flags
-				 * s8 : reroute_static address
-				 * s9 : reroute_dynamic address
-				 * s10 : reserved for system calls
-				 * s11 : context address
-				 */
-		};
-
 		enum class RegisterAccess : uint8_t {
 			QWORD,    // 64bit
 			DWORD,    // 32bit
@@ -138,6 +119,10 @@ namespace codegen {
 		static void translate_push(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
 		static void translate_pushf(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
+
+		static void translate_pop(const fadec::Instruction& inst, utils::riscv_instruction_t*  riscv, size_t& count);
+
+		static void translate_popf(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
 		 * Translates a x86 instruction into multiple risc-v instructions.
@@ -225,14 +210,15 @@ namespace codegen {
 		 *
 		 * The source-register will be preserved.
 		 * t5 and t6 might be overwritten.
-		 * @param dest register to be changed.
-		 * @param src register to write.
-		 * @param access the operand-size of the register to write to.
+		 * @param dest Register to be changed.
+		 * @param src Register to write.
+		 * @param access The operand-size of the register to write to.
 		 * @param riscv An array of risc-v instructions.
-		 * @param count current number of risc-v instructions.
+		 * @param count Current number of risc-v instructions.
+		 * @param cleared If true the upper bits of the source register are expected to be 0.
 		 */
 		static void move_to_register(encoding::RiscVRegister dest, encoding::RiscVRegister src, RegisterAccess access,
-									 utils::riscv_instruction_t* riscv, size_t& count);
+									 utils::riscv_instruction_t* riscv, size_t& count, bool cleared = false);
 
 		/**
 		 * Loads a 12 bit immediate into the specified register. The value is sign extended to 64 bit,
@@ -305,7 +291,37 @@ namespace codegen {
 		 * @param reg The x86-register.
 		 * @return The riscv-register.
 		 */
-		static encoding::RiscVRegister map_reg(const fadec::Register reg);
+		static constexpr encoding::RiscVRegister map_reg(const fadec::Register reg) {
+			constexpr encoding::RiscVRegister register_mapping[] = {
+					encoding::RiscVRegister::a0, // rax
+					encoding::RiscVRegister::a2, // rcx
+					encoding::RiscVRegister::a3, // rdx
+					encoding::RiscVRegister::a1, // rbx
+					encoding::RiscVRegister::sp, // rsp
+					encoding::RiscVRegister::s0, // rbp
+					encoding::RiscVRegister::a4, // rsi
+					encoding::RiscVRegister::a5, // rdi
+					encoding::RiscVRegister::a6, // r8
+					encoding::RiscVRegister::a7, // r9
+					encoding::RiscVRegister::s2, // r10
+					encoding::RiscVRegister::s3, // r11
+					encoding::RiscVRegister::s4, // r12
+					encoding::RiscVRegister::s5, // r13
+					encoding::RiscVRegister::s6, // r14
+					encoding::RiscVRegister::s7  // r15
+			};
+
+			return register_mapping[static_cast<uint8_t>(reg)];
+		}
+
+		/**
+		 * Maps the x86 gph register to it's base's riscv register.
+		 * @param reg The x86-register.
+		 * @return The riscv-register.
+		 */
+		static constexpr encoding::RiscVRegister map_reg_high(const fadec::Register reg) {
+			return map_reg(static_cast<fadec::Register>(static_cast<uint8_t>(reg) + 4));
+		}
 	};
 }
 
