@@ -23,12 +23,13 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 
 	// iterate through the instructions and query all information about the flags
 	std::vector<InstructionEntry> instructions;
-	auto address = reinterpret_cast<const uint8_t*>(_elf.resolve_vaddr(addr));
 	while (true) {
 		// decode the fadec-instruction
 		InstructionEntry entry{};
-		if (fadec::decode(address, _elf.get_size(addr), DecodeMode::decode_64, addr, entry.instruction) <= 0)
+		if (fadec::decode(reinterpret_cast<uint8_t*>(addr), _elf.get_size(addr), DecodeMode::decode_64, addr,
+						  entry.instruction) <= 0) {
 			Dispatcher::fault_exit("Failed to decode the instruction");
+		}
 
 		// query all of the information about the instruction
 		entry.update_flags = group_instruction(entry.instruction.get_type());
@@ -40,9 +41,8 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 			Dispatcher::fault_exit(exception_buffer);
 		}
 
-		// update the addresses
+		// update the address
 		addr += entry.instruction.get_size();
-		address += entry.instruction.get_size();
 
 		// add the instruction to the array and check if the instruction would end the block
 		instructions.push_back(entry);

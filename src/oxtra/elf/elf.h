@@ -24,7 +24,8 @@ namespace elf {
 			format_issue,
 			unsupported_binary,
 			unsupported_type,
-			not_static
+			not_static,
+			base_address_taken
 		};
 
 	private:
@@ -48,9 +49,7 @@ namespace elf {
 	class Elf {
 	private:
 		std::unique_ptr<uint8_t[]> _image_ptr;
-		uintptr_t _actual_base;
-		uintptr_t _base_address;
-		size_t _address_range;
+		size_t _image_size;
 		std::unique_ptr<uint8_t[]> _page_flags;
 		uintptr_t _entry_point;
 
@@ -72,16 +71,17 @@ namespace elf {
  		* @return returns false if already called before. Otherwise parses and returns true
  		*/
 		Elf(const char* path);
-		
+
 		/**
 		 * Creates a dummy-elf-object from a stream of bytes.
 		 * By Default it will mark the first exe_pages-number of pages es read/executable.
 		 * The rest of the pages will be flagged as read/writable.
 		 * @param ptr stream of bytes
 		 * @param size number of bytes in the stream
+		 * @param base_address The base used to map the image to
 		 * @param exe_pages number of initial pages flagged as executable
 		 */
-		Elf(const uint8_t* ptr, size_t size, size_t exec_pages = 1);
+		Elf(const uint8_t* ptr, size_t size, uintptr_t base_address = 0x00400000, size_t exec_pages = 1);
 
 		Elf() = delete;
 
@@ -95,7 +95,7 @@ namespace elf {
  		* @return virtual base-address
  		*/
 		uintptr_t get_base_vaddr() const {
-			return _base_address;
+			return reinterpret_cast<uintptr_t>(_image_ptr.get());
 		}
 
 		/**
@@ -103,7 +103,7 @@ namespace elf {
  		* @return virtual address-range
 	 	*/
 		uintptr_t get_image_size() const {
-			return _address_range;
+			return _image_size;
 		}
 
 		/**
@@ -112,24 +112,6 @@ namespace elf {
  		*/
 		uintptr_t get_entry_point() const {
 			return _entry_point;
-		}
-
-		/**
- 		* retrieves the delta between the virtual address and the actual address
- 		* @return _actual_base - _base_address
- 		*/
-		uintptr_t get_address_delta() const {
-			return _actual_base - _base_address;
-		}
-
-		/**
- 		* resolves a virtual address to an actual pointer inside of the binary-image
- 		* (Pages within the virtual address-space of this binary, flagged as unmapped can be accessed but will be set to 0)
- 		* @param vaddr the virtual address
- 		* @return 0 if the virtual address lies outside of the addressable range of the binary, otherwise the pointer
- 		*/
-		void* resolve_vaddr(uintptr_t vaddr) const {
-			return reinterpret_cast<void*>(vaddr - _base_address + _actual_base);
 		}
 
 		/**

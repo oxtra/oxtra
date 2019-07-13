@@ -47,14 +47,13 @@ TEST_CASE("static Elf-Parser unpacking", "[elf::Elf]") {
 		//open the elf and extract the important pointers
 		elf::Elf elf((base_path + "/dump_me").c_str());
 		uint8_t* target_ptr = buffer;
-		uint8_t* actual_ptr = reinterpret_cast<uint8_t*>(elf.resolve_vaddr(elf.get_base_vaddr()));
+		uint8_t* actual_ptr = reinterpret_cast<uint8_t*>(elf.get_base_vaddr());
 		REQUIRE((elf.get_image_size() & 0x00000FFFu) == 0);
 
 		//validate the parameter
 		REQUIRE(elf.get_image_size() == size);
 		REQUIRE(elf.get_entry_point() == 0x403fb0);
 		REQUIRE(elf.get_base_vaddr() == 0x400000);
-		REQUIRE((reinterpret_cast<uintptr_t>(elf.resolve_vaddr(elf.get_base_vaddr())) & 0x00000FFFu) == 0);
 
 		//iterate through the non-writable pages and compare them
 		for (size_t i = 0; i < elf.get_image_size(); i += 0x1000) {
@@ -74,11 +73,10 @@ TEST_CASE("static Elf-Parser unpacking", "[elf::Elf]") {
 		// create the elf-object
 		elf::Elf elf = elf::Elf(random_buffer, sizeof(random_buffer), 3);
 
-		// validate the parameter
+		// validate the parameters
 		REQUIRE(elf.get_base_vaddr() == 0);
 		REQUIRE(elf.get_entry_point() == 0);
 		REQUIRE(elf.get_image_size() == 0x4000);
-		REQUIRE(reinterpret_cast<uintptr_t>(elf.resolve_vaddr(0)) == elf.get_address_delta());
 		REQUIRE(elf.get_page_flags(0) == (elf::PAGE_EXECUTE | elf::PAGE_MAPPED | elf::PAGE_READ));
 		REQUIRE(elf.get_page_flags(0x1000) == elf.get_page_flags(0));
 		REQUIRE(elf.get_page_flags(0x2000) == elf.get_page_flags(0));
@@ -86,6 +84,6 @@ TEST_CASE("static Elf-Parser unpacking", "[elf::Elf]") {
 		REQUIRE(elf.get_size(50, 1) == 0x2000 - 50);
 		REQUIRE(elf.get_size(50, 4) == 0x3000 - 50);
 		REQUIRE(elf.get_size(0x3100) == 0xf00);
-		REQUIRE(memcmp(elf.resolve_vaddr(0), random_buffer, sizeof(random_buffer)) == 0);
+		REQUIRE(memcmp(reinterpret_cast<void*>(elf.get_base_vaddr()), random_buffer, sizeof(random_buffer)) == 0);
 	}
 }
