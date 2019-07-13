@@ -11,6 +11,7 @@ using namespace dispatcher;
 
 void CodeGenerator::apply_operation(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count,
 									OperationCallback callback) {
+	spdlog::trace("Entering apply_operation");
 	// extract the source-operand
 	RiscVRegister source_register = source_temp_register;
 	if (inst.get_operand(1).get_type() == OperandType::reg &&
@@ -32,11 +33,13 @@ void CodeGenerator::apply_operation(const fadec::Instruction& inst, utils::riscv
 
 	// write the value back to the destination
 	translate_destination(inst, dest_register, address, riscv, count);
+	spdlog::trace("Leaving apply_operation");
 }
 
 encoding::RiscVRegister
 CodeGenerator::translate_operand(const fadec::Instruction& inst, size_t index, encoding::RiscVRegister reg,
 								 utils::riscv_instruction_t* riscv, size_t& count) {
+	spdlog::trace("Entering translate_operand");
 	// extract the operand
 	auto& operand = inst.get_operand(index);
 
@@ -70,10 +73,12 @@ CodeGenerator::translate_operand(const fadec::Instruction& inst, size_t index, e
 		return address_temp_register;
 	}
 	return encoding::RiscVRegister::zero;
+	spdlog::trace("Leaving translate_operand");
 }
 
 void CodeGenerator::translate_destination(const fadec::Instruction& inst, encoding::RiscVRegister reg,
 										  encoding::RiscVRegister address, utils::riscv_instruction_t* riscv, size_t& count) {
+	spdlog::trace("Entering translate_destination");
 	auto& operand = inst.get_operand(0);
 
 	// check if the destination is a register
@@ -120,10 +125,12 @@ void CodeGenerator::translate_destination(const fadec::Instruction& inst, encodi
 			riscv[count++] = encoding::SB(address, reg, 0);
 			break;
 	}
+	spdlog::trace("Leaving translate_destination");
 }
 
 void CodeGenerator::translate_memory(const Instruction& inst, size_t index, RiscVRegister reg, riscv_instruction_t* riscv,
 									 size_t& count) {
+	spdlog::trace("Entering translate_memory");
 	if (inst.get_address_size() < 4)
 		Dispatcher::fault_exit("invalid addressing-size");
 	const auto& operand = inst.get_operand(index);
@@ -152,10 +159,12 @@ void CodeGenerator::translate_memory(const Instruction& inst, size_t index, Risc
 			riscv[count++] = encoding::ADD(reg, temp_reg, memory_temp_register);
 		}
 	}
+	spdlog::trace("Leaving translate_memory");
 }
 
 void CodeGenerator::move_to_register(RiscVRegister dest, RiscVRegister src, RegisterAccess access, riscv_instruction_t* riscv,
 									 size_t& count, bool cleared) {
+	spdlog::trace("Entering move_to_register");
 	switch (access) {
 		case RegisterAccess::QWORD:
 			riscv[count++] = encoding::ADD(dest, src, RiscVRegister::zero);
@@ -206,6 +215,7 @@ void CodeGenerator::move_to_register(RiscVRegister dest, RiscVRegister src, Regi
 			riscv[count++] = encoding::OR(dest, dest, move_to_temp_register);
 			return;
 	}
+	spdlog::trace("Leaving move_to_register");
 }
 
 void CodeGenerator::load_12bit_immediate(uint16_t imm, RiscVRegister dest, riscv_instruction_t* riscv, size_t& count) {
@@ -253,6 +263,7 @@ void CodeGenerator::load_64bit_immediate(uint64_t imm, RiscVRegister dest, riscv
 }
 
 void CodeGenerator::load_signed_immediate(uintptr_t imm, RiscVRegister dest, riscv_instruction_t* riscv, size_t& count) {
+	spdlog::trace("Entering load_signed_immediate");
 	uintptr_t short_value = (imm & 0xFFFu);
 	if (short_value & 0x800u) {
 		short_value |= 0xFFFFFFFFFFFFF000;
@@ -270,9 +281,11 @@ void CodeGenerator::load_signed_immediate(uintptr_t imm, RiscVRegister dest, ris
 	} else { // 64 bit also have to be manually specified
 		load_64bit_immediate(static_cast<uint64_t>(imm), dest, riscv, count, true);
 	}
+	spdlog::trace("Leaving load_signed_immediate");
 }
 
 void CodeGenerator::load_unsigned_immediate(uintptr_t imm, RiscVRegister dest, riscv_instruction_t* riscv, size_t& count) {
+	spdlog::trace("Entering load_unsigned_immediate");
 	uint8_t immediate_type = 2; // 0 means 12bit, 1 means 32 bit, >= 2 means 64 bit
 
 	// if it is a signed immediate we have to use the bigger type to ensure that it is padded with zeros.
@@ -290,4 +303,5 @@ void CodeGenerator::load_unsigned_immediate(uintptr_t imm, RiscVRegister dest, r
 	} else {
 		load_64bit_immediate(static_cast<uint64_t>(imm), dest, riscv, count, true);
 	}
+	spdlog::trace("Leaving load_unsigned_immediate");
 }

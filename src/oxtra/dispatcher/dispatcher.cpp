@@ -32,6 +32,9 @@ long Dispatcher::run() {
 	_guest_context.map.syscall_handler = reinterpret_cast<uintptr_t>(Dispatcher::syscall_handler);
 	_guest_context.map.context = reinterpret_cast<uintptr_t>(&_guest_context);
 
+	SPDLOG_TRACE("Finished initializing guest context.");
+	SPDLOG_TRACE("Now entering guest.");
+
 	// switch the context and begin translation
 	const char* error_string = nullptr;
 	const auto exit_code = guest_enter(&_guest_context, _elf.get_entry_point(), &error_string);
