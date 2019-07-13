@@ -3,7 +3,7 @@
 
 using namespace arguments;
 
-const char* argp_program_version = "oxtra 0.1";
+const char* argp_program_version = "oxtra 0.3 [alpha]";
 const char* argp_program_bug_address = "https://gitlab.lrz.de/lrr-tum/students/eragp-x86emu-2019";
 
 Arguments::Arguments(int argc, char** argv) :
@@ -85,7 +85,7 @@ static std::vector<std::string> string_split(const std::string& string, const ch
 		// it has been ended, if there is a " but not a \" at the end
 		if (!tokens.empty() && tokens.back().find_first_of('"') == 0
 		&& (tokens.back().find_last_of('"') != tokens.back().length() - 1 || tokens.back().find_last_of('\\') == tokens.back().length() - 2)) {
-			tokens.back() += ' ' + token;
+			tokens.back() += delimiter + token;
 		} else if (token.length() > 0) {
 			tokens.push_back(token);
 		}

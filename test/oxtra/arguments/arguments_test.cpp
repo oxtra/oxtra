@@ -19,7 +19,7 @@ TEST_CASE("Arguments support parsing valid arguments", "[arguments]") {
 		REQUIRE(((int)arguments.get_log_level()) >= 0);
 	}
 	SECTION("use modified arguments") {
-		constexpr const char* args_string[] = {"./oxtra", "-l", "5", "--linstruction-size=1337", "--lentry-size=42",
+		constexpr const char* args_string[] = {"./oxtra", "-l", "5", "--linst-size=1337", "--lentry-size=42",
 											   "--loffset-size=50", "app", "-a", "this is  a test"};
 		const auto arguments = Arguments(9, const_cast<char**>(args_string));
 
