@@ -34,4 +34,14 @@ TEST_CASE("Arguments support parsing valid arguments", "[arguments]") {
 		REQUIRE(strcmp(arguments.get_guest_path(), "app") == 0);
 		REQUIRE(((int)arguments.get_log_level()) == SPDLOG_LEVEL_CRITICAL);
 	}
+	SECTION("nested quotes in string") {
+		constexpr const char* args_string[] = {"./oxtra", "-a", "\"this is a \\\"  nested string\" -l  0", "app"};
+		const auto arguments = Arguments(4, const_cast<char**>(args_string));
+
+		REQUIRE(arguments.get_guest_arguments().size() == 3);
+		REQUIRE(arguments.get_guest_arguments()[0] == "\"this is a \\\"  nested string\"");
+		REQUIRE(arguments.get_guest_arguments()[1] == "-l");
+		REQUIRE(arguments.get_guest_arguments()[2] == "0");
+		REQUIRE(strcmp(arguments.get_guest_path(), "app") == 0);
+	}
 }

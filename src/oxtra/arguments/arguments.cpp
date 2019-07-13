@@ -76,19 +76,22 @@ static int parse_string(struct argp_state* state, char* str,
 static std::vector<std::string> string_split(const std::string& string, const char delimiter) {
 	std::vector<std::string> tokens;
 
-	size_t current, previous = 0;
-	current = string.find(delimiter);
-	while (current != std::string::npos) {
+	size_t current = 0, previous = 0;
+	do {
+		current = string.find(delimiter, previous);
 		const auto token = string.substr(previous, current - previous);
-		if (token.length() > 0) {
+
+		// check if the token currently is a string and has not been ended yet
+		// it has been ended, if there is a " but not a \" at the end
+		if (!tokens.empty() && tokens.back().find_first_of('"') == 0
+		&& (tokens.back().find_last_of('"') != tokens.back().length() - 1 || tokens.back().find_last_of('\\') == tokens.back().length() - 2)) {
+			tokens.back() += ' ' + token;
+		} else if (token.length() > 0) {
 			tokens.push_back(token);
 		}
 
 		previous = current + 1;
-		current = string.find(delimiter, previous);
-	}
-
-	tokens.push_back(string.substr(previous, current - previous));
+	} while (current != std::string::npos);
 
 	return tokens;
 }
@@ -99,9 +102,6 @@ error_t Arguments::parse_opt(int key, char* arg, struct argp_state* state) {
 	switch (key) {
 		case 'a':
 			arguments->guest_arguments = string_split(arg, ' ');
-			for (auto const& value: arguments->guest_arguments) {
-				printf("%s\n", value.c_str());
-			}
 			break;
 		case _instruction_list_size_id:
 			arguments->instruction_list_size = parse_string(state, arg, 1, "Illegal size");
