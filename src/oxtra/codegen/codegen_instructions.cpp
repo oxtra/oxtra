@@ -44,7 +44,7 @@ void CodeGenerator::translate_mov(const fadec::Instruction& inst, utils::riscv_i
 	const auto& src_operand = inst.get_operand(1);
 
 	if (dst_operand.get_type() == OperandType::reg) {
-		const auto dst_register = register_mapping[static_cast<uint16_t>(dst_operand.get_register())];
+		const auto dst_register = map_reg(dst_operand.get_register());
 
 		// if the destination operand is a 8-byte register then we can move the source operand result directly into it
 		if (dst_operand.get_size() == 8) {
@@ -52,10 +52,10 @@ void CodeGenerator::translate_mov(const fadec::Instruction& inst, utils::riscv_i
 			return;
 		}
 
-		/*
-		 * if the destination operand is a 4-byte register then we can move the source operand result into it
-		 * and clear the upper 32 bits (saves 1 instruction)
-		 */
+			/*
+			 * if the destination operand is a 4-byte register then we can move the source operand result into it
+			 * and clear the upper 32 bits (saves 1 instruction)
+			 */
 		else if (dst_operand.get_size() == 4) {
 			translate_operand(inst, 1, dst_register, riscv, count);
 			riscv[count++] = encoding::SLLI(dst_register, dst_register, 32);
@@ -67,7 +67,7 @@ void CodeGenerator::translate_mov(const fadec::Instruction& inst, utils::riscv_i
 	// extract the source-operand
 	RiscVRegister source_operand = temp0_register;
 	if (src_operand.get_type() == OperandType::reg && src_operand.get_register_type() != RegisterType::gph) {
-		source_operand = register_mapping[static_cast<uint16_t>(src_operand.get_register())];
+		source_operand = map_reg(src_operand.get_register());
 	} else
 		translate_operand(inst, 1, source_operand, riscv, count);
 
@@ -88,4 +88,117 @@ void CodeGenerator::translate_jmp(const Instruction& inst, riscv_instruction_t* 
 void CodeGenerator::translate_ret(const Instruction& inst, riscv_instruction_t* riscv, size_t& count) {
 	load_64bit_immediate(reinterpret_cast<uint64_t>(Dispatcher::guest_exit), temp0_register, riscv, count, false);
 	riscv[count++] = JALR(RiscVRegister::zero, temp0_register, 0);
+}
+
+void CodeGenerator::translate_syscall(utils::riscv_instruction_t* riscv, size_t& count) {
+	riscv[count++] = JALR(RiscVRegister::ra, syscall_address, 0);
+}
+
+void CodeGenerator::translate_push(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
+	const auto& operand = inst.get_operand(0);
+	constexpr auto rsp_reg = map_reg(Register::rsp);
+
+	// update the stack-pointer
+	riscv[count++] = encoding::ADDI(rsp_reg, rsp_reg, -operand.get_size());
+
+	// extract the value
+	RiscVRegister value_register = temp0_register;
+	if (operand.get_type() == OperandType::reg)
+		value_register = map_reg(operand.get_register());
+	else
+		translate_operand(inst, 0, value_register, riscv, count);
+
+	// write the value to memory
+	switch (operand.get_size()) {
+		case 8:
+			riscv[count++] = encoding::SD(rsp_reg, value_register, 0);
+			break;
+		case 4:
+			riscv[count++] = encoding::SW(rsp_reg, value_register, 0);
+			break;
+		case 2:
+			riscv[count++] = encoding::SH(rsp_reg, value_register, 0);
+			break;
+	}
+}
+
+void CodeGenerator::translate_pushf(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
+	// update the stack-pointer
+	constexpr auto rsp_reg = map_reg(Register::rsp);
+	riscv[count++] = encoding::ADDI(rsp_reg, rsp_reg, -inst.get_operand_size());
+
+	// write the value to memory
+	switch (inst.get_operand_size()) {
+		case 8:
+			riscv[count++] = encoding::SD(rsp_reg, flag_register, 0);
+			break;
+		case 4:
+			riscv[count++] = encoding::SW(rsp_reg, flag_register, 0);
+			break;
+		case 2:
+			riscv[count++] = encoding::SH(rsp_reg, flag_register, 0);
+			break;
+	}
+}
+
+void CodeGenerator::translate_pop(const fadec::Instruction& inst, utils::riscv_instruction_t*  riscv, size_t& count) {
+	constexpr auto rsp_reg = map_reg(Register::rsp);
+	const auto operand_size = inst.get_operand(0).get_size();
+
+	// if the destination operand is a register then we can optimize it
+	if (inst.get_operand(0).get_type() == OperandType::reg) {
+		const auto dest_reg = map_reg(inst.get_operand(0).get_register());
+		switch (operand_size) {
+			case 8:
+				riscv[count++] = encoding::LD(dest_reg, rsp_reg, 0);
+				break;
+			case 4:
+				riscv[count++] = encoding::LWU(temp0_register, rsp_reg, 0);
+				move_to_register(dest_reg, temp0_register, RegisterAccess::DWORD, riscv, count, true);
+				break;
+			case 2:
+				riscv[count++] = encoding::LHU(temp0_register, rsp_reg, 0);
+				move_to_register(dest_reg, temp0_register, RegisterAccess::WORD, riscv, count, true);
+				break;
+		}
+	} else if (inst.get_operand(0).get_type() == OperandType::mem) {
+		translate_memory(inst, 0, temp0_register, riscv, count);
+		switch (operand_size) {
+			case 8:
+				riscv[count++] = encoding::LD(temp1_register, rsp_reg, 0);
+				riscv[count++] = encoding::SD(temp0_register, temp1_register, 0);
+				break;
+			case 4:
+				riscv[count++] = encoding::LW(temp1_register, rsp_reg, 0);
+				riscv[count++] = encoding::SW(temp0_register, temp1_register, 0);
+				break;
+			case 2:
+				riscv[count++] = encoding::LH(temp1_register, rsp_reg, 0);
+				riscv[count++] = encoding::SH(temp0_register, temp1_register, 0);
+				break;
+		}
+	}
+
+	// update the stack pointer
+	riscv[count++] = encoding::ADDI(rsp_reg, rsp_reg, operand_size);
+}
+
+void CodeGenerator::translate_popf(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
+	constexpr auto rsp_reg = map_reg(Register::rsp);
+
+	// load the top of the stack into the flags register
+	switch (inst.get_operand_size()) {
+		case 8:
+			riscv[count++] = encoding::LD(flag_register, rsp_reg, 0);
+			break;
+		case 4:
+			riscv[count++] = encoding::LW(flag_register, rsp_reg, 0);
+			break;
+		case 2:
+			riscv[count++] = encoding::LH(flag_register, rsp_reg, 0);
+			break;
+	}
+
+	// update the stack pointer
+	riscv[count++] = encoding::ADDI(rsp_reg, rsp_reg, inst.get_operand_size());
 }

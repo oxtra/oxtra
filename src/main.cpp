@@ -24,7 +24,6 @@ int main(int argc, char** argv) {
 	//startup the translation and execution of the source-code
 	const auto return_value = dispatcher.run();
 	spdlog::info("Returned: 0x{0:0x}", return_value);
-	spdlog::info("Returned adjusted: 0x{0:0x}", return_value - elf.get_address_delta());
 
 	return return_value;
 }
