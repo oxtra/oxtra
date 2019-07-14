@@ -14,10 +14,9 @@ project(oxtra)
 
 if (CMAKE_COMPILER_IS_GNUCC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wl,-Ttext-segment=0x7F000000")
-endif ()
-if (MSVC)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
-endif ()
+else()
+	message(FATAL_ERROR "Only GNUCC is supported.")
+endif()
 
 set(CMAKE_EXE_LINKER_FLAGS "-static")
 set(CMAKE_C_STANDARD 99)
