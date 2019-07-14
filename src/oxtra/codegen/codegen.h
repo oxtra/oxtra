@@ -116,20 +116,11 @@ namespace codegen {
 		static void translate_popf(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
-		 * Translates a x86 instruction into multiple risc-v instructions.
-		 * @param inst The x86 instruction object.
-		 * @param riscv An array of riscv instructions.
-		 * @param count Reference to the number of instructions that were written to the array.
-		 * @return Returns whether the this instruction ends the basic block.
-		 */
-		static bool translate_instruction(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
-
-		/**
 		 * Extracts all of the grouping information out of the instruction.
 		 * @param type The type of instructions
 		 * @return the group-flags of the instruction
 		 */
-		static size_t group_instruction(const fadec::InstructionType type);
+		static size_t group_instruction(fadec::InstructionType type);
 
 		/**
 		 * Translates a single x86 instruction into an array of riscv-instructions.

@@ -105,7 +105,7 @@ void CodeGenerator::update_basic_block(utils::host_addr_t addr, utils::host_addr
 	riscv[count++] = encoding::JALR(RiscVRegister::zero, address_destination, 0);
 }
 
-size_t CodeGenerator::group_instruction(const fadec::InstructionType type) {
+size_t CodeGenerator::group_instruction(fadec::InstructionType type) {
 	switch (type) {
 		case InstructionType::MOV_IMM:
 		case InstructionType::MOVABS_IMM:
