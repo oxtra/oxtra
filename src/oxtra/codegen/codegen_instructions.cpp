@@ -190,3 +190,34 @@ void CodeGenerator::translate_popf(const fadec::Instruction& inst, utils::riscv_
 	// update the stack pointer
 	riscv[count++] = encoding::ADDI(rsp_reg, rsp_reg, inst.get_operand_size());
 }
+
+void CodeGenerator::translate_ret(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
+	constexpr auto rsp_reg = map_reg(Register::rsp);
+
+	// pop the immediate from the stack
+	if (inst.get_immediate()) {
+		load_unsigned_immediate(inst.get_immediate(), RiscVRegister::t0, riscv, count);
+		riscv[count++] = encoding::ADD(rsp_reg, rsp_reg, RiscVRegister::t0);
+	}
+
+	// pop the ip from the stack and attach the rerouting
+	riscv[count++] = encoding::LD(address_destination, rsp_reg, 0);
+	riscv[count++] = encoding::ADDI(rsp_reg, rsp_reg, 8);
+	riscv[count++] = JALR(RiscVRegister::ra, reroute_dynamic_address, 0);
+}
+
+void CodeGenerator::translate_call(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
+	// add the instructions for pushing the ip
+	load_unsigned_immediate(inst.get_address() + inst.get_size(), RiscVRegister::t0, riscv, count);
+	riscv[count++] = encoding::ADDI(map_reg(Register::rsp), map_reg(Register::rsp), -8);
+	riscv[count++] = encoding::SD(map_reg(Register::rsp), RiscVRegister::t0, 0);
+
+	// add the instructions for the rerouting
+	if (inst.get_operand(0).get_type() == OperandType::imm) {
+		load_64bit_immediate(inst.get_immediate(), address_destination, riscv, count, false);
+		riscv[count++] = JALR(RiscVRegister::ra, reroute_static_address, 0);
+	} else {
+		translate_operand(inst, 0, address_destination, RiscVRegister::t0, RiscVRegister::t1, riscv, count);
+		riscv[count++] = JALR(RiscVRegister::ra, reroute_dynamic_address, 0);
+	}
+}
