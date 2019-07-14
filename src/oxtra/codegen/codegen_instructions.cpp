@@ -70,13 +70,11 @@ void CodeGenerator::translate_jmp(const Instruction& inst, riscv_instruction_t* 
 	}
 }
 
-void CodeGenerator::translate_ret(const Instruction& inst, riscv_instruction_t* riscv, size_t& count) {
-	load_64bit_immediate(reinterpret_cast<uint64_t>(Dispatcher::guest_exit), temp0_register, riscv, count, false);
-	riscv[count++] = JALR(RiscVRegister::zero, temp0_register, 0);
-}
-
-void CodeGenerator::translate_syscall(utils::riscv_instruction_t* riscv, size_t& count) {
+void CodeGenerator::translate_syscall(const Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
+	// add the syscall-jump and add the padding for a static reroute
 	riscv[count++] = JALR(RiscVRegister::ra, syscall_address, 0);
+	load_64bit_immediate(inst.get_address() + inst.get_size(), address_destination, riscv, count, false);
+	riscv[count++] = JALR(RiscVRegister::ra, reroute_static_address, 0);
 }
 
 void CodeGenerator::translate_push(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
