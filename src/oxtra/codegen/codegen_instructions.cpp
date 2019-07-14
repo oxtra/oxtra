@@ -9,8 +9,13 @@ using namespace fadec;
 using namespace encoding;
 using namespace dispatcher;
 
-void CodeGenerator::translate_mov_ext(const ContextInstruction& inst, encoding::RiscVRegister dest, encoding::RiscVRegister src,
+void CodeGenerator::translate_mov_ext(const ContextInstruction& inst, RiscVRegister dest, RiscVRegister src,
+									  RiscVRegister temp_a, RiscVRegister temp_b, RiscVRegister temp_c,
 									  utils::riscv_instruction_t* riscv, size_t& count) {
+	unused_parameter(temp_a);
+	unused_parameter(temp_b);
+	unused_parameter(temp_c);
+
 	/* Thus they will have to be sign-extended/zero-extended.
 	 * Otherwise the optimization will fail (load full 8-byte register, and store the interesting parts).
 	 * [It will fail, because the interesting, stored parts, are larger than they should be]
@@ -33,7 +38,7 @@ void CodeGenerator::translate_mov(const ContextInstruction& inst, utils::riscv_i
 
 		// if the destination operand is a 8-byte register then we can move the source operand result directly into it
 		if (dst_operand.get_size() == 8) {
-			translate_operand(inst, 1, dst_register, riscv, count);
+			translate_operand(inst, 1, dst_register, RiscVRegister::t0, RiscVRegister::t1, riscv, count);
 			return;
 		}
 
@@ -42,7 +47,7 @@ void CodeGenerator::translate_mov(const ContextInstruction& inst, utils::riscv_i
 			 * and clear the upper 32 bits (saves 1 instruction)
 			 */
 		else if (dst_operand.get_size() == 4) {
-			translate_operand(inst, 1, dst_register, riscv, count);
+			translate_operand(inst, 1, dst_register, RiscVRegister::t0, RiscVRegister::t1, riscv, count);
 			riscv[count++] = encoding::SLLI(dst_register, dst_register, 32);
 			riscv[count++] = encoding::SRLI(dst_register, dst_register, 32);
 			return;
@@ -50,14 +55,14 @@ void CodeGenerator::translate_mov(const ContextInstruction& inst, utils::riscv_i
 	}
 
 	// extract the source-operand
-	RiscVRegister source_operand = temp0_register;
+	RiscVRegister source_operand = RiscVRegister::t0;
 	if (src_operand.get_type() == OperandType::reg && src_operand.get_register_type() != RegisterType::gph) {
 		source_operand = map_reg(src_operand.get_register());
 	} else
-		translate_operand(inst, 1, source_operand, riscv, count);
+		translate_operand(inst, 1, source_operand, RiscVRegister::t1, RiscVRegister::t2, riscv, count);
 
 	// write the value to the destination-register
-	translate_destination(inst, source_operand, RiscVRegister::zero, riscv, count);
+	translate_destination(inst, source_operand, RiscVRegister::zero, RiscVRegister::t1, RiscVRegister::t2, riscv, count);
 }
 
 void CodeGenerator::translate_jmp(const ContextInstruction& inst, riscv_instruction_t* riscv, size_t& count) {
@@ -65,18 +70,16 @@ void CodeGenerator::translate_jmp(const ContextInstruction& inst, riscv_instruct
 		load_64bit_immediate(inst.get_immediate(), address_destination, riscv, count, false);
 		riscv[count++] = JALR(RiscVRegister::ra, reroute_static_address, 0);
 	} else {
-		translate_operand(inst, 0, address_destination, riscv, count);
+		translate_operand(inst, 0, address_destination, RiscVRegister::t0, RiscVRegister::t1, riscv, count);
 		riscv[count++] = JALR(RiscVRegister::ra, reroute_dynamic_address, 0);
 	}
 }
 
-void CodeGenerator::translate_ret(const ContextInstruction& inst, riscv_instruction_t* riscv, size_t& count) {
-	load_64bit_immediate(reinterpret_cast<uint64_t>(Dispatcher::guest_exit), temp0_register, riscv, count, false);
-	riscv[count++] = JALR(RiscVRegister::zero, temp0_register, 0);
-}
-
-void CodeGenerator::translate_syscall(utils::riscv_instruction_t* riscv, size_t& count) {
+void CodeGenerator::translate_syscall(const Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
+	// add the syscall-jump and add the padding for a static reroute
 	riscv[count++] = JALR(RiscVRegister::ra, syscall_address, 0);
+	load_64bit_immediate(inst.get_address() + inst.get_size(), address_destination, riscv, count, false);
+	riscv[count++] = JALR(RiscVRegister::ra, reroute_static_address, 0);
 }
 
 void CodeGenerator::translate_push(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
@@ -87,11 +90,11 @@ void CodeGenerator::translate_push(const fadec::Instruction& inst, utils::riscv_
 	riscv[count++] = encoding::ADDI(rsp_reg, rsp_reg, -operand.get_size());
 
 	// extract the value
-	RiscVRegister value_register = temp0_register;
+	RiscVRegister value_register = RiscVRegister::t0;
 	if (operand.get_type() == OperandType::reg)
 		value_register = map_reg(operand.get_register());
 	else
-		translate_operand(inst, 0, value_register, riscv, count);
+		translate_operand(inst, 0, value_register, RiscVRegister::t1, RiscVRegister::t2, riscv, count);
 
 	// write the value to memory
 	switch (operand.get_size()) {
@@ -126,7 +129,7 @@ void CodeGenerator::translate_pushf(const fadec::Instruction& inst, utils::riscv
 	}
 }
 
-void CodeGenerator::translate_pop(const fadec::Instruction& inst, utils::riscv_instruction_t*  riscv, size_t& count) {
+void CodeGenerator::translate_pop(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
 	constexpr auto rsp_reg = map_reg(Register::rsp);
 	const auto operand_size = inst.get_operand(0).get_size();
 
@@ -138,28 +141,28 @@ void CodeGenerator::translate_pop(const fadec::Instruction& inst, utils::riscv_i
 				riscv[count++] = encoding::LD(dest_reg, rsp_reg, 0);
 				break;
 			case 4:
-				riscv[count++] = encoding::LWU(temp0_register, rsp_reg, 0);
-				move_to_register(dest_reg, temp0_register, RegisterAccess::DWORD, riscv, count, true);
+				riscv[count++] = encoding::LWU(RiscVRegister::t0, rsp_reg, 0);
+				move_to_register(dest_reg, RiscVRegister::t0, RegisterAccess::DWORD, RiscVRegister::t1, riscv, count, true);
 				break;
 			case 2:
-				riscv[count++] = encoding::LHU(temp0_register, rsp_reg, 0);
-				move_to_register(dest_reg, temp0_register, RegisterAccess::WORD, riscv, count, true);
+				riscv[count++] = encoding::LHU(RiscVRegister::t0, rsp_reg, 0);
+				move_to_register(dest_reg, RiscVRegister::t0, RegisterAccess::WORD, RiscVRegister::t1, riscv, count, true);
 				break;
 		}
 	} else if (inst.get_operand(0).get_type() == OperandType::mem) {
-		translate_memory(inst, 0, temp0_register, riscv, count);
+		translate_memory(inst, 0, RiscVRegister::t0, RiscVRegister::t1, riscv, count);
 		switch (operand_size) {
 			case 8:
-				riscv[count++] = encoding::LD(temp1_register, rsp_reg, 0);
-				riscv[count++] = encoding::SD(temp0_register, temp1_register, 0);
+				riscv[count++] = encoding::LD(RiscVRegister::t1, rsp_reg, 0);
+				riscv[count++] = encoding::SD(RiscVRegister::t0, RiscVRegister::t1, 0);
 				break;
 			case 4:
-				riscv[count++] = encoding::LW(temp1_register, rsp_reg, 0);
-				riscv[count++] = encoding::SW(temp0_register, temp1_register, 0);
+				riscv[count++] = encoding::LW(RiscVRegister::t1, rsp_reg, 0);
+				riscv[count++] = encoding::SW(RiscVRegister::t0, RiscVRegister::t1, 0);
 				break;
 			case 2:
-				riscv[count++] = encoding::LH(temp1_register, rsp_reg, 0);
-				riscv[count++] = encoding::SH(temp0_register, temp1_register, 0);
+				riscv[count++] = encoding::LH(RiscVRegister::t1, rsp_reg, 0);
+				riscv[count++] = encoding::SH(RiscVRegister::t0, RiscVRegister::t1, 0);
 				break;
 		}
 	}

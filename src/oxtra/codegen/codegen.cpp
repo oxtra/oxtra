@@ -115,18 +115,19 @@ size_t CodeGenerator::group_instruction(const fadec::InstructionType type) {
 		case InstructionType::NOP:
 		case InstructionType::PUSH:
 		case InstructionType::POP:
-		case InstructionType::SYSCALL:
 			return Group::none;
+
 		case InstructionType::PUSHF:
 			return Group::require_all;
+
 		case InstructionType::POPF:
 			return Group::update_all;
+
 		case InstructionType::JMP:
 		case InstructionType::JMP_IND:
-		case InstructionType::RET:
-		case InstructionType::RET_IMM:
-		case InstructionType::CALL:
+		case InstructionType::SYSCALL:
 			return Group::end_of_block;
+
 		default:
 			return Group::error;
 	}
@@ -135,8 +136,12 @@ size_t CodeGenerator::group_instruction(const fadec::InstructionType type) {
 void CodeGenerator::translate_instruction(ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
 	switch (inst.get_type()) {
 		case InstructionType::HLT:
-			update_zero_flag(map_reg(Register::rax), 1, riscv, count);
-			update_sign_flag(map_reg(Register::rax), 1, riscv, count);
+			//update_zero_flag(map_reg(Register::rax), 1, RiscVRegister::t0, riscv, count);
+			//update_sign_flag(map_reg(Register::rax), 1, RiscVRegister::t0, riscv, count);
+			update_parity_flag(map_reg(Register::rax), 1, RiscVRegister::t0, RiscVRegister::t1, riscv, count);
+			update_parity_flag(map_reg(Register::rax), 2, RiscVRegister::t0, RiscVRegister::t1, riscv, count);
+			update_parity_flag(map_reg(Register::rax), 4, RiscVRegister::t0, RiscVRegister::t1, riscv, count);
+			update_parity_flag(map_reg(Register::rax), 8, RiscVRegister::t0, RiscVRegister::t1, riscv, count);
 			break;
 
 		case InstructionType::MOV_IMM:
@@ -156,6 +161,7 @@ void CodeGenerator::translate_instruction(ContextInstruction& inst, utils::riscv
 		case InstructionType::PUSH:
 			translate_push(inst, riscv, count);
 			break;
+
 		case InstructionType::PUSHF:
 			translate_pushf(inst, riscv, count);
 			break;
@@ -169,17 +175,14 @@ void CodeGenerator::translate_instruction(ContextInstruction& inst, utils::riscv
 			break;
 
 		case InstructionType::SYSCALL:
-			translate_syscall(riscv, count);
+			translate_syscall(inst, riscv, count);
 			break;
 
 		case InstructionType::JMP:
 		case InstructionType::JMP_IND:
 			translate_jmp(inst, riscv, count);
 			break;
-		case InstructionType::RET:
-		case InstructionType::RET_IMM:
-			translate_ret(inst, riscv, count);
-			break;
+
 		default:
 			break;
 	}

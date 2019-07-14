@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
 
 	//create the elf-object
 	//const auto elf = elf::Elf(arguments.get_guest_path());
-	const auto elf = elf::Elf((uint8_t*)"\x48\xC7\xC0\x80\x12\x34\x56\xF4\x66\x9C\x66\x58\xC3", 13);
+	const auto elf = elf::Elf((uint8_t*)"\x48\xC7\xC0\x80\x12\x34\x56\xF4\x66\x9C\x66\x58\x0f\x05", 14);
 	SPDLOG_INFO("Finished reading and parsing elf file.");
 
 	//create the dispatcher

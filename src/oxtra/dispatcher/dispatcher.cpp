@@ -12,9 +12,6 @@ Dispatcher::Dispatcher(const elf::Elf& elf, const arguments::Arguments& args)
 }
 
 long Dispatcher::run() {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
-
 	//TODO: add argument for stack-size (default: 0x3200000)
 	//TODO: initialize registers (ABI-conform)
 	//TODO: initialize stack (ABI-Conform)
@@ -40,8 +37,6 @@ long Dispatcher::run() {
 	if (error_string != nullptr)
 		throw std::runtime_error(error_string);
 	return exit_code;
-
-#pragma GCC diagnostic pop
 }
 
 long Dispatcher::virtualize_syscall() {
