@@ -1,5 +1,4 @@
 /* define FAKE_GUEST to use a default throw and not Dispatcher::fault_exit */
-#define FAKE_GUEST
 
 #include "../../../catch2/catch.hpp"
 #include "oxtra/codegen/codestore/codestore.h"
@@ -119,8 +118,6 @@ TEST_CASE("codestore test instruction-adding", "[codestore]") {
 		fadec::Instruction instruction = fadec::Instruction();
 		fadec::decode(instruction_buffer, instruction_buffer_size, fadec::DecodeMode::decode_64,
 					  temp_elf.get_base_vaddr() + offset - 1, instruction);
-		REQUIRE_THROWS(store.add_instruction(entry, instruction, const_cast<utils::riscv_instruction_t*>(riscv_buffer),
-											 riscv_buffer_size));
 	}
 	SECTION("add multiple blocks and resolve blocks") {
 		/* as long as the default-static_list size recieved form arguments is small enough,
@@ -158,11 +155,6 @@ TEST_CASE("codestore test instruction-adding", "[codestore]") {
 						store.find(temp_address));
 				temp_address += instruction_offsets[index];
 			}
-
-			// test resolving miss-aligned addresses
-			REQUIRE_THROWS(store.find(x86_block_addresses[i] + temp_elf.get_base_vaddr() + 1));
-			size_t offset = instruction_offsets[0] + instruction_offsets[1] + instruction_offsets[2];
-			REQUIRE_THROWS(store.find(x86_block_addresses[i] + temp_elf.get_base_vaddr() + offset + 1));
 		}
 
 		/* test to resolve to every next page (in step-sizes of 0x83 bytes

@@ -7,12 +7,6 @@
 #include "oxtra/elf/elf.h"
 #include "context.h"
 
-#ifdef FAKE_GUEST
-#define throw_exception(str, ec) throw std::runtime_error(str)
-#else
-#define throw_exception(str, ec) dispatcher::Dispatcher::fault_exit(str, ec)
-#endif
-
 namespace dispatcher {
 	static_assert(codegen::CodeGenerator::address_destination == encoding::RiscVRegister::t3,
 				  "dispatcher::reroute_static, reroute_dynamic requires t3");
@@ -55,7 +49,7 @@ namespace dispatcher {
 		 * @param fault_string the fault-string to be thrown
 		 * @param exit_code the exit-code to be returned
 		 */
-		static void fault_exit(const char* fault_string, long exit_code);
+		static void fault_exit(const char* fault_string, long exit_code = -1);
 
 	private:
 		/**

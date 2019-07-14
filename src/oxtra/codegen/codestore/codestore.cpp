@@ -37,7 +37,7 @@ host_addr_t CodeStore::find(guest_addr_t x86_code) const {
 			 * That means that the x86_code points inside of an instruction. We could just start translating the block from that point onwards,
 			 * but usually only obfuscated programs require this.
 			 */
-			throw_exception("Jump inside instruction.", -1);
+			dispatcher::Dispatcher::fault_exit("Jump inside instruction.");
 		}
 	}
 	return 0;
@@ -113,7 +113,7 @@ void CodeStore::insert_block(codegen::codestore::BlockEntry& block, utils::guest
 
 	else if (block.x86_end != x86_address) {
 		// maybe do this for the debug build only?
-		throw_exception("Tried to add a non-consecutive instruction to a block.", -1);
+		dispatcher::Dispatcher::fault_exit("Tried to add a non-consecutive instruction to a block.");
 	}
 
 }

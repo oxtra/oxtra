@@ -17,7 +17,7 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 	 * Code-block-size will continue the check for the upcoming instructions.
 	 * This check will also validate, that the address won't corrupt the page-array. */
 	if ((_elf.get_page_flags(addr) & (elf::PAGE_EXECUTE | elf::PAGE_READ)) != (elf::PAGE_EXECUTE | elf::PAGE_READ))
-		throw_exception("virtual segmentation fault", -1);
+		dispatcher::Dispatcher::fault_exit("virtual segmentation fault");
 	if (const auto riscv_code = _codestore.find(addr))
 		return riscv_code;
 
@@ -27,7 +27,7 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 		// decode the fadec-instruction
 		ContextInstruction entry{};
 		if (fadec::decode(reinterpret_cast<uint8_t*>(addr), _elf.get_size(addr), DecodeMode::decode_64, addr, entry) <= 0) {
-			Dispatcher::fault_exit("Failed to decode the instruction", -1);
+			dispatcher::Dispatcher::fault_exit("Failed to decode the instruction");
 		}
 
 		// query all of the information about the instruction
@@ -37,7 +37,7 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 			fadec::format(entry, formatted_string, sizeof(formatted_string));
 			char exception_buffer[512];
 			snprintf(exception_buffer, sizeof(exception_buffer), "Unsupported instruction used. %s", formatted_string);
-			throw_exception(exception_buffer, -1);
+			dispatcher::Dispatcher::fault_exit(exception_buffer);
 		}
 
 		// update the address
@@ -99,7 +99,7 @@ void CodeGenerator::update_basic_block(utils::host_addr_t addr, utils::host_addr
 	load_64bit_immediate(absolute_address, address_destination, riscv, count, false);
 #ifdef DEBUG
 	if (count != 8)
-		throw_exception("load_64bit_immediate did not generate 8 instructions", -1);
+		dispatcher::Dispatcher::fault_exit("load_64bit_immediate did not generate 8 instructions", -1);
 #endif
 	riscv[count++] = encoding::JALR(RiscVRegister::zero, address_destination, 0);
 }
