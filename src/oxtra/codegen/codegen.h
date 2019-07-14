@@ -105,10 +105,7 @@ namespace codegen {
 
 		static void translate_jmp(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
-		// TODO: implement this properly
-		static void translate_ret(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
-
-		static void translate_syscall(utils::riscv_instruction_t* riscv, size_t& count);
+		static void translate_syscall(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
 		static void translate_push(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
