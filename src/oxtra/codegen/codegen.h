@@ -37,8 +37,13 @@ namespace codegen {
 	public:
 		// If these registers are changed, the documentation has to be updated
 		constexpr static encoding::RiscVRegister
+		/* functions, which use the temporary register t6 are
+		 * obligated to only use it within the function
+		 * and not call any other functions */
 				memory_temp_register = encoding::RiscVRegister::t6,
 				move_to_temp_register = encoding::RiscVRegister::t6,
+				flags_temp_register = encoding::RiscVRegister::t6,
+
 				dest_temp_register = encoding::RiscVRegister::t5,
 				source_temp_register = encoding::RiscVRegister::t4,
 				address_temp_register = encoding::RiscVRegister::t3,
@@ -118,7 +123,7 @@ namespace codegen {
 
 		static void translate_pushf(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
-		static void translate_pop(const fadec::Instruction& inst, utils::riscv_instruction_t*  riscv, size_t& count);
+		static void translate_pop(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
 		static void translate_popf(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
@@ -158,7 +163,7 @@ namespace codegen {
 		 * @param callback Callback, which will apply the instruction.
 		 */
 		static void apply_operation(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count,
-							 OperationCallback callback);
+									OperationCallback callback);
 
 		/**
 		 * Translates a single operand (either register, or memory or immediate value)
@@ -283,6 +288,29 @@ namespace codegen {
 		static void
 		load_unsigned_immediate(uintptr_t imm, encoding::RiscVRegister dest,
 								utils::riscv_instruction_t* riscv, size_t& count);
+
+		/**
+		 * Update the zero-flag from the result-register. The register will be unchanged.
+		 * @param reg register which contains the result-value
+		 * @param reg_size operand-size of the register (8,4,2,1)
+		 * @param riscv The pointer to the generated riscv instructions.
+		 * @param count The current length of the riscv instructions (i.e. the index of the next free position).
+		 */
+		static void
+		update_zero_flag(encoding::RiscVRegister reg, uint8_t reg_size, utils::riscv_instruction_t* riscv, size_t& count);
+
+		/**
+		 * Update the sign-flag from the result-register. The register will be unchanged.
+		 * @param reg register which contains the result-value
+		 * @param reg_size operand-size of the register (8,4,2,1)
+		 * @param riscv The pointer to the generated riscv instructions.
+		 * @param count The current length of the riscv instructions (i.e. the index of the next free position).
+		 */
+		static void
+		update_sign_flag(encoding::RiscVRegister reg, uint8_t reg_size, utils::riscv_instruction_t* riscv, size_t& count);
+
+		static void update_carry_flag(encoding::RiscVRegister src1, encoding::RiscVRegister src2, uint8_t reg_size,
+									  utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
 		 * Returns the riscv-register, which maps to the x86-register.

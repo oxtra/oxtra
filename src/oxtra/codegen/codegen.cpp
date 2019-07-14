@@ -106,6 +106,7 @@ void CodeGenerator::update_basic_block(utils::host_addr_t addr, utils::host_addr
 
 size_t CodeGenerator::group_instruction(const fadec::InstructionType type) {
 	switch (type) {
+		case InstructionType::HLT:
 		case InstructionType::MOV_IMM:
 		case InstructionType::MOVABS_IMM:
 		case InstructionType::MOV:
@@ -133,6 +134,11 @@ size_t CodeGenerator::group_instruction(const fadec::InstructionType type) {
 
 void CodeGenerator::translate_instruction(ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
 	switch (inst.get_type()) {
+		case InstructionType::HLT:
+			update_zero_flag(map_reg(Register::rax), 1, riscv, count);
+			update_sign_flag(map_reg(Register::rax), 1, riscv, count);
+			break;
+
 		case InstructionType::MOV_IMM:
 		case InstructionType::MOVABS_IMM:
 		case InstructionType::MOV:

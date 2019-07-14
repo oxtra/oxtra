@@ -291,3 +291,55 @@ void CodeGenerator::load_unsigned_immediate(uintptr_t imm, RiscVRegister dest, r
 		load_64bit_immediate(static_cast<uint64_t>(imm), dest, riscv, count, true);
 	}
 }
+
+void CodeGenerator::update_zero_flag(encoding::RiscVRegister reg, uint8_t reg_size, utils::riscv_instruction_t* riscv,
+									 size_t& count) {
+	// shift the upper bits, in order to clear them
+	if (reg_size != 8) {
+		riscv[count++] = encoding::SLLI(flags_temp_register, reg, 64 - 8 * reg_size);
+		reg = flags_temp_register;
+		riscv[count++] = encoding::SRLI(reg, reg, 64 - 8 * reg_size);
+	}
+
+	/* The zero flag is fairly simple to test. 
+	 * We just check if the value in the register is zero, 
+	 * and clear or set the flag-bit accordingly. */
+	riscv[count++] = encoding::BNQZ(reg, 12u);
+	riscv[count++] = encoding::ORI(flag_register, flag_register, 0x40);
+	riscv[count++] = encoding::J(8u);
+	riscv[count++] = encoding::ANDI(flag_register, flag_register, -0x41);
+}
+
+void CodeGenerator::update_sign_flag(encoding::RiscVRegister reg, uint8_t reg_size, utils::riscv_instruction_t* riscv,
+									 size_t& count) {
+	// extract the lowest bit
+	riscv[count++] = encoding::SRLI(flags_temp_register, reg, reg_size * 8 - 1);
+	riscv[count++] = encoding::ANDI(flags_temp_register, flags_temp_register, 0x01);
+
+	/* In order to test for the sign-bit,
+	 * we just check if the lowest bit is set,
+	 * after the we have isolated it. */
+	riscv[count++] = encoding::BEQZ(flags_temp_register, 12u);
+	riscv[count++] = encoding::ORI(flag_register, flag_register, 0x80);
+	riscv[count++] = encoding::J(8u);
+	riscv[count++] = encoding::ANDI(flag_register, flag_register, -0x81);
+}
+
+void CodeGenerator::update_carry_flag(encoding::RiscVRegister src1, encoding::RiscVRegister src2, uint8_t reg_size,
+									  utils::riscv_instruction_t* riscv, size_t& count) {
+	// add the two sources together into the temp register
+	riscv[count++] = encoding::ADD(flags_temp_register, src1, src2);
+
+	/* If the operand-size is 8 bytes,
+	 * we check if either src1 or src2 is larger than the result. */
+	if (reg_size == 8) {
+		riscv[count++] = encoding::BGEU(flags_temp_register, src1, 16);
+		riscv[count++] = encoding::BGEU(flags_temp_register, src2, 12);
+		riscv[count++] = encoding::ORI(flag_register, flag_register, 0x01);
+		riscv[count++] = encoding::J(8);
+		riscv[count++] = encoding::ANDI(flag_register, flag_register, -0x02);
+	}
+	else {
+
+	}
+}
