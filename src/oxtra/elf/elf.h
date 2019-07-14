@@ -24,7 +24,8 @@ namespace elf {
 			format_issue,
 			unsupported_binary,
 			unsupported_type,
-			not_static
+			not_static,
+			base_address_taken
 		};
 
 	private:
@@ -45,24 +46,62 @@ namespace elf {
 		const char* what() const noexcept;
 	};
 
+	class ElfImage {
+	private:
+		void* _base = nullptr;
+		size_t _size = 0;
+
+	public:
+		ElfImage() = default;
+
+		/**
+		 * Creates an elf image.
+		 * @param base_address The base address.
+		 * @param size The size.
+		 */
+		explicit ElfImage(uintptr_t base_address, size_t size);
+
+		~ElfImage();
+
+		ElfImage(const ElfImage&) = delete;
+
+		ElfImage(ElfImage&&) = default;
+
+		ElfImage& operator=(const ElfImage&) = delete;
+
+		ElfImage& operator=(ElfImage&&);
+
+	public:
+		/**
+		 * Get the base address of the mapped image.
+		 */
+		void* get_base() const {
+			return _base;
+		}
+
+		/**
+		 * Get the size of the mapped image.
+		 */
+		size_t get_size() const {
+			return _size;
+		}
+	};
+
 	class Elf {
 	private:
-		std::unique_ptr<uint8_t[]> _image_ptr;
-		uintptr_t _actual_base;
-		uintptr_t _base_address;
-		size_t _address_range;
+		ElfImage _image;
 		std::unique_ptr<uint8_t[]> _page_flags;
 		uintptr_t _entry_point;
 
 	private:
-		void read_file(const char* path);
+		size_t read_file(const char* path);
 
 		template<typename tp>
 		tp resolve_offset(uintptr_t offset);
 
 		void validate_elf();
 
-		void unpack_file();
+		void unpack_file(size_t file_size);
 
 	public:
 
@@ -71,21 +110,20 @@ namespace elf {
  		* @param path path to the elf-binary-file
  		* @return returns false if already called before. Otherwise parses and returns true
  		*/
-		Elf(const char* path);
-		
+		explicit Elf(const char* path);
+
 		/**
 		 * Creates a dummy-elf-object from a stream of bytes.
 		 * By Default it will mark the first exe_pages-number of pages es read/executable.
 		 * The rest of the pages will be flagged as read/writable.
 		 * @param ptr stream of bytes
 		 * @param size number of bytes in the stream
+		 * @param base_address The base used to map the image to
 		 * @param exe_pages number of initial pages flagged as executable
 		 */
-		Elf(const uint8_t* ptr, size_t size, size_t exec_pages = 1);
+		explicit Elf(const uint8_t* ptr, size_t size, uintptr_t base_address = 0x00400000, size_t exec_pages = 1);
 
-		Elf() = delete;
-
-		Elf(Elf&) = delete;
+		Elf(const Elf&) = delete;
 
 		Elf(Elf&&) = delete;
 
@@ -95,7 +133,7 @@ namespace elf {
  		* @return virtual base-address
  		*/
 		uintptr_t get_base_vaddr() const {
-			return _base_address;
+			return reinterpret_cast<uintptr_t>(_image.get_base());
 		}
 
 		/**
@@ -103,7 +141,7 @@ namespace elf {
  		* @return virtual address-range
 	 	*/
 		uintptr_t get_image_size() const {
-			return _address_range;
+			return _image.get_size();
 		}
 
 		/**
@@ -112,24 +150,6 @@ namespace elf {
  		*/
 		uintptr_t get_entry_point() const {
 			return _entry_point;
-		}
-
-		/**
- 		* retrieves the delta between the virtual address and the actual address
- 		* @return _actual_base - _base_address
- 		*/
-		uintptr_t get_address_delta() const {
-			return _actual_base - _base_address;
-		}
-
-		/**
- 		* resolves a virtual address to an actual pointer inside of the binary-image
- 		* (Pages within the virtual address-space of this binary, flagged as unmapped can be accessed but will be set to 0)
- 		* @param vaddr the virtual address
- 		* @return 0 if the virtual address lies outside of the addressable range of the binary, otherwise the pointer
- 		*/
-		void* resolve_vaddr(uintptr_t vaddr) const {
-			return reinterpret_cast<void*>(vaddr - _base_address + _actual_base);
 		}
 
 		/**

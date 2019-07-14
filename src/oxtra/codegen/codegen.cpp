@@ -23,12 +23,12 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 
 	// iterate through the instructions and query all information about the flags
 	std::vector<ContextInstruction> instructions;
-	auto address = reinterpret_cast<const uint8_t*>(_elf.resolve_vaddr(addr));
 	while (true) {
 		// decode the fadec-instruction
 		ContextInstruction entry{};
-		if (fadec::decode(address, _elf.get_size(addr), DecodeMode::decode_64, addr, entry) <= 0)
-			throw_exception("Failed to decode the instruction", -1);
+		if (fadec::decode(reinterpret_cast<uint8_t*>(addr), _elf.get_size(addr), DecodeMode::decode_64, addr, entry) <= 0) {
+			Dispatcher::fault_exit("Failed to decode the instruction", -1);
+		}
 
 		// query all of the information about the instruction
 		entry.update_flags = group_instruction(entry.get_type());
@@ -40,9 +40,8 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 			throw_exception(exception_buffer, -1);
 		}
 
-		// update the addresses
+		// update the address
 		addr += entry.get_size();
-		address += entry.get_size();
 
 		// add the instruction to the array and check if the instruction would end the block
 		instructions.push_back(entry);
@@ -117,6 +116,10 @@ size_t CodeGenerator::group_instruction(const fadec::InstructionType type) {
 		case InstructionType::POP:
 		case InstructionType::SYSCALL:
 			return Group::none;
+		case InstructionType::PUSHF:
+			return Group::require_all;
+		case InstructionType::POPF:
+			return Group::update_all;
 		case InstructionType::JMP:
 		case InstructionType::JMP_IND:
 		case InstructionType::RET:
@@ -142,6 +145,21 @@ void CodeGenerator::translate_instruction(ContextInstruction& inst, utils::riscv
 			break;
 
 		case InstructionType::NOP:
+			break;
+
+		case InstructionType::PUSH:
+			translate_push(inst, riscv, count);
+			break;
+		case InstructionType::PUSHF:
+			translate_pushf(inst, riscv, count);
+			break;
+
+		case InstructionType::POP:
+			translate_pop(inst, riscv, count);
+			break;
+
+		case InstructionType::POPF:
+			translate_popf(inst, riscv, count);
 			break;
 
 		case InstructionType::SYSCALL:

@@ -15,7 +15,7 @@ void CodeGenerator::apply_operation(const ContextInstruction& inst, utils::riscv
 	RiscVRegister source_register = source_temp_register;
 	if (inst.get_operand(1).get_type() == OperandType::reg &&
 		inst.get_operand(1).get_register_type() != RegisterType::gph)
-		source_register = register_mapping[static_cast<uint16_t>(inst.get_operand(1).get_register())];
+		source_register = map_reg(inst.get_operand(1).get_register());
 	else
 		translate_operand(inst, 1, source_register, riscv, count);
 
@@ -23,7 +23,7 @@ void CodeGenerator::apply_operation(const ContextInstruction& inst, utils::riscv
 	RiscVRegister dest_register = dest_temp_register;
 	RiscVRegister address = RiscVRegister::zero;
 	if (inst.get_operand(0).get_type() == OperandType::reg && inst.get_operand(0).get_size() >= 4)
-		dest_register = register_mapping[static_cast<uint16_t>(inst.get_operand(0).get_register())];
+		dest_register = map_reg(inst.get_operand(0).get_register());
 	else
 		address = translate_operand(inst, 0, dest_register, riscv, count);
 
@@ -45,16 +45,14 @@ CodeGenerator::translate_operand(const fadec::Instruction& inst, size_t index, e
 		/* read the value from the register (read the whole register
 		 * (unless HBYTE is required), and just cut the rest when writing the register */
 		if (operand.get_register_type() == RegisterType::gph) {
-			riscv[count++] = encoding::SRLI(reg,
-											register_mapping[static_cast<uint16_t>(operand.get_register()) - 4], 8);
+			riscv[count++] = encoding::SRLI(reg, map_reg_high(operand.get_register()), 8);
 		} else
-			riscv[count++] = encoding::ADD(reg, register_mapping[static_cast<uint16_t>(operand.get_register())],
-										   RiscVRegister::zero);
+			riscv[count++] = encoding::ADD(reg, map_reg(operand.get_register()), RiscVRegister::zero);
 	} else if (operand.get_type() == OperandType::imm)
 		load_unsigned_immediate(inst.get_immediate(), reg, riscv, count);
 	else {
 		// read the value from memory
-		translate_memory(inst, 1, address_temp_register, riscv, count);
+		translate_memory(inst, index, address_temp_register, riscv, count);
 		switch (operand.get_size()) {
 			case 8:
 				riscv[count++] = encoding::LD(reg, address_temp_register, 0);
@@ -80,7 +78,7 @@ void CodeGenerator::translate_destination(const fadec::Instruction& inst, encodi
 
 	// check if the destination is a register
 	if (operand.get_type() == OperandType::reg) {
-		RiscVRegister temp_reg = register_mapping[static_cast<uint16_t>(operand.get_register())];
+		RiscVRegister temp_reg = map_reg(operand.get_register());
 		switch (operand.get_size()) {
 			case 8:
 				if (temp_reg != reg)
@@ -94,10 +92,10 @@ void CodeGenerator::translate_destination(const fadec::Instruction& inst, encodi
 				break;
 			case 1:
 				if (operand.get_register_type() == RegisterType::gph) {
-					move_to_register(register_mapping[static_cast<uint16_t>(operand.get_register()) - 4], reg,
-									 RegisterAccess::HBYTE, riscv, count);
-				} else
+					move_to_register(map_reg_high(operand.get_register()), reg, RegisterAccess::HBYTE, riscv, count);
+				} else {
 					move_to_register(temp_reg, reg, RegisterAccess::LBYTE, riscv, count);
+				}
 				break;
 		}
 		return;
@@ -131,14 +129,16 @@ void CodeGenerator::translate_memory(const Instruction& inst, size_t index, Risc
 	const auto& operand = inst.get_operand(index);
 
 	// add the scale & index
+	RiscVRegister temp_reg = RiscVRegister::zero;
 	if (inst.get_index_register() != fadec::Register::none) {
-		riscv[count++] = encoding::SLLI(reg, register_mapping[static_cast<uint16_t>(inst.get_index_register())], inst.get_index_scale());
-	} else
-		load_unsigned_immediate(0, reg, riscv, count);
+		riscv[count++] = encoding::SLLI(reg, map_reg(inst.get_index_register()), inst.get_index_scale());
+		temp_reg = reg;
+	}
 
 	// add the base-register
 	if (operand.get_register() != fadec::Register::none) {
-		riscv[count++] = encoding::ADD(reg, reg, register_mapping[static_cast<uint16_t>(operand.get_register())]);
+		riscv[count++] = encoding::ADD(reg, temp_reg, map_reg(operand.get_register()));
+		temp_reg = reg;
 	}
 
 	// add the displacement
@@ -146,16 +146,16 @@ void CodeGenerator::translate_memory(const Instruction& inst, size_t index, Risc
 		const auto displacement = inst.get_displacement();
 		// less or equal than 12 bits
 		if (displacement < 0x800) {
-			riscv[count++] = encoding::ADDI(reg, reg, static_cast<uint16_t>(displacement));
+			riscv[count++] = encoding::ADDI(reg, temp_reg, static_cast<uint16_t>(displacement));
 		} else {
 			load_unsigned_immediate(displacement, memory_temp_register, riscv, count);
-			riscv[count++] = encoding::ADD(reg, reg, memory_temp_register);
+			riscv[count++] = encoding::ADD(reg, temp_reg, memory_temp_register);
 		}
 	}
 }
 
 void CodeGenerator::move_to_register(RiscVRegister dest, RiscVRegister src, RegisterAccess access, riscv_instruction_t* riscv,
-									 size_t& count) {
+									 size_t& count, bool cleared) {
 	switch (access) {
 		case RegisterAccess::QWORD:
 			riscv[count++] = encoding::ADD(dest, src, RiscVRegister::zero);
@@ -171,11 +171,13 @@ void CodeGenerator::move_to_register(RiscVRegister dest, RiscVRegister src, Regi
 			riscv[count++] = encoding::SLLI(dest, dest, 16);
 
 			// copy the source-register and clear the upper bits by shifting
-			riscv[count++] = encoding::SLLI(move_to_temp_register, src, 48);
-			riscv[count++] = encoding::SRLI(move_to_temp_register, move_to_temp_register, 48);
+			if (!cleared) {
+				riscv[count++] = encoding::SLLI(move_to_temp_register, src, 48);
+				riscv[count++] = encoding::SRLI(move_to_temp_register, move_to_temp_register, 48);
+			}
 
 			// combine the registers
-			riscv[count++] = encoding::OR(dest, dest, move_to_temp_register);
+			riscv[count++] = encoding::OR(dest, dest, cleared ? src : move_to_temp_register);
 			return;
 		case RegisterAccess::LBYTE:
 			// clear the lower bits of the destination-register
@@ -183,8 +185,10 @@ void CodeGenerator::move_to_register(RiscVRegister dest, RiscVRegister src, Regi
 			riscv[count++] = encoding::XOR(dest, dest, move_to_temp_register);
 
 			// extract the lower bits of the source-register and merge the registers
-			riscv[count++] = encoding::ANDI(move_to_temp_register, src, 0xff);
-			riscv[count++] = encoding::OR(dest, dest, move_to_temp_register);
+			if (!cleared) {
+				riscv[count++] = encoding::ANDI(move_to_temp_register, src, 0xff);
+			}
+			riscv[count++] = encoding::OR(dest, dest, cleared ? src : move_to_temp_register);
 			return;
 		case RegisterAccess::HBYTE:
 			// load the and-mask
@@ -195,8 +199,10 @@ void CodeGenerator::move_to_register(RiscVRegister dest, RiscVRegister src, Regi
 			riscv[count++] = encoding::XOR(dest, dest, move_to_temp_register);
 
 			// extract the lower bits of the source-register and merge the registers
-			riscv[count++] = encoding::ANDI(move_to_temp_register, src, 0xff);
-			riscv[count++] = encoding::SLLI(move_to_temp_register, move_to_temp_register, 8);
+			if (!cleared) {
+				riscv[count++] = encoding::ANDI(move_to_temp_register, src, 0xff);
+			}
+			riscv[count++] = encoding::SLLI(move_to_temp_register, cleared ? src : move_to_temp_register, 8);
 			riscv[count++] = encoding::OR(dest, dest, move_to_temp_register);
 			return;
 	}
