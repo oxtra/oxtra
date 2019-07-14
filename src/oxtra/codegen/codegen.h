@@ -42,19 +42,11 @@ namespace codegen {
 	public:
 		// If these registers are changed, the documentation has to be updated
 		constexpr static encoding::RiscVRegister
-				memory_temp_register = encoding::RiscVRegister::t6,
-				move_to_temp_register = encoding::RiscVRegister::t6,
-				dest_temp_register = encoding::RiscVRegister::t5,
-				source_temp_register = encoding::RiscVRegister::t4,
-				address_temp_register = encoding::RiscVRegister::t3,
 				address_destination = encoding::RiscVRegister::t3,
 				reroute_static_address = encoding::RiscVRegister::s8,
 				reroute_dynamic_address = encoding::RiscVRegister::s9,
 				syscall_address = encoding::RiscVRegister::s10,
 				context_address = encoding::RiscVRegister::s11,
-				temp0_register = encoding::RiscVRegister::t0,
-				temp1_register = encoding::RiscVRegister::t1,
-				temp2_register = encoding::RiscVRegister::t2,
 				flag_register = encoding::RiscVRegister::s1;
 
 		/*
@@ -79,8 +71,9 @@ namespace codegen {
 		};
 
 		using OperationCallback = void (*)(const fadec::Instruction& inst, encoding::RiscVRegister dest,
-										   encoding::RiscVRegister source, utils::riscv_instruction_t* riscv,
-										   size_t& count);
+										   encoding::RiscVRegister source, encoding::RiscVRegister temp_a,
+										   encoding::RiscVRegister temp_b, encoding::RiscVRegister temp_c,
+										   utils::riscv_instruction_t* riscv, size_t& count);
 
 		struct InstructionEntry {
 			fadec::Instruction instruction;
@@ -105,7 +98,8 @@ namespace codegen {
 
 	private:
 		static void translate_mov_ext(const fadec::Instruction& inst, encoding::RiscVRegister dest, encoding::RiscVRegister src,
-									  utils::riscv_instruction_t* riscv, size_t& count);
+									  encoding::RiscVRegister temp_a, encoding::RiscVRegister temp_b,
+									  encoding::RiscVRegister temp_c, utils::riscv_instruction_t* riscv, size_t& count);
 
 		static void translate_mov(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
@@ -117,7 +111,7 @@ namespace codegen {
 
 		static void translate_pushf(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
-		static void translate_pop(const fadec::Instruction& inst, utils::riscv_instruction_t*  riscv, size_t& count);
+		static void translate_pop(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
 		static void translate_popf(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
@@ -164,13 +158,16 @@ namespace codegen {
 		 * @param inst The x86 instruction object.
 		 * @param index operand-index of instruction.
 		 * @param reg The resulting value will be stored in this register.
+		 * @param temp_a A temporary that might be changed.
+		 * @param temp_b A temporary that might be changed.
 		 * @param riscv An array of risc-v instructions.
 		 * @param count current number of risc-v instructions.
 		 * @return if this operation was a memory-operation, the return-register will contain the address.
 		 */
 		static encoding::RiscVRegister translate_operand(const fadec::Instruction& inst, size_t index,
-														 encoding::RiscVRegister reg, utils::riscv_instruction_t* riscv,
-														 size_t& count);
+														 encoding::RiscVRegister reg,
+														 encoding::RiscVRegister temp_a, encoding::RiscVRegister temp_b,
+														 utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
 		 * Writes the value in the register to the destination-operand of the instruction
@@ -178,23 +175,27 @@ namespace codegen {
 		 * @param inst The x86 instruction object.
 		 * @param reg This value will be written to the destination.
 		 * @param address If the destination is a memory address, this address will be used as destination.
+		 * @param temp_a A temporary that might be changed.
+		 * @param temp_b A temporary that might be changed.
 		 * @param riscv An array of risc-v instructions.
 		 * @param count current number of risc-v instructions.
 		 */
-		static void translate_destination(const fadec::Instruction& inst, encoding::RiscVRegister reg,
-										  encoding::RiscVRegister address, utils::riscv_instruction_t* riscv, size_t& count);
+		static void
+		translate_destination(const fadec::Instruction& inst, encoding::RiscVRegister reg, encoding::RiscVRegister address,
+							  encoding::RiscVRegister temp_a, encoding::RiscVRegister temp_b, utils::riscv_instruction_t* riscv,
+							  size_t& count);
 
 		/**
 		 * Translates a x86-memory operand into risc-v instructions (resulting address in reg)
-		 * t6 might be overridden.
 		 * @param x86_instruction The x86 instruction object.
 		 * @param index operand-index of instruction.
-		 * @param reg The resulting address will be returned in this register. (t6 may not be used)
+		 * @param reg The resulting address will be returned in this register.
+		 * @param temp A temporary that might be changed.
 		 * @param riscv_instructions An array of risc-v instructions.
 		 * @param num_instructions current number of risc-v instructions.
 		 */
 		static void translate_memory(const fadec::Instruction& inst, size_t index, encoding::RiscVRegister reg,
-									 utils::riscv_instruction_t* riscv, size_t& count);
+									 encoding::RiscVRegister temp, utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
 		 * Writes a register with x86-style sub-manipulation to an existing register without
@@ -206,16 +207,17 @@ namespace codegen {
 		 * 		- store riscv:a1 to x86:eax
 		 *
 		 * The source-register will be preserved.
-		 * t5 and t6 might be overwritten.
 		 * @param dest Register to be changed.
 		 * @param src Register to write.
 		 * @param access The operand-size of the register to write to.
+		 * @param temp A temporary that might be changed.
 		 * @param riscv An array of risc-v instructions.
 		 * @param count Current number of risc-v instructions.
 		 * @param cleared If true the upper bits of the source register are expected to be 0.
 		 */
 		static void move_to_register(encoding::RiscVRegister dest, encoding::RiscVRegister src, RegisterAccess access,
-									 utils::riscv_instruction_t* riscv, size_t& count, bool cleared = false);
+									 encoding::RiscVRegister temp, utils::riscv_instruction_t* riscv, size_t& count,
+									 bool cleared = false);
 
 		/**
 		 * Loads a 12 bit immediate into the specified register. The value is sign extended to 64 bit,
