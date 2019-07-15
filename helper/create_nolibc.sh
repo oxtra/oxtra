@@ -9,14 +9,16 @@ echo "Enter your assembly code and finish with Ctrl+D"
 
 readarray -t lines
 
-echo "void _start() { asm(" > /tmp/.create_nolibc.tmp.c
+echo ".intel_syntax noprefix" > /tmp/.create_nolibc.tmp.s
+echo ".global _start" >> /tmp/.create_nolibc.tmp.s
+echo "_start:" >> /tmp/.create_nolibc.tmp.s
 
 for line in "${lines[@]}"; do
-	echo "\"$line;\"" >> /tmp/.create_nolibc.tmp.c
+	echo "$line" >> /tmp/.create_nolibc.tmp.s
 done
 
-echo ");}" >> /tmp/.create_nolibc.tmp.c
+gcc -static -nostdlib -m64 -masm=intel /tmp/.create_nolibc.tmp.s -o $1
 
-gcc -static -nostdlib -m64 -masm=intel /tmp/.create_nolibc.tmp.c -o $1
+rm /tmp/.create_nolibc.tmp.s
 
-rm /tmp/.create_nolibc.tmp.c
+objdump -d -M intel $1
