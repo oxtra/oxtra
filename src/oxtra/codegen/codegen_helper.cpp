@@ -34,9 +34,9 @@ void CodeGenerator::apply_operation(const fadec::Instruction& inst, utils::riscv
 	translate_destination(inst, dest_register, address, RiscVRegister::t2, RiscVRegister::t3, riscv, count);
 }
 
-encoding::RiscVRegister
-CodeGenerator::translate_operand(const fadec::Instruction& inst, size_t index, RiscVRegister reg,
-								 RiscVRegister temp_a, RiscVRegister temp_b, utils::riscv_instruction_t* riscv, size_t& count) {
+RiscVRegister CodeGenerator::translate_operand(const fadec::Instruction& inst, size_t index, RiscVRegister reg,
+											   RiscVRegister temp_a, RiscVRegister temp_b, utils::riscv_instruction_t* riscv,
+											   size_t& count) {
 	// extract the operand
 	auto& operand = inst.get_operand(index);
 
@@ -52,7 +52,7 @@ CodeGenerator::translate_operand(const fadec::Instruction& inst, size_t index, R
 		load_unsigned_immediate(inst.get_immediate(), reg, riscv, count);
 	else {
 		// read the value from memory
-		translate_memory(inst, index, temp_a, temp_b, riscv, count);
+		temp_a = translate_memory(inst, index, temp_a, temp_b, riscv, count);
 		switch (operand.get_size()) {
 			case 8:
 				riscv[count++] = encoding::LD(reg, temp_a, 0);
@@ -103,10 +103,8 @@ void CodeGenerator::translate_destination(const fadec::Instruction& inst, RiscVR
 	}
 
 	// translate the memory-address and write the value to it
-	if (address == encoding::RiscVRegister::zero) {
-		translate_memory(inst, 0, temp_a, temp_b, riscv, count);
-		address = temp_a;
-	}
+	if (address == encoding::RiscVRegister::zero)
+		address = translate_memory(inst, 0, temp_a, temp_b, riscv, count);
 	switch (operand.get_size()) {
 		case 8:
 			riscv[count++] = encoding::SD(address, reg, 0);
@@ -123,23 +121,27 @@ void CodeGenerator::translate_destination(const fadec::Instruction& inst, RiscVR
 	}
 }
 
-void CodeGenerator::translate_memory(const Instruction& inst, size_t index, RiscVRegister reg, RiscVRegister temp,
-									 riscv_instruction_t* riscv, size_t& count) {
+RiscVRegister CodeGenerator::translate_memory(const Instruction& inst, size_t index, RiscVRegister temp_a, RiscVRegister temp_b,
+											  riscv_instruction_t* riscv, size_t& count) {
 	if (inst.get_address_size() < 4)
 		Dispatcher::fault_exit("invalid addressing-size");
 	const auto& operand = inst.get_operand(index);
 
+	// check if its only a base-register
+	if (inst.get_index_register() == fadec::Register::none && inst.get_displacement() == 0 && operand.get_size() == 8)
+		return map_reg(operand.get_register());
+
 	// add the scale & index
 	RiscVRegister temp_reg = RiscVRegister::zero;
 	if (inst.get_index_register() != fadec::Register::none) {
-		riscv[count++] = encoding::SLLI(reg, map_reg(inst.get_index_register()), inst.get_index_scale());
-		temp_reg = reg;
+		riscv[count++] = encoding::SLLI(temp_a, map_reg(inst.get_index_register()), inst.get_index_scale());
+		temp_reg = temp_a;
 	}
 
 	// add the base-register
 	if (operand.get_register() != fadec::Register::none) {
-		riscv[count++] = encoding::ADD(reg, temp_reg, map_reg(operand.get_register()));
-		temp_reg = reg;
+		riscv[count++] = encoding::ADD(temp_a, temp_reg, map_reg(operand.get_register()));
+		temp_reg = temp_a;
 	}
 
 	// add the displacement
@@ -147,12 +149,19 @@ void CodeGenerator::translate_memory(const Instruction& inst, size_t index, Risc
 		const auto displacement = inst.get_displacement();
 		// less or equal than 12 bits
 		if (displacement < 0x800) {
-			riscv[count++] = encoding::ADDI(reg, temp_reg, static_cast<uint16_t>(displacement));
+			riscv[count++] = encoding::ADDI(temp_a, temp_reg, static_cast<uint16_t>(displacement));
 		} else {
-			load_unsigned_immediate(displacement, temp, riscv, count);
-			riscv[count++] = encoding::ADD(reg, temp_reg, temp);
+			load_unsigned_immediate(displacement, temp_b, riscv, count);
+			riscv[count++] = encoding::ADD(temp_a, temp_reg, temp_b);
 		}
 	}
+
+	// check if the addressing-mode is a 32-bit mode
+	if (inst.get_address_size() == 4) {
+		riscv[count++] = encoding::SLLI(temp_reg, temp_reg, 32);
+		riscv[count++] = encoding::SRAI(temp_reg, temp_reg, 32);
+	}
+	return temp_reg;
 }
 
 void CodeGenerator::move_to_register(RiscVRegister dest, RiscVRegister src, RegisterAccess access, RiscVRegister temp,
