@@ -114,8 +114,20 @@ namespace codegen {
 		static void translate_imul(const fadec::Instruction& inst, encoding::RiscVRegister dest,
 								   encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
 
+		static void translate_shl(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
+
+		static void translate_shl_imm(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
+
 		static void translate_shr(const fadec::Instruction& inst, encoding::RiscVRegister dest,
 								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
+
+		static void translate_shr_imm(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
+
+		static void translate_sar(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
+
+		static void translate_sar_imm(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
 		static void translate_mov_ext(const fadec::Instruction& inst, encoding::RiscVRegister dest, encoding::RiscVRegister src,
 									  utils::riscv_instruction_t* riscv, size_t& count);
