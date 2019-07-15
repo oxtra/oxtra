@@ -23,7 +23,7 @@ namespace codegen {
 			require_auxiliary = 0x0020u,
 			require_direction = 0x0040u,
 			require_arithmentic = require_basic | require_parity | require_auxiliary,
-			require_all =  require_arithmentic | require_direction,
+			require_all = require_arithmentic | require_direction,
 			update_zero = 0x0100u,
 			update_sign = 0x0200u,
 			update_carry = 0x0400u,
@@ -109,6 +109,13 @@ namespace codegen {
 		static void translate_add(const fadec::Instruction& inst, encoding::RiscVRegister dest,
 								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
 
+		static void translate_inc(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
+
+		static void translate_sub(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
+
+		static void translate_dec(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
+
 		static void translate_imul(const fadec::Instruction& inst, encoding::RiscVRegister dest,
 								   encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
 
@@ -131,7 +138,7 @@ namespace codegen {
 
 		static void translate_pushf(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
-		static void translate_pop(const fadec::Instruction& inst, utils::riscv_instruction_t*  riscv, size_t& count);
+		static void translate_pop(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
 		static void translate_popf(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 

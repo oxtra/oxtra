@@ -109,10 +109,15 @@ size_t CodeGenerator::group_instruction(const fadec::InstructionType type) {
 	switch (type) {
 		case InstructionType::ADD:
 		case InstructionType::ADD_IMM:
+		case InstructionType::SUB:
+		case InstructionType::SUB_IMM:
 		case InstructionType::IMUL2:
 		case InstructionType::SHR_CL:
 		case InstructionType::SHR_IMM:
 			return Group::update_arithmetic;
+		case InstructionType::INC:
+		case InstructionType::DEC:
+			return Group::update_arithmetic & ~(Group::update_carry);
 		case InstructionType::MOV_IMM:
 		case InstructionType::MOVABS_IMM:
 		case InstructionType::MOV:
@@ -143,6 +148,16 @@ void CodeGenerator::translate_instruction(InstructionEntry& inst, utils::riscv_i
 		case InstructionType::ADD:
 		case InstructionType::ADD_IMM:
 			apply_operation(inst.instruction, riscv, count, translate_add);
+			break;
+		case InstructionType::INC:
+			translate_inc(inst.instruction, riscv, count);
+			break;
+		case InstructionType::SUB:
+		case InstructionType::SUB_IMM:
+			apply_operation(inst.instruction, riscv, count, translate_sub);
+			break;
+		case InstructionType::DEC:
+			translate_dec(inst.instruction, riscv, count);
 			break;
 		case InstructionType::IMUL2:
 			apply_operation(inst.instruction, riscv, count, translate_imul);

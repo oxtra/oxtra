@@ -14,6 +14,21 @@ void CodeGenerator::translate_add(const fadec::Instruction& inst, encoding::Risc
 	riscv[count++] = encoding::ADD(dest, src, dest);
 }
 
+void CodeGenerator::translate_inc(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
+	const auto reg = map_reg(inst.get_operand(0).get_register());
+	riscv[count++] = encoding::ADDI(reg, reg, 1);
+}
+
+void CodeGenerator::translate_sub(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count) {
+	riscv[count++] = encoding::SUB(dest, src, dest);
+}
+
+void CodeGenerator::translate_dec(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
+	const auto reg = map_reg(inst.get_operand(0).get_register());
+	riscv[count++] = encoding::ADDI(reg, reg, -1);
+}
+
 void CodeGenerator::translate_imul(const fadec::Instruction& inst, encoding::RiscVRegister dest,
 								   encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count) {
 	riscv[count++] = encoding::MUL(dest, src, dest);
@@ -141,7 +156,7 @@ void CodeGenerator::translate_pushf(const fadec::Instruction& inst, utils::riscv
 	}
 }
 
-void CodeGenerator::translate_pop(const fadec::Instruction& inst, utils::riscv_instruction_t*  riscv, size_t& count) {
+void CodeGenerator::translate_pop(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
 	constexpr auto rsp_reg = map_reg(Register::rsp);
 	const auto operand_size = inst.get_operand(0).get_size();
 
