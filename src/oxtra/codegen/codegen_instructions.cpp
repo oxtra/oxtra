@@ -196,13 +196,14 @@ void CodeGenerator::translate_ret(const fadec::Instruction& inst, utils::riscv_i
 
 	// pop the immediate from the stack
 	if (inst.get_immediate()) {
-		load_unsigned_immediate(inst.get_immediate(), RiscVRegister::t0, riscv, count);
+		load_unsigned_immediate(inst.get_immediate() + 8, RiscVRegister::t0, riscv, count);
 		riscv[count++] = encoding::ADD(rsp_reg, rsp_reg, RiscVRegister::t0);
 	}
+	else
+		riscv[count++] = encoding::ADDI(rsp_reg, rsp_reg, 8);
 
 	// pop the ip from the stack and attach the rerouting
-	riscv[count++] = encoding::LD(address_destination, rsp_reg, 0);
-	riscv[count++] = encoding::ADDI(rsp_reg, rsp_reg, 8);
+	riscv[count++] = encoding::LD(address_destination, rsp_reg, -8);
 	riscv[count++] = JALR(RiscVRegister::ra, reroute_dynamic_address, 0);
 }
 
