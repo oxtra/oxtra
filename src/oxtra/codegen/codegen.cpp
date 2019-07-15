@@ -23,12 +23,13 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 
 	// iterate through the instructions and query all information about the flags
 	std::vector<InstructionEntry> instructions;
-	auto address = reinterpret_cast<const uint8_t*>(_elf.resolve_vaddr(addr));
 	while (true) {
 		// decode the fadec-instruction
 		InstructionEntry entry{};
-		if (fadec::decode(address, _elf.get_size(addr), DecodeMode::decode_64, addr, entry.instruction) <= 0)
+		if (fadec::decode(reinterpret_cast<uint8_t*>(addr), _elf.get_size(addr), DecodeMode::decode_64, addr,
+						  entry.instruction) <= 0) {
 			Dispatcher::fault_exit("Failed to decode the instruction");
+		}
 
 		// query all of the information about the instruction
 		entry.update_flags = group_instruction(entry.instruction.get_type());
@@ -40,9 +41,8 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 			Dispatcher::fault_exit(exception_buffer);
 		}
 
-		// update the addresses
+		// update the address
 		addr += entry.instruction.get_size();
-		address += entry.instruction.get_size();
 
 		// add the instruction to the array and check if the instruction would end the block
 		instructions.push_back(entry);
@@ -105,7 +105,7 @@ void CodeGenerator::update_basic_block(utils::host_addr_t addr, utils::host_addr
 	riscv[count++] = encoding::JALR(RiscVRegister::zero, address_destination, 0);
 }
 
-size_t CodeGenerator::group_instruction(const fadec::InstructionType type) {
+size_t CodeGenerator::group_instruction(fadec::InstructionType type) {
 	switch (type) {
 		case InstructionType::ADD:
 		case InstructionType::ADD_IMM:
@@ -126,18 +126,19 @@ size_t CodeGenerator::group_instruction(const fadec::InstructionType type) {
 		case InstructionType::NOP:
 		case InstructionType::PUSH:
 		case InstructionType::POP:
-		case InstructionType::SYSCALL:
 			return Group::none;
+
 		case InstructionType::PUSHF:
 			return Group::require_all;
+
 		case InstructionType::POPF:
 			return Group::update_all;
+
 		case InstructionType::JMP:
 		case InstructionType::JMP_IND:
-		case InstructionType::RET:
-		case InstructionType::RET_IMM:
-		case InstructionType::CALL:
+		case InstructionType::SYSCALL:
 			return Group::end_of_block;
+
 		default:
 			return Group::error;
 	}
@@ -183,6 +184,7 @@ void CodeGenerator::translate_instruction(InstructionEntry& inst, utils::riscv_i
 		case InstructionType::PUSH:
 			translate_push(inst.instruction, riscv, count);
 			break;
+
 		case InstructionType::PUSHF:
 			translate_pushf(inst.instruction, riscv, count);
 			break;
@@ -196,17 +198,14 @@ void CodeGenerator::translate_instruction(InstructionEntry& inst, utils::riscv_i
 			break;
 
 		case InstructionType::SYSCALL:
-			translate_syscall(riscv, count);
+			translate_syscall(inst.instruction, riscv, count);
 			break;
 
 		case InstructionType::JMP:
 		case InstructionType::JMP_IND:
 			translate_jmp(inst.instruction, riscv, count);
 			break;
-		case InstructionType::RET:
-		case InstructionType::RET_IMM:
-			translate_ret(inst.instruction, riscv, count);
-			break;
+
 		default:
 			break;
 	}
