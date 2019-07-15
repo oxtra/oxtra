@@ -159,7 +159,7 @@ RiscVRegister CodeGenerator::translate_memory(const Instruction& inst, size_t in
 	// check if the addressing-mode is a 32-bit mode
 	if (inst.get_address_size() == 4) {
 		riscv[count++] = encoding::SLLI(temp_reg, temp_reg, 32);
-		riscv[count++] = encoding::SRAI(temp_reg, temp_reg, 32);
+		riscv[count++] = encoding::SRLI(temp_reg, temp_reg, 32);
 	}
 	return temp_reg;
 }
@@ -176,44 +176,39 @@ void CodeGenerator::move_to_register(RiscVRegister dest, RiscVRegister src, Regi
 			riscv[count++] = encoding::SRLI(dest, dest, 32);
 			return;
 		case RegisterAccess::WORD:
-			// clear the lower bits of the destination-register by shifting
-			riscv[count++] = encoding::SRLI(dest, dest, 16);
-			riscv[count++] = encoding::SLLI(dest, dest, 16);
-
-			// copy the source-register and clear the upper bits by shifting
+			// check if the upper source-register has to be cleared
 			if (!cleared) {
-				riscv[count++] = encoding::SLLI(temp, src, 48);
+				riscv[count++] = encoding::XOR(temp, src, dest);
+				riscv[count++] = encoding::SLLI(temp, temp, 48);
 				riscv[count++] = encoding::SRLI(temp, temp, 48);
+				riscv[count++] = encoding::XOR(dest, temp, dest);
+			} else {
+				// clear the lower bits of the destination-register by shifting
+				riscv[count++] = encoding::SRLI(dest, dest, 16);
+				riscv[count++] = encoding::SLLI(dest, dest, 16);
+				riscv[count++] = encoding::OR(dest, dest, src);
 			}
-
-			// combine the registers
-			riscv[count++] = encoding::OR(dest, dest, cleared ? src : temp);
 			return;
 		case RegisterAccess::LBYTE:
-			// clear the lower bits of the destination-register
-			riscv[count++] = encoding::ANDI(temp, dest, 0xff);
-			riscv[count++] = encoding::XOR(dest, dest, temp);
+			// clear the destination
+			riscv[count++] = encoding::ANDI(dest, dest, -0x100);
 
 			// extract the lower bits of the source-register and merge the registers
-			if (!cleared) {
+			if (!cleared)
 				riscv[count++] = encoding::ANDI(temp, src, 0xff);
-			}
 			riscv[count++] = encoding::OR(dest, dest, cleared ? src : temp);
 			return;
 		case RegisterAccess::HBYTE:
-			// load the and-mask
-			load_unsigned_immediate(0xff00, temp, riscv, count);
+			// move the 8 bits of the destination-register down and xor them with the source
+			riscv[count++] = encoding::SRLI(temp, dest, 8);
+			riscv[count++] = encoding::XOR(temp, temp, src);
 
-			// clear the lower bits of the destination-register
-			riscv[count++] = encoding::AND(temp, temp, dest);
-			riscv[count++] = encoding::XOR(dest, dest, temp);
+			// clear the upper 48 bits of the temp register and keep the lower 8 cleared
+			riscv[count++] = encoding::SLLI(temp, temp, 56);
+			riscv[count++] = encoding::SRLI(temp, temp, 48);
 
-			// extract the lower bits of the source-register and merge the registers
-			if (!cleared) {
-				riscv[count++] = encoding::ANDI(temp, src, 0xff);
-			}
-			riscv[count++] = encoding::SLLI(temp, cleared ? src : temp, 8);
-			riscv[count++] = encoding::OR(dest, dest, temp);
+			// xor the temporary register to the destination
+			riscv[count++] = encoding::XOR(dest, temp, dest);
 			return;
 	}
 }
