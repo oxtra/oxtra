@@ -21,7 +21,7 @@ void CodeGenerator::translate_inc(const fadec::Instruction& inst, utils::riscv_i
 
 void CodeGenerator::translate_sub(const fadec::Instruction& inst, encoding::RiscVRegister dest,
 								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count) {
-	riscv[count++] = encoding::SUB(dest, src, dest);
+	riscv[count++] = encoding::SUB(dest, dest, src);
 }
 
 void CodeGenerator::translate_dec(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
