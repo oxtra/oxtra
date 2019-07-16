@@ -2,7 +2,7 @@
 .global _start
 _start:
 MOV RAX, 3
-MOV RSI, 0x24
+MOV RSI, offset .end - .begin
 
 MOV RBX, 2
 MOV RCX, 1
@@ -20,7 +20,7 @@ SHR RDI, 4
 
 IMUL RDI, RSI
 
-ADD RDI, 0x40101c
+ADD RDI, offset .begin
 
 JMP RDI
 
