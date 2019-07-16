@@ -70,10 +70,12 @@ namespace codegen {
 			LBYTE    // low byte
 		};
 
+		/**
+		 * This is the callback that is required for an apply-operation lifecycle. Inside a callback, the registers
+		 * t4, t5, t6 can be used freely.
+		 */
 		using OperationCallback = void (*)(const fadec::Instruction& inst, encoding::RiscVRegister dest,
-										   encoding::RiscVRegister source, encoding::RiscVRegister temp_a,
-										   encoding::RiscVRegister temp_b, encoding::RiscVRegister temp_c,
-										   utils::riscv_instruction_t* riscv, size_t& count);
+										   encoding::RiscVRegister source, utils::riscv_instruction_t* riscv, size_t& count);
 
 		struct InstructionEntry {
 			fadec::Instruction instruction;
@@ -98,8 +100,7 @@ namespace codegen {
 
 	private:
 		static void translate_mov_ext(const fadec::Instruction& inst, encoding::RiscVRegister dest, encoding::RiscVRegister src,
-									  encoding::RiscVRegister temp_a, encoding::RiscVRegister temp_b,
-									  encoding::RiscVRegister temp_c, utils::riscv_instruction_t* riscv, size_t& count);
+									  utils::riscv_instruction_t* riscv, size_t& count);
 
 		static void translate_mov(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 

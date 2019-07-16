@@ -10,12 +10,7 @@ using namespace encoding;
 using namespace dispatcher;
 
 void CodeGenerator::translate_mov_ext(const fadec::Instruction& inst, RiscVRegister dest, RiscVRegister src,
-									  RiscVRegister temp_a, RiscVRegister temp_b, RiscVRegister temp_c,
 									  utils::riscv_instruction_t* riscv, size_t& count) {
-	unused_parameter(temp_a);
-	unused_parameter(temp_b);
-	unused_parameter(temp_c);
-
 	/* Thus they will have to be sign-extended/zero-extended.
 	 * Otherwise the optimization will fail (load full 8-byte register, and store the interesting parts).
 	 * [It will fail, because the interesting, stored parts, are larger than they should be]

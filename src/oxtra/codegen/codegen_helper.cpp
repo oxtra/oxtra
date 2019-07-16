@@ -28,7 +28,7 @@ void CodeGenerator::apply_operation(const fadec::Instruction& inst, utils::riscv
 		address = translate_operand(inst, 0, dest_register, RiscVRegister::t2, RiscVRegister::t3, riscv, count);
 
 	// call the callback to apply the changes
-	callback(inst, dest_register, source_register, RiscVRegister::t4, RiscVRegister::t5, RiscVRegister::t6, riscv, count);
+	callback(inst, dest_register, source_register, riscv, count);
 
 	// write the value back to the destination
 	translate_destination(inst, dest_register, address, RiscVRegister::t2, RiscVRegister::t3, riscv, count);
