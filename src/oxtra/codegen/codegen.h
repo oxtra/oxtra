@@ -317,7 +317,7 @@ namespace codegen {
 		 * @return The riscv-register.
 		 */
 		static constexpr encoding::RiscVRegister map_reg_high(const fadec::Register reg) {
-			return map_reg(static_cast<fadec::Register>(static_cast<uint8_t>(reg) + 4));
+			return map_reg(static_cast<fadec::Register>(static_cast<uint8_t>(reg) - 4));
 		}
 	};
 }
