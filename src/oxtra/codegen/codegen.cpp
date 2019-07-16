@@ -21,9 +21,22 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 	if (const auto riscv_code = _codestore.find(addr))
 		return riscv_code;
 
+	// extract the next block
+	auto next_block = _codestore.get_next_block(addr);
+
 	// iterate through the instructions and query all information about the flags
 	std::vector<InstructionEntry> instructions;
 	while (true) {
+		// check if the address is equal to the next block
+		if (next_block) {
+			if (next_block->x86_start == addr) {
+				if (instructions.empty())
+					Dispatcher::fault_exit("codestore::find(...) must have failed");
+				instructions[instructions.size() - 1].update_flags |= Group::require_all;
+				break;
+			}
+		}
+
 		// decode the fadec-instruction
 		InstructionEntry entry{};
 		if (fadec::decode(reinterpret_cast<uint8_t*>(addr), _elf.get_size(addr), DecodeMode::decode_64, addr,
@@ -46,8 +59,10 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 
 		// add the instruction to the array and check if the instruction would end the block
 		instructions.push_back(entry);
-		if ((entry.update_flags & Group::end_of_block) == Group::end_of_block)
+		if ((entry.update_flags & Group::end_of_block) == Group::end_of_block) {
+			next_block = nullptr;
 			break;
+		}
 	}
 
 	// iterate through the instructions backwards and check where the instructions have to be up-to-date
@@ -66,25 +81,34 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 	// iterate through the instructions and translate them to riscv-code
 	auto& codeblock = _codestore.create_block();
 	riscv_instruction_t riscv[max_riscv_instructions];
-	for (auto& entry : instructions) {
+	for (size_t i = 0; i < instructions.size(); i++) {
 		// translate the instruction
 		size_t count = 0;
-		translate_instruction(entry, riscv, count);
+		translate_instruction(instructions[i], riscv, count);
+
+		// check if the instruction is the last instruction and the upcoming block is known
+		if (next_block) {
+			if (i == instructions.size() - 1) {
+				// append the forcing connection to the next block
+				load_unsigned_immediate(next_block->riscv_start, address_destination, riscv, count);
+				riscv[count++] = encoding::JALR(RiscVRegister::zero, address_destination, 0);
+			}
+		}
 
 		// print tracing-information
 		if constexpr (SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE) {
 			char formatted_string[512];
-			fadec::format(entry.instruction, formatted_string, sizeof(formatted_string));
+			fadec::format(instructions[i].instruction, formatted_string, sizeof(formatted_string));
 			SPDLOG_TRACE("decoded {}", formatted_string);
-			for (size_t i = 0; i < count; i++)
-				SPDLOG_TRACE(" - instruction[{}] = {}", i, decoding::parse_riscv(riscv[i]));
+			for (size_t j = 0; j < count; j++)
+				SPDLOG_TRACE(" - instruction[{}] = {}", j, decoding::parse_riscv(riscv[j]));
 		}
 
 		// add the instruction to the store
-		_codestore.add_instruction(codeblock, entry.instruction, riscv, count);
+		_codestore.add_instruction(codeblock, instructions[i].instruction, riscv, count);
 	}
 
-	//add dynamic tracing-information for the basic-block
+	// add dynamic tracing-information for the basic-block
 	spdlog::trace("Basicblock translated: x86: [0x{0:x} - 0x{1:x}] riscv: 0x{2:x}", codeblock.x86_start, codeblock.x86_end,
 				  codeblock.riscv_start);
 	return codeblock.riscv_start;
