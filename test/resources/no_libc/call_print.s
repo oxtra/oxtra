@@ -4,13 +4,9 @@ _start:
 push offset hello_world
 push [hello_world_size]
 call print
-pop rax
-pop rax
 push offset second_string
 push [second_string_size]
 call print
-pop rax
-pop rax
 call exit
 
 
@@ -25,7 +21,7 @@ print:
 	mov rdi, 0x01
 	syscall
 	pop rbp
-	ret
+	ret 0x10
 
 
 exit:
