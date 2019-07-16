@@ -100,8 +100,8 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 			char formatted_string[512];
 			fadec::format(instructions[i].instruction, formatted_string, sizeof(formatted_string));
 			SPDLOG_TRACE("decoded {}", formatted_string);
-			for (size_t i = 0; i < count; i++)
-				SPDLOG_TRACE(" - instruction[{}] = {}", i, decoding::parse_riscv(riscv[i]));
+			for (size_t j = 0; j < count; j++)
+				SPDLOG_TRACE(" - instruction[{}] = {}", j, decoding::parse_riscv(riscv[j]));
 		}
 
 		// add the instruction to the store
