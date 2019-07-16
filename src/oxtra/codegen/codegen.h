@@ -113,6 +113,9 @@ namespace codegen {
 		static void translate_dec(const fadec::Instruction& inst, encoding::RiscVRegister dest,
 								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
 
+		static void translate_neg(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
+
 		static void translate_imul(const fadec::Instruction& inst, encoding::RiscVRegister dest,
 								   encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
 
