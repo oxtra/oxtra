@@ -163,10 +163,10 @@ void CodeGenerator::translate_instruction(InstructionEntry& inst, utils::riscv_i
 			break;
 
 		case InstructionType::INC:
-			translate_inc(inst.instruction, riscv, count);
+			apply_operation(inst.instruction, riscv, count, translate_inc);
 			break;
 		case InstructionType::DEC:
-			translate_dec(inst.instruction, riscv, count);
+			apply_operation(inst.instruction, riscv, count, translate_dec);
 			break;
 
 		case InstructionType::IMUL2:
@@ -174,25 +174,20 @@ void CodeGenerator::translate_instruction(InstructionEntry& inst, utils::riscv_i
 			break;
 
 		case InstructionType::SHL_CL:
-			apply_operation(inst.instruction, riscv, count, translate_shl);
-			break;
 		case InstructionType::SHL_IMM:
-			translate_shl_imm(inst.instruction, riscv, count);
+			apply_operation(inst.instruction, riscv, count, translate_shl);
 			break;
 
 		case InstructionType::SHR_CL:
-			apply_operation(inst.instruction, riscv, count, translate_shr);
-			break;
 		case InstructionType::SHR_IMM:
-			translate_shr_imm(inst.instruction, riscv, count);
+			apply_operation(inst.instruction, riscv, count, translate_shr);
 			break;
 
 		case InstructionType::SAR_CL:
+		case InstructionType::SAR_IMM:
 			apply_operation(inst.instruction, riscv, count, translate_sar);
 			break;
-		case InstructionType::SAR_IMM:
-			translate_sar_imm(inst.instruction, riscv, count);
-			break;
+
 		case InstructionType::MOV_IMM:
 		case InstructionType::MOVABS_IMM:
 		case InstructionType::MOV:
