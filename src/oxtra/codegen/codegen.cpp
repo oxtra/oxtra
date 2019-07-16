@@ -150,6 +150,10 @@ size_t CodeGenerator::group_instruction(fadec::InstructionType type) {
 		case InstructionType::JMP:
 		case InstructionType::JMP_IND:
 		case InstructionType::SYSCALL:
+		case InstructionType::RET:
+		case InstructionType::RET_IMM:
+		case InstructionType::CALL:
+		case InstructionType::CALL_IND:
 			return Group::end_of_block;
 
 		default:
@@ -191,6 +195,16 @@ void CodeGenerator::translate_instruction(InstructionEntry& inst, utils::riscv_i
 
 		case InstructionType::SYSCALL:
 			translate_syscall(inst.instruction, riscv, count);
+			break;
+
+		case InstructionType::CALL:
+		case InstructionType::CALL_IND:
+			translate_call(inst.instruction, riscv, count);
+			break;
+
+		case InstructionType::RET:
+		case InstructionType::RET_IMM:
+			translate_ret(inst.instruction, riscv, count);
 			break;
 
 		case InstructionType::JMP:
