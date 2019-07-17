@@ -50,7 +50,7 @@ RiscVRegister CodeGenerator::translate_operand(const fadec::Instruction& inst, s
 			riscv[count++] = encoding::ADD(reg, map_reg(operand.get_register()), RiscVRegister::zero);
 	} else if (operand.get_type() == OperandType::imm)
 		load_unsigned_immediate(inst.get_immediate(), reg, riscv, count);
-	else {
+	else if (operand.get_type() == OperandType::mem) {
 		// read the value from memory
 		temp_a = translate_memory(inst, index, temp_a, temp_b, riscv, count);
 		switch (operand.get_size()) {
@@ -101,6 +101,10 @@ void CodeGenerator::translate_destination(const fadec::Instruction& inst, RiscVR
 		}
 		return;
 	}
+
+	// check if the destination is a memory-operation
+	if (operand.get_type() != OperandType::mem)
+		return;
 
 	// translate the memory-address and write the value to it
 	if (address == encoding::RiscVRegister::zero)
