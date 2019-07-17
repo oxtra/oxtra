@@ -9,6 +9,71 @@ using namespace fadec;
 using namespace encoding;
 using namespace dispatcher;
 
+void CodeGenerator::translate_add(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count) {
+	unused_parameter(inst);
+	riscv[count++] = encoding::ADD(dest, src, dest);
+}
+
+void CodeGenerator::translate_inc(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count) {
+	unused_parameter(inst);
+	unused_parameter(src);
+
+	riscv[count++] = encoding::ADDI(dest, dest, 1);
+}
+
+void CodeGenerator::translate_sub(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count) {
+	unused_parameter(inst);
+
+	riscv[count++] = encoding::SUB(dest, dest, src);
+}
+
+void CodeGenerator::translate_dec(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count) {
+	unused_parameter(inst);
+	unused_parameter(src);
+
+	riscv[count++] = encoding::ADDI(dest, dest, -1);
+}
+
+void CodeGenerator::translate_neg(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count) {
+	unused_parameter(inst);
+	unused_parameter(src);
+
+	riscv[count++] = encoding::NEG(dest, dest);
+}
+
+void CodeGenerator::translate_imul(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+								   encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count) {
+	unused_parameter(inst);
+
+	riscv[count++] = encoding::MUL(dest, src, dest);
+}
+
+void CodeGenerator::translate_shl(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count) {
+	unused_parameter(inst);
+
+	riscv[count++] = encoding::SLL(dest, dest, src);
+}
+
+void CodeGenerator::translate_shr(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count) {
+	unused_parameter(inst);
+
+	riscv[count++] = encoding::SRL(dest, dest, src);
+}
+
+void CodeGenerator::translate_sar(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count) {
+	unused_parameter(inst);
+
+	riscv[count++] = encoding::SRA(dest, dest, src);
+}
+
 void CodeGenerator::translate_mov_ext(const fadec::Instruction& inst, RiscVRegister dest, RiscVRegister src,
 									  utils::riscv_instruction_t* riscv, size_t& count) {
 	/* Thus they will have to be sign-extended/zero-extended.

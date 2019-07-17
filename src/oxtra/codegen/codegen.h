@@ -22,7 +22,8 @@ namespace codegen {
 			require_parity = 0x0010u,
 			require_auxiliary = 0x0020u,
 			require_direction = 0x0040u,
-			require_all = require_basic | require_parity | require_auxiliary | require_direction,
+			require_arithmentic = require_basic | require_parity | require_auxiliary,
+			require_all = require_arithmentic | require_direction,
 			update_zero = 0x0100u,
 			update_sign = 0x0200u,
 			update_carry = 0x0400u,
@@ -31,7 +32,8 @@ namespace codegen {
 			update_parity = 0x1000u,
 			update_auxiliary = 0x2000u,
 			update_direction = 0x4000u,
-			update_all = update_basic | update_parity | update_auxiliary | update_direction,
+			update_arithmetic = update_basic | update_parity | update_auxiliary,
+			update_all = update_arithmetic | update_direction,
 			end_of_block = 0x8000u | require_all,
 			error = 0xffffffffu,
 			require_to_update_lshift = 8u
@@ -99,6 +101,33 @@ namespace codegen {
 		void update_basic_block(utils::host_addr_t addr, utils::host_addr_t absolute_address);
 
 	private:
+		static void translate_add(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
+
+		static void translate_inc(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
+
+		static void translate_sub(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
+
+		static void translate_dec(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
+
+		static void translate_neg(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
+
+		static void translate_imul(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+								   encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
+
+		static void translate_shl(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
+
+		static void translate_shr(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
+
+		static void translate_sar(const fadec::Instruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
+
 		static void translate_mov_ext(const fadec::Instruction& inst, encoding::RiscVRegister dest, encoding::RiscVRegister src,
 									  utils::riscv_instruction_t* riscv, size_t& count);
 
