@@ -96,12 +96,13 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 		}
 
 		// print tracing-information
-		if constexpr (SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE) {
+		if constexpr (SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_DEBUG) {
 			char formatted_string[512];
 			fadec::format(instructions[i].instruction, formatted_string, sizeof(formatted_string));
-			SPDLOG_TRACE("decoded {}", formatted_string);
-			for (size_t j = 0; j < count; j++)
+			SPDLOG_DEBUG("decoded {}", formatted_string);
+			for (size_t j = 0; j < count; j++) {
 				SPDLOG_TRACE(" - instruction[{}] = {}", j, decoding::parse_riscv(riscv[j]));
+			}
 		}
 
 		// add the instruction to the store
@@ -109,8 +110,9 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 	}
 
 	// add dynamic tracing-information for the basic-block
-	spdlog::trace("Basicblock translated: x86: [0x{0:x} - 0x{1:x}] riscv: 0x{2:x}", codeblock.x86_start, codeblock.x86_end,
+	spdlog::debug("Basicblock translated: x86: [0x{0:x} - 0x{1:x}] riscv: 0x{2:x}", codeblock.x86_start, codeblock.x86_end,
 				  codeblock.riscv_start);
+
 	return codeblock.riscv_start;
 }
 
@@ -131,6 +133,24 @@ void CodeGenerator::update_basic_block(utils::host_addr_t addr, utils::host_addr
 
 size_t CodeGenerator::group_instruction(fadec::InstructionType type) {
 	switch (type) {
+		case InstructionType::ADD:
+		case InstructionType::ADD_IMM:
+		case InstructionType::SUB:
+		case InstructionType::SUB_IMM:
+		case InstructionType::NEG:
+		case InstructionType::IMUL2:
+		case InstructionType::SHL_CL:
+		case InstructionType::SHL_IMM:
+		case InstructionType::SHR_CL:
+		case InstructionType::SAR_CL:
+		case InstructionType::SHR_IMM:
+		case InstructionType::SAR_IMM:
+			return Group::update_arithmetic;
+
+		case InstructionType::INC:
+		case InstructionType::DEC:
+			return Group::update_arithmetic ^ Group::update_carry;
+
 		case InstructionType::MOV_IMM:
 		case InstructionType::MOVABS_IMM:
 		case InstructionType::MOV:
@@ -163,6 +183,46 @@ size_t CodeGenerator::group_instruction(fadec::InstructionType type) {
 
 void CodeGenerator::translate_instruction(InstructionEntry& inst, utils::riscv_instruction_t* riscv, size_t& count) {
 	switch (inst.instruction.get_type()) {
+		case InstructionType::ADD:
+		case InstructionType::ADD_IMM:
+			apply_operation(inst.instruction, riscv, count, translate_add);
+			break;
+
+		case InstructionType::SUB:
+		case InstructionType::SUB_IMM:
+			apply_operation(inst.instruction, riscv, count, translate_sub);
+			break;
+
+		case InstructionType::NEG:
+			apply_operation(inst.instruction, riscv, count, translate_neg);
+			break;
+
+		case InstructionType::INC:
+			apply_operation(inst.instruction, riscv, count, translate_inc);
+			break;
+		case InstructionType::DEC:
+			apply_operation(inst.instruction, riscv, count, translate_dec);
+			break;
+
+		case InstructionType::IMUL2:
+			apply_operation(inst.instruction, riscv, count, translate_imul);
+			break;
+
+		case InstructionType::SHL_CL:
+		case InstructionType::SHL_IMM:
+			apply_operation(inst.instruction, riscv, count, translate_shl);
+			break;
+
+		case InstructionType::SHR_CL:
+		case InstructionType::SHR_IMM:
+			apply_operation(inst.instruction, riscv, count, translate_shr);
+			break;
+
+		case InstructionType::SAR_CL:
+		case InstructionType::SAR_IMM:
+			apply_operation(inst.instruction, riscv, count, translate_sar);
+			break;
+
 		case InstructionType::MOV_IMM:
 		case InstructionType::MOVABS_IMM:
 		case InstructionType::MOV:
