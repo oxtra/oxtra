@@ -96,12 +96,13 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 		}
 
 		// print tracing-information
-		if constexpr (SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE) {
+		if constexpr (SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_DEBUG) {
 			char formatted_string[512];
 			fadec::format(instructions[i].instruction, formatted_string, sizeof(formatted_string));
-			SPDLOG_TRACE("decoded {}", formatted_string);
-			for (size_t j = 0; j < count; j++)
+			SPDLOG_DEBUG("decoded {}", formatted_string);
+			for (size_t j = 0; j < count; j++) {
 				SPDLOG_TRACE(" - instruction[{}] = {}", j, decoding::parse_riscv(riscv[j]));
+			}
 		}
 
 		// add the instruction to the store
@@ -109,8 +110,9 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 	}
 
 	// add dynamic tracing-information for the basic-block
-	spdlog::trace("Basicblock translated: x86: [0x{0:x} - 0x{1:x}] riscv: 0x{2:x}", codeblock.x86_start, codeblock.x86_end,
+	spdlog::debug("Basicblock translated: x86: [0x{0:x} - 0x{1:x}] riscv: 0x{2:x}", codeblock.x86_start, codeblock.x86_end,
 				  codeblock.riscv_start);
+
 	return codeblock.riscv_start;
 }
 
