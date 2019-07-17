@@ -187,7 +187,8 @@ namespace codegen {
 		 * @param temp_b A temporary that might be changed.
 		 * @param riscv An array of risc-v instructions.
 		 * @param count current number of risc-v instructions.
-		 * @return if this operation was a memory-operation, the return-register will contain the address.
+		 * @return if this operation was a memory-operation,
+		 * 		   the return-register will contain the address (either temp_a, or a base-register)
 		 */
 		static encoding::RiscVRegister translate_operand(const fadec::Instruction& inst, size_t index,
 														 encoding::RiscVRegister reg,
@@ -205,22 +206,23 @@ namespace codegen {
 		 * @param riscv An array of risc-v instructions.
 		 * @param count current number of risc-v instructions.
 		 */
-		static void
-		translate_destination(const fadec::Instruction& inst, encoding::RiscVRegister reg, encoding::RiscVRegister address,
-							  encoding::RiscVRegister temp_a, encoding::RiscVRegister temp_b, utils::riscv_instruction_t* riscv,
-							  size_t& count);
+		static void translate_destination(const fadec::Instruction& inst, encoding::RiscVRegister reg,
+										  encoding::RiscVRegister address, encoding::RiscVRegister temp_a,
+										  encoding::RiscVRegister temp_b, utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
-		 * Translates a x86-memory operand into risc-v instructions (resulting address in reg)
+		 * Translates a x86-memory operand into risc-v instructions .
 		 * @param x86_instruction The x86 instruction object.
 		 * @param index operand-index of instruction.
-		 * @param reg The resulting address will be returned in this register.
-		 * @param temp A temporary that might be changed.
+		 * @param temp_a A temporary that might be changed.
+		 * @param temp_b A temporary that might be changed.
 		 * @param riscv_instructions An array of risc-v instructions.
 		 * @param num_instructions current number of risc-v instructions.
+		 * @return Returns the register containing the address (either temp_a, or a base-register)
 		 */
-		static void translate_memory(const fadec::Instruction& inst, size_t index, encoding::RiscVRegister reg,
-									 encoding::RiscVRegister temp, utils::riscv_instruction_t* riscv, size_t& count);
+		static encoding::RiscVRegister translate_memory(const fadec::Instruction& inst, size_t index,
+														encoding::RiscVRegister temp_a, encoding::RiscVRegister temp_b,
+														utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
 		 * Writes a register with x86-style sub-manipulation to an existing register without
@@ -344,7 +346,7 @@ namespace codegen {
 		 * @return The riscv-register.
 		 */
 		static constexpr encoding::RiscVRegister map_reg_high(const fadec::Register reg) {
-			return map_reg(static_cast<fadec::Register>(static_cast<uint8_t>(reg) + 4));
+			return map_reg(static_cast<fadec::Register>(static_cast<uint8_t>(reg) - 4));
 		}
 	};
 }

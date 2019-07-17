@@ -210,19 +210,19 @@ void CodeGenerator::translate_pop(const fadec::Instruction& inst, utils::riscv_i
 				break;
 		}
 	} else if (inst.get_operand(0).get_type() == OperandType::mem) {
-		translate_memory(inst, 0, RiscVRegister::t0, RiscVRegister::t1, riscv, count);
+		RiscVRegister reg = translate_memory(inst, 0, RiscVRegister::t0, RiscVRegister::t1, riscv, count);
 		switch (operand_size) {
 			case 8:
 				riscv[count++] = encoding::LD(RiscVRegister::t1, rsp_reg, 0);
-				riscv[count++] = encoding::SD(RiscVRegister::t0, RiscVRegister::t1, 0);
+				riscv[count++] = encoding::SD(reg, RiscVRegister::t1, 0);
 				break;
 			case 4:
 				riscv[count++] = encoding::LW(RiscVRegister::t1, rsp_reg, 0);
-				riscv[count++] = encoding::SW(RiscVRegister::t0, RiscVRegister::t1, 0);
+				riscv[count++] = encoding::SW(reg, RiscVRegister::t1, 0);
 				break;
 			case 2:
 				riscv[count++] = encoding::LH(RiscVRegister::t1, rsp_reg, 0);
-				riscv[count++] = encoding::SH(RiscVRegister::t0, RiscVRegister::t1, 0);
+				riscv[count++] = encoding::SH(reg, RiscVRegister::t1, 0);
 				break;
 		}
 	}
