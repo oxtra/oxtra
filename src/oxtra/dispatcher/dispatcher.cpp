@@ -59,12 +59,12 @@ long Dispatcher::virtualize_syscall() {
 	if (guest_index < syscall_map.size()) {
 		const auto syscall_index = syscall_map[guest_index];
 
-		// only print the system call with it's arguments if debug trace is enabled
-		if constexpr (SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE) {
-			SPDLOG_TRACE("syscall: {}({}, {}, {}, {}, {}, {})", syscall_index,
-						 _guest_context.map.rdi, _guest_context.map.rsi, _guest_context.map.rdx,
-						 _guest_context.map.r10, _guest_context.map.r8, _guest_context.map.r9);
-		}
+#ifdef DEBUG
+		// print the systemcall with its attributes
+		spdlog::info("syscall: {}({}, {}, {}, {}, {}, {})", syscall_index,
+					 _guest_context.map.rdi, _guest_context.map.rsi, _guest_context.map.rdx,
+					 _guest_context.map.r10, _guest_context.map.r8, _guest_context.map.r9);
+#endif
 
 		if (syscall_index >= 0)
 			return syscall_index;
