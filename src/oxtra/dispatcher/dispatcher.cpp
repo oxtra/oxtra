@@ -12,9 +12,6 @@ Dispatcher::Dispatcher(const elf::Elf& elf, const arguments::Arguments& args)
 }
 
 long Dispatcher::run() {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
-
 	//TODO: add argument for stack-size (default: 0x3200000)
 	//TODO: initialize registers (ABI-conform)
 	//TODO: initialize stack (ABI-Conform)
@@ -32,9 +29,6 @@ long Dispatcher::run() {
 	_guest_context.map.syscall_handler = reinterpret_cast<uintptr_t>(Dispatcher::syscall_handler);
 	_guest_context.map.context = reinterpret_cast<uintptr_t>(&_guest_context);
 
-	SPDLOG_TRACE("Finished initializing guest context.");
-	SPDLOG_TRACE("Now entering guest.");
-
 	// switch the context and begin translation
 	const char* error_string = nullptr;
 	const auto exit_code = guest_enter(&_guest_context, _elf.get_entry_point(), &error_string);
@@ -43,8 +37,6 @@ long Dispatcher::run() {
 	if (error_string != nullptr)
 		throw std::runtime_error(error_string);
 	return exit_code;
-
-#pragma GCC diagnostic pop
 }
 
 long Dispatcher::virtualize_syscall() {

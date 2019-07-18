@@ -1,0 +1,15 @@
+.intel_syntax noprefix
+.global _start
+_start:
+MOV RDI, 1337
+SHL RDI, 60
+SAR RDI, 32
+ADD RDI, 42
+SUB RDI, 43
+INC RDI
+DEC RDI
+MOV RAX, 7
+IMUL RDI, RAX
+
+MOV RAX, 60
+SYSCALL
