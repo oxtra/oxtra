@@ -95,23 +95,23 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 			}
 		}
 
-#ifdef DEBUG
 		// print tracing-information
-		char formatted_string[512];
-		fadec::format(instructions[i].instruction, formatted_string, sizeof(formatted_string));
-		spdlog::debug("decoded {}", formatted_string);
-		for (size_t j = 0; j < count; j++) {
-			spdlog::trace(" - instruction[{}] = {}", j, decoding::parse_riscv(riscv[j]));
+		if constexpr (SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_DEBUG) {
+			char formatted_string[512];
+			fadec::format(instructions[i].instruction, formatted_string, sizeof(formatted_string));
+			SPDLOG_DEBUG("decoded {}", formatted_string);
+			for (size_t j = 0; j < count; j++) {
+				SPDLOG_TRACE(" - instruction[{}] = {}", j, decoding::parse_riscv(riscv[j]));
+			}
 		}
-#endif
 
 		// add the instruction to the store
 		_codestore.add_instruction(codeblock, instructions[i].instruction, riscv, count);
 	}
 
 	// add dynamic tracing-information for the basic-block
-	spdlog::info("Basicblock translated: x86: [0x{0:x} - 0x{1:x}] riscv: 0x{2:x}", codeblock.x86_start, codeblock.x86_end,
-				 codeblock.riscv_start);
+	spdlog::debug("Basicblock translated: x86: [0x{0:x} - 0x{1:x}] riscv: 0x{2:x}", codeblock.x86_start, codeblock.x86_end,
+				  codeblock.riscv_start);
 
 	return codeblock.riscv_start;
 }
