@@ -9,11 +9,6 @@ using namespace utils;
 
 Dispatcher::Dispatcher(const elf::Elf& elf, const arguments::Arguments& args)
 		: _elf(elf), _args(args), _codegen(args, elf) {
-
-	if(false) {
-		uintptr_t temp = 0;
-		spdlog::info("trigger_compilation 0x{0:x}", temp);
-	}
 }
 
 long Dispatcher::run() {
@@ -27,7 +22,7 @@ long Dispatcher::run() {
 	 * because they use this function with this prototype, but they
 	 * are not capable of triggering the compiler to compile this function.
 	 * Thus we have to trigger if from outside. */
-	spdlog::info("guest entry point: 0x{0:x}", _elf.get_entry_point());
+	spdlog::info<unsigned long>("guest entry point: 0x{0:x}", _elf.get_entry_point());
 
 	register uintptr_t gp_reg asm("gp");
 	register uintptr_t tp_reg asm("tp");
