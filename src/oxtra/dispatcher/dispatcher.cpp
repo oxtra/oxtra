@@ -7,6 +7,14 @@ using namespace dispatcher;
 using namespace codegen;
 using namespace utils;
 
+/* Print the info-string about the entry-point.
+	 * This string is required and must not be removed.
+	 * Otherwise reroute_static & reroute_dynamic will not compile,
+	 * because they use this function with this prototype, but they
+	 * are not capable of triggering the compiler to compile this function.
+	 * Thus we have to trigger if from outside. */
+template void spdlog::info<unsigned long>(const char*, const unsigned long&);
+
 Dispatcher::Dispatcher(const elf::Elf& elf, const arguments::Arguments& args)
 		: _elf(elf), _args(args), _codegen(args, elf) {
 }
@@ -16,12 +24,6 @@ long Dispatcher::run() {
 	//TODO: initialize registers (ABI-conform)
 	//TODO: initialize stack (ABI-Conform)
 
-	/* Print the info-string about the entry-point.
-	 * This string is required and must not be removed.
-	 * Otherwise reroute_static & reroute_dynamic will not compile,
-	 * because they use this function with this prototype, but they
-	 * are not capable of triggering the compiler to compile this function.
-	 * Thus we have to trigger if from outside. */
 	spdlog::info<unsigned long>("guest entry point: 0x{0:x}", _elf.get_entry_point());
 
 	register uintptr_t gp_reg asm("gp");
