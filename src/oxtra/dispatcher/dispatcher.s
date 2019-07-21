@@ -1,4 +1,4 @@
-.global _ZN10dispatcher10Dispatcher11guest_enterEPNS_7ContextEmPPKc # guest_enter
+.global _ZN10dispatcher10Dispatcher11guest_enterEPNS_16ExecutionContextEmPPKc # guest_enter
 .global _ZN10dispatcher10Dispatcher10guest_exitEl # guest_exit
 .global _ZN10dispatcher10Dispatcher10fault_exitEPKcl # fault_exit
 .global _ZN10dispatcher10Dispatcher14reroute_staticEv # reroute_static
@@ -70,7 +70,7 @@ reroute_dynamic_fmt: .string "reroute_dynamic: %lx\n"
 .section .text
 
 # guest_enter
-_ZN10dispatcher10Dispatcher11guest_enterEPNS_7ContextEmPPKc:
+_ZN10dispatcher10Dispatcher11guest_enterEPNS_16ExecutionContextEmPPKc:
 	# store a pointer to the guest context
 	mv t0, a0
 	mv t3, a1
@@ -146,7 +146,7 @@ _ZN10dispatcher10Dispatcher14reroute_staticEv:
 	jal ra, _IO_printf
 
 	# _codegen.translate(t3)
-	addi a0, s11, 512
+	ld a0, 496(s11)
 	mv a1, s0
 	jal ra, _ZN7codegen13CodeGenerator9translateEm
 
@@ -154,7 +154,7 @@ _ZN10dispatcher10Dispatcher14reroute_staticEv:
 	mv s0, a0
 
 	# _codegen.update_basic_block(ra, translated_address);
-	addi a0, s11, 512
+	ld a0, 496(s11)
 	mv a1, s1
 	mv a2, s0
 	jal ra, _ZN7codegen13CodeGenerator18update_basic_blockEmm
@@ -181,7 +181,7 @@ _ZN10dispatcher10Dispatcher15reroute_dynamicEv:
     jal ra, _IO_printf
 
     # _codegen.translate(t3)
-    addi a0, s11, 512
+    ld a0, 496(s11)
     mv a1, s0
     jal ra, _ZN7codegen13CodeGenerator9translateEm
 
@@ -200,7 +200,7 @@ _ZN10dispatcher10Dispatcher15syscall_handlerEv:
 
 	# invoke virtualize_syscall and check if it should be forwarded
     mv a0, s11
-    jal ra, _ZN10dispatcher10Dispatcher18virtualize_syscallEv
+    jal ra, _ZN10dispatcher10Dispatcher18virtualize_syscallEPKNS_16ExecutionContextE
     bltz a0, syscall_handled
 
     # arguments

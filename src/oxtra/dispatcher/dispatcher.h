@@ -3,9 +3,9 @@
 
 #include "oxtra/utils/types.h"
 #include "oxtra/arguments/arguments.h"
+#include "execution_context.h"
 #include "oxtra/codegen/codegen.h"
 #include "oxtra/elf/elf.h"
-#include "context.h"
 
 namespace dispatcher {
 	static_assert(codegen::CodeGenerator::address_destination == encoding::RiscVRegister::t3,
@@ -15,11 +15,7 @@ namespace dispatcher {
 
 	class Dispatcher {
 	private:
-		/**
-		 * The order and size of these attributes must not be changed!
-		 * (dispatcher.s requires these offsets)
-		 */
-		Context _guest_context, _host_context;
+		ExecutionContext _context;
 		const elf::Elf& _elf;
 		const arguments::Arguments& _args;
 		codegen::CodeGenerator _codegen;
@@ -62,7 +58,7 @@ namespace dispatcher {
 		 * Checks if the syscall has to be emulated and emulates it or forwards it otherwise.
 		 * @return Index of the riscv syscall or -1 if it was emulated.
 		 */
-		long virtualize_syscall();
+		static long virtualize_syscall(const ExecutionContext* context);
 
 		/**
 		 * Translates a guest branch address and reroutes the control flow to the branch target
@@ -83,7 +79,7 @@ namespace dispatcher {
 		 * @param fault_string A pointer, which might store the address to the fault_string, or zero
 		 * @return The exit_code parameter.
 		 */
-		static long guest_enter(Context* context, utils::guest_addr_t entry, const char** fault_string);
+		static long guest_enter(ExecutionContext* context, utils::guest_addr_t entry, const char** fault_string);
 	};
 }
 

@@ -11,7 +11,8 @@ add_library(oxtra_libs
 		oxtra/elf/elf.cpp
 		oxtra/codegen/codegen.cpp
 		oxtra/codegen/codestore/codestore.cpp
-		oxtra/dispatcher/dispatcher.cpp oxtra/utils/fixed_array.h
+		oxtra/dispatcher/dispatcher.cpp
+		oxtra/utils/fixed_array.h
 		oxtra/codegen/encoding/encoding.cpp
 		oxtra/codegen/decoding/decoding.cpp
 		oxtra/codegen/codegen_instructions.cpp
