@@ -3,7 +3,7 @@
 
 using namespace arguments;
 
-const char* argp_program_version = "oxtra 0.3 [alpha]";
+const char* argp_program_version = "oxtra 0.4 [alpha]";
 const char* argp_program_bug_address = "https://gitlab.lrz.de/lrr-tum/students/eragp-x86emu-2019";
 
 Arguments::Arguments(int argc, char** argv) :

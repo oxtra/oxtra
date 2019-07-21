@@ -21,6 +21,7 @@ namespace codegen {
 			require_overflow = 0x0008u,
 			require_parity = 0x0010u,
 			require_all = require_zero | require_sign | require_carry | require_overflow | require_parity,
+
 			update_zero = 0x0100u,
 			update_sign = 0x0200u,
 			update_carry = 0x0400u,
@@ -72,10 +73,12 @@ namespace codegen {
 			Group::Type update_flags = 0;
 		};
 
+		/*
+		 * This is the callback that is required for an apply-operation lifecycle. Inside a callback, the registers
+		 * t4, t5, t6 can be used freely.
+		 */
 		using OperationCallback = void (*)(const ContextInstruction& inst, encoding::RiscVRegister dest,
-										   encoding::RiscVRegister source, encoding::RiscVRegister temp_a,
-										   encoding::RiscVRegister temp_b, encoding::RiscVRegister temp_c,
-										   utils::riscv_instruction_t* riscv, size_t& count);
+										   encoding::RiscVRegister source, utils::riscv_instruction_t* riscv, size_t& count);
 
 	private:
 		const arguments::Arguments& _args;
@@ -95,39 +98,60 @@ namespace codegen {
 		void update_basic_block(utils::host_addr_t addr, utils::host_addr_t absolute_address);
 
 	private:
+		static void translate_add(const ContextInstruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
+
+		static void translate_inc(const ContextInstruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
+
+		static void translate_sub(const ContextInstruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
+
+		static void translate_dec(const ContextInstruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
+
+		static void translate_neg(const ContextInstruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
+
+		static void translate_imul(const ContextInstruction& inst, encoding::RiscVRegister dest,
+								   encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
+
+		static void translate_shl(const ContextInstruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
+
+		static void translate_shr(const ContextInstruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
+
+		static void translate_sar(const ContextInstruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
+
 		static void translate_mov_ext(const ContextInstruction& inst, encoding::RiscVRegister dest, encoding::RiscVRegister src,
-									  encoding::RiscVRegister temp_a, encoding::RiscVRegister temp_b,
-									  encoding::RiscVRegister temp_c, utils::riscv_instruction_t* riscv, size_t& count);
+									  utils::riscv_instruction_t* riscv, size_t& count);
 
 		static void translate_mov(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
 		static void translate_jmp(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
-		static void translate_syscall(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
+		static void translate_syscall(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
-		static void translate_push(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
+		static void translate_push(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
-		static void translate_pushf(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
+		static void translate_pushf(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
-		static void translate_pop(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
+		static void translate_pop(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
-		static void translate_popf(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
+		static void translate_popf(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
-		/**
-		 * Translates a x86 instruction into multiple risc-v instructions.
-		 * @param inst The x86 instruction object.
-		 * @param riscv An array of riscv instructions.
-		 * @param count Reference to the number of instructions that were written to the array.
-		 * @return Returns whether the this instruction ends the basic block.
-		 */
-		static bool translate_instruction(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
+		static void translate_ret(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
+
+		static void translate_call(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
 		 * Extracts all of the grouping information out of the instruction.
 		 * @param type The type of instructions
 		 * @return the group-flags of the instruction
 		 */
-		static size_t group_instruction(const fadec::InstructionType type);
+		static size_t group_instruction(fadec::InstructionType type);
 
 		/**
 		 * Translates a single x86 instruction into an array of riscv-instructions.
@@ -160,7 +184,8 @@ namespace codegen {
 		 * @param temp_b A temporary that might be changed.
 		 * @param riscv An array of risc-v instructions.
 		 * @param count current number of risc-v instructions.
-		 * @return if this operation was a memory-operation, the return-register will contain the address.
+		 * @return if this operation was a memory-operation,
+		 * 		   the return-register will contain the address (either temp_a, or a base-register)
 		 */
 		static encoding::RiscVRegister translate_operand(const fadec::Instruction& inst, size_t index,
 														 encoding::RiscVRegister reg,
@@ -178,22 +203,23 @@ namespace codegen {
 		 * @param riscv An array of risc-v instructions.
 		 * @param count current number of risc-v instructions.
 		 */
-		static void
-		translate_destination(const fadec::Instruction& inst, encoding::RiscVRegister reg, encoding::RiscVRegister address,
-							  encoding::RiscVRegister temp_a, encoding::RiscVRegister temp_b, utils::riscv_instruction_t* riscv,
-							  size_t& count);
+		static void translate_destination(const fadec::Instruction& inst, encoding::RiscVRegister reg,
+										  encoding::RiscVRegister address, encoding::RiscVRegister temp_a,
+										  encoding::RiscVRegister temp_b, utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
-		 * Translates a x86-memory operand into risc-v instructions (resulting address in reg)
+		 * Translates a x86-memory operand into risc-v instructions .
 		 * @param x86_instruction The x86 instruction object.
 		 * @param index operand-index of instruction.
-		 * @param reg The resulting address will be returned in this register.
-		 * @param temp A temporary that might be changed.
+		 * @param temp_a A temporary that might be changed.
+		 * @param temp_b A temporary that might be changed.
 		 * @param riscv_instructions An array of risc-v instructions.
 		 * @param num_instructions current number of risc-v instructions.
+		 * @return Returns the register containing the address (either temp_a, or a base-register)
 		 */
-		static void translate_memory(const fadec::Instruction& inst, size_t index, encoding::RiscVRegister reg,
-									 encoding::RiscVRegister temp, utils::riscv_instruction_t* riscv, size_t& count);
+		static encoding::RiscVRegister translate_memory(const fadec::Instruction& inst, size_t index,
+														encoding::RiscVRegister temp_a, encoding::RiscVRegister temp_b,
+														utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
 		 * Writes a register with x86-style sub-manipulation to an existing register without
@@ -354,7 +380,7 @@ namespace codegen {
 		 * @return The riscv-register.
 		 */
 		static constexpr encoding::RiscVRegister map_reg_high(const fadec::Register reg) {
-			return map_reg(static_cast<fadec::Register>(static_cast<uint8_t>(reg) + 4));
+			return map_reg(static_cast<fadec::Register>(static_cast<uint8_t>(reg) - 4));
 		}
 	};
 }

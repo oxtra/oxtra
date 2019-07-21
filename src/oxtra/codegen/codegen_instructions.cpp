@@ -9,13 +9,73 @@ using namespace fadec;
 using namespace encoding;
 using namespace dispatcher;
 
-void CodeGenerator::translate_mov_ext(const ContextInstruction& inst, RiscVRegister dest, RiscVRegister src,
-									  RiscVRegister temp_a, RiscVRegister temp_b, RiscVRegister temp_c,
-									  utils::riscv_instruction_t* riscv, size_t& count) {
-	unused_parameter(temp_a);
-	unused_parameter(temp_b);
-	unused_parameter(temp_c);
+void CodeGenerator::translate_add(const ContextInstruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count) {
+	unused_parameter(inst);
+	riscv[count++] = encoding::ADD(dest, src, dest);
+}
 
+void CodeGenerator::translate_inc(const ContextInstruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count) {
+	unused_parameter(inst);
+	unused_parameter(src);
+
+	riscv[count++] = encoding::ADDI(dest, dest, 1);
+}
+
+void CodeGenerator::translate_sub(const ContextInstruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count) {
+	unused_parameter(inst);
+
+	riscv[count++] = encoding::SUB(dest, dest, src);
+}
+
+void CodeGenerator::translate_dec(const ContextInstruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count) {
+	unused_parameter(inst);
+	unused_parameter(src);
+
+	riscv[count++] = encoding::ADDI(dest, dest, -1);
+}
+
+void CodeGenerator::translate_neg(const ContextInstruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count) {
+	unused_parameter(inst);
+	unused_parameter(src);
+
+	riscv[count++] = encoding::NEG(dest, dest);
+}
+
+void CodeGenerator::translate_imul(const ContextInstruction& inst, encoding::RiscVRegister dest,
+								   encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count) {
+	unused_parameter(inst);
+
+	riscv[count++] = encoding::MUL(dest, src, dest);
+}
+
+void CodeGenerator::translate_shl(const ContextInstruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count) {
+	unused_parameter(inst);
+
+	riscv[count++] = encoding::SLL(dest, dest, src);
+}
+
+void CodeGenerator::translate_shr(const ContextInstruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count) {
+	unused_parameter(inst);
+
+	riscv[count++] = encoding::SRL(dest, dest, src);
+}
+
+void CodeGenerator::translate_sar(const ContextInstruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count) {
+	unused_parameter(inst);
+
+	riscv[count++] = encoding::SRA(dest, dest, src);
+}
+
+void CodeGenerator::translate_mov_ext(const ContextInstruction& inst, RiscVRegister dest, RiscVRegister src,
+									  utils::riscv_instruction_t* riscv, size_t& count) {
 	/* Thus they will have to be sign-extended/zero-extended.
 	 * Otherwise the optimization will fail (load full 8-byte register, and store the interesting parts).
 	 * [It will fail, because the interesting, stored parts, are larger than they should be]
@@ -75,14 +135,14 @@ void CodeGenerator::translate_jmp(const ContextInstruction& inst, riscv_instruct
 	}
 }
 
-void CodeGenerator::translate_syscall(const Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
+void CodeGenerator::translate_syscall(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
 	// add the syscall-jump and add the padding for a static reroute
 	riscv[count++] = JALR(RiscVRegister::ra, syscall_address, 0);
 	load_64bit_immediate(inst.get_address() + inst.get_size(), address_destination, riscv, count, false);
 	riscv[count++] = JALR(RiscVRegister::ra, reroute_static_address, 0);
 }
 
-void CodeGenerator::translate_push(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
+void CodeGenerator::translate_push(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
 	const auto& operand = inst.get_operand(0);
 	constexpr auto rsp_reg = map_reg(Register::rsp);
 
@@ -110,7 +170,7 @@ void CodeGenerator::translate_push(const fadec::Instruction& inst, utils::riscv_
 	}
 }
 
-void CodeGenerator::translate_pushf(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
+void CodeGenerator::translate_pushf(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
 	// update the stack-pointer
 	constexpr auto rsp_reg = map_reg(Register::rsp);
 	riscv[count++] = encoding::ADDI(rsp_reg, rsp_reg, -inst.get_operand_size());
@@ -129,7 +189,7 @@ void CodeGenerator::translate_pushf(const fadec::Instruction& inst, utils::riscv
 	}
 }
 
-void CodeGenerator::translate_pop(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
+void CodeGenerator::translate_pop(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
 	constexpr auto rsp_reg = map_reg(Register::rsp);
 	const auto operand_size = inst.get_operand(0).get_size();
 
@@ -150,19 +210,19 @@ void CodeGenerator::translate_pop(const fadec::Instruction& inst, utils::riscv_i
 				break;
 		}
 	} else if (inst.get_operand(0).get_type() == OperandType::mem) {
-		translate_memory(inst, 0, RiscVRegister::t0, RiscVRegister::t1, riscv, count);
+		RiscVRegister reg = translate_memory(inst, 0, RiscVRegister::t0, RiscVRegister::t1, riscv, count);
 		switch (operand_size) {
 			case 8:
 				riscv[count++] = encoding::LD(RiscVRegister::t1, rsp_reg, 0);
-				riscv[count++] = encoding::SD(RiscVRegister::t0, RiscVRegister::t1, 0);
+				riscv[count++] = encoding::SD(reg, RiscVRegister::t1, 0);
 				break;
 			case 4:
 				riscv[count++] = encoding::LW(RiscVRegister::t1, rsp_reg, 0);
-				riscv[count++] = encoding::SW(RiscVRegister::t0, RiscVRegister::t1, 0);
+				riscv[count++] = encoding::SW(reg, RiscVRegister::t1, 0);
 				break;
 			case 2:
 				riscv[count++] = encoding::LH(RiscVRegister::t1, rsp_reg, 0);
-				riscv[count++] = encoding::SH(RiscVRegister::t0, RiscVRegister::t1, 0);
+				riscv[count++] = encoding::SH(reg, RiscVRegister::t1, 0);
 				break;
 		}
 	}
@@ -171,7 +231,7 @@ void CodeGenerator::translate_pop(const fadec::Instruction& inst, utils::riscv_i
 	riscv[count++] = encoding::ADDI(rsp_reg, rsp_reg, operand_size);
 }
 
-void CodeGenerator::translate_popf(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
+void CodeGenerator::translate_popf(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
 	constexpr auto rsp_reg = map_reg(Register::rsp);
 
 	// load the top of the stack into the flags register
@@ -189,4 +249,32 @@ void CodeGenerator::translate_popf(const fadec::Instruction& inst, utils::riscv_
 
 	// update the stack pointer
 	riscv[count++] = encoding::ADDI(rsp_reg, rsp_reg, inst.get_operand_size());
+}
+
+void CodeGenerator::translate_ret(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
+	constexpr auto rsp_reg = map_reg(Register::rsp);
+
+	// pop the ip from the stack
+	riscv[count++] = encoding::LD(address_destination, rsp_reg, 0);
+
+	// pop the immediate from the stack
+	if (inst.get_immediate() + 8 < 0x800)
+		riscv[count++] = encoding::ADDI(rsp_reg, rsp_reg, inst.get_immediate() + 8);
+	else {
+		load_unsigned_immediate(inst.get_immediate() + 8, RiscVRegister::t0, riscv, count);
+		riscv[count++] = encoding::ADD(rsp_reg, rsp_reg, RiscVRegister::t0);
+	}
+	
+	// attach the rerouting
+	riscv[count++] = JALR(RiscVRegister::ra, reroute_dynamic_address, 0);
+}
+
+void CodeGenerator::translate_call(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
+	// add the instructions for pushing the ip
+	load_unsigned_immediate(inst.get_address() + inst.get_size(), RiscVRegister::t0, riscv, count);
+	riscv[count++] = encoding::ADDI(map_reg(Register::rsp), map_reg(Register::rsp), -8);
+	riscv[count++] = encoding::SD(map_reg(Register::rsp), RiscVRegister::t0, 0);
+
+	// the rest of the function behaves just like jump
+	translate_jmp(inst, riscv, count);
 }
