@@ -78,50 +78,19 @@ namespace dispatcher {
 		 * The order and size of these attributes must not be changed!
 		 * (dispatcher.s requires these offsets)
 		 */
-		Context guest, host;
+
+		// 0x0
+		Context guest;
+
+		// 0xF8
+		Context host;
+
+		// 0x1F0
 		codegen::CodeGenerator* codegen;
 
-		/*
-		 * zero flag
-		 * store qword ptr 0
-		 * store value
-		 */
-		uintptr_t zf_value;
+		// 0x1F8
+		codegen::flags::FlagUpdateInfo flag_info;
 
-		/*
-		 * sign flag
-		 * store value
-		 * store size
-		 */
-		uintptr_t sf_value;
-		uint8_t sf_size;
-		
-		/*
-		 * parity flag
-		 * store qword ptr 0
-		 * store value
-		 */
-		uintptr_t pf_value;
-
-		/*
-		 * carry flag
-		 * store operation type
-		 * store operand size
-		 * store sources/results
-		 */
-		uint8_t cf_operation;
-		uint8_t cf_size;
-		uintptr_t cf_value[2];
-
-		/*
-		 * overflow flag
-		 * store operation type
-		 * store operand size
-		 * store sources/results
-		 */
-		uint8_t of_operation;
-		uint8_t of_size;
-		uintptr_t of_values[2];
 	};
 }
 

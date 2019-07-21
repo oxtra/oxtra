@@ -32,7 +32,7 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 			if (next_block->x86_start == addr) {
 				if (instructions.empty())
 					Dispatcher::fault_exit("codestore::find(...) must have failed");
-				instructions[instructions.size() - 1].update_flags |= Group::require_all;
+				instructions[instructions.size() - 1].update_flags |= flags::Group::require_all;
 				break;
 			}
 		}
@@ -45,7 +45,7 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 
 		// query all of the information about the instruction
 		entry.update_flags = group_instruction(entry.get_type());
-		if (entry.update_flags == Group::error) {
+		if (entry.update_flags == flags::Group::error) {
 			char formatted_string[256];
 			fadec::format(entry, formatted_string, sizeof(formatted_string));
 			char exception_buffer[512];
@@ -58,7 +58,7 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 
 		// add the instruction to the array and check if the instruction would end the block
 		instructions.push_back(entry);
-		if ((entry.update_flags & Group::end_of_block) == Group::end_of_block) {
+		if ((entry.update_flags & flags::Group::end_of_block) == flags::Group::end_of_block) {
 			next_block = nullptr;
 			break;
 		}
@@ -73,7 +73,7 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 
 		// add the requirements of this instruction to the search-requirements,
 		// to indicate to previous instructions, that the flags are needed, and update its update-flags
-		required_updates |= (it->update_flags & Group::require_all) << Group::require_to_update_lshift;
+		required_updates |= (it->update_flags & flags::Group::require_all) << flags::Group::require_to_update_lshift;
 		it->update_flags = need_update;
 	}
 
@@ -130,7 +130,7 @@ void CodeGenerator::update_basic_block(utils::host_addr_t addr, utils::host_addr
 	riscv[count++] = encoding::JALR(RiscVRegister::zero, address_destination, 0);
 }
 
-size_t CodeGenerator::group_instruction(fadec::InstructionType type) {
+flags::Group::Type CodeGenerator::group_instruction(fadec::InstructionType type) {
 	switch (type) {
 		case InstructionType::ADD:
 		case InstructionType::ADD_IMM:
@@ -144,11 +144,11 @@ size_t CodeGenerator::group_instruction(fadec::InstructionType type) {
 		case InstructionType::SAR_CL:
 		case InstructionType::SHR_IMM:
 		case InstructionType::SAR_IMM:
-			return Group::update_all;
+			return flags::Group::update_all;
 
 		case InstructionType::INC:
 		case InstructionType::DEC:
-			return Group::update_all ^ Group::update_carry;
+			return flags::Group::update_all ^ flags::Group::update_carry;
 
 		case InstructionType::MOV_IMM:
 		case InstructionType::MOVABS_IMM:
@@ -158,13 +158,13 @@ size_t CodeGenerator::group_instruction(fadec::InstructionType type) {
 		case InstructionType::NOP:
 		case InstructionType::PUSH:
 		case InstructionType::POP:
-			return Group::none;
+			return flags::Group::none;
 
 		case InstructionType::PUSHF:
-			return Group::require_all;
+			return flags::Group::require_all;
 
 		case InstructionType::POPF:
-			return Group::update_all;
+			return flags::Group::update_all;
 
 		case InstructionType::JMP:
 		case InstructionType::JMP_IND:
@@ -173,10 +173,10 @@ size_t CodeGenerator::group_instruction(fadec::InstructionType type) {
 		case InstructionType::RET_IMM:
 		case InstructionType::CALL:
 		case InstructionType::CALL_IND:
-			return Group::end_of_block;
+			return flags::Group::end_of_block;
 
 		default:
-			return Group::error;
+			return flags::Group::error;
 	}
 }
 

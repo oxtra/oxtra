@@ -3,8 +3,8 @@
 
 #include "oxtra/utils/types.h"
 #include "oxtra/arguments/arguments.h"
-#include "execution_context.h"
 #include "oxtra/codegen/codegen.h"
+#include "execution_context.h"
 #include "oxtra/elf/elf.h"
 
 namespace dispatcher {

@@ -1,6 +1,7 @@
 #ifndef OXTRA_CODEGEN_H
 #define OXTRA_CODEGEN_H
 
+#include "flags.h"
 #include "oxtra/utils/types.h"
 #include "oxtra/arguments/arguments.h"
 #include "oxtra/codegen/codestore/codestore.h"
@@ -10,29 +11,6 @@
 #include <fadec.h>
 
 namespace codegen {
-	namespace Group {
-		using Type = uint32_t;
-		enum : Type {
-			none = 0x0000u,
-			require_zero = 0x0001u,
-			require_sign = 0x0002u,
-			require_carry = 0x0004u,
-			require_overflow = 0x0008u,
-			require_parity = 0x0010u,
-			require_all = require_zero | require_sign | require_carry | require_overflow | require_parity,
-
-			update_zero = 0x0100u,
-			update_sign = 0x0200u,
-			update_carry = 0x0400u,
-			update_overflow = 0x0800u,
-			update_parity = 0x1000u,
-			update_all = update_zero | update_sign | update_carry | update_overflow | update_parity,
-			end_of_block = 0x8000u | require_all,
-			error = 0xffffffffu,
-			require_to_update_lshift = 8u
-		};
-	}
-
 	class CodeGenerator {
 	public:
 		// If these registers are changed, the documentation has to be updated
@@ -69,7 +47,7 @@ namespace codegen {
 		 * An instruction that contains information based on the context.
 		 */
 		struct ContextInstruction : public fadec::Instruction {
-			Group::Type update_flags = 0;
+			flags::Group::Type update_flags = 0;
 		};
 
 		/*
@@ -150,7 +128,7 @@ namespace codegen {
 		 * @param type The type of instructions
 		 * @return the group-flags of the instruction
 		 */
-		static size_t group_instruction(fadec::InstructionType type);
+		static flags::Group::Type group_instruction(fadec::InstructionType type);
 
 		/**
 		 * Translates a single x86 instruction into an array of riscv-instructions.
@@ -307,43 +285,6 @@ namespace codegen {
 		static void
 		load_unsigned_immediate(uintptr_t imm, encoding::RiscVRegister dest,
 								utils::riscv_instruction_t* riscv, size_t& count);
-
-		/**
-		 * Update the zero-flag from the result-register. The register will stay unchanged.
-		 * @param reg register which contains the result-value
-		 * @param reg_size operand-size of the register (8,4,2,1)
-		 * @param temp A temporary that might be changed.
-		 * @param riscv The pointer to the generated riscv instructions.
-		 * @param count The current length of the riscv instructions (i.e. the index of the next free position).
-		 */
-		static void
-		update_zero_flag(encoding::RiscVRegister reg, uint8_t reg_size, encoding::RiscVRegister temp,
-						 utils::riscv_instruction_t* riscv, size_t& count);
-
-		/**
-		 * Update the sign-flag from the result-register. The register will stay unchanged.
-		 * @param reg register which contains the result-value
-		 * @param reg_size operand-size of the register (8,4,2,1)
-		 * @param temp A temporary that might be changed.
-		 * @param riscv The pointer to the generated riscv instructions.
-		 * @param count The current length of the riscv instructions (i.e. the index of the next free position).
-		 */
-		static void
-		update_sign_flag(encoding::RiscVRegister reg, uint8_t reg_size, encoding::RiscVRegister temp,
-						 utils::riscv_instruction_t* riscv, size_t& count);
-
-		/**
-		 * Update the parity-flag from the result-register. The register will stay unchanged.
-		 * @param reg register which contains the result-value
-		 * @param reg_size operand-size of the register (8,4,2,1)
-		 * @param temp_a A temporary that might be changed.
-		 * @param temp_b A temporary that might be changed.
-		 * @param riscv The pointer to the generated riscv instructions.
-		 * @param count The current length of the riscv instructions (i.e. the index of the next free position).
-		 */
-		static void
-		update_parity_flag(encoding::RiscVRegister reg, uint8_t reg_size, encoding::RiscVRegister temp_a,
-						   encoding::RiscVRegister temp_b, utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
 		 * Returns the riscv-register, which maps to the x86-register.

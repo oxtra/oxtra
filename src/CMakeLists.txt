@@ -12,12 +12,11 @@ add_library(oxtra_libs
 		oxtra/codegen/codegen.cpp
 		oxtra/codegen/codestore/codestore.cpp
 		oxtra/dispatcher/dispatcher.cpp
-		oxtra/utils/fixed_array.h
 		oxtra/codegen/encoding/encoding.cpp
 		oxtra/codegen/decoding/decoding.cpp
 		oxtra/codegen/codegen_instructions.cpp
 		oxtra/codegen/codegen_helper.cpp
-)
+		oxtra/codegen/flags.cpp)
 
 target_link_libraries(oxtra_libs
 		fadec
