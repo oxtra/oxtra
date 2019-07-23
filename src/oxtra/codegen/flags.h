@@ -82,7 +82,8 @@ namespace codegen::flags {
 	};
 
 	/**
-	 * Update the zero-flag from the result-register. The register will stay unchanged.
+	 * Generate the code required to update the zero flag. The register will stay unchanged.
+	 * Call this method for every instruction, which updates the zero flag.
 	 * @param reg Register which contains the result-value.
 	 * @param reg_size Operand-size of the register (8,4,2,1).
 	 * @param riscv The pointer to the generated riscv instructions.
@@ -92,7 +93,16 @@ namespace codegen::flags {
 						  utils::riscv_instruction_t* riscv, size_t& count);
 
 	/**
+	 * Evaluate the zero flag. Call this method for every instruction, which requires the value of the zero flag.
+	 * @param reg This register will be zero if the flag is cleared and not equal to zero otherwise.
+	 * @param riscv The pointer to the generated riscv instructions.
+	 * @param count The current length of the riscv instructions (i.e. the index of the next free position).
+	 */
+	void evaluate_zero_flag(encoding::RiscVRegister reg, utils::riscv_instruction_t* riscv, size_t& count);
+
+	/**
 	 * Update the sign-flag from the result-register. The register will stay unchanged.
+	 * Call this method for every instruction, which updates the sign flag.
 	 * @param reg Register which contains the result-value.
 	 * @param reg_size Operand-size of the register (8,4,2,1).
 	 * @param temp A temporary that might be changed.
@@ -103,7 +113,16 @@ namespace codegen::flags {
 						  utils::riscv_instruction_t* riscv, size_t& count);
 
 	/**
+	 * Evaluate the sign flag. Call this method for every instruction, which requires the value of the sign flag.
+	 * @param reg This register will be zero if the flag is cleared and not equal to zero otherwise.
+	 * @param riscv The pointer to the generated riscv instructions.
+	 * @param count The current length of the riscv instructions (i.e. the index of the next free position).
+	 */
+	void evaluate_sign_flag(encoding::RiscVRegister reg, utils::riscv_instruction_t* riscv, size_t& count);
+
+	/**
 	 * Update the parity-flag from the result-register. The register will stay unchanged.
+	 * Call this method for every instruction, which updates the parity flag.
 	 * @param reg Register which contains the result-value.
 	 * @param reg_size Operand-size of the register (8,4,2,1).
 	 * @param riscv The pointer to the generated riscv instructions.
@@ -113,7 +132,16 @@ namespace codegen::flags {
 							utils::riscv_instruction_t* riscv, size_t& count);
 
 	/**
+	 * Evaluate the parity flag. Call this method for every instruction, which requires the value of the parity flag.
+	 * @param reg This register will be zero if the flag is cleared and not equal to zero otherwise.
+	 * @param riscv The pointer to the generated riscv instructions.
+	 * @param count The current length of the riscv instructions (i.e. the index of the next free position).
+	 */
+	void evaluate_parity_flag(encoding::RiscVRegister reg, utils::riscv_instruction_t* riscv, size_t& count);
+
+	/**
 	 * Update the carry-flag from the registers {reg_a, reg_b}. The registers will stay unchanged.
+	 * Call this method for every instruction, which updates the carry flag.
 	 * @param reg_a Operation dependent register.
 	 * @param reg_b Operation dependent register.
 	 * @param reg_size Operand-size of the register (8,4,2,1).
@@ -125,7 +153,16 @@ namespace codegen::flags {
 						   FlagOperation operation, utils::riscv_instruction_t* riscv, size_t& count);
 
 	/**
+	 * Evaluate the carry flag. Call this method for every instruction, which requires the value of the carry flag.
+	 * @param reg This register will be zero if the flag is cleared and not equal to zero otherwise.
+	 * @param riscv The pointer to the generated riscv instructions.
+	 * @param count The current length of the riscv instructions (i.e. the index of the next free position).
+	 */
+	void evaluate_carry_flag(encoding::RiscVRegister reg, utils::riscv_instruction_t* riscv, size_t& count);
+
+	/**
 	 * Update the overflow-flag from the registers {reg_a, reg_b}. The registers will stay unchanged.
+	 * Call this method for every instruction, which updates the overflow flag.
 	 * @param reg_a Operation dependent register.
 	 * @param reg_b Operation dependent register.
 	 * @param reg_size Operand-size of the register (8,4,2,1).
@@ -135,6 +172,14 @@ namespace codegen::flags {
 	 */
 	void update_overflow_flag(encoding::RiscVRegister reg_a, encoding::RiscVRegister reg_b, uint8_t reg_size,
 							  FlagOperation operation, utils::riscv_instruction_t* riscv, size_t& count);
+
+	/**
+	 * Evaluate the overflow flag. Call this method for every instruction, which requires the value of the overflow flag.
+	 * @param reg This register will be zero if the flag is cleared and not equal to zero otherwise.
+	 * @param riscv The pointer to the generated riscv instructions.
+	 * @param count The current length of the riscv instructions (i.e. the index of the next free position).
+	 */
+	void evaluate_overflow_flag(encoding::RiscVRegister reg, utils::riscv_instruction_t* riscv, size_t& count);
 }
 
 #endif //OXTRA_FLAGS_H

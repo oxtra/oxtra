@@ -7,8 +7,11 @@ using namespace encoding;
  * TODO move update functionality into evaluate functions and implement update.
  */
 
-void codegen::flags::update_zero_flag(RiscVRegister reg, uint8_t reg_size, utils::riscv_instruction_t* riscv, size_t& count) {
+void codegen::flags::update_zero_flag(encoding::RiscVRegister reg, uint8_t reg_size,
+									  utils::riscv_instruction_t* riscv, size_t& count) {
+}
 
+void codegen::flags::evaluate_zero_flag(encoding::RiscVRegister reg, utils::riscv_instruction_t* riscv, size_t& count) {
 #if 0
 	// shift the upper bits, in order to clear them
 	if (reg_size != 8) {
@@ -27,8 +30,8 @@ void codegen::flags::update_zero_flag(RiscVRegister reg, uint8_t reg_size, utils
 #endif
 }
 
-void codegen::flags::update_sign_flag(RiscVRegister reg, uint8_t reg_size, RiscVRegister temp, utils::riscv_instruction_t* riscv,
-									 size_t& count) {
+void codegen::flags::update_sign_flag(encoding::RiscVRegister reg, uint8_t reg_size, encoding::RiscVRegister temp,
+									  utils::riscv_instruction_t* riscv, size_t& count) {
 #if 0
 	// extract the lowest bit
 	riscv[count++] = encoding::SRLI(temp, reg, reg_size * 8 - 1);
@@ -44,7 +47,12 @@ void codegen::flags::update_sign_flag(RiscVRegister reg, uint8_t reg_size, RiscV
 #endif
 }
 
-void codegen::flags::update_parity_flag(RiscVRegister reg, uint8_t reg_size, utils::riscv_instruction_t* riscv, size_t& count) {
+void codegen::flags::evaluate_sign_flag(encoding::RiscVRegister reg, utils::riscv_instruction_t* riscv, size_t& count) {
+
+}
+
+void codegen::flags::update_parity_flag(encoding::RiscVRegister reg, uint8_t reg_size,
+										utils::riscv_instruction_t* riscv, size_t& count) {
 #if 0
 	// (reg >> 32) ^ reg = temp
 	// (a >> 16) ^ a
@@ -75,4 +83,26 @@ void codegen::flags::update_parity_flag(RiscVRegister reg, uint8_t reg_size, uti
 	riscv[count++] = encoding::J(8u);
 	riscv[count++] = encoding::ANDI(flag_register, flag_register, -0x11);
 #endif
+}
+
+void codegen::flags::evaluate_parity_flag(encoding::RiscVRegister reg, utils::riscv_instruction_t* riscv, size_t& count) {
+
+}
+
+void codegen::flags::update_carry_flag(encoding::RiscVRegister reg_a, encoding::RiscVRegister reg_b, uint8_t reg_size,
+									   FlagOperation operation, utils::riscv_instruction_t* riscv, size_t& count) {
+
+}
+
+void codegen::flags::evaluate_carry_flag(encoding::RiscVRegister reg, utils::riscv_instruction_t* riscv, size_t& count) {
+
+}
+
+void codegen::flags::update_overflow_flag(encoding::RiscVRegister reg_a, encoding::RiscVRegister reg_b, uint8_t reg_size,
+										  FlagOperation operation, utils::riscv_instruction_t* riscv, size_t& count) {
+
+}
+
+void codegen::flags::evaluate_overflow_flag(encoding::RiscVRegister reg, utils::riscv_instruction_t* riscv, size_t& count) {
+
 }

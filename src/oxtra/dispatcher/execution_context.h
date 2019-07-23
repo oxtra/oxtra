@@ -91,6 +91,7 @@ namespace dispatcher {
 		// 0x1F8
 		codegen::flags::FlagUpdateInfo flag_info;
 
+
 	};
 }
 

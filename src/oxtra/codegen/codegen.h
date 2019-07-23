@@ -34,6 +34,10 @@ namespace codegen {
 		 * s11 : context address
 		 */
 
+		/*
+		 * ld r, 0x600(s9)
+		 */
+
 	private:
 		enum class RegisterAccess : uint8_t {
 			QWORD,    // 64bit
