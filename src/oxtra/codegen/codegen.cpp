@@ -110,7 +110,7 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 	}
 
 	// add dynamic tracing-information for the basic-block
-	spdlog::info("Basicblock translated: x86: [0x{0:x} - 0x{1:x}] riscv: 0x{2:x}", codeblock.x86_start, codeblock.x86_end,
+	spdlog::info("basicblock translated: x86: [0x{0:x} - 0x{1:x}] riscv: 0x{2:x}", codeblock.x86_start, codeblock.x86_end,
 				 codeblock.riscv_start);
 
 	return codeblock.riscv_start;
