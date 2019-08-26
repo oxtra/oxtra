@@ -15,7 +15,8 @@ build:
     paths:
       - oxtra
       - test/unit_tests
-test:
+
+unit_test:
     stage: test
     script:
       - set +e # disable exit on error
@@ -25,3 +26,9 @@ test:
     artifacts:
       reports:
         junit: test/report.xml
+
+integration_test:
+    stage: test
+    script:
+      - shelltest --version
+      - shelltest --timeout=30 --threads=4 test/integration/*.otest
