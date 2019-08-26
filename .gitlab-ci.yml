@@ -34,5 +34,7 @@ integration_test:
     dependencies:
       - build
     script:
+      - ls -la
+      - ./oxtra --version
       - shelltest --version
       - shelltest --all --timeout=30 --threads=4 test/integration/*.otest
