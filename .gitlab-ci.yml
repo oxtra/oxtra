@@ -31,4 +31,4 @@ integration_test:
     stage: test
     script:
       - shelltest --version
-      - shelltest --timeout=30 --threads=4 test/integration/*.otest
+      - shelltest --all --timeout=30 --threads=4 test/integration/*.otest
