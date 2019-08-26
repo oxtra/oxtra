@@ -18,6 +18,8 @@ build:
 
 unit_test:
     stage: test
+    dependencies:
+      - build
     script:
       - set +e # disable exit on error
       - qemu-riscv64 test/unit_tests
@@ -29,6 +31,8 @@ unit_test:
 
 integration_test:
     stage: test
+    dependencies:
+      - build
     script:
       - shelltest --version
       - shelltest --all --timeout=30 --threads=4 test/integration/*.otest
