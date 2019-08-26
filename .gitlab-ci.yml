@@ -1,4 +1,4 @@
-image: plainerman/qemuriscv:gcc
+image: plainerman/qemuriscv:oxtra
 
 cache:
   key: ${CI_COMMIT_REF_SLUG}
