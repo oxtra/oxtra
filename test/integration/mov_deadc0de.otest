@@ -1,3 +1,3 @@
 # Testing if a simple move works correctly (at least the lowest 8bit).
 ./oxtra test/resources/no_libc/mov_deadc0de
->>>= 222
+>>>= 221
