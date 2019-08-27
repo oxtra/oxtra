@@ -27,7 +27,9 @@ namespace codegen::flags {
 	}
 
 	enum class FlagOperation : uint8_t {
-
+		add,
+		sub,
+		//...
 	};
 
 	/**
@@ -39,21 +41,14 @@ namespace codegen::flags {
 		 * store qword ptr 0
 		 * store value
 		 */
-		uintptr_t zf_value;
+		uintptr_t zf_value; // 0x00
 
 		/*
 		 * sign flag
 		 * store value
 		 * store size
 		 */
-		uintptr_t sf_value;
-
-		/*
-		 * parity flag
-		 * store qword ptr 0
-		 * store value
-		 */
-		uintptr_t pf_value;
+		uintptr_t sf_value; // 0x08
 
 		/*
 		 * carry flag
@@ -61,7 +56,7 @@ namespace codegen::flags {
 		 * store operand size
 		 * store sources/results
 		 */
-		uintptr_t cf_value[2];
+		uintptr_t cf_values[2]; // 0x10
 
 		/*
 		 * overflow flag
@@ -69,16 +64,30 @@ namespace codegen::flags {
 		 * store operand size
 		 * store sources/results
 		 */
-		uintptr_t of_values[2];
+		uintptr_t of_values[2]; // 0x20
 
 		/*
 		 * we want better padding
 		 */
-		uint8_t sf_size;
-		uint8_t cf_operation;
-		uint8_t cf_size;
-		uint8_t of_operation;
-		uint8_t of_size;
+		uint8_t sf_size; // 0x30
+		uint8_t pf_value; // 0x31
+		uint8_t cf_operation; // 0x32
+		uint8_t cf_size; // 0x33
+		uint8_t of_operation; // 0x34
+		uint8_t of_size; // 0x35
+
+		static constexpr uint32_t
+			flag_info_offset = 0x1F8,
+			zf_value_offset = flag_info_offset + 0x00,
+			sf_value_offset = flag_info_offset + 0x08,
+			cf_values_offset = flag_info_offset + 0x10,
+			of_values_offset = flag_info_offset + 0x20,
+			sf_size_offset = flag_info_offset + 0x30,
+			pf_value_offset = flag_info_offset + 0x31,
+			cf_operation_offset = flag_info_offset + 0x32,
+			cf_size_offset = flag_info_offset + 0x33,
+			of_operation_offset = flag_info_offset + 0x34,
+			of_size_offset = flag_info_offset + 0x35;
 	};
 
 	/**
@@ -105,11 +114,10 @@ namespace codegen::flags {
 	 * Call this method for every instruction, which updates the sign flag.
 	 * @param reg Register which contains the result-value.
 	 * @param reg_size Operand-size of the register (8,4,2,1).
-	 * @param temp A temporary that might be changed.
 	 * @param riscv The pointer to the generated riscv instructions.
 	 * @param count The current length of the riscv instructions (i.e. the index of the next free position).
 	 */
-	void update_sign_flag(encoding::RiscVRegister reg, uint8_t reg_size, encoding::RiscVRegister temp,
+	void update_sign_flag(encoding::RiscVRegister reg, uint8_t reg_size,
 						  utils::riscv_instruction_t* riscv, size_t& count);
 
 	/**
@@ -124,12 +132,10 @@ namespace codegen::flags {
 	 * Update the parity-flag from the result-register. The register will stay unchanged.
 	 * Call this method for every instruction, which updates the parity flag.
 	 * @param reg Register which contains the result-value.
-	 * @param reg_size Operand-size of the register (8,4,2,1).
 	 * @param riscv The pointer to the generated riscv instructions.
 	 * @param count The current length of the riscv instructions (i.e. the index of the next free position).
 	 */
-	void update_parity_flag(encoding::RiscVRegister reg, uint8_t reg_size,
-							utils::riscv_instruction_t* riscv, size_t& count);
+	void update_parity_flag(encoding::RiscVRegister reg, utils::riscv_instruction_t* riscv, size_t& count);
 
 	/**
 	 * Evaluate the parity flag. Call this method for every instruction, which requires the value of the parity flag.

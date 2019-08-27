@@ -18,6 +18,7 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 	 * This check will also validate, that the address won't corrupt the page-array. */
 	if ((_elf.get_page_flags(addr) & (elf::PAGE_EXECUTE | elf::PAGE_READ)) != (elf::PAGE_EXECUTE | elf::PAGE_READ))
 		dispatcher::Dispatcher::fault_exit("virtual segmentation fault");
+
 	if (const auto riscv_code = _codestore.find(addr))
 		return riscv_code;
 
