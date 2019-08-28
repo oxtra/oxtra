@@ -64,8 +64,8 @@
 .endm
 
 .section .data
-reroute_static_fmt: .string "reroute_static: %lx\n"
-reroute_dynamic_fmt: .string "reroute_dynamic: %lx\n"
+reroute_static_fmt: .string "reroute_static: 0x{0:x}"
+reroute_dynamic_fmt: .string "reroute_dynamic: 0x{0:x}"
 
 .section .text
 
@@ -140,10 +140,16 @@ _ZN10dispatcher10Dispatcher14reroute_staticEv:
 	# t3 might be changed by upcoming function calls, which is why we back it up
 	mv s0, t3
 
-	# printf("reroute_static: %lx\n", t3)
+	# spdlog::info("reroute_static: 0x{0:x}")
+	# Speedlog requires a reference on the value.
+	# To implement this, we push the value to display on the stack.
+	# Afterwards we can just pass the stackpointer to SpeedLog.
 	la a0, reroute_static_fmt
-	mv a1, s0
-	jal ra, _IO_printf
+	addi sp, sp, -8
+	sd s0, 0(sp)
+	mv a1, sp
+	jal ra, _ZN6spdlog4infoIJmEEEvPKcDpRKT_
+	addi sp, sp, 8
 
 	# _codegen.translate(t3)
 	ld a0, 496(s11)
@@ -170,15 +176,21 @@ _ZN10dispatcher10Dispatcher14reroute_staticEv:
 # reroute_dynamic
 _ZN10dispatcher10Dispatcher15reroute_dynamicEv:
 	# capture the guest context
-    capture_context s11
+	capture_context s11
 
-    # t3 might be changed by upcoming function calls, which is why we back it up
-    mv s0, t3
+	# t3 might be changed by upcoming function calls, which is why we back it up
+	mv s0, t3
 
-	# printf("reroute_dynamic: %lx\n", t3)
-    la a0, reroute_dynamic_fmt
-    mv a1, s0
-    jal ra, _IO_printf
+	# spdlog::info("reroute_dynamic: 0x{0:x}")
+	# Speedlog requires a reference on the value.
+	# To implement this, we push the value to display on the stack.
+	# Afterwards we can just pass the stackpointer to SpeedLog.
+	la a0, reroute_dynamic_fmt
+	addi sp, sp, -8
+	sd s0, 0(sp)
+	mv a1, sp
+	jal ra, _ZN6spdlog4infoIJmEEEvPKcDpRKT_
+	addi sp, sp, 8
 
     # _codegen.translate(t3)
     ld a0, 496(s11)
@@ -186,11 +198,11 @@ _ZN10dispatcher10Dispatcher15reroute_dynamicEv:
     jal ra, _ZN7codegen13CodeGenerator9translateEm
 
 	# a0 will be overridden by restore_context so we have to save the translated address
-    mv t3, a0
+	mv t3, a0
 
-    # restore the guest context
-    restore_context s11
-    jalr zero, t3, 0
+	# restore the guest context
+	restore_context s11
+	jalr zero, t3, 0
 
 
 # syscall_handler
@@ -203,8 +215,8 @@ _ZN10dispatcher10Dispatcher15syscall_handlerEv:
     jal ra, _ZN10dispatcher10Dispatcher18virtualize_syscallEPKNS_16ExecutionContextE
     bltz a0, syscall_handled
 
-    # arguments
-    mv a7, a0 # syscall index -> a7
+	# arguments
+	mv a7, a0 # syscall index -> a7
 	ld a0, 0x70(s11) # arg0 (rdi)
 	ld a1, 0x68(s11) # arg1 (rsi)
 	ld a2, 0x60(s11) # arg2 (rdx)
@@ -212,9 +224,9 @@ _ZN10dispatcher10Dispatcher15syscall_handlerEv:
 	ld a4, 0x78(s11) # arg4 (r8)
 	ld a5, 0x80(s11) # arg5 (r9)
 
-    # execute the syscall and write the return value into _guest_context.a0
-    ecall
-    sd a0, 0x48(s11)
+	# execute the syscall and write the return value into _guest_context.a0
+	ecall
+	sd a0, 0x48(s11)
 
 	# restore the guest context and return to caller
 syscall_handled:

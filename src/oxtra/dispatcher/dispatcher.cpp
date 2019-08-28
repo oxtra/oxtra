@@ -7,6 +7,13 @@ using namespace dispatcher;
 using namespace codegen;
 using namespace utils;
 
+/* This statement is required and must not be removed.
+ * Otherwise reroute_static & reroute_dynamic will not compile,
+ * because they use this function with this prototype, but they
+ * are not capable of triggering the compiler to compile this function.
+ * Thus we have to trigger if from outside. */
+template void spdlog::info(const char*, const unsigned long&);
+
 Dispatcher::Dispatcher(const elf::Elf& elf, const arguments::Arguments& args)
 		: _elf(elf), _args(args), _codegen(args, elf) {
 }
@@ -60,12 +67,12 @@ long Dispatcher::virtualize_syscall(const ExecutionContext* context) {
 	if (guest_index < syscall_map.size()) {
 		const auto syscall_index = syscall_map[guest_index];
 
-		// only print the system call with it's arguments if debug trace is enabled
-		if constexpr (SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE) {
-			SPDLOG_TRACE("syscall: {}({}, {}, {}, {}, {}, {})", syscall_index,
-						 context->guest.map.rdi, context->guest.map.rsi, context->guest.map.rdx,
-						 context->guest.map.r10, context->guest.map.r8, context->guest.map.r9);
-		}
+#ifdef DEBUG
+		// print the systemcall with its attributes
+		spdlog::info("syscall: {}({}, {}, {}, {}, {}, {})", syscall_index,
+					 context->guest.map.rdi, context->guest.map.rsi, context->guest.map.rdx,
+					 context->guest.map.r10, context->guest.map.r8, context->guest.map.r9);
+#endif
 
 		if (syscall_index >= 0)
 			return syscall_index;

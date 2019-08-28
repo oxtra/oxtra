@@ -23,6 +23,7 @@ namespace codegen {
 				flag_register = encoding::RiscVRegister::s1;
 
 		/*
+		 * sp : Is required to be the stack-pointer. Otherwise assembly will fail
 		 * ra, gp, tp : reserved
 		 * t0, t1, t2 : always temporary
 		 * t3, t4, t5, t6 : reserved for helper functions
