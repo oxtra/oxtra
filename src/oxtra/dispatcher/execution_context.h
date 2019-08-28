@@ -28,8 +28,11 @@ namespace dispatcher {
 			private:
 				uintptr_t _gp, _tp, _t0, _t1, _t2;
 			public:
-				uintptr_t rbp, rflags, rax, rbx, rcx, rdx, rsi, rdi, r8, r9, r10, r11, r12, r13, r14, r15,
-						reroute_static, reroute_dynamic, syscall_handler, context;
+				uintptr_t rbp, rflags, rax, rbx, rcx, rdx, rsi, rdi, r8, r9, r10, r11, r12, r13, r14, r15;
+			private:
+				uintptr_t _r8, _r9;
+			public:
+				uintptr_t jump_table, context;
 			private:
 				uintptr_t _t3, _t4, _t5, _t6;
 			} map;

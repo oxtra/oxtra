@@ -1,4 +1,5 @@
-#include "oxtra/codegen/codegen.h"
+#include "codegen.h"
+#include "jump_table.h"
 #include <spdlog/spdlog.h>
 #include <oxtra/dispatcher/dispatcher.h>
 
@@ -128,18 +129,18 @@ void CodeGenerator::translate_mov(const ContextInstruction& inst, utils::riscv_i
 void CodeGenerator::translate_jmp(const ContextInstruction& inst, riscv_instruction_t* riscv, size_t& count) {
 	if (inst.get_operand(0).get_type() == OperandType::imm) {
 		load_64bit_immediate(inst.get_immediate(), address_destination, riscv, count, false);
-		riscv[count++] = JALR(RiscVRegister::ra, reroute_static_address, 0);
+		jump_table::jump_reroute_static(RiscVRegister::ra, riscv, count);
 	} else {
 		translate_operand(inst, 0, address_destination, RiscVRegister::t0, RiscVRegister::t1, riscv, count);
-		riscv[count++] = JALR(RiscVRegister::ra, reroute_dynamic_address, 0);
+		jump_table::jump_reroute_dynamic(RiscVRegister::ra, riscv, count);
 	}
 }
 
 void CodeGenerator::translate_syscall(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
 	// add the syscall-jump and add the padding for a static reroute
-	riscv[count++] = JALR(RiscVRegister::ra, syscall_address, 0);
+	jump_table::jump_syscall_handler(RiscVRegister::ra, riscv, count);
 	load_64bit_immediate(inst.get_address() + inst.get_size(), address_destination, riscv, count, false);
-	riscv[count++] = JALR(RiscVRegister::ra, reroute_static_address, 0);
+	jump_table::jump_reroute_static(RiscVRegister::ra, riscv, count);
 }
 
 void CodeGenerator::translate_push(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
@@ -172,7 +173,8 @@ void CodeGenerator::translate_push(const ContextInstruction& inst, utils::riscv_
 
 void CodeGenerator::translate_pushf(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
 	// update the stack-pointer
-	constexpr auto rsp_reg = map_reg(Register::rsp);
+	// TODO: reimplement this
+	/*constexpr auto rsp_reg = map_reg(Register::rsp);
 	riscv[count++] = encoding::ADDI(rsp_reg, rsp_reg, -inst.get_operand_size());
 
 	// write the value to memory
@@ -186,7 +188,7 @@ void CodeGenerator::translate_pushf(const ContextInstruction& inst, utils::riscv
 		case 2:
 			riscv[count++] = encoding::SH(rsp_reg, flag_register, 0);
 			break;
-	}
+	}*/
 }
 
 void CodeGenerator::translate_pop(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
@@ -232,7 +234,8 @@ void CodeGenerator::translate_pop(const ContextInstruction& inst, utils::riscv_i
 }
 
 void CodeGenerator::translate_popf(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
-	constexpr auto rsp_reg = map_reg(Register::rsp);
+	// TODO: reimplement this
+	/*constexpr auto rsp_reg = map_reg(Register::rsp);
 
 	// load the top of the stack into the flags register
 	switch (inst.get_operand_size()) {
@@ -248,7 +251,7 @@ void CodeGenerator::translate_popf(const ContextInstruction& inst, utils::riscv_
 	}
 
 	// update the stack pointer
-	riscv[count++] = encoding::ADDI(rsp_reg, rsp_reg, inst.get_operand_size());
+	riscv[count++] = encoding::ADDI(rsp_reg, rsp_reg, inst.get_operand_size());*/
 }
 
 void CodeGenerator::translate_ret(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
@@ -266,7 +269,7 @@ void CodeGenerator::translate_ret(const ContextInstruction& inst, utils::riscv_i
 	}
 	
 	// attach the rerouting
-	riscv[count++] = JALR(RiscVRegister::ra, reroute_dynamic_address, 0);
+	jump_table::jump_reroute_dynamic(RiscVRegister::ra, riscv, count);
 }
 
 void CodeGenerator::translate_call(const ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {

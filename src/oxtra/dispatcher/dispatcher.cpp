@@ -31,9 +31,7 @@ long Dispatcher::run() {
 	_context.guest.tp = tp_reg;
 	_context.guest.map.rsp = reinterpret_cast<uintptr_t>(new uint8_t[0x3200000]) + 0x3200000;
 	_context.guest.map.rbp = _context.guest.map.rsp;
-	_context.guest.map.reroute_static = reinterpret_cast<uintptr_t>(Dispatcher::reroute_static);
-	_context.guest.map.reroute_dynamic = reinterpret_cast<uintptr_t>(Dispatcher::reroute_dynamic);
-	_context.guest.map.syscall_handler = reinterpret_cast<uintptr_t>(Dispatcher::syscall_handler);
+	_context.guest.map.jump_table = reinterpret_cast<uintptr_t>(jump_table);
 	_context.guest.map.context = reinterpret_cast<uintptr_t>(&_context);
 	_context.codegen = &_codegen;
 

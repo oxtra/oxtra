@@ -20,6 +20,11 @@ namespace dispatcher {
 		const arguments::Arguments& _args;
 		codegen::CodeGenerator _codegen;
 
+		/**
+		 * HACK HACK! This is a jump table pointer and not a normal function. We need this for name mangling.
+		 */
+		static void jump_table();
+
 	public:
 		Dispatcher(const elf::Elf& elf, const arguments::Arguments& args);
 

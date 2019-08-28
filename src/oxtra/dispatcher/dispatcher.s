@@ -4,6 +4,7 @@
 .global _ZN10dispatcher10Dispatcher14reroute_staticEv # reroute_static
 .global _ZN10dispatcher10Dispatcher15reroute_dynamicEv # reroute_dynamic
 .global _ZN10dispatcher10Dispatcher15syscall_handlerEv # syscall_handler
+.global _ZN10dispatcher10Dispatcher10jump_tableEv # jump_table
 
 
 # address of the context in reg
@@ -85,7 +86,7 @@ _ZN10dispatcher10Dispatcher11guest_enterEPNS_16ExecutionContextEmPPKc:
 	restore_context t0
 
 	# call reroute_dynamic to translate the address in t3
-	jalr ra, s9, 0
+	call _ZN10dispatcher10Dispatcher15reroute_dynamicEv
 	jalr zero, t3, 0
 
 
@@ -235,7 +236,7 @@ syscall_handled:
 
 # don't use the 'j' pseudo-instruction as it might unwrap to multiple instructions
 .align 8
-jump_table:
+_ZN10dispatcher10Dispatcher10jump_tableEv:
 	jal zero, _ZN10dispatcher10Dispatcher15syscall_handlerEv
 	jal zero, _ZN10dispatcher10Dispatcher14reroute_staticEv
 	jal zero, _ZN10dispatcher10Dispatcher15reroute_dynamicEv
