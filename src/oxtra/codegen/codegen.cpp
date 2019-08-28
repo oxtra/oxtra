@@ -207,23 +207,11 @@ void CodeGenerator::translate_instruction(InstructionEntry& inst, utils::riscv_i
 			break;
 
 		case InstructionType::MUL:
-		case InstructionType::MULX: {
+		case InstructionType::MULX:
 			//Todo: test with memory operand
-			constexpr auto scale_register = RiscVRegister::t0;
-			translate_operand(inst.instruction, 0, scale_register, RiscVRegister::t1, RiscVRegister::t2,
-							  riscv, count);
-
-			if (inst.instruction.get_operand(0).get_size() == 8) {
-				constexpr auto base_register = map_reg(fadec::Register::rax);
-				riscv[count++] = MULH(map_reg(fadec::Register::rdx), base_register, scale_register);
-				riscv[count++] = MUL(map_reg(fadec::Register::rax), base_register, scale_register);
-			} else {
-				spdlog::error("Only 64bit multiplication supported");
-				throw std::runtime_error("Unsupported operation.");
-			}
-
+			translate_mul(inst.instruction, riscv, count);
 			break;
-		}
+
 		case InstructionType::IMUL2:
 			apply_operation(inst.instruction, riscv, count, translate_imul);
 			break;

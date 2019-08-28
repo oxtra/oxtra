@@ -251,6 +251,50 @@ void CodeGenerator::translate_popf(const fadec::Instruction& inst, utils::riscv_
 	riscv[count++] = encoding::ADDI(rsp_reg, rsp_reg, inst.get_operand_size());
 }
 
+void CodeGenerator::translate_mul(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
+	constexpr auto rax = map_reg(fadec::Register::rax);
+	constexpr auto rdx = map_reg(fadec::Register::rdx);
+
+	const auto op_size = inst.get_operand(0).get_size();
+
+	constexpr auto operand_register = RiscVRegister::t0;
+	translate_operand(inst, 0, operand_register, RiscVRegister::t1, RiscVRegister::t2, riscv, count);
+
+	if (op_size == 8) {
+		constexpr auto base_register = rax;
+		riscv[count++] = MULH(rdx, base_register, operand_register);
+		riscv[count++] = MUL(rax, base_register, operand_register);
+	} else {
+		// 32 bit multiplication only requires a single MUL command, since the result fits in a 64 bit register
+		constexpr auto base_register = RiscVRegister::t1;
+		RegisterAccess base_register_type = RegisterAccess::DWORD;
+
+		if (op_size == 1) {
+			base_register_type = RegisterAccess::LBYTE;
+		} else if (op_size == 2) {
+			base_register_type = RegisterAccess::WORD;
+		}
+
+		move_to_register(base_register, rax, base_register_type, RiscVRegister::t2, riscv, count);
+
+		riscv[count++] = MUL(base_register, base_register, operand_register);
+		move_to_register(rax, base_register, base_register_type, RiscVRegister::t2, riscv, count);
+
+		riscv[count++] = SRLI(base_register, base_register, op_size * 8);
+		move_to_register(rdx, base_register, base_register_type, RiscVRegister::t2, riscv, count);
+	}
+}
+
+void CodeGenerator::translate_call(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
+	// add the instructions for pushing the ip
+	load_unsigned_immediate(inst.get_address() + inst.get_size(), RiscVRegister::t0, riscv, count);
+	riscv[count++] = encoding::ADDI(map_reg(Register::rsp), map_reg(Register::rsp), -8);
+	riscv[count++] = encoding::SD(map_reg(Register::rsp), RiscVRegister::t0, 0);
+
+	// the rest of the function behaves just like jump
+	translate_jmp(inst, riscv, count);
+}
+
 void CodeGenerator::translate_ret(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
 	constexpr auto rsp_reg = map_reg(Register::rsp);
 
@@ -264,17 +308,7 @@ void CodeGenerator::translate_ret(const fadec::Instruction& inst, utils::riscv_i
 		load_unsigned_immediate(inst.get_immediate() + 8, RiscVRegister::t0, riscv, count);
 		riscv[count++] = encoding::ADD(rsp_reg, rsp_reg, RiscVRegister::t0);
 	}
-	
+
 	// attach the rerouting
 	riscv[count++] = JALR(RiscVRegister::ra, reroute_dynamic_address, 0);
-}
-
-void CodeGenerator::translate_call(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
-	// add the instructions for pushing the ip
-	load_unsigned_immediate(inst.get_address() + inst.get_size(), RiscVRegister::t0, riscv, count);
-	riscv[count++] = encoding::ADDI(map_reg(Register::rsp), map_reg(Register::rsp), -8);
-	riscv[count++] = encoding::SD(map_reg(Register::rsp), RiscVRegister::t0, 0);
-
-	// the rest of the function behaves just like jump
-	translate_jmp(inst, riscv, count);
 }
