@@ -154,14 +154,13 @@ RiscVRegister CodeGenerator::translate_memory(const Instruction& inst, size_t in
 		// less or equal than 12 bits
 		if (displacement < 0x800) {
 			riscv[count++] = encoding::ADDI(temp_a, temp_reg, static_cast<uint16_t>(displacement));
-			if(temp_reg == RiscVRegister::zero)
+			if (temp_reg == RiscVRegister::zero)
 				temp_reg = temp_a;
 		} else {
-			if(temp_reg == RiscVRegister::zero) {
+			if (temp_reg == RiscVRegister::zero) {
 				load_unsigned_immediate(displacement, temp_a, riscv, count);
 				temp_reg = temp_a;
-			}
-			else{
+			} else {
 				load_unsigned_immediate(displacement, temp_b, riscv, count);
 				riscv[count++] = encoding::ADD(temp_a, temp_reg, temp_b);
 			}

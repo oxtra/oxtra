@@ -138,6 +138,7 @@ size_t CodeGenerator::group_instruction(fadec::InstructionType type) {
 		case InstructionType::SUB:
 		case InstructionType::SUB_IMM:
 		case InstructionType::NEG:
+		case InstructionType::MUL: //TODO: check this
 		case InstructionType::IMUL2:
 		case InstructionType::SHL_CL:
 		case InstructionType::SHL_IMM:
@@ -151,6 +152,7 @@ size_t CodeGenerator::group_instruction(fadec::InstructionType type) {
 		case InstructionType::DEC:
 			return Group::update_arithmetic ^ Group::update_carry;
 
+		case InstructionType::MULX:
 		case InstructionType::MOV_IMM:
 		case InstructionType::MOVABS_IMM:
 		case InstructionType::MOV:
@@ -204,6 +206,24 @@ void CodeGenerator::translate_instruction(InstructionEntry& inst, utils::riscv_i
 			apply_operation(inst.instruction, riscv, count, translate_dec);
 			break;
 
+		case InstructionType::MUL:
+		case InstructionType::MULX: {
+			//Todo: test with memory operand
+			constexpr auto scale_register = RiscVRegister::t0;
+			translate_operand(inst.instruction, 0, scale_register, RiscVRegister::t1, RiscVRegister::t2,
+							  riscv, count);
+
+			if (inst.instruction.get_operand(0).get_size() == 8) {
+				constexpr auto base_register = map_reg(fadec::Register::rax);
+				riscv[count++] = MULH(map_reg(fadec::Register::rdx), base_register, scale_register);
+				riscv[count++] = MUL(map_reg(fadec::Register::rax), base_register, scale_register);
+			} else {
+				spdlog::error("Only 64bit multiplication supported");
+				throw std::runtime_error("Unsupported operation.");
+			}
+
+			break;
+		}
 		case InstructionType::IMUL2:
 			apply_operation(inst.instruction, riscv, count, translate_imul);
 			break;
