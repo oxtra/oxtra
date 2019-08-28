@@ -252,6 +252,7 @@ void CodeGenerator::translate_popf(const fadec::Instruction& inst, utils::riscv_
 }
 
 void CodeGenerator::translate_mul(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
+	//TODO: find a better way than those constants?
 	constexpr auto rax = map_reg(fadec::Register::rax);
 	constexpr auto rdx = map_reg(fadec::Register::rdx);
 
@@ -265,7 +266,7 @@ void CodeGenerator::translate_mul(const fadec::Instruction& inst, utils::riscv_i
 		riscv[count++] = MULH(rdx, base_register, operand_register);
 		riscv[count++] = MUL(rax, base_register, operand_register);
 	} else {
-		// 32 bit multiplication only requires a single MUL command, since the result fits in a 64 bit register
+		// 32 bit multiplication only requires a single MUL command, since the result fits in a single 64 bit register
 		constexpr auto base_register = RiscVRegister::t1;
 		RegisterAccess base_register_type = RegisterAccess::DWORD;
 
@@ -275,13 +276,19 @@ void CodeGenerator::translate_mul(const fadec::Instruction& inst, utils::riscv_i
 			base_register_type = RegisterAccess::WORD;
 		}
 
-		move_to_register(base_register, rax, base_register_type, RiscVRegister::t2, riscv, count);
+		//since we use the base register as destination, we have to clear it first
+		riscv[count++] = ADDI(base_register, RiscVRegister::zero, 0);
+		move_to_register(base_register, rax, base_register_type, RiscVRegister::t2, riscv, count, true);
 
 		riscv[count++] = MUL(base_register, base_register, operand_register);
-		move_to_register(rax, base_register, base_register_type, RiscVRegister::t2, riscv, count);
 
-		riscv[count++] = SRLI(base_register, base_register, op_size * 8);
-		move_to_register(rdx, base_register, base_register_type, RiscVRegister::t2, riscv, count);
+		if (op_size == 1) {
+			move_to_register(rax, base_register, RegisterAccess::WORD, RiscVRegister::t2, riscv, count);
+		} else {
+			move_to_register(rax, base_register, base_register_type, RiscVRegister::t2, riscv, count);
+			riscv[count++] = SRLI(base_register, base_register, op_size * 8);
+			move_to_register(rdx, base_register, base_register_type, RiscVRegister::t2, riscv, count);
+		}
 	}
 }
 
