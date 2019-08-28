@@ -220,3 +220,10 @@ _ZN10dispatcher10Dispatcher15syscall_handlerEv:
 syscall_handled:
     restore_context s11
     ret
+
+# don't use the 'j' pseudo-instruction as it might unwrap to multiple instructions
+.align 8
+jump_table:
+	jal zero, _ZN10dispatcher10Dispatcher15syscall_handlerEv
+	jal zero, _ZN10dispatcher10Dispatcher14reroute_staticEv
+	jal zero, _ZN10dispatcher10Dispatcher15reroute_dynamicEv

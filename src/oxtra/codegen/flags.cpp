@@ -43,6 +43,7 @@ void codegen::flags::evaluate_zero_flag(RiscVRegister reg, utils::riscv_instruct
 	// load the value we base our zero flag calculation off of
 	riscv[count++] = LD(RiscVRegister::t0, CodeGenerator::context_address, FlagUpdateInfo::zf_value_offset);
 
+	// we wouldn't need this instruction if we modified the checks in jz for example
 	// reg = (t0 == 0) ? 1 : 0
 	riscv[count++] = SEQZ(reg, RiscVRegister::t0);
 }
@@ -92,6 +93,9 @@ void codegen::flags::evaluate_parity_flag(RiscVRegister reg, utils::riscv_instru
 
 	// only look at the least significant bit
 	riscv[count++] = ANDI(RiscVRegister::t0, RiscVRegister::t0, 1);
+
+	// we wouldn't need this instruction if me modified the checks in jp for example
+	// reg = (t0 == 0) ? 1 : 0
 	riscv[count++] = SEQZ(reg, RiscVRegister::t0);
 }
 
