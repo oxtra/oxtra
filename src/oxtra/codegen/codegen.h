@@ -146,6 +146,8 @@ namespace codegen {
 
 		static void translate_popf(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
+		static void translate_div(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
+
 		static void translate_ret(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
 		static void translate_call(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);

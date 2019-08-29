@@ -145,6 +145,7 @@ size_t CodeGenerator::group_instruction(fadec::InstructionType type) {
 		case InstructionType::SAR_CL:
 		case InstructionType::SHR_IMM:
 		case InstructionType::SAR_IMM:
+		case InstructionType::DIV:
 			return Group::update_arithmetic;
 
 		case InstructionType::INC:
@@ -206,6 +207,10 @@ void CodeGenerator::translate_instruction(InstructionEntry& inst, utils::riscv_i
 
 		case InstructionType::IMUL2:
 			apply_operation(inst.instruction, riscv, count, translate_imul);
+			break;
+
+		case InstructionType::DIV:
+			translate_div(inst.instruction, riscv, count);
 			break;
 
 		case InstructionType::SHL_CL:

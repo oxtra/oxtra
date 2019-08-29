@@ -269,6 +269,59 @@ void CodeGenerator::translate_ret(const fadec::Instruction& inst, utils::riscv_i
 	riscv[count++] = JALR(RiscVRegister::ra, reroute_dynamic_address, 0);
 }
 
+void CodeGenerator::translate_div(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
+	// TODO move_to_register needs a temp but i'm already using 0-2. maybe change?
+
+	const auto op_size = inst.get_operand(0).get_size();
+
+	constexpr auto quotient = RiscVRegister::t2;
+	constexpr auto remainder = RiscVRegister::t2;
+	constexpr auto dividend = RiscVRegister::t1;
+	constexpr auto divisor = RiscVRegister::t0;
+	translate_operand(inst, 0, divisor, RiscVRegister::t1, RiscVRegister::t2, riscv, count);
+
+	constexpr auto rax = map_reg(fadec::Register::rax);
+	constexpr auto rdx = map_reg(fadec::Register::rdx);
+
+	if (op_size == 8) {
+		// TODO
+	} else if (op_size == 1) {
+		constexpr auto quotient_dest = rax;
+		constexpr auto remainder_dest = rax;
+
+		move_to_register(dividend, rax, RegisterAccess::WORD, RiscVRegister::t2, riscv, count);
+
+		riscv[count++] = encoding::DIVU(quotient, dividend, divisor);
+		move_to_register(quotient_dest, quotient, RegisterAccess::LBYTE, RiscVRegister::t3, riscv, count);
+		riscv[count++] = encoding::REMU(remainder, dividend, divisor);
+		move_to_register(remainder_dest, remainder, RegisterAccess::HBYTE, RiscVRegister::t3, riscv, count);
+	} else {
+		constexpr auto quotient_dest = rax;
+		constexpr auto remainder_dest = rdx;
+		RegisterAccess reg_access;
+		size_t shamt;
+		if (op_size == 2) {
+			reg_access = RegisterAccess::WORD;
+			shamt = 16;
+		} else {
+			reg_access = RegisterAccess::DWORD;
+			shamt = 32;
+		}
+
+		// TODO: does not take edx into account for some reason
+		// dividend = dx:ax bzw. edx:eax
+		riscv[count++] = encoding::MV(dividend, RiscVRegister::zero);
+		move_to_register(dividend, rdx, reg_access, RiscVRegister::t2, riscv, count);
+		riscv[count++] = encoding::SLLI(dividend, dividend, shamt);
+		move_to_register(dividend, rax, reg_access, RiscVRegister::t2, riscv, count);
+
+		riscv[count++] = encoding::DIVU(quotient, dividend, divisor);
+		move_to_register(quotient_dest, quotient, reg_access, RiscVRegister::t3, riscv, count);
+		riscv[count++] = encoding::REMU(remainder, dividend, divisor);
+		move_to_register(remainder_dest, remainder, reg_access, RiscVRegister::t3, riscv, count);
+	}
+}
+
 void CodeGenerator::translate_call(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
 	// add the instructions for pushing the ip
 	load_unsigned_immediate(inst.get_address() + inst.get_size(), RiscVRegister::t0, riscv, count);
