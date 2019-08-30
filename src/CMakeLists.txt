@@ -16,7 +16,7 @@ add_library(oxtra_libs
 		oxtra/codegen/decoding/decoding.cpp
 		oxtra/codegen/codegen_instructions.cpp
 		oxtra/codegen/codegen_helper.cpp
-		oxtra/codegen/flags.cpp
+		oxtra/codegen/flags/flags.cpp
 )
 
 target_link_libraries(oxtra_libs

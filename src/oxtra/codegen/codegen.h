@@ -1,7 +1,7 @@
 #ifndef OXTRA_CODEGEN_H
 #define OXTRA_CODEGEN_H
 
-#include "flags.h"
+#include "oxtra/codegen/flags/flags.h"
 #include "oxtra/utils/types.h"
 #include "oxtra/arguments/arguments.h"
 #include "oxtra/codegen/codestore/codestore.h"
@@ -139,7 +139,7 @@ namespace codegen {
 		static void translate_instruction(ContextInstruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
-		 * extracts the two operands out of the instruction, and calls the callback,
+		 * Extracts the two operands out of the instruction, and calls the callback,
 		 * which then implements the corresponding operation.
 		 * The value of the source-register must not be changed. For optimization-purposes,
 		 * it might be the actual source-register.

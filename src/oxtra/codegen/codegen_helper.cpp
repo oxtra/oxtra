@@ -22,13 +22,23 @@ void CodeGenerator::apply_operation(const ContextInstruction& inst, utils::riscv
 	// extract the register for the destination-value
 	RiscVRegister dest_register = RiscVRegister::t1;
 	RiscVRegister address = RiscVRegister::zero;
-	if (inst.get_operand(0).get_type() == OperandType::reg && inst.get_operand(0).get_size() >= 4)
+	auto dest_size = inst.get_operand(0).get_size();
+	if (inst.get_operand(0).get_type() == OperandType::reg && dest_size >= 4)
 		dest_register = map_reg(inst.get_operand(0).get_register());
 	else
 		address = translate_operand(inst, 0, dest_register, RiscVRegister::t2, RiscVRegister::t3, riscv, count);
 
 	// call the callback to apply the changes
 	callback(inst, dest_register, source_register, riscv, count);
+
+	if (inst.update_flags & flags::Group::update_zero)
+		flags::update_zero_flag(dest_register, dest_size, riscv, count);
+
+	if (inst.update_flags & flags::Group::update_sign)
+		flags::update_sign_flag(dest_register, RiscVRegister::t4, dest_size, riscv, count);
+
+	if (inst.update_flags & flags::Group::update_parity)
+		flags::update_parity_flag(dest_register, riscv, count);
 
 	// write the value back to the destination
 	translate_destination(inst, dest_register, address, RiscVRegister::t2, RiscVRegister::t3, riscv, count);
