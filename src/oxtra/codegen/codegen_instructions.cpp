@@ -252,43 +252,55 @@ void CodeGenerator::translate_popf(const fadec::Instruction& inst, utils::riscv_
 }
 
 void CodeGenerator::translate_mul(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
-	//TODO: find a better way than those constants?
-	constexpr auto rax = map_reg(fadec::Register::rax);
-	constexpr auto rdx = map_reg(fadec::Register::rdx);
-
 	const auto op_size = inst.get_operand(0).get_size();
 
 	constexpr auto operand_register = RiscVRegister::t0;
+	const auto base_register = op_size == 8 ? RiscVRegister::rax : RiscVRegister::t1;
+
 	translate_operand(inst, 0, operand_register, RiscVRegister::t1, RiscVRegister::t2, riscv, count);
 
 	if (op_size == 8) {
-		constexpr auto base_register = rax;
-		riscv[count++] = MULH(rdx, base_register, operand_register);
-		riscv[count++] = MUL(rax, base_register, operand_register);
+		riscv[count++] = MULHU(RiscVRegister::rdx, base_register, operand_register);
+		riscv[count++] = MUL(RiscVRegister::rax, base_register, operand_register);
 	} else {
 		// 32 bit multiplication only requires a single MUL command, since the result fits in a single 64 bit register
-		constexpr auto base_register = RiscVRegister::t1;
-		RegisterAccess base_register_type = RegisterAccess::DWORD;
-
-		if (op_size == 1) {
-			base_register_type = RegisterAccess::LBYTE;
-		} else if (op_size == 2) {
-			base_register_type = RegisterAccess::WORD;
-		}
+		const RegisterAccess register_type = operand_to_register_access(op_size);
 
 		//since we use the base register as destination, we have to clear it first
 		riscv[count++] = ADDI(base_register, RiscVRegister::zero, 0);
-		move_to_register(base_register, rax, base_register_type, RiscVRegister::t2, riscv, count, true);
+		move_to_register(base_register, RiscVRegister::rax, register_type, RiscVRegister::t2, riscv, count, true);
 
 		riscv[count++] = MUL(base_register, base_register, operand_register);
 
 		if (op_size == 1) {
-			move_to_register(rax, base_register, RegisterAccess::WORD, RiscVRegister::t2, riscv, count);
+			move_to_register(RiscVRegister::rax, base_register, RegisterAccess::WORD, RiscVRegister::t2, riscv, count);
 		} else {
-			move_to_register(rax, base_register, base_register_type, RiscVRegister::t2, riscv, count);
+			move_to_register(RiscVRegister::rax, base_register, register_type, RiscVRegister::t2, riscv, count);
 			riscv[count++] = SRLI(base_register, base_register, op_size * 8);
-			move_to_register(rdx, base_register, base_register_type, RiscVRegister::t2, riscv, count);
+			move_to_register(RiscVRegister::rdx, base_register, register_type, RiscVRegister::t2, riscv, count);
 		}
+	}
+}
+
+void CodeGenerator::translate_imul1(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
+	const auto op_size = inst.get_operand(0).get_size();
+
+	constexpr auto operand_register = RiscVRegister::t0;
+	translate_operand(inst, 0, operand_register, RiscVRegister::t1, RiscVRegister::t2, riscv, count);
+	sign_extend_register(operand_register, operand_register, op_size, riscv, count);
+
+	const auto base_register = op_size == 8 ? RiscVRegister::rax : RiscVRegister::t1;
+	sign_extend_register(base_register, RiscVRegister::rax, op_size, riscv, count);
+
+	// if we have 64bit multiplication, we do not have to care about storing the upper bits
+	riscv[count++] = MULH(op_size == 8 ? RiscVRegister::rdx : RiscVRegister::t2, base_register, operand_register);
+	riscv[count++] = MUL(base_register, base_register, operand_register);
+
+	if (op_size < 8) {
+		const RegisterAccess register_type = operand_to_register_access(op_size);
+
+		move_to_register(RiscVRegister::rdx, RiscVRegister::t2, register_type, RiscVRegister::t3, riscv, count);
+		move_to_register(RiscVRegister::rax, base_register, register_type, RiscVRegister::t3, riscv, count);
 	}
 }
 

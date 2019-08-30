@@ -224,6 +224,15 @@ void CodeGenerator::move_to_register(RiscVRegister dest, RiscVRegister src, Regi
 	}
 }
 
+void CodeGenerator::sign_extend_register(RiscVRegister dest, RiscVRegister src, size_t byte,
+										 riscv_instruction_t* riscv, size_t& count) {
+	const auto shamt = (sizeof(size_t) - byte) * 8;
+	if (shamt > 0) {
+		riscv[count++] = encoding::SLLI(dest, src, shamt);
+		riscv[count++] = encoding::SRAI(dest, dest, shamt);
+	}
+}
+
 void CodeGenerator::load_12bit_immediate(uint16_t imm, RiscVRegister dest, riscv_instruction_t* riscv, size_t& count) {
 	riscv[count++] = encoding::ADDI(dest, RiscVRegister::zero, static_cast<uint16_t>(imm) & 0x0FFFu);
 }

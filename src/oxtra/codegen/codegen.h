@@ -74,6 +74,18 @@ namespace codegen {
 		};
 
 		/**
+		 * Get the register access for a given operand size.
+		 * @param op_size The size of the operand in bytes. May only be 1,2,4 or 8.
+		 * @return The correct RegisterAccess. The lower byte will be returned for an operand size of 1.
+		 */
+		static RegisterAccess operand_to_register_access(size_t op_size) {
+			if (op_size == 1) return RegisterAccess::LBYTE;
+			if (op_size == 2) return RegisterAccess::WORD;
+			if (op_size == 4) return RegisterAccess::DWORD;
+			return RegisterAccess::QWORD;
+		}
+
+		/**
 		 * This is the callback that is required for an apply-operation lifecycle. Inside a callback, the registers
 		 * t4, t5, t6 can be used freely.
 		 */
@@ -148,6 +160,8 @@ namespace codegen {
 
 		static void translate_mul(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
+		static void translate_imul1(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
+
 		static void translate_call(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
 		static void translate_ret(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
@@ -191,7 +205,8 @@ namespace codegen {
 		 * @param riscv An array of risc-v instructions.
 		 * @param count current number of risc-v instructions.
 		 * @return if this operation was a memory-operation,
-		 * 		   the return-register will contain the address (either temp_a, or a base-register)
+		 * 		   the return-register will contain the address (either temp_a, or a base-register).
+		 * 		   Otherwise, the zero register will be returned.
 		 */
 		static encoding::RiscVRegister translate_operand(const fadec::Instruction& inst, size_t index,
 														 encoding::RiscVRegister reg,
@@ -248,6 +263,17 @@ namespace codegen {
 		static void move_to_register(encoding::RiscVRegister dest, encoding::RiscVRegister src, RegisterAccess access,
 									 encoding::RiscVRegister temp, utils::riscv_instruction_t* riscv, size_t& count,
 									 bool cleared = false);
+
+		/**
+		 * Sign extend a given source register (which will not be modified) into a destination register.
+		 * @param dest The register where the sign extended value will be stored.
+		 * @param src The register that contains the value that will be sign extended.
+		 * @param byte The number of bytes that are stored in the given register (e.g. EAX: 4, AX: 2).
+		 * @param riscv An array of risc-v instructions.
+		 * @param count Current number of risc-v instructions.
+		 */
+		static void sign_extend_register(encoding::RiscVRegister dest, encoding::RiscVRegister src, size_t byte,
+										 utils::riscv_instruction_t* riscv, size_t& count);
 
 		/**
 		 * Loads a 12 bit immediate into the specified register. The value is sign extended to 64 bit,
@@ -322,22 +348,22 @@ namespace codegen {
 		 */
 		static constexpr encoding::RiscVRegister map_reg(const fadec::Register reg) {
 			constexpr encoding::RiscVRegister register_mapping[] = {
-					encoding::RiscVRegister::a0, // rax
-					encoding::RiscVRegister::a2, // rcx
-					encoding::RiscVRegister::a3, // rdx
-					encoding::RiscVRegister::a1, // rbx
-					encoding::RiscVRegister::sp, // rsp
-					encoding::RiscVRegister::s0, // rbp
-					encoding::RiscVRegister::a4, // rsi
-					encoding::RiscVRegister::a5, // rdi
-					encoding::RiscVRegister::a6, // r8
-					encoding::RiscVRegister::a7, // r9
-					encoding::RiscVRegister::s2, // r10
-					encoding::RiscVRegister::s3, // r11
-					encoding::RiscVRegister::s4, // r12
-					encoding::RiscVRegister::s5, // r13
-					encoding::RiscVRegister::s6, // r14
-					encoding::RiscVRegister::s7  // r15
+					encoding::RiscVRegister::rax,
+					encoding::RiscVRegister::rcx,
+					encoding::RiscVRegister::rdx,
+					encoding::RiscVRegister::rbx,
+					encoding::RiscVRegister::rsp,
+					encoding::RiscVRegister::rbp,
+					encoding::RiscVRegister::rsi,
+					encoding::RiscVRegister::rdi,
+					encoding::RiscVRegister::r8,
+					encoding::RiscVRegister::r9,
+					encoding::RiscVRegister::r10,
+					encoding::RiscVRegister::r11,
+					encoding::RiscVRegister::r12,
+					encoding::RiscVRegister::r13,
+					encoding::RiscVRegister::r14,
+					encoding::RiscVRegister::r15
 			};
 
 			return register_mapping[static_cast<uint8_t>(reg)];
