@@ -270,14 +270,12 @@ void CodeGenerator::translate_ret(const fadec::Instruction& inst, utils::riscv_i
 }
 
 void CodeGenerator::translate_div(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
-	// TODO: move_to_register needs a temp but i'm already using 0-2. maybe change?
-	//		 on the same note, it would be faster to have DIV and REM directly after one another,
-	//		 but again that would require another temp
+	// TODO: currently using two of the tmps reserved for helper-functions, maybe change
 
 	const auto idiv = (inst.get_type() == fadec::InstructionType::IDIV) ? true : false;
 	const auto op_size = inst.get_operand(0).get_size();
 
-	constexpr auto quotient = RiscVRegister::t2;
+	constexpr auto quotient = RiscVRegister::t3;
 	constexpr auto remainder = RiscVRegister::t2;
 	constexpr auto dividend = RiscVRegister::t1;
 	constexpr auto divisor = RiscVRegister::t0;
@@ -297,16 +295,15 @@ void CodeGenerator::translate_div(const fadec::Instruction& inst, utils::riscv_i
 		riscv[count++] = encoding::MV(dividend, RiscVRegister::zero);
 		move_to_register(dividend, rax, RegisterAccess::WORD, tmp, riscv, count);
 
-		if (idiv)
+		if (idiv) {
 			riscv[count++] = encoding::DIV(quotient, dividend, divisor);
-		else
-			riscv[count++] = encoding::DIVU(quotient, dividend, divisor);
-		move_to_register(quotient_dest, quotient, RegisterAccess::LBYTE, tmp, riscv, count);
-
-		if (idiv)
 			riscv[count++] = encoding::REM(remainder, dividend, divisor);
-		else
+		} else {
 			riscv[count++] = encoding::REMU(remainder, dividend, divisor);
+			riscv[count++] = encoding::DIVU(quotient, dividend, divisor);
+		}
+
+		move_to_register(quotient_dest, quotient, RegisterAccess::LBYTE, tmp, riscv, count);
 		move_to_register(remainder_dest, remainder, RegisterAccess::HBYTE, tmp, riscv, count);
 	} else {
 		constexpr auto quotient_dest = rax;
@@ -328,16 +325,15 @@ void CodeGenerator::translate_div(const fadec::Instruction& inst, utils::riscv_i
 		move_to_register(RiscVRegister::t2, rax, reg_access, tmp, riscv, count);
 		riscv[count++] = encoding::ADD(dividend, dividend, RiscVRegister::t2);
 
-		if (idiv)
+		if (idiv) {
 			riscv[count++] = encoding::DIV(quotient, dividend, divisor);
-		else
-			riscv[count++] = encoding::DIVU(quotient, dividend, divisor);
-		move_to_register(quotient_dest, quotient, reg_access, tmp, riscv, count);
-
-		if (idiv)
 			riscv[count++] = encoding::REM(remainder, dividend, divisor);
-		else
+		} else {
+			riscv[count++] = encoding::DIVU(quotient, dividend, divisor);
 			riscv[count++] = encoding::REMU(remainder, dividend, divisor);
+		}
+
+		move_to_register(quotient_dest, quotient, reg_access, tmp, riscv, count);
 		move_to_register(remainder_dest, remainder, reg_access, tmp, riscv, count);
 	}
 }
