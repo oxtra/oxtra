@@ -264,7 +264,7 @@ void CodeGenerator::translate_ret(const fadec::Instruction& inst, utils::riscv_i
 		load_unsigned_immediate(inst.get_immediate() + 8, RiscVRegister::t0, riscv, count);
 		riscv[count++] = encoding::ADD(rsp_reg, rsp_reg, RiscVRegister::t0);
 	}
-	
+
 	// attach the rerouting
 	riscv[count++] = JALR(RiscVRegister::ra, reroute_dynamic_address, 0);
 }
@@ -289,6 +289,7 @@ void CodeGenerator::translate_div(const fadec::Instruction& inst, utils::riscv_i
 		constexpr auto quotient_dest = rax;
 		constexpr auto remainder_dest = rax;
 
+		riscv[count++] = encoding::MV(dividend, RiscVRegister::zero);
 		move_to_register(dividend, rax, RegisterAccess::WORD, RiscVRegister::t2, riscv, count);
 
 		riscv[count++] = encoding::DIVU(quotient, dividend, divisor);
@@ -308,12 +309,12 @@ void CodeGenerator::translate_div(const fadec::Instruction& inst, utils::riscv_i
 			shamt = 32;
 		}
 
-		// TODO: does not take edx into account for some reason
 		// dividend = dx:ax bzw. edx:eax
 		riscv[count++] = encoding::MV(dividend, RiscVRegister::zero);
 		move_to_register(dividend, rdx, reg_access, RiscVRegister::t2, riscv, count);
 		riscv[count++] = encoding::SLLI(dividend, dividend, shamt);
-		move_to_register(dividend, rax, reg_access, RiscVRegister::t2, riscv, count);
+		move_to_register(RiscVRegister::t2, rax, reg_access, RiscVRegister::t3, riscv, count);
+		riscv[count++] = encoding::ADD(dividend, dividend, RiscVRegister::t2);
 
 		riscv[count++] = encoding::DIVU(quotient, dividend, divisor);
 		move_to_register(quotient_dest, quotient, reg_access, RiscVRegister::t3, riscv, count);
