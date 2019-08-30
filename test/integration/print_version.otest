@@ -1,0 +1,4 @@
+# Testing if oxtra prints the version and returns with 0.
+./oxtra --version
+>>> /oxtra [0-9]*.[0-9]*.*/
+>>>= 0
