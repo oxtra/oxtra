@@ -139,8 +139,9 @@ size_t CodeGenerator::group_instruction(fadec::InstructionType type) {
 		case InstructionType::SUB_IMM:
 		case InstructionType::NEG:
 		case InstructionType::MUL: //TODO: check this
-		case InstructionType::IMUL: //TDO: also this
+		case InstructionType::IMUL: //TODO: also this
 		case InstructionType::IMUL2:
+		case InstructionType::IMUL3: //TODO: also this
 		case InstructionType::SHL_CL:
 		case InstructionType::SHL_IMM:
 		case InstructionType::SHR_CL:
@@ -210,6 +211,7 @@ void CodeGenerator::translate_instruction(InstructionEntry& inst, utils::riscv_i
 		case InstructionType::MUL:
 		case InstructionType::MULX:
 		case InstructionType::IMUL:
+		case InstructionType::IMUL3:
 			//Todo: test with memory operand
 			translate_mul(inst.instruction, riscv, count);
 			break;
