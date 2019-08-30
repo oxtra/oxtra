@@ -160,8 +160,6 @@ namespace codegen {
 
 		static void translate_mul(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
-		static void translate_imul1(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
-
 		static void translate_call(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);
 
 		static void translate_ret(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count);

@@ -209,11 +209,9 @@ void CodeGenerator::translate_instruction(InstructionEntry& inst, utils::riscv_i
 
 		case InstructionType::MUL:
 		case InstructionType::MULX:
+		case InstructionType::IMUL:
 			//Todo: test with memory operand
 			translate_mul(inst.instruction, riscv, count);
-			break;
-		case InstructionType::IMUL:
-			translate_imul1(inst.instruction, riscv, count);
 			break;
 		case InstructionType::IMUL2:
 			apply_operation(inst.instruction, riscv, count, translate_imul);
