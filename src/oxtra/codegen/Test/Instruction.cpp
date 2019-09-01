@@ -4,12 +4,21 @@ using namespace encoding;
 using namespace fadec;
 using namespace dispatcher;
 
+codegen::Instruction::Instruction(uint8_t update, uint8_t require) {
+	update_flags = update;
+	require_flags = require;
+}
+
 uint8_t codegen::Instruction::query_require() {
-	return Instruction::Flags::none;
+	return require_flags;
 }
 
 uint8_t codegen::Instruction::query_update() {
-	return Instruction::Flags::none;
+	return update_flags;
+}
+
+void codegen::Instruction::set_update(uint8_t flags) {
+	update_flags = flags;
 }
 
 RiscVRegister codegen::Instruction::translate_operand(CodeBatch& batch, const fadec::Instruction& inst, size_t index,
@@ -233,4 +242,96 @@ encoding::RiscVRegister codegen::Instruction::evalute_overflow(CodeBatch& batch)
 
 encoding::RiscVRegister codegen::Instruction::evalute_carry(CodeBatch& batch) {
 
+}
+
+void codegen::Instruction::update_zero(CodeBatch& batch, bool set) {
+	// check if the instruction has to update the zero-flag
+	if ((update_flags & Flags::zero) == 0)
+		return;
+	/*
+	 * implement the flag
+	 */
+}
+
+void codegen::Instruction::update_zero(CodeBatch& batch, encoding::RiscVRegister va, size_t size) {
+	// check if the instruction has to update the zero-flag
+	if ((update_flags & Flags::zero) == 0)
+		return;
+	/*
+	 * implement the flag
+	 */
+}
+
+void codegen::Instruction::update_sign(CodeBatch& batch, bool set) {
+	// check if the instruction has to update the sign-flag
+	if ((update_flags & Flags::sign) == 0)
+		return;
+	/*
+	 * implement the flag
+	 */
+}
+
+void codegen::Instruction::update_sign(CodeBatch& batch, encoding::RiscVRegister va, size_t size) {
+	// check if the instruction has to update the sign-flag
+	if ((update_flags & Flags::sign) == 0)
+		return;
+	/*
+	 * implement the flag
+	 */
+}
+
+void codegen::Instruction::update_parity(CodeBatch& batch, bool set) {
+	// check if the instruction has to update the parity-flag
+	if ((update_flags & Flags::parity) == 0)
+		return;
+	/*
+	 * implement the flag
+	 */
+}
+
+void codegen::Instruction::update_parity(CodeBatch& batch, encoding::RiscVRegister va, size_t size) {
+	// check if the instruction has to update the parity-flag
+	if ((update_flags & Flags::parity) == 0)
+		return;
+	/*
+	 * implement the flag
+	 */
+}
+
+void codegen::Instruction::update_overflow(CodeBatch& batch, uint16_t index, bool set) {
+	// check if the instruction has to update the overflow-flag
+	if ((update_flags & Flags::overflow) == 0)
+		return;
+	/*
+	 * implement the flag
+	 */
+}
+
+void codegen::Instruction::update_overflow(CodeBatch& batch, uint16_t index, encoding::RiscVRegister va,
+										   encoding::RiscVRegister vb) {
+	// check if the instruction has to update the overflow-flag
+	if ((update_flags & Flags::overflow) == 0)
+		return;
+	/*
+	 * implement the flag
+	 */
+}
+
+void codegen::Instruction::update_carry(CodeBatch& batch, uint16_t index, bool set) {
+	// check if the instruction has to update the carry-flag
+	if ((update_flags & Flags::carry) == 0)
+		return;
+	/*
+	 * implement the flag
+	 */
+}
+
+void codegen::Instruction::update_carry(CodeBatch& batch, uint16_t index, encoding::RiscVRegister va,
+										encoding::RiscVRegister vb) {
+	// check if the instruction has to update the carry-flag
+	if ((update_flags & Flags::carry) == 0)
+		return;
+	/*
+	 * implement the flag
+	 */
 }

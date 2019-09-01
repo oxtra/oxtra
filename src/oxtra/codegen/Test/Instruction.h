@@ -76,13 +76,21 @@ namespace codegen {
 			HBYTE,
 			LBYTE
 		};
+	private:
+		uint8_t update_flags;
+		uint8_t require_flags;
+
+	protected:
+		explicit Instruction(uint8_t update, uint8_t require);
 
 	public:
 		virtual void generate(CodeBatch& batch) = 0;
 
-		virtual uint8_t query_require();
+		uint8_t query_require();
 
-		virtual uint8_t query_update();
+		uint8_t query_update();
+
+		void set_update(uint8_t flags);
 
 	protected:
 		/**
