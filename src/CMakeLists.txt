@@ -16,7 +16,10 @@ add_library(oxtra_libs
 		oxtra/codegen/decoding/decoding.cpp
 		oxtra/codegen/codegen_instructions.cpp
 		oxtra/codegen/codegen_helper.cpp
+		oxtra/codegen/jump_table.cpp
 		oxtra/codegen/flags/flags.cpp
+		oxtra/codegen/flags/compute_carry.s
+		oxtra/codegen/flags/compute_overflow.s
 )
 
 target_link_libraries(oxtra_libs

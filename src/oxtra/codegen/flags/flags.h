@@ -26,10 +26,44 @@ namespace codegen::flags {
 		static constexpr Type require_to_update_lshift = 8u;
 	}
 
-	enum class FlagOperation : uint8_t {
+	enum class CarryOperation : uint8_t {
+		clear,
+		set,
+
 		add,
-		sub,
-		//...
+		add_8 = add,
+		add_16,
+		add_32,
+		add_64,
+
+		adc, // use adc if carry is set, use add if carry is clear
+		adc_8 = adc,
+		adc_16,
+		adc_32,
+		adc_64,
+
+		// Not an actual operation
+		last
+	};
+
+	enum class OverflowOperation : uint8_t {
+		clear,
+		set,
+
+		add,
+		add_8 = add,
+		add_16,
+		add_32,
+		add_64,
+
+		adc, // use adc if carry is set, use add if carry is clear
+		adc_8 = adc,
+		adc_16,
+		adc_32,
+		adc_64,
+
+		// Not an actual operation
+		last
 	};
 
 	/**
@@ -71,10 +105,8 @@ namespace codegen::flags {
 		 */
 		uint8_t sf_size; // 0x30
 		uint8_t pf_value; // 0x31
-		uint8_t cf_operation; // 0x32
-		uint8_t cf_size; // 0x33
-		uint8_t of_operation; // 0x34
-		uint8_t of_size; // 0x35
+		uint16_t cf_operation; // 0x32
+		uint16_t of_operation; // 0x34
 
 		static constexpr uint32_t
 				flag_info_offset = 0x1F8,
@@ -85,9 +117,7 @@ namespace codegen::flags {
 				sf_size_offset = flag_info_offset + 0x30,
 				pf_value_offset = flag_info_offset + 0x31,
 				cf_operation_offset = flag_info_offset + 0x32,
-				cf_size_offset = flag_info_offset + 0x33,
-				of_operation_offset = flag_info_offset + 0x34,
-				of_size_offset = flag_info_offset + 0x35;
+				of_operation_offset = flag_info_offset + 0x34;
 	};
 
 	/**
@@ -168,16 +198,24 @@ namespace codegen::flags {
 	 * @param count The current length of the riscv instructions (i.e. the index of the next free position).
 	 */
 	void update_carry_flag(encoding::RiscVRegister reg_a, encoding::RiscVRegister reg_b, encoding::RiscVRegister temp,
-						   uint8_t reg_size, FlagOperation operation, utils::riscv_instruction_t* riscv, size_t& count);
+						   uint8_t reg_size, CarryOperation operation, utils::riscv_instruction_t* riscv, size_t& count);
 
 	/**
 	 * Evaluate the carry flag. Call this method for every instruction, which requires the value of the carry flag.
-	 * @param invert If true, branch if the flag is cleared.
+	 * This function generates code that modifies the t4, t5 and t6 registers.
 	 * @param reg This register will be zero if the flag is cleared and not equal to zero otherwise.
 	 * @param riscv The pointer to the generated riscv instructions.
 	 * @param count The current length of the riscv instructions (i.e. the index of the next free position).
 	 */
-	void evaluate_carry_flag(bool invert, encoding::RiscVRegister reg, utils::riscv_instruction_t* riscv, size_t& count);
+	utils::riscv_instruction_t& evaluate_carry_flag(utils::riscv_instruction_t* riscv, size_t& count);
+
+	/**
+	 * Generates a branch based on the value of the carry flag.
+	 * @param instruction Reference returned by evaluate_carry_flag.
+	 * @param invert If true, branch if the flag is cleared.
+	 * @param offset The number of bytes that will be skipped if the flag is set.
+	 */
+	void branch_carry_flag(utils::riscv_instruction_t& instruction, bool invert, uint16_t offset);
 
 	/**
 	 * Update the overflow-flag from the registers {reg_a, reg_b}. The registers will stay unchanged.
@@ -191,16 +229,17 @@ namespace codegen::flags {
 	 * @param count The current length of the riscv instructions (i.e. the index of the next free position).
 	 */
 	void update_overflow_flag(encoding::RiscVRegister reg_a, encoding::RiscVRegister reg_b, encoding::RiscVRegister temp,
-							  uint8_t reg_size, FlagOperation operation, utils::riscv_instruction_t* riscv, size_t& count);
+							  uint8_t reg_size, OverflowOperation operation, utils::riscv_instruction_t* riscv, size_t& count);
 
 	/**
 	 * Evaluate the overflow flag. Call this method for every instruction, which requires the value of the overflow flag.
+	 * This function generates code that modifies the t4, t5 and t6 registers.
 	 * @param invert If true, branch if the flag is cleared.
-	 * @param reg This register will be zero if the flag is cleared and not equal to zero otherwise.
+	 * @param @param offset The number of bytes that will be skipped if the flag is set.
 	 * @param riscv The pointer to the generated riscv instructions.
 	 * @param count The current length of the riscv instructions (i.e. the index of the next free position).
 	 */
-	void evaluate_overflow_flag(bool invert, encoding::RiscVRegister reg, utils::riscv_instruction_t* riscv, size_t& count);
+	void evaluate_overflow_flag(bool invert, uint16_t offset, utils::riscv_instruction_t* riscv, size_t& count);
 }
 
 #endif //OXTRA_FLAGS_H

@@ -78,6 +78,9 @@ namespace codegen {
 		static void translate_add(const ContextInstruction& inst, encoding::RiscVRegister dest,
 								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
 
+		static void translate_adc(const ContextInstruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
+
 		static void translate_inc(const ContextInstruction& inst, encoding::RiscVRegister dest,
 								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count);
 

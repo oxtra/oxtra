@@ -12,8 +12,35 @@ using namespace dispatcher;
 
 void CodeGenerator::translate_add(const ContextInstruction& inst, encoding::RiscVRegister dest,
 								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count) {
-	unused_parameter(inst);
 	riscv[count++] = encoding::ADD(dest, src, dest);
+
+	if (inst.update_flags & flags::Group::update_carry)
+		flags::update_carry_flag(src, dest, RiscVRegister::t4, inst.get_operand(0).get_size(),
+				flags::CarryOperation::add, riscv, count);
+
+	if (inst.update_flags & flags::Group::update_overflow)
+		flags::update_overflow_flag(src, dest, RiscVRegister::t4, inst.get_operand(0).get_size(),
+									flags::OverflowOperation::add, riscv, count);
+}
+
+void CodeGenerator::translate_adc(const ContextInstruction& inst, encoding::RiscVRegister dest,
+								  encoding::RiscVRegister src, utils::riscv_instruction_t* riscv, size_t& count) {
+	// implementation does not work yet
+	/*auto& branch = flags::evaluate_carry_flag(riscv, count);
+
+	const auto tcount = count;
+
+	riscv[count++] = encoding::ADD(dest, src, dest);
+
+	if (inst.update_flags & flags::Group::update_carry)
+		flags::update_carry_flag(src, dest, RiscVRegister::t4, inst.get_operand(0).get_size(),
+								 flags::CarryOperation::add, riscv, count);
+
+	if (inst.update_flags & flags::Group::update_overflow)
+		flags::update_overflow_flag(src, dest, RiscVRegister::t4, inst.get_operand(0).get_size(),
+									flags::OverflowOperation::add, riscv, count);
+
+	flags::branch_carry_flag(branch, false, (count - tcount) * 4);*/
 }
 
 void CodeGenerator::translate_inc(const ContextInstruction& inst, encoding::RiscVRegister dest,

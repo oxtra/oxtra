@@ -135,6 +135,8 @@ flags::Group::Type CodeGenerator::group_instruction(fadec::InstructionType type)
 	switch (type) {
 		case InstructionType::ADD:
 		case InstructionType::ADD_IMM:
+		case InstructionType::ADC:
+		case InstructionType::ADC_IMM:
 		case InstructionType::SUB:
 		case InstructionType::SUB_IMM:
 		case InstructionType::NEG:
@@ -186,6 +188,11 @@ void CodeGenerator::translate_instruction(ContextInstruction& inst, utils::riscv
 		case InstructionType::ADD:
 		case InstructionType::ADD_IMM:
 			apply_operation(inst, riscv, count, translate_add);
+			break;
+
+		case InstructionType::ADC:
+		case InstructionType::ADC_IMM:
+			apply_operation(inst, riscv, count, translate_adc);
 			break;
 
 		case InstructionType::SUB:

@@ -1,3 +1,5 @@
+#include <oxtra/codegen/jump_table.h>
+#include <oxtra/dispatcher/dispatcher.h>
 #include "flags.h"
 #include "oxtra/codegen/encoding/encoding.h"
 #include "oxtra/codegen/codegen.h"
@@ -8,6 +10,23 @@ using namespace encoding;
 /*
  * All this code is untested.
  */
+
+static uint16_t adjust_operation(uint16_t operation, uint8_t size) {
+	switch (size) {
+	case 0:
+	case 1:
+		return operation;
+	case 2:
+		return operation + 1;
+	case 4:
+		return operation + 2;
+	case 8:
+		return operation + 3;
+	default:
+		dispatcher::Dispatcher::fault_exit("Instruction size out of range");
+		return 0;
+	}
+}
 
 void codegen::flags::update_zero_flag(RiscVRegister reg, uint8_t reg_size,
 									  utils::riscv_instruction_t* riscv, size_t& count) {
@@ -102,40 +121,62 @@ void codegen::flags::evaluate_parity_flag(bool invert, uint16_t offset, RiscVReg
 }
 
 void codegen::flags::update_carry_flag(RiscVRegister reg_a, RiscVRegister reg_b, RiscVRegister temp, uint8_t reg_size,
-									   FlagOperation operation, utils::riscv_instruction_t* riscv, size_t& count) {
+									   CarryOperation operation, utils::riscv_instruction_t* riscv, size_t& count) {
+	const auto op = adjust_operation(static_cast<uint16_t>(operation), reg_size);
+
+#ifdef DEBUG
+	if (op >= static_cast<uint16_t>(CarryOperation::last))
+		dispatcher::Dispatcher::fault_exit("Overflow operation out of range");
+#endif
 	// store the values
 	riscv[count++] = SD(CodeGenerator::context_address, reg_a, FlagUpdateInfo::cf_values_offset);
 	riscv[count++] = SD(CodeGenerator::context_address, reg_b, FlagUpdateInfo::cf_values_offset + 8);
 
-	// store the store the register sizes involved
-	riscv[count++] = ADDI(temp, RiscVRegister::zero, reg_size);
-	riscv[count++] = SB(temp, CodeGenerator::context_address, FlagUpdateInfo::cf_size_offset);
-
-	// store the operation
-	riscv[count++] = ADDI(temp, RiscVRegister::zero, static_cast<uint16_t>(operation));
-	riscv[count++] = SB(CodeGenerator::context_address, temp, FlagUpdateInfo::cf_operation_offset);
+	// store the jump table index
+	riscv[count++] = ADDI(temp, RiscVRegister::zero, op * 4);
+	riscv[count++] = SH(CodeGenerator::context_address, temp, FlagUpdateInfo::cf_operation_offset);
 }
 
-void codegen::flags::evaluate_carry_flag(bool invert, RiscVRegister reg, utils::riscv_instruction_t* riscv, size_t& count) {
-	// do this in software
+utils::riscv_instruction_t& codegen::flags::evaluate_carry_flag(utils::riscv_instruction_t* riscv, size_t& count) {
+	// load the jump table offset
+	riscv[count++] = LHU(RiscVRegister::t4, CodeGenerator::context_address, FlagUpdateInfo::cf_operation_offset);
+
+	// jump into the jump table
+	jump_table::jump_flag_evaluation(RiscVRegister::t4, RiscVRegister::ra, riscv, count);
+
+	return riscv[count++];
+}
+
+void codegen::flags::branch_carry_flag(utils::riscv_instruction_t& instruction, bool invert, uint16_t offset) {
+	// compute_carry returns the carry flag in t4
+	instruction = (invert ? BEQZ : BNQZ)(RiscVRegister::t4, offset + 4);
 }
 
 void codegen::flags::update_overflow_flag(RiscVRegister reg_a, RiscVRegister reg_b, RiscVRegister temp,
-										  uint8_t reg_size, FlagOperation operation,
+										  uint8_t reg_size, OverflowOperation operation,
 										  utils::riscv_instruction_t* riscv, size_t& count) {
+	const auto op = adjust_operation(static_cast<uint16_t>(operation), reg_size);
+#ifdef DEBUG
+	if (op >= static_cast<uint16_t>(OverflowOperation::last))
+		dispatcher::Dispatcher::fault_exit("Overflow operation out of range");
+#endif
 	// store the values
 	riscv[count++] = SD(CodeGenerator::context_address, reg_a, FlagUpdateInfo::of_values_offset);
 	riscv[count++] = SD(CodeGenerator::context_address, reg_b, FlagUpdateInfo::of_values_offset + 8);
 
-	// store the store the register sizes involved
-	riscv[count++] = ADDI(temp, RiscVRegister::zero, reg_size);
-	riscv[count++] = SB(CodeGenerator::context_address, temp, FlagUpdateInfo::of_size_offset);
-
-	// store the operation
-	riscv[count++] = ADDI(temp, RiscVRegister::zero, static_cast<uint16_t>(operation));
-	riscv[count++] = SB(CodeGenerator::context_address, temp, FlagUpdateInfo::of_operation_offset);
+	// store the jump table index
+	riscv[count++] = ADDI(temp, RiscVRegister::zero,
+			(op + static_cast<uint16_t>(CarryOperation::last)) * 4);
+	riscv[count++] = SH(CodeGenerator::context_address, temp, FlagUpdateInfo::of_operation_offset);
 }
 
-void codegen::flags::evaluate_overflow_flag(bool invert, RiscVRegister reg, utils::riscv_instruction_t* riscv, size_t& count) {
-	// do this in software
+void codegen::flags::evaluate_overflow_flag(bool invert, uint16_t offset, utils::riscv_instruction_t* riscv, size_t& count) {
+	// load the jump table offset
+	riscv[count++] = LHU(RiscVRegister::t4, CodeGenerator::context_address, FlagUpdateInfo::of_operation_offset);
+
+	// jump into the jump table
+	jump_table::jump_flag_evaluation(RiscVRegister::t4, RiscVRegister::ra, riscv, count);
+
+	// compute_carry returns the carry flag in t4
+	riscv[count++] = (invert ? BEQZ : BNQZ)(RiscVRegister::t4, offset + 4);
 }
