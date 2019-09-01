@@ -2,8 +2,7 @@
 #define OXTRA_INSTRUCTION_H
 
 #include "oxtra/utils/types.h"
-#include "CodeBatch.h"
-#include "oxtra/codegen/encoding/encoding.h"
+#include "jumptable/jump_table.h"
 #include "oxtra/dispatcher/dispatcher.h"
 
 namespace codegen {
@@ -31,15 +30,11 @@ namespace codegen {
 					sign_size_offset = flag_info_offset + sizeof(uint64_t) * 7 + sizeof(uint16_t) * 2;
 		};
 
-	protected:
 		// If these registers are changed, the documentation has to be updated
 		constexpr static encoding::RiscVRegister
 				address_destination = encoding::RiscVRegister::t3,
-				reroute_static_address = encoding::RiscVRegister::s8,
-				reroute_dynamic_address = encoding::RiscVRegister::s9,
-				syscall_address = encoding::RiscVRegister::s10,
-				context_address = encoding::RiscVRegister::s11,
-				flag_register = encoding::RiscVRegister::s1;
+				jump_table_address = encoding::RiscVRegister::s10,
+				context_address = encoding::RiscVRegister::s11;
 
 		/*
 		 * sp : Is required to be the stack-pointer. Otherwise assembly will fail
@@ -47,13 +42,12 @@ namespace codegen {
 		 * t0, t1, t2 : always temporary
 		 * t3, t4, t5, t6 : reserved for helper functions
 		 * t3 : address_destination [doubled with reserved for helper-functions]
-		 * s1 : flags
-		 * s8 : reroute_static address
-		 * s9 : reroute_dynamic address
-		 * s10 : reserved for system calls
+		 * s10 : jump table
 		 * s11 : context address
+		 * s1, s8, s9: unmapped
 		 */
 
+	protected:
 		enum Flags : uint8_t {
 			none = 0x00,
 			carry = 0x01,
@@ -61,12 +55,6 @@ namespace codegen {
 			sign = 0x04,
 			overflow = 0x08,
 			parity = 0x10
-		};
-
-		enum JumpTable : uint16_t {
-			virtual_syscall,
-			reroute_static,
-			reroute_dynamic
 		};
 
 		enum class RegisterAccess : uint8_t {
