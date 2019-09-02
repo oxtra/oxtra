@@ -8,7 +8,7 @@
 #include "oxtra/codegen/encoding/encoding.h"
 #include "oxtra/codegen/decoding/decoding.h"
 #include <fadec.h>
-#include "oxtra/dispatcher/context.h"
+#include "oxtra/dispatcher/execution_context.h"
 
 namespace codegen {
 	class CodeGenerator {
@@ -20,7 +20,7 @@ namespace codegen {
 	public:
 		CodeGenerator(const arguments::Arguments& args, const elf::Elf& elf);
 
-		CodeGenerator(CodeGenerator&) = delete;
+		CodeGenerator(const CodeGenerator&) = delete;
 
 		CodeGenerator(CodeGenerator&&) = delete;
 

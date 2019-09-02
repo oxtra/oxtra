@@ -1,9 +1,9 @@
 #ifndef OXTRA_JUMP_TABLE_H
 #define OXTRA_JUMP_TABLE_H
 
-#include "oxtra/codegen/Test/CodeBatch.h"
+#include "oxtra/codegen/Test/code_batch.h"
 #include "oxtra/codegen/encoding/encoding.h"
-#include "oxtra/codegen/Test/Instruction.h"
+#include "oxtra/codegen/Test/instruction.h"
 
 namespace codegen::jump_table {
 	// define the jump-table object

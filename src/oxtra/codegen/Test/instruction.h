@@ -6,8 +6,18 @@
 #include "oxtra/dispatcher/dispatcher.h"
 
 namespace codegen {
-	class Instruction {
+	class Instruction : protected fadec::Instruction {
 	public:
+		enum Flags : uint8_t {
+			none = 0x00,
+			carry = 0x01,
+			zero = 0x02,
+			sign = 0x04,
+			overflow = 0x08,
+			parity = 0x10,
+			all = carry | zero | sign | overflow | parity
+		};
+
 		struct FlagInfo {
 			uint64_t zero_value;
 			uint64_t parity_value;
@@ -48,15 +58,6 @@ namespace codegen {
 		 */
 
 	protected:
-		enum Flags : uint8_t {
-			none = 0x00,
-			carry = 0x01,
-			zero = 0x02,
-			sign = 0x04,
-			overflow = 0x08,
-			parity = 0x10
-		};
-
 		enum class RegisterAccess : uint8_t {
 			QWORD,
 			DWORD,
@@ -78,7 +79,7 @@ namespace codegen {
 
 		uint8_t query_update();
 
-		void set_update(uint8_t flags);
+		void set_require(uint8_t flags);
 
 	protected:
 		/**
@@ -92,7 +93,7 @@ namespace codegen {
 		 * @return if this operation was a memory-operation,
 		 * 		   the return-register will contain the address (either temp_a, or a base-register)
 		 */
-		static encoding::RiscVRegister translate_operand(CodeBatch& batch, const fadec::Instruction& inst, size_t index,
+		encoding::RiscVRegister translate_operand(CodeBatch& batch, size_t index,
 														 encoding::RiscVRegister reg, encoding::RiscVRegister temp_a,
 														 encoding::RiscVRegister temp_b);
 
@@ -106,7 +107,7 @@ namespace codegen {
 		 * @param temp_a A temporary that might be changed.
 		 * @param temp_b A temporary that might be changed.
 		 */
-		static void translate_destination(CodeBatch& batch, const fadec::Instruction& inst, encoding::RiscVRegister reg,
+		void translate_destination(CodeBatch& batch, encoding::RiscVRegister reg,
 										  encoding::RiscVRegister address, encoding::RiscVRegister temp_a,
 										  encoding::RiscVRegister temp_b);
 
@@ -119,7 +120,7 @@ namespace codegen {
 		 * @param temp_b A temporary that might be changed.
 		 * @return Returns the register containing the address (either temp_a, or a base-register)
 		 */
-		static encoding::RiscVRegister translate_memory(CodeBatch& batch, const fadec::Instruction& inst, size_t index,
+		encoding::RiscVRegister translate_memory(CodeBatch& batch, size_t index,
 														encoding::RiscVRegister temp_a, encoding::RiscVRegister temp_b);
 
 		/**
@@ -141,6 +142,40 @@ namespace codegen {
 		 */
 		static void move_to_register(CodeBatch& batch, encoding::RiscVRegister dest, encoding::RiscVRegister src,
 									 RegisterAccess access, encoding::RiscVRegister temp, bool cleared = false);
+
+		/**
+		 * Loads a 12 bit immediate into the specified register. The value is sign extended to 64 bit,
+		 * so be careful when using this method to ensure that the value is <= 11 bits or negative numbers are desired.
+		 * Use load_unsigned_immediate otherwise.
+		 * @param batch Store the current riscv-batch.
+		 * @param imm The immediate that will be stored. The highest 4 bits of uint16_t will be masked.
+		 * @param count A reference to the length of the instructions (has to point to the first free index)
+		 */
+		static void load_12bit_immediate(CodeBatch& batch, uint16_t imm, encoding::RiscVRegister dest);
+
+		/**
+		 * Loads a 32 bit immediate into the specified register.
+		 * The value is sign extended to 64 bit, so be careful when using this method
+		 * to ensure that the value is <= 31 bits or negative numbers are desired.
+		 * Use load_unsigned_immediate otherwise.
+		 * @param batch Store the current riscv-batch.
+		 * @param imm The immediate that will be stored. The highest 4 bits of uint16_t will be masked.
+		 * @param count A reference to the length of the instructions (has to point to the first free index)
+		 * @param optimize When set to true, this method tries to minimize the number of generated instructions.
+		 */
+		static void load_32bit_immediate(CodeBatch& batch, uint32_t imm, encoding::RiscVRegister dest, bool optimize);
+
+		/**
+		 * Loads a 64 bit immediate into the specified register.
+		 * The only difference between this method and load_unsigned_immediate is that this one is slightly faster.
+		 * Unoptimized this function must generate 8-riscv-instructions. Otherwise update_basic_block will fail.
+		 * @param batch Store the current riscv-batch.
+		 * @param imm The immediate that will be stored. The highest 4 bits of uint16_t will be masked.
+		 * @param count A reference to the length of the instructions (has to point to the first free index)
+		 * @param optimize When set to true, this method tries to minimize the number of generated instructions.
+		 */
+		static void load_64bit_immediate(CodeBatch& batch, uint64_t imm, encoding::RiscVRegister dest, bool optimize);
+
 
 		/**
 		 * Load an immediate of up to 64 bit into the register.

@@ -25,14 +25,14 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 	auto next_block = _codestore.get_next_block(addr);
 
 	// iterate through the instructions and query all information about the flags
-	std::vector<InstructionEntry> instructions;
+	std::vector<Instruction> instructions;
 	while (true) {
 		// check if the address is equal to the next block
 		if (next_block) {
 			if (next_block->x86_start == addr) {
 				if (instructions.empty())
 					Dispatcher::fault_exit("codestore::find(...) must have failed");
-				instructions[instructions.size() - 1].update_flags |= Group::require_all;
+				instructions[instructions.size() - 1].set_require(Instruction::all);
 				break;
 			}
 		}

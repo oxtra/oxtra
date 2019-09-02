@@ -1,6 +1,6 @@
 #include "oxtra/dispatcher/dispatcher.h"
 #include "oxtra/dispatcher/syscall_map.h"
-#include "context.h"
+#include "execution_context.h"
 #include <spdlog/spdlog.h>
 
 using namespace dispatcher;
@@ -15,8 +15,7 @@ using namespace utils;
 template void spdlog::info(const char*, const unsigned long&);
 
 Dispatcher::Dispatcher(const elf::Elf& elf, const arguments::Arguments& args)
-		: _elf(elf), _args(args), _codegen(args, elf) {
-}
+		: _elf(elf), _args(args), _codegen(args, elf) {}
 
 long Dispatcher::run() {
 	//TODO: add argument for stack-size (default: 0x3200000)
@@ -27,18 +26,17 @@ long Dispatcher::run() {
 	register uintptr_t tp_reg asm("tp");
 
 	// initialize guest-context
-	_guest_context.gp = gp_reg;
-	_guest_context.tp = tp_reg;
-	_guest_context.map.rsp = reinterpret_cast<uintptr_t>(new uint8_t[0x3200000]) + 0x3200000;
-	_guest_context.map.rbp = _guest_context.map.rsp;
-	_guest_context.map.reroute_static = reinterpret_cast<uintptr_t>(Dispatcher::reroute_static);
-	_guest_context.map.reroute_dynamic = reinterpret_cast<uintptr_t>(Dispatcher::reroute_dynamic);
-	_guest_context.map.syscall_handler = reinterpret_cast<uintptr_t>(Dispatcher::syscall_handler);
-	_guest_context.map.context = reinterpret_cast<uintptr_t>(&_guest_context);
+	_context.guest.gp = gp_reg;
+	_context.guest.tp = tp_reg;
+	_context.guest.map.rsp = reinterpret_cast<uintptr_t>(new uint8_t[0x3200000]) + 0x3200000;
+	_context.guest.map.rbp = _context.guest.map.rsp;
+	_context.guest.map.jump_table = reinterpret_cast<uintptr_t>(jump_table::table_address);
+	_context.guest.map.context = reinterpret_cast<uintptr_t>(&_context);
+	_context.codegen = &_codegen;
 
 	// switch the context and begin translation
 	const char* error_string = nullptr;
-	const auto exit_code = guest_enter(&_guest_context, _elf.get_entry_point(), &error_string);
+	const auto exit_code = guest_enter(&_context, _elf.get_entry_point(), &error_string);
 
 	// check if the guest has ended with and error
 	if (error_string != nullptr)
@@ -46,15 +44,15 @@ long Dispatcher::run() {
 	return exit_code;
 }
 
-long Dispatcher::virtualize_syscall() {
+long Dispatcher::virtualize_syscall(const ExecutionContext* context) {
 	using namespace internal;
 
 	// the x86 syscall index
-	const auto guest_index = _guest_context.map.rax;
+	const auto guest_index = context->guest.map.rax;
 
 	// we emulate exit
 	if (guest_index == 60) {
-		guest_exit(_guest_context.map.rdi);
+		guest_exit(context->guest.map.rdi);
 		return -1;
 	}
 
@@ -69,8 +67,8 @@ long Dispatcher::virtualize_syscall() {
 #ifdef DEBUG
 		// print the systemcall with its attributes
 		spdlog::info("syscall: {}({}, {}, {}, {}, {}, {})", syscall_index,
-					 _guest_context.map.rdi, _guest_context.map.rsi, _guest_context.map.rdx,
-					 _guest_context.map.r10, _guest_context.map.r8, _guest_context.map.r9);
+					 context->guest.map.rdi, context->guest.map.rsi, context->guest.map.rdx,
+					 context->guest.map.r10, context->guest.map.r8, context->guest.map.r9);
 #endif
 
 		if (syscall_index >= 0)
@@ -80,6 +78,6 @@ long Dispatcher::virtualize_syscall() {
 	// we will only reach this if the system call is not supported
 	char fault_message[256];
 	snprintf(fault_message, sizeof(fault_message), "Guest tried to call an unsupported syscall (%li).", guest_index);
-	fault_exit(fault_message);
+	dispatcher::Dispatcher::fault_exit(fault_message);
 	return -1;
 }
