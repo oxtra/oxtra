@@ -4,11 +4,8 @@
 #include "oxtra/utils/types.h"
 #include "oxtra/arguments/arguments.h"
 #include "oxtra/codegen/codestore/codestore.h"
+#include "oxtra/codegen/Test/instruction.h"
 #include "oxtra/elf/elf.h"
-#include "oxtra/codegen/encoding/encoding.h"
-#include "oxtra/codegen/decoding/decoding.h"
-#include <fadec.h>
-#include "oxtra/dispatcher/execution_context.h"
 
 namespace codegen {
 	class CodeGenerator {
@@ -28,6 +25,11 @@ namespace codegen {
 		utils::host_addr_t translate(utils::guest_addr_t addr);
 
 		void update_basic_block(utils::host_addr_t addr, utils::host_addr_t absolute_address);
+
+	private:
+		using inst_vec_t = std::vector<std::unique_ptr<Instruction>>;
+
+		Instruction& decode_instruction(utils::guest_addr_t& addr, inst_vec_t& inst_vec) const;
 	};
 }
 

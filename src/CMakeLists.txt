@@ -15,7 +15,7 @@ add_library(oxtra_libs
 		oxtra/codegen/encoding/encoding.cpp
 		oxtra/codegen/decoding/decoding.cpp
 		oxtra/codegen/codegen_instructions.cpp
-		oxtra/codegen/codegen_helper.cpp
+		oxtra/codegen/helper.cpp
 		oxtra/codegen/Test/instruction.cpp
 		oxtra/codegen/Test/jumptable/jump_table.cpp)
 

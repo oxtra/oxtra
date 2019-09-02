@@ -6,16 +6,17 @@
 
 namespace codegen {
 	class Add : public BinaryOperation {
-		explicit Add()
-			: BinaryOperation{all, none} {}
+	public:
+		explicit Add(const fadec::Instruction& inst)
+			: BinaryOperation{inst, all, none} {}
 
-		void execute_operation(CodeBatch& batch, encoding::RiscVRegister dst, encoding::RiscVRegister src) override {
-			const auto carry_reg = evalute_carry(batch);
-			batch += encoding::ADD(dst, dst, carry_reg);
+		void execute_operation(CodeBatch& batch, encoding::RiscVRegister dst, encoding::RiscVRegister src) const override {
 			batch += encoding::ADD(dst, src, dst);
 		}
 
-		static void compute_overflow();
+		bool end_of_block() const {
+			return false;
+		}
 	};
 
 }

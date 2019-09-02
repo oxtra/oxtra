@@ -62,19 +62,19 @@ BlockEntry& CodeStore::create_block() {
 	return _block_entries.allocate_entry();
 }
 
-void CodeStore::add_instruction(BlockEntry& block, const fadec::Instruction& x86_instruction,
+void CodeStore::add_instruction(BlockEntry& block, utils::guest_addr_t address, uint8_t size,
 								riscv_instruction_t* riscv_instructions, size_t num_instructions) {
 
-	insert_block(block, x86_instruction.get_address());
+	insert_block(block, address);
 
 	block.riscv_start = reinterpret_cast<host_addr_t>(
 			_code_buffer.add(reinterpret_cast<riscv_instruction_t*>(block.riscv_start), riscv_instructions,
 							 num_instructions));
 
-	block.offsets = _instruction_offset_buffer.add(block.offsets, {x86_instruction.get_size(),
+	block.offsets = _instruction_offset_buffer.add(block.offsets, {size,
 																   static_cast<uint8_t>(num_instructions)});
 	block.instruction_count++;
-	block.x86_end = x86_instruction.get_address() + x86_instruction.get_size();
+	block.x86_end = address + size;
 
 	//check if the block overlaps into another page
 	if ((block.x86_start >> page_shift) < (block.x86_end >> page_shift)) {

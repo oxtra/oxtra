@@ -7,6 +7,13 @@
 #include "oxtra/codegen/decoding/decoding.h"
 
 namespace codegen {
+	/*
+	 * string:
+	 * for (size_t j = 0; j < count; j++) {
+			spdlog::trace(" - instruction[{}] = {}", j, decoding::parse_riscv(riscv[j]));
+		}
+	 */
+
 	class CodeBatch {
 	protected:
 		utils::riscv_instruction_t riscv[codestore::max_riscv_instructions];
@@ -14,13 +21,31 @@ namespace codegen {
 	public:
 		virtual void add(utils::riscv_instruction_t inst);
 
-		virtual size_t size();
+		virtual void end();
 
-		virtual utils::riscv_instruction_t* get();
+		virtual std::string string() const;
 
-		virtual std::string string();
+		size_t size() const;
+
+		utils::riscv_instruction_t* get();
+
+		void reset();
 
 		void operator+=(utils::riscv_instruction_t inst);
+	};
+
+	class X86Step : public CodeBatch {
+	public:
+		void end() final;
+
+		std::string string() const final;
+	};
+
+	class RiscVStep : public CodeBatch {
+	public:
+		void add(utils::riscv_instruction_t inst) final;
+
+		std::string string() const final;
 	};
 }
 

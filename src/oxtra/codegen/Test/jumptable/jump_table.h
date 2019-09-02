@@ -14,6 +14,7 @@ namespace codegen::jump_table {
 		static constexpr uint16_t virtual_syscall 	= 0;
 		static constexpr uint16_t reroute_static 	= 1;
 		static constexpr uint16_t reroute_dynamic 	= 2;
+		static constexpr uint16_t debug_callback	= 3;
 	};
 
 	/**
