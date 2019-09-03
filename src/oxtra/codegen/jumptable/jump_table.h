@@ -15,38 +15,40 @@ namespace codegen::jump_table {
 		static constexpr uint16_t reroute_static 	= 1;
 		static constexpr uint16_t reroute_dynamic 	= 2;
 		static constexpr uint16_t debug_callback	= 3;
+		static constexpr uint16_t my_evalutation = 4;
 	};
 
 	/**
 	 * Generates a jump to the syscall handler.
-	 * @param return_address The register that will contain the return address.
 	 */
-	void jump_syscall_handler(CodeBatch& batch, encoding::RiscVRegister return_address);
+	void jump_syscall_handler(CodeBatch& batch);
 
 	/**
 	 * Generates a jump to reroute_static.
-	 * @param return_address The register that will contain the return address.
 	 */
-	void jump_reroute_static(CodeBatch& batch, encoding::RiscVRegister return_address);
+	void jump_reroute_static(CodeBatch& batch);
 
 	/**
 	* Generates a jump to reroute_dynamic.
-	* @param return_address The register that will contain the return address.
 	*/
-	void jump_reroute_dynamic(CodeBatch& batch, encoding::RiscVRegister return_address);
+	void jump_reroute_dynamic(CodeBatch& batch);
 
 	/**
 	 * Generates a jump to the debug break routine.
-	 * @param return_address The register that will contain the return address.
 	 */
-	void jump_debug_break(CodeBatch& batch, encoding::RiscVRegister return_address);
+	void jump_debug_break(CodeBatch& batch);
 
 	/**
-	 * Generates a jump into the jump table designated to flag evaluation.
+	 * Generates a jump into the jump table to the offset in the register.
 	 * @param offset The register that will contain the offset. This register will be overwritten.
-	 * @param return_address The register that will contain the return address.
 	 */
-	void jump_flag_evaluation(CodeBatch& batch, encoding::RiscVRegister offset, encoding::RiscVRegister return_address);
+	void jump_table_offset(CodeBatch& batch, encoding::RiscVRegister offset);
+
+	/**
+	 * Generates a jump into the jump table to the designated index.
+	 * @param jump_entry The index into the jump-table
+	 */
+	void jump_table_entry(CodeBatch& batch, uint16_t jump_entry);
 }
 
 

@@ -37,7 +37,7 @@ void codegen::CodeStash::reset() {
 }
 
 void codegen::X86Step::end() {
-	jump_table::jump_debug_break(*this, encoding::RiscVRegister::ra);
+	jump_table::jump_debug_break(*this);
 }
 
 void codegen::X86Step::print() const {
@@ -48,7 +48,7 @@ void codegen::X86Step::print() const {
 
 void codegen::RiscVStep::add(utils::riscv_instruction_t inst) {
 	riscv[count++] = inst;
-	jump_table::jump_debug_break(*this, encoding::RiscVRegister::ra);
+	jump_table::jump_debug_break(*this);
 }
 
 void codegen::RiscVStep::print() const {
