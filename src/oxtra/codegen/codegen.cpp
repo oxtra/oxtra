@@ -112,11 +112,7 @@ void CodeGenerator::update_basic_block(utils::host_addr_t addr, utils::host_addr
 	CodeMemory code{reinterpret_cast<riscv_instruction_t*>(addr - 9 * sizeof(riscv_instruction_t))};
 
 	// write the new instructions
-	helper::load_address(code, absolute_address, helper::address_destination);
-#ifdef DEBUG
-	if (code.size() != 8)
-		Dispatcher::fault_exit("load_64bit_immediate did not generate 8 instructions");
-#endif
+	helper::load_immediate(code, absolute_address, helper::address_destination);
 	code += encoding::JALR(RiscVRegister::zero, helper::address_destination, 0);
 }
 

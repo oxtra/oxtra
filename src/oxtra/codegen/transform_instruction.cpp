@@ -5,6 +5,8 @@
 #include "oxtra/codegen/instructions/arithmetic/inc.h"
 #include "oxtra/codegen/instructions/arithmetic/dec.h"
 #include "oxtra/codegen/instructions/memory/mov.h"
+#include "oxtra/codegen/instructions/memory/pop.h"
+#include "oxtra/codegen/instructions/memory/push.h"
 #include "oxtra/codegen/instructions/logic/shl.h"
 #include "oxtra/codegen/instructions/logic/shr.h"
 #include "oxtra/codegen/instructions/logic/sar.h"
@@ -12,6 +14,8 @@
 #include "oxtra/codegen/instructions/control-flow/syscall.h"
 #include "oxtra/codegen/instructions/control-flow/jmp.h"
 #include "oxtra/codegen/instructions/control-flow/call.h"
+#include "oxtra/codegen/instructions/control-flow/ret.h"
+
 
 using namespace codegen;
 using namespace fadec;
@@ -62,6 +66,16 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 		case InstructionType::CALL:
 		case InstructionType::CALL_IND:
 			return std::make_unique<Call>(inst);
+
+		case InstructionType::RET:
+		case InstructionType::RET_IMM:
+			return std::make_unique<Ret>(inst);
+
+		case InstructionType::PUSH:
+			return std::make_unique<Push>(inst);
+
+		case InstructionType::POP:
+			return std::make_unique<Pop>(inst);
 
 		default:
 			return nullptr;
