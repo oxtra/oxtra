@@ -10,6 +10,8 @@ echo "int main() { "
 
 readarray -t lines
 
+echo "}"
+
 echo "int main() { " > $1.c
 
 for line in "${lines[@]}"; do
@@ -18,8 +20,12 @@ done
 
 echo "}" >> $1.c
 
-echo "void _start() { register int *ret asm (\"rdi\") = main();" >> $1.c
-echo "asm(\"mov rax,60;syscall\");" >> $1.c
+echo "void _start() { " >> $1.c
+echo "#pragma GCC diagnostic push" >> $1.c
+echo "#pragma GCC diagnostic ignored \"-Wint-conversion\"" >> $1.c
+echo "	register int *ret asm (\"rdi\") = main();" >> $1.c
+echo "	asm(\"mov rax,60;syscall\");" >> $1.c
+echo "#pragma GCC diagnostic pop" >> $1.c
 echo "}" >> $1.c
 
 gcc -static -nostdlib -m64 -masm=intel $1.c -o $1
