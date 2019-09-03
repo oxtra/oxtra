@@ -1,3 +1,6 @@
+// The following methods are not meant to be used outside of this program.
+// The methods do not check boundaries or other important conditions and are just for testing purposes.
+
 long _syscall(long number, long param1, long param2, long param3) {
 	long ret;
 	
