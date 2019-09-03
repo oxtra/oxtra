@@ -65,6 +65,18 @@ namespace codegen::helper {
 	 */
 	 void load_address(CodeBatch& batch, uintptr_t ptr, encoding::RiscVRegister dest);
 
+	 /**
+	  * Appends a jump into reroute_static.
+	  * @param ptr The address of the next block.
+	  */
+	 void append_eob(CodeBatch& batch, uintptr_t ptr);
+
+	 /**
+	  * Appends a jump into reroute_dynamic.
+	  * @param reg The register that contains the address of the next block.
+	  */
+	 void append_eob(CodeBatch& batch, encoding::RiscVRegister reg);
+
 	/**
 	 * Returns the riscv-register, which maps to the x86-register.
 	 * @param reg The x86-register.

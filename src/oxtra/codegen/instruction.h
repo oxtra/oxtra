@@ -9,35 +9,35 @@ namespace codegen {
 	public:
 		struct Flags {
 			static constexpr uint8_t
-				none = 0x00,
-				carry = 0x01,
-				zero = 0x02,
-				sign = 0x04,
-				overflow = 0x08,
-				parity = 0x10,
-				all = carry | zero | sign | overflow | parity;
+					none = 0x00,
+					carry = 0x01,
+					zero = 0x02,
+					sign = 0x04,
+					overflow = 0x08,
+					parity = 0x10,
+					all = carry | zero | sign | overflow | parity;
 		};
 
 		struct FlagInfo {
 			uint64_t zero_value;
-			uint64_t parity_value;
 			uint64_t sign_value;
 			uint64_t overflow_value[2];
 			uint64_t carry_value[2];
 			uint16_t overflow_operation;
 			uint16_t carry_operation;
 			uint8_t sign_size;
+			uint8_t parity_value;
 
 			static constexpr uint32_t
 					flag_info_offset = 0x1F8,
 					zero_value_offset = flag_info_offset + sizeof(uint64_t) * 0,
-					parity_value_offset = flag_info_offset + sizeof(uint64_t) * 1,
-					sign_value_offset = flag_info_offset + sizeof(uint64_t) * 2,
-					overflow_values_offset = flag_info_offset + sizeof(uint64_t) * 3,
-					carry_values_offset = flag_info_offset + sizeof(uint64_t) * 5,
-					overflow_operation_offset = flag_info_offset + sizeof(uint64_t) * 7,
-					carry_operation_offset = flag_info_offset + sizeof(uint64_t) * 7 + sizeof(uint16_t),
-					sign_size_offset = flag_info_offset + sizeof(uint64_t) * 7 + sizeof(uint16_t) * 2;
+					sign_value_offset = flag_info_offset + sizeof(uint64_t) * 1,
+					overflow_values_offset = flag_info_offset + sizeof(uint64_t) * 2,
+					carry_values_offset = flag_info_offset + sizeof(uint64_t) * 4,
+					overflow_operation_offset = flag_info_offset + sizeof(uint64_t) * 6,
+					carry_operation_offset = flag_info_offset + sizeof(uint64_t) * 6 + sizeof(uint16_t),
+					sign_size_offset = flag_info_offset + sizeof(uint64_t) * 6 + sizeof(uint16_t) * 2,
+					parity_value_offset = flag_info_offset + sizeof(uint64_t) * 6 + sizeof(uint16_t) * 2 + sizeof(uint8_t);
 		};
 
 	private:
@@ -116,25 +116,27 @@ namespace codegen {
 
 		encoding::RiscVRegister evalute_carry(CodeBatch& batch);
 
-		void update_zero(CodeBatch& batch, bool set);
+		void update_zero(CodeBatch& batch, bool set, encoding::RiscVRegister temp);
 
-		void update_zero(CodeBatch& batch, encoding::RiscVRegister va, size_t size);
+		void update_zero(CodeBatch& batch, encoding::RiscVRegister va, uint8_t size);
 
-		void update_sign(CodeBatch& batch, bool set);
+		void update_sign(CodeBatch& batch, bool set, encoding::RiscVRegister temp);
 
-		void update_sign(CodeBatch& batch, encoding::RiscVRegister va, size_t size);
+		void update_sign(CodeBatch& batch, encoding::RiscVRegister va, uint8_t size, encoding::RiscVRegister temp);
 
-		void update_parity(CodeBatch& batch, bool set);
+		void update_parity(CodeBatch& batch, bool set, encoding::RiscVRegister temp);
 
-		void update_parity(CodeBatch& batch, encoding::RiscVRegister va, size_t size);
+		void update_parity(CodeBatch& batch, encoding::RiscVRegister va);
 
-		void update_overflow(CodeBatch& batch, uint16_t index, bool set);
+		void update_overflow(CodeBatch& batch, bool set, encoding::RiscVRegister temp);
 
-		void update_overflow(CodeBatch& batch, uint16_t index, encoding::RiscVRegister va, encoding::RiscVRegister vb);
+		void update_overflow(CodeBatch& batch, uint16_t index,
+							 encoding::RiscVRegister va, encoding::RiscVRegister vb, encoding::RiscVRegister temp);
 
-		void update_carry(CodeBatch& batch, uint16_t index, bool set);
+		void update_carry(CodeBatch& batch, bool set, encoding::RiscVRegister temp);
 
-		void update_carry(CodeBatch& batch, uint16_t index, encoding::RiscVRegister va, encoding::RiscVRegister vb);
+		void update_carry(CodeBatch& batch, uint16_t index,
+						  encoding::RiscVRegister va, encoding::RiscVRegister vb, encoding::RiscVRegister temp);
 	};
 }
 

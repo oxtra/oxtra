@@ -7,7 +7,7 @@ using namespace fadec;
 using namespace codegen::helper;
 
 codegen::Instruction::Instruction(const fadec::Instruction& inst, uint8_t update, uint8_t require, bool eob)
-	: fadec::Instruction{inst} {
+		: fadec::Instruction{inst} {
 	update_flags = update;
 	require_flags = eob ? Flags::all : require;
 	end_of_block = eob;
@@ -211,94 +211,148 @@ encoding::RiscVRegister codegen::Instruction::evalute_carry(CodeBatch& batch) {
 
 }
 
-void codegen::Instruction::update_zero(CodeBatch& batch, bool set) {
+void codegen::Instruction::update_zero(CodeBatch& batch, bool set, encoding::RiscVRegister temp) {
 	// check if the instruction has to update the zero-flag
 	if ((update_flags & Flags::zero) == 0)
 		return;
-	/*
-	 * implement the flag
-	 */
+
+	if (set) {
+		batch += encoding::SD(helper::context_address, RiscVRegister::zero, FlagInfo::zero_value_offset);
+	} else {
+		batch += encoding::ADDI(temp, encoding::RiscVRegister::zero, 1);
+		batch += encoding::SD(helper::context_address, temp, FlagInfo::zero_value_offset);
+	}
 }
 
-void codegen::Instruction::update_zero(CodeBatch& batch, encoding::RiscVRegister va, size_t size) {
+void codegen::Instruction::update_zero(CodeBatch& batch, encoding::RiscVRegister va, uint8_t size) {
 	// check if the instruction has to update the zero-flag
 	if ((update_flags & Flags::zero) == 0)
 		return;
-	/*
-	 * implement the flag
-	 */
+
+	// if the register size is 8 then we don't need to store 0 into the memory operand
+	if (size == 8) {
+		batch += encoding::SD(helper::context_address, va, FlagInfo::zero_value_offset);
+		return;
+	}
+
+	// clear the zf_value because the upper bits may still be set
+	batch += SD(helper::context_address, RiscVRegister::zero, FlagInfo::zero_value_offset);
+
+
+	switch (size) {
+		case 1:
+			batch += SB(helper::context_address, va, FlagInfo::zero_value_offset);
+			break;
+
+		case 2:
+			batch += SH(helper::context_address, va, FlagInfo::zero_value_offset);
+			break;
+
+		case 4:
+			batch += SW(helper::context_address, va, FlagInfo::zero_value_offset);
+			break;
+
+		default:
+			throw std::runtime_error("Invalid register size.");
+	}
+
 }
 
-void codegen::Instruction::update_sign(CodeBatch& batch, bool set) {
+void codegen::Instruction::update_sign(CodeBatch& batch, bool set, encoding::RiscVRegister temp) {
 	// check if the instruction has to update the sign-flag
 	if ((update_flags & Flags::sign) == 0)
 		return;
-	/*
-	 * implement the flag
-	 */
+
+	if (set) {
+		batch += encoding::ADDI(temp, encoding::RiscVRegister::zero, -1);
+		batch += encoding::SD(helper::context_address, temp, FlagInfo::sign_value_offset);
+	} else {
+		batch += encoding::SD(helper::context_address, RiscVRegister::zero, FlagInfo::sign_value_offset);
+	}
 }
 
-void codegen::Instruction::update_sign(CodeBatch& batch, encoding::RiscVRegister va, size_t size) {
+void codegen::Instruction::update_sign(CodeBatch& batch, encoding::RiscVRegister va,
+									   uint8_t size, encoding::RiscVRegister temp) {
 	// check if the instruction has to update the sign-flag
 	if ((update_flags & Flags::sign) == 0)
 		return;
-	/*
-	 * implement the flag
-	 */
+
+	// store the sf_value
+	batch += encoding::SD(helper::context_address, va, FlagInfo::sign_value_offset);
+
+	// store the size in bits - 1 (the evaluate function shifts by that amount to get the value of the carry flag)
+	batch += encoding::ADDI(temp, RiscVRegister::zero, size * 8 - 1);
+	batch += encoding::SB(helper::context_address, temp, FlagInfo::sign_size_offset);
+
 }
 
-void codegen::Instruction::update_parity(CodeBatch& batch, bool set) {
+void codegen::Instruction::update_parity(CodeBatch& batch, bool set, encoding::RiscVRegister temp) {
 	// check if the instruction has to update the parity-flag
 	if ((update_flags & Flags::parity) == 0)
 		return;
-	/*
-	 * implement the flag
-	 */
+
+	if (set) {
+		batch += encoding::SB(helper::context_address, RiscVRegister::zero, FlagInfo::parity_value_offset);
+	} else {
+		batch += encoding::ADDI(temp, RiscVRegister::zero, 1);
+		batch += encoding::SB(helper::context_address, temp, FlagInfo::parity_value_offset);
+	}
 }
 
-void codegen::Instruction::update_parity(CodeBatch& batch, encoding::RiscVRegister va, size_t size) {
+void codegen::Instruction::update_parity(CodeBatch& batch, encoding::RiscVRegister va) {
 	// check if the instruction has to update the parity-flag
 	if ((update_flags & Flags::parity) == 0)
 		return;
-	/*
-	 * implement the flag
-	 */
+
+	batch += encoding::SB(helper::context_address, va, FlagInfo::parity_value_offset);
 }
 
-void codegen::Instruction::update_overflow(CodeBatch& batch, uint16_t index, bool set) {
+void codegen::Instruction::update_overflow(CodeBatch& batch, bool set, encoding::RiscVRegister temp) {
 	// check if the instruction has to update the overflow-flag
 	if ((update_flags & Flags::overflow) == 0)
 		return;
-	/*
-	 * implement the flag
-	 */
+
+	// TODO: implement this when the overflow set and reset indices are chosen
+	//batch += encoding::ADDI(temp, RiscVRegister::zero, set ? set_idx : rst_idx);
+	//batch += encoding::SH(helper::context_address, temp, FlagInfo::overflow_operation_offset);
 }
 
 void codegen::Instruction::update_overflow(CodeBatch& batch, uint16_t index, encoding::RiscVRegister va,
-										   encoding::RiscVRegister vb) {
+										   encoding::RiscVRegister vb, encoding::RiscVRegister temp) {
 	// check if the instruction has to update the overflow-flag
 	if ((update_flags & Flags::overflow) == 0)
 		return;
-	/*
-	 * implement the flag
-	 */
+
+	// store the values
+	batch += encoding::SD(helper::context_address, va, FlagInfo::overflow_values_offset);
+	batch += encoding::SD(helper::context_address, vb, FlagInfo::overflow_values_offset + 8);
+
+	// store the jump table index
+	batch += encoding::ADDI(temp, RiscVRegister::zero, index);
+	batch += encoding::SH(helper::context_address, temp, FlagInfo::overflow_operation_offset);
 }
 
-void codegen::Instruction::update_carry(CodeBatch& batch, uint16_t index, bool set) {
+void codegen::Instruction::update_carry(CodeBatch& batch, bool set, encoding::RiscVRegister temp) {
 	// check if the instruction has to update the carry-flag
 	if ((update_flags & Flags::carry) == 0)
 		return;
-	/*
-	 * implement the flag
-	 */
+
+	// TODO: implement this when the carry set and reset indices are chosen
+	//batch += encoding::ADDI(temp, RiscVRegister::zero, set ? set_idx : rst_idx);
+	//batch += encoding::SH(helper::context_address, temp, FlagInfo::carry_operation_offset);
 }
 
 void codegen::Instruction::update_carry(CodeBatch& batch, uint16_t index, encoding::RiscVRegister va,
-										encoding::RiscVRegister vb) {
+										encoding::RiscVRegister vb, encoding::RiscVRegister temp) {
 	// check if the instruction has to update the carry-flag
 	if ((update_flags & Flags::carry) == 0)
 		return;
-	/*
-	 * implement the flag
-	 */
+
+	// store the values
+	batch += encoding::SD(helper::context_address, va, FlagInfo::carry_values_offset);
+	batch += encoding::SD(helper::context_address, vb, FlagInfo::carry_values_offset + 8);
+
+	// store the jump table index
+	batch += encoding::ADDI(temp, RiscVRegister::zero, index);
+	batch += encoding::SH(helper::context_address, temp, FlagInfo::carry_operation_offset);
 }

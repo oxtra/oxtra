@@ -119,3 +119,16 @@ void codegen::helper::load_immediate(CodeBatch& batch, uintptr_t imm, encoding::
 void codegen::helper::load_address(codegen::CodeBatch& batch, uintptr_t ptr, encoding::RiscVRegister dest) {
 	load_64bit_immediate(batch, ptr, dest, false);
 }
+
+void codegen::helper::append_eob(CodeBatch& batch, uintptr_t ptr) {
+	load_address(batch, ptr, helper::address_destination);
+	jump_table::jump_reroute_static(batch);
+}
+
+void codegen::helper::append_eob(CodeBatch& batch, encoding::RiscVRegister reg) {
+	if (reg != helper::address_destination) {
+		batch += encoding::MV(helper::address_destination, reg);
+	}
+
+	jump_table::jump_reroute_dynamic(batch);
+}
