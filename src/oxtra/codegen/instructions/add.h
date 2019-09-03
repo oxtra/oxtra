@@ -1,8 +1,8 @@
 #ifndef OXTRA_ADD_H
 #define OXTRA_ADD_H
 
-#include "oxtra/codegen/Test/instruction.h"
-#include "oxtra/codegen/Test/binary_operation.h"
+#include "oxtra/codegen/instruction.h"
+#include "oxtra/codegen/binary_operation.h"
 
 namespace codegen {
 	class Add : public BinaryOperation {

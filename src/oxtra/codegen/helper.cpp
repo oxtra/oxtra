@@ -1,6 +1,6 @@
 #include "oxtra/codegen/helper.h"
 #include "oxtra/codegen/encoding/encoding.h"
-#include "oxtra/codegen/Test/instruction.h"
+#include "instruction.h"
 #include <spdlog/spdlog.h>
 
 using namespace encoding;

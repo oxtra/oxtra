@@ -1,7 +1,7 @@
 #ifndef OXTRA_HELPER_H
 #define OXTRA_HELPER_H
 
-#include "oxtra/codegen/Test/code_batch.h"
+#include "code_batch.h"
 
 namespace codegen::helper {
 	// If these registers are changed, the documentation has to be updated

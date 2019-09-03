@@ -4,7 +4,7 @@
 #include "oxtra/utils/types.h"
 #include "oxtra/arguments/arguments.h"
 #include "oxtra/codegen/codestore/codestore.h"
-#include "oxtra/codegen/Test/instruction.h"
+#include "instruction.h"
 #include "oxtra/elf/elf.h"
 
 namespace codegen {
