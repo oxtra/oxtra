@@ -1,0 +1,3 @@
+# Testing if the arithmetic returns the correct value.
+./oxtra test/resources/no_libc/arithmetic_test
+>>>= 249
