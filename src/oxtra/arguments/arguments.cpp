@@ -9,7 +9,8 @@ const char* argp_program_bug_address = "https://gitlab.lrz.de/lrr-tum/students/e
 Arguments::Arguments(int argc, char** argv) :
 		_argp_parser{_options, parse_opt, _argument_description, _documentation, nullptr, nullptr, nullptr},
 		_executable_path{argv[0]},
-		_stored_arguments{nullptr, std::vector<std::string>(), spdlog::level::level_enum::warn, 128, 128, 128} {
+		_stored_arguments{nullptr, std::vector<std::string>(), spdlog::level::level_enum::warn, 128, 128, 128,
+						  StepMode::none} {
 
 	parse_arguments(argc, argv);
 }
@@ -36,6 +37,10 @@ size_t Arguments::get_offset_list_size() const {
 
 size_t Arguments::get_entry_list_size() const {
 	return _stored_arguments.entry_list_size;
+}
+
+StepMode Arguments::get_step_mode() const {
+	return _stored_arguments.step_mode;
 }
 
 void Arguments::parse_arguments(int argc, char** argv) {
@@ -67,7 +72,8 @@ static int parse_string(struct argp_state* state, char* str,
 	int ret = parse_string(state, str, min_value, failure_string);
 
 	if (ret > max_value) {
-		argp_failure(state, 1, 0, "%s: %s", failure_string, str);
+		argp_failure(state, 1, 0, "%s: %s. %s %d-%d.", failure_string, str, "Please specify a value between", min_value,
+					 max_value);
 	}
 
 	return ret;
@@ -84,7 +90,8 @@ static std::vector<std::string> string_split(const std::string& string, const ch
 		// check if the token currently is a string and has not been ended yet
 		// it has been ended, if there is a " but not a \" at the end
 		if (!tokens.empty() && tokens.back().find_first_of('"') == 0
-		&& (tokens.back().find_last_of('"') != tokens.back().length() - 1 || tokens.back().find_last_of('\\') == tokens.back().length() - 2)) {
+			&& (tokens.back().find_last_of('"') != tokens.back().length() - 1 ||
+				tokens.back().find_last_of('\\') == tokens.back().length() - 2)) {
 			tokens.back() += delimiter + token;
 		} else if (token.length() > 0) {
 			tokens.push_back(token);
@@ -104,19 +111,30 @@ error_t Arguments::parse_opt(int key, char* arg, struct argp_state* state) {
 			arguments->guest_arguments = string_split(arg, ' ');
 			break;
 		case _instruction_list_size_id:
-			arguments->instruction_list_size = parse_string(state, arg, 1, "Illegal size");
+			arguments->instruction_list_size = parse_string(state, arg, 1, "Illegal size, must be a positive integer");
 			break;
 		case _offset_list_size_id:
-			arguments->offset_list_size = parse_string(state, arg, 1, "Illegal size");
+			arguments->offset_list_size = parse_string(state, arg, 1, "Illegal size, must be a positive integer");
 			break;
 		case _entry_list_size_id:
-			arguments->entry_list_size = parse_string(state, arg, 1, "Illegal size");
+			arguments->entry_list_size = parse_string(state, arg, 1, "Illegal size, must be a positive integer.");
 			break;
 		case 'l': {
 			int parsed = parse_string(state, arg, 0, 6, "Illegal log level");
 			arguments->spdlog_log_level = static_cast<enum spdlog::level::level_enum>(parsed);
 			break;
 		}
+		case 'd':
+			if (strcasecmp("none", arg) == 0)
+				arguments->step_mode = StepMode::none;
+			else if (strcasecmp("x86", arg) == 0)
+				arguments->step_mode = StepMode::x86;
+			else if (strcasecmp("riscv", arg) == 0)
+				arguments->step_mode = StepMode::riscv;
+			else
+				argp_failure(state, 1, 0, "%s: %s. %s.", "Illegal debug step mode", arg, "Allowed are: none, x86, riscv");
+
+			break;
 		case ARGP_KEY_NO_ARGS:
 			argp_usage(state);
 			break;
