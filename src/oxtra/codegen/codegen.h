@@ -27,9 +27,9 @@ namespace codegen {
 		void update_basic_block(utils::host_addr_t addr, utils::host_addr_t absolute_address);
 
 	private:
-		using inst_vec_t = std::vector<std::unique_ptr<Instruction>>;
+		using inst_vec_t = std::vector<std::unique_ptr<codegen::Instruction>>;
 
-		Instruction& decode_instruction(utils::guest_addr_t& addr, inst_vec_t& inst_vec) const;
+		codegen::Instruction& decode_instruction(utils::guest_addr_t& addr, inst_vec_t& inst_vec) const;
 	};
 }
 

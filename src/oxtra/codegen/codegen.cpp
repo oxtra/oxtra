@@ -70,7 +70,7 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 
 	// iterate through the instructions and translate them to riscv-code
 	// TODO: instatiate code batch here based on the debug settings
-	CodeBatch batch{};
+	CodeStash batch{};
 	auto&& codeblock = _codestore.create_block();
 	for (size_t i = 0; i < instructions.size(); i++) {
 		auto&& inst = instructions[i];
@@ -109,17 +109,15 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 void CodeGenerator::update_basic_block(utils::host_addr_t addr, utils::host_addr_t absolute_address) {
 	// compute new base-address where the new absolute address will be written to t0
 	// 9 = 8 [load_64bit_immediate] + 1 [JALR]
-	auto riscv = reinterpret_cast<riscv_instruction_t*>(addr - 9 * sizeof(riscv_instruction_t));
-	size_t count = 0;
+	CodeMemory code{reinterpret_cast<riscv_instruction_t*>(addr - 9 * sizeof(riscv_instruction_t))};
 
 	// write the new instructions
-	//helper::load_address(batch, absolute_address, )
-	load_64bit_immediate(absolute_address, address_destination, riscv, count, false);
+	helper::load_address(code, absolute_address, helper::address_destination);
 #ifdef DEBUG
-	if (count != 8)
+	if (code.size() != 8)
 		Dispatcher::fault_exit("load_64bit_immediate did not generate 8 instructions");
 #endif
-	riscv[count++] = encoding::JALR(RiscVRegister::zero, address_destination, 0);
+	code += encoding::JALR(RiscVRegister::zero, helper::address_destination, 0);
 }
 
 codegen::Instruction& CodeGenerator::decode_instruction(utils::guest_addr_t& addr, inst_vec_t& inst_vec) const {

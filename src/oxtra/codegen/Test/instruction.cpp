@@ -1,8 +1,10 @@
+#include <oxtra/dispatcher/dispatcher.h>
 #include "instruction.h"
+#include "oxtra/codegen/helper.h"
 
 using namespace encoding;
 using namespace fadec;
-using namespace dispatcher;
+using namespace codegen::helper;
 
 codegen::Instruction::Instruction(const fadec::Instruction& inst, uint8_t update, uint8_t require, bool eob)
 	: fadec::Instruction{inst} {
@@ -32,14 +34,6 @@ void codegen::Instruction::set_eob() {
 	require_flags = Flags::all;
 }
 
-uint8_t codegen::Instruction::get_size() const {
-	return fadec::Instruction::get_size();
-}
-
-uintptr_t codegen::Instruction::get_address() const {
-	return fadec::Instruction::get_address();
-}
-
 std::string codegen::Instruction::string() const {
 	char buffer[256];
 	fadec::format(*this, buffer, sizeof(buffer));
@@ -48,7 +42,7 @@ std::string codegen::Instruction::string() const {
 }
 
 RiscVRegister codegen::Instruction::translate_operand(CodeBatch& batch, size_t index,
-													  RiscVRegister reg, RiscVRegister temp_a, RiscVRegister temp_b) {
+													  RiscVRegister reg, RiscVRegister temp_a, RiscVRegister temp_b) const {
 	// extract the operand
 	auto& operand = get_operand(index);
 
@@ -85,7 +79,7 @@ RiscVRegister codegen::Instruction::translate_operand(CodeBatch& batch, size_t i
 }
 
 void codegen::Instruction::translate_destination(CodeBatch& batch, RiscVRegister reg,
-												 RiscVRegister address, RiscVRegister temp_a, RiscVRegister temp_b) {
+												 RiscVRegister address, RiscVRegister temp_a, RiscVRegister temp_b) const {
 	auto& operand = get_operand(0);
 
 	// check if the destination is a register
@@ -137,9 +131,9 @@ void codegen::Instruction::translate_destination(CodeBatch& batch, RiscVRegister
 }
 
 RiscVRegister codegen::Instruction::translate_memory(CodeBatch& batch, size_t index,
-													 RiscVRegister temp_a, RiscVRegister temp_b) {
+													 RiscVRegister temp_a, RiscVRegister temp_b) const {
 	if (get_address_size() < 4)
-		Dispatcher::fault_exit("invalid addressing-size");
+		dispatcher::Dispatcher::fault_exit("invalid addressing-size");
 	const auto& operand = get_operand(index);
 
 	// check if its only a base-register
@@ -187,17 +181,17 @@ RiscVRegister codegen::Instruction::translate_memory(CodeBatch& batch, size_t in
 }
 
 encoding::RiscVRegister codegen::Instruction::evalute_zero(CodeBatch& batch) {
-	batch += encoding::LD(RiscVRegister::t4, Instruction::context_address, FlagInfo::zero_value_offset);
+	batch += encoding::LD(RiscVRegister::t4, context_address, FlagInfo::zero_value_offset);
 	batch += encoding::SNEZ(RiscVRegister::t4, RiscVRegister::t4);
 	return RiscVRegister::t4;
 }
 
 encoding::RiscVRegister codegen::Instruction::evalute_sign(CodeBatch& batch, encoding::RiscVRegister temp) {
 	// load the shift amount
-	batch += LBU(RiscVRegister::t4, Instruction::context_address, FlagInfo::sign_size_offset);
+	batch += LBU(RiscVRegister::t4, context_address, FlagInfo::sign_size_offset);
 
 	// load the value
-	batch += LD(temp, Instruction::context_address, FlagInfo::sign_value_offset);
+	batch += LD(temp, context_address, FlagInfo::sign_value_offset);
 
 	// shift the value
 	batch += SRL(temp, temp, RiscVRegister::t4);

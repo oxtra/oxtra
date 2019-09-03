@@ -7,14 +7,38 @@
 #include "oxtra/codegen/decoding/decoding.h"
 
 namespace codegen {
-	/*
-	 * string:
-	 * for (size_t j = 0; j < count; j++) {
-			spdlog::trace(" - instruction[{}] = {}", j, decoding::parse_riscv(riscv[j]));
-		}
+	/**
+	 * Interface for writing code.
 	 */
-
 	class CodeBatch {
+	protected:
+		size_t count = 0;
+
+	public:
+		virtual void add(utils::riscv_instruction_t inst) = 0;
+
+		size_t size() const;
+
+		void operator+=(utils::riscv_instruction_t inst);
+	};
+
+	/**
+	 * Wraps a pointer of riscv code.
+	 */
+	class CodeMemory : public CodeBatch {
+	protected:
+		utils::riscv_instruction_t* address;
+	public:
+		explicit CodeMemory(utils::riscv_instruction_t* address)
+			: address{address} {}
+
+		virtual void add(utils::riscv_instruction_t inst);
+	};
+
+	/**
+	 * Manages an internal storage of riscv code.
+	 */
+	class CodeStash : public CodeBatch {
 	protected:
 		utils::riscv_instruction_t riscv[codestore::max_riscv_instructions];
 		size_t count;
@@ -25,23 +49,25 @@ namespace codegen {
 
 		virtual std::string string() const;
 
-		size_t size() const;
-
 		utils::riscv_instruction_t* get();
 
 		void reset();
-
-		void operator+=(utils::riscv_instruction_t inst);
 	};
 
-	class X86Step : public CodeBatch {
+	/**
+	 * Generates a call into the debugger after every x86 instruction.
+	 */
+	class X86Step : public CodeStash {
 	public:
 		void end() final;
 
 		std::string string() const final;
 	};
 
-	class RiscVStep : public CodeBatch {
+	/**
+	 * Generates a call into the debugger after every riscv instruction.
+	 */
+	class RiscVStep : public CodeStash {
 	public:
 		void add(utils::riscv_instruction_t inst) final;
 

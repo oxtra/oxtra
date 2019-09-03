@@ -7,7 +7,7 @@
 
 namespace codegen::jump_table {
 	// define the jump-table object
-	extern uintptr_t table_address;
+	void table_address();
 
 	// This jump-table-enum must correspond to the order of the assembly-jumptable
 	struct Entries {
@@ -19,28 +19,30 @@ namespace codegen::jump_table {
 
 	/**
 	 * Generates a jump to the syscall handler.
-	 * @param batch Store the current riscv-batch.
 	 * @param return_address The register that will contain the return address.
 	 */
 	void jump_syscall_handler(CodeBatch& batch, encoding::RiscVRegister return_address);
 
 	/**
 	 * Generates a jump to reroute_static.
-	 * @param batch Store the current riscv-batch.
 	 * @param return_address The register that will contain the return address.
 	 */
 	void jump_reroute_static(CodeBatch& batch, encoding::RiscVRegister return_address);
 
 	/**
 	* Generates a jump to reroute_dynamic.
-	* @param batch Store the current riscv-batch.
 	* @param return_address The register that will contain the return address.
 	*/
 	void jump_reroute_dynamic(CodeBatch& batch, encoding::RiscVRegister return_address);
 
 	/**
+	 * Generates a jump to the debug break routine.
+	 * @param return_address The register that will contain the return address.
+	 */
+	void jump_debug_break(CodeBatch& batch, encoding::RiscVRegister return_address);
+
+	/**
 	 * Generates a jump into the jump table designated to flag evaluation.
-	 * @param batch Store the current riscv-batch.
 	 * @param offset The register that will contain the offset. This register will be overwritten.
 	 * @param return_address The register that will contain the return address.
 	 */

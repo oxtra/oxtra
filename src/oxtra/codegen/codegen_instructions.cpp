@@ -1,4 +1,4 @@
-#include "oxtra/codegen/codegen.h"
+/*#include "oxtra/codegen/codegen.h"
 #include <spdlog/spdlog.h>
 #include <oxtra/dispatcher/dispatcher.h>
 
@@ -80,7 +80,7 @@ void CodeGenerator::translate_mov_ext(const fadec::Instruction& inst, RiscVRegis
 	 * Otherwise the optimization will fail (load full 8-byte register, and store the interesting parts).
 	 * [It will fail, because the interesting, stored parts, are larger than they should be]
 	 * With a simple hack of shifting all the way up, and down again, we can fill the space with the
-	 * highest bit. */
+	 * highest bit. //
 	const auto shift_amount = 64 - 8 * inst.get_operand(1).get_size();
 	riscv[count++] = encoding::SLLI(dest, src, shift_amount);
 	if (inst.get_type() == InstructionType::MOVSX)
@@ -105,7 +105,7 @@ void CodeGenerator::translate_mov(const fadec::Instruction& inst, utils::riscv_i
 			/*
 			 * if the destination operand is a 4-byte register then we can move the source operand result into it
 			 * and clear the upper 32 bits (saves 1 instruction)
-			 */
+			 //
 		else if (dst_operand.get_size() == 4) {
 			translate_operand(inst, 1, dst_register, RiscVRegister::t0, RiscVRegister::t1, riscv, count);
 			riscv[count++] = encoding::SLLI(dst_register, dst_register, 32);
@@ -277,4 +277,4 @@ void CodeGenerator::translate_call(const fadec::Instruction& inst, utils::riscv_
 
 	// the rest of the function behaves just like jump
 	translate_jmp(inst, riscv, count);
-}
+}*/

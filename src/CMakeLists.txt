@@ -16,8 +16,13 @@ add_library(oxtra_libs
 		oxtra/codegen/decoding/decoding.cpp
 		oxtra/codegen/codegen_instructions.cpp
 		oxtra/codegen/helper.cpp
+		oxtra/codegen/Test/code_batch.cpp
 		oxtra/codegen/Test/instruction.cpp
-		oxtra/codegen/Test/jumptable/jump_table.cpp)
+		oxtra/codegen/Test/transform_instruction.cpp
+		oxtra/codegen/Test/jumptable/jump_table.cpp
+		oxtra/codegen/Test/jumptable/jump_table.s
+		oxtra/codegen/Test/binary_operation.cpp
+		oxtra/codegen/Test/instructions/add.cpp)
 
 target_link_libraries(oxtra_libs
 		fadec

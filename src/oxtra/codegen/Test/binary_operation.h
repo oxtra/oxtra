@@ -4,13 +4,13 @@
 #include "instruction.h"
 
 namespace codegen {
-	class BinaryOperation : protected codegen::Instruction {
+	class BinaryOperation : public codegen::Instruction {
 	protected:
 		explicit BinaryOperation(const fadec::Instruction& inst, uint8_t update, uint8_t require);
 
 		void generate(CodeBatch& batch) const final;
 
-		virtual void execute_operation(CodeBatch& batch, encoding::RiscVRegister dst, encoding::RiscVRegister src) = 0;
+		virtual void execute_operation(CodeBatch& batch, encoding::RiscVRegister dst, encoding::RiscVRegister src) const = 0;
 	};
 }
 

@@ -4,13 +4,14 @@
 #include "oxtra/utils/types.h"
 #include "oxtra/arguments/arguments.h"
 #include "oxtra/codegen/codegen.h"
+#include "oxtra/codegen/helper.h"
 #include "oxtra/elf/elf.h"
 #include "execution_context.h"
 
 namespace dispatcher {
-	static_assert(codegen::CodeGenerator::address_destination == encoding::RiscVRegister::t3,
+	static_assert(codegen::helper::address_destination == encoding::RiscVRegister::t3,
 				  "dispatcher::reroute_static, reroute_dynamic requires t3");
-	static_assert(codegen::CodeGenerator::context_address == encoding::RiscVRegister::s11,
+	static_assert(codegen::helper::context_address == encoding::RiscVRegister::s11,
 				  "dispatcher::reroute_static, reroute_dynamic requires s11");
 
 	class Dispatcher {
@@ -79,7 +80,7 @@ namespace dispatcher {
 		 * @param fault_string A pointer, which might store the address to the fault_string, or zero
 		 * @return The exit_code parameter.
 		 */
-		static long guest_enter(Context* context, utils::guest_addr_t entry, const char** fault_string);
+		static long guest_enter(ExecutionContext* context, utils::guest_addr_t entry, const char** fault_string);
 	};
 }
 

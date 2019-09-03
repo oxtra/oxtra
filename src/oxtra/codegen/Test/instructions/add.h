@@ -8,15 +8,11 @@ namespace codegen {
 	class Add : public BinaryOperation {
 	public:
 		explicit Add(const fadec::Instruction& inst)
-			: BinaryOperation{inst, all, none} {}
+			: BinaryOperation{inst, Flags::all, Flags::none} {}
 
-		void execute_operation(CodeBatch& batch, encoding::RiscVRegister dst, encoding::RiscVRegister src) const override {
-			batch += encoding::ADD(dst, src, dst);
-		}
+		void execute_operation(CodeBatch& batch, encoding::RiscVRegister dst, encoding::RiscVRegister src) const override;
 
-		bool end_of_block() const {
-			return false;
-		}
+		bool end_of_block() const;
 	};
 
 }

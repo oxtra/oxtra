@@ -3,7 +3,6 @@
 
 #include "oxtra/utils/types.h"
 #include "jumptable/jump_table.h"
-#include "oxtra/dispatcher/dispatcher.h"
 
 namespace codegen {
 	class Instruction : protected fadec::Instruction {
@@ -62,11 +61,10 @@ namespace codegen {
 
 		void set_eob();
 
-		uint8_t get_size() const;
-
-		uintptr_t get_address() const;
-
 		std::string string() const;
+
+		using fadec::Instruction::get_size;
+		using fadec::Instruction::get_address;
 
 	protected:
 		/**
@@ -81,7 +79,7 @@ namespace codegen {
 		 * 		   the return-register will contain the address (either temp_a, or a base-register)
 		 */
 		encoding::RiscVRegister translate_operand(CodeBatch& batch, size_t index, encoding::RiscVRegister reg,
-												  encoding::RiscVRegister temp_a, encoding::RiscVRegister temp_b);
+												  encoding::RiscVRegister temp_a, encoding::RiscVRegister temp_b) const;
 
 		/**
 		 * Writes the value in the register to the destination-operand of the instruction
@@ -94,7 +92,7 @@ namespace codegen {
 		 * @param temp_b A temporary that might be changed.
 		 */
 		void translate_destination(CodeBatch& batch, encoding::RiscVRegister reg, encoding::RiscVRegister address,
-								   encoding::RiscVRegister temp_a, encoding::RiscVRegister temp_b);
+								   encoding::RiscVRegister temp_a, encoding::RiscVRegister temp_b) const;
 
 		/**
 		 * Translates a x86-memory operand into risc-v instructions.
@@ -106,7 +104,7 @@ namespace codegen {
 		 * @return Returns the register containing the address (either temp_a, or a base-register)
 		 */
 		encoding::RiscVRegister translate_memory(CodeBatch& batch, size_t index,
-												 encoding::RiscVRegister temp_a, encoding::RiscVRegister temp_b);
+												 encoding::RiscVRegister temp_a, encoding::RiscVRegister temp_b) const;
 
 		encoding::RiscVRegister evalute_zero(CodeBatch& batch);
 
