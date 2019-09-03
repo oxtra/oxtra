@@ -6,6 +6,12 @@
 #include <argp.h>
 
 namespace arguments {
+	enum class StepMode {
+		none,
+		x86,
+		riscv
+	};
+
 	class Arguments {
 	private:
 		/**
@@ -26,6 +32,7 @@ namespace arguments {
 			std::vector<std::string> guest_arguments;
 			enum spdlog::level::level_enum spdlog_log_level;
 			size_t instruction_list_size, offset_list_size, entry_list_size;
+			enum StepMode step_mode;
 		};
 
 		static constexpr char _instruction_list_size_id = 1;
@@ -36,14 +43,15 @@ namespace arguments {
 		 * This struct contains all options and their identifiers (+ definition strings).
 		 * Unprintable ASCII strings will not be able to be accessed (only long variant available).
 		 */
-		const struct argp_option _options[6] = {
-				{"args", 'a', "\"ARGUMENTS...\"", 0, "Specify the arguments that will be passed to the x86 executable. The default is no arguments", 0},
-				{"linst-size", _instruction_list_size_id, "SIZE",  0, "The size of the list containing instructions. Limit for consecutive instructions.\nThe default is 128.",   0},
-				{"loffset-size",      _offset_list_size_id,      "SIZE",  0, "The size of the list containing offset. Limit for consecutive offsets.\nThe default is 128.",              0},
-				{"lentry-size",       _entry_list_size_id,       "SIZE",  0, "The size of the list containing block entires. Limit for consecutive block entries.\nThe default is 128.", 0},
-				{"log-level",         'l',                       "LEVEL", 0, "Specify the log level. 0=trace, 1=debug, 2=info, 3=warn, 4=error, 5=critical, 6=off.\nThe default is 3.",  0},
+		const struct argp_option _options[7] = {
+				{"args",         'a',                       "\"ARGUMENTS...\"", 0, "Specify the arguments that will be passed to the x86 executable. The default is no arguments",                                                          0},
+				{"linst-size",   _instruction_list_size_id, "SIZE",             0, "The size of the list containing instructions. Limit for consecutive instructions.\nThe default is 128.",                                                0},
+				{"loffset-size", _offset_list_size_id,      "SIZE",             0, "The size of the list containing offset. Limit for consecutive offsets.\nThe default is 128.",                                                           0},
+				{"lentry-size",  _entry_list_size_id,       "SIZE",             0, "The size of the list containing block entires. Limit for consecutive block entries.\nThe default is 128.",                                              0},
+				{"log-level",    'l',                       "LEVEL",            0, "Specify the log level. 0=trace, 1=debug, 2=info, 3=warn, 4=error, 5=critical, 6=off.\nThe default is 3.",                                               0},
+				{"debug",        'd',                       "STEP_MODE",        0, "Specify the stepping behavior. Allowed step modes are: none, x86, or riscv specifying the granularity of possible breakpoints.\nThe default ist none.", 0},
 				// This specifies the required x86 executable argument
-				{nullptr,             0,                         nullptr, 0, nullptr,                                                                                                    0}
+				{nullptr,        0,                         nullptr,            0, nullptr,                                                                                                                                                 0}
 		};
 
 		const struct argp _argp_parser;
@@ -72,6 +80,8 @@ namespace arguments {
 		size_t get_offset_list_size() const;
 
 		size_t get_entry_list_size() const;
+
+		StepMode get_step_mode() const;
 
 	private:
 		/**
