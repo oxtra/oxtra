@@ -17,6 +17,7 @@
 #include "oxtra/codegen/instructions/control-flow/jmp.h"
 #include "oxtra/codegen/instructions/control-flow/call.h"
 #include "oxtra/codegen/instructions/control-flow/ret.h"
+#include "oxtra/codegen/instructions/arithmetic/idiv.h"
 
 
 using namespace codegen;
@@ -57,6 +58,10 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 
 		case InstructionType::IMUL2:
 			return std::make_unique<Imul>(inst);
+			
+		case InstructionType::DIV:
+		case InstructionType::IDIV:
+			return std::make_unique<Idiv>(inst);
 
 		case InstructionType::SYSCALL:
 			return std::make_unique<Syscall>(inst);
