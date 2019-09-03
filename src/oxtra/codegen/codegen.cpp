@@ -70,7 +70,7 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 
 	// iterate through the instructions and translate them to riscv-code
 	// TODO: instatiate code batch here based on the debug settings
-	CodeStash batch{};
+	CodeBatchImpl batch{};
 	auto&& codeblock = _codestore.create_block();
 	for (size_t i = 0; i < instructions.size(); i++) {
 		auto&& inst = instructions[i];

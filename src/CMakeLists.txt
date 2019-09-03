@@ -14,7 +14,6 @@ add_library(oxtra_libs
 		oxtra/dispatcher/dispatcher.cpp
 		oxtra/codegen/encoding/encoding.cpp
 		oxtra/codegen/decoding/decoding.cpp
-		oxtra/codegen/codegen_instructions.cpp
 		oxtra/codegen/helper.cpp
 		oxtra/codegen/code_batch.cpp
 		oxtra/codegen/instruction.cpp
@@ -34,7 +33,7 @@ add_library(oxtra_libs
 		oxtra/codegen/instructions/arithmetic/imul.cpp
 		oxtra/codegen/instructions/control-flow/syscall.cpp
 		oxtra/codegen/instructions/control-flow/call.cpp
-		oxtra/codegen/instructions/control-flow/jmp.cpp oxtra/codegen/instructions/memory/push.h oxtra/codegen/instructions/memory/push.cpp oxtra/codegen/instructions/memory/pop.h oxtra/codegen/instructions/memory/pop.cpp oxtra/codegen/instructions/control-flow/ret.h oxtra/codegen/instructions/control-flow/ret.cpp)
+		oxtra/codegen/instructions/control-flow/jmp.cpp oxtra/codegen/instructions/memory/push.h oxtra/codegen/instructions/memory/push.cpp oxtra/codegen/instructions/memory/pop.h oxtra/codegen/instructions/memory/pop.cpp oxtra/codegen/instructions/control-flow/ret.h oxtra/codegen/instructions/control-flow/ret.cpp oxtra/codegen/instructions/memory/movzx.h oxtra/codegen/instructions/memory/movsx.h oxtra/codegen/instructions/memory/movsx.cpp oxtra/codegen/instructions/memory/movzx.cpp)
 
 target_link_libraries(oxtra_libs
 		fadec

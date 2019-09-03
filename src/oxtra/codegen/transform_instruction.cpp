@@ -7,6 +7,8 @@
 #include "oxtra/codegen/instructions/memory/mov.h"
 #include "oxtra/codegen/instructions/memory/pop.h"
 #include "oxtra/codegen/instructions/memory/push.h"
+#include "oxtra/codegen/instructions/memory/movsx.h"
+#include "oxtra/codegen/instructions/memory/movzx.h"
 #include "oxtra/codegen/instructions/logic/shl.h"
 #include "oxtra/codegen/instructions/logic/shr.h"
 #include "oxtra/codegen/instructions/logic/sar.h"
@@ -76,6 +78,12 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 
 		case InstructionType::POP:
 			return std::make_unique<Pop>(inst);
+
+		case InstructionType::MOVSX:
+			return std::make_unique<Movsx>(inst);
+
+		case InstructionType::MOVZX:
+			return std::make_unique<Movzx>(inst);
 
 		default:
 			return nullptr;

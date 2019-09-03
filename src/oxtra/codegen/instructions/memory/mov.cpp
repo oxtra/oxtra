@@ -36,5 +36,4 @@ void codegen::Mov::generate(CodeBatch& batch) const {
 	// write the value to the destination-register
 	translate_destination(batch, source_operand, encoding::RiscVRegister::zero,
 						  encoding::RiscVRegister::t1, encoding::RiscVRegister::t2);
-
 }
