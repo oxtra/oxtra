@@ -32,7 +32,9 @@ add_library(oxtra_libs
 		oxtra/codegen/instructions/inc.cpp
 		oxtra/codegen/instructions/dec.cpp
 		oxtra/codegen/instructions/imul.cpp
-		oxtra/codegen/instructions/syscall.cpp)
+		oxtra/codegen/instructions/syscall.cpp
+		oxtra/codegen/instructions/call.cpp
+		oxtra/codegen/instructions/jmp.cpp)
 
 target_link_libraries(oxtra_libs
 		fadec

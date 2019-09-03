@@ -10,6 +10,8 @@
 #include "instructions/sar.h"
 #include "instructions/imul.h"
 #include "instructions/syscall.h"
+#include "instructions/jmp.h"
+#include "instructions/call.h"
 
 using namespace codegen;
 using namespace fadec;
@@ -52,6 +54,14 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 
 		case InstructionType::SYSCALL:
 			return std::make_unique<Syscall>(inst);
+
+		case InstructionType::JMP:
+		case InstructionType::JMP_IND:
+			return std::make_unique<Jmp>(inst);
+
+		case InstructionType::CALL:
+		case InstructionType::CALL_IND:
+			return std::make_unique<Call>(inst);
 
 		default:
 			return nullptr;

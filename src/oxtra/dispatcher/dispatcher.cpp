@@ -34,8 +34,6 @@ long Dispatcher::run() {
 	_context.guest.map.context = reinterpret_cast<uintptr_t>(&_context);
 	_context.codegen = &_codegen;
 
-	printf("context: %p\n", &_context);
-
 	// switch the context and begin translation
 	const char* error_string = nullptr;
 	const auto exit_code = guest_enter(&_context, _elf.get_entry_point(), &error_string);
@@ -48,9 +46,6 @@ long Dispatcher::run() {
 
 long Dispatcher::virtualize_syscall(const ExecutionContext* context) {
 	using namespace internal;
-
-	printf("context: %p\n", context);
-	fflush(stdout);
 
 	// the x86 syscall index
 	const auto guest_index = context->guest.map.rax;
