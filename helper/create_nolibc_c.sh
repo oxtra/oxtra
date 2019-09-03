@@ -5,27 +5,42 @@ if [ $# -ne 1 ]; then
 	exit 1
 fi
 
+syscall=$'int _syscall(int number, int param1) {
+	int ret;
+
+	asm(\"mov eax, %1;\"
+	\"mov edi, %2;\"
+	\"syscall;\"
+	\"mov %0, eax;\"
+	: \"=r\" (ret)
+	: \"r\" (number), \"r\" (param1)
+	);
+						
+	return ret;
+}\n'
+
 echo "Enter your C code and finish with Ctrl+D"
+
+echo "$syscall"
+
 echo "int main() { "
 
 readarray -t lines
 
 echo "}"
 
-echo "int main() { " > $1.c
+echo "$syscall" > $1.c
+
+echo "int main() { " >> $1.c
 
 for line in "${lines[@]}"; do
 	echo "	$line" >> $1.c
 done
 
-echo "}" >> $1.c
+echo $'}\n' >> $1.c
 
 echo "void _start() { " >> $1.c
-echo "#pragma GCC diagnostic push" >> $1.c
-echo "#pragma GCC diagnostic ignored \"-Wint-conversion\"" >> $1.c
-echo "	register int *ret asm (\"rdi\") = main();" >> $1.c
-echo "	asm(\"mov rax,60;syscall\");" >> $1.c
-echo "#pragma GCC diagnostic pop" >> $1.c
+echo "	_syscall(60, main());" >> $1.c
 echo "}" >> $1.c
 
 gcc -static -nostdlib -m64 -masm=intel $1.c -o $1
