@@ -9,13 +9,13 @@ namespace codegen {
 	public:
 		struct Flags {
 			static constexpr uint8_t
-					none = 0x00,
-					carry = 0x01,
-					zero = 0x02,
-					sign = 0x04,
-					overflow = 0x08,
-					parity = 0x10,
-					all = carry | zero | sign | overflow | parity;
+				none = 0x00,
+				carry = 0x01,
+				zero = 0x02,
+				sign = 0x04,
+				overflow = 0x08,
+				parity = 0x10,
+				all = carry | zero | sign | overflow | parity;
 		};
 
 		struct FlagInfo {

@@ -7,7 +7,7 @@ using namespace encoding;
 
 
 void codegen::helper::move_to_register(CodeBatch& batch, RiscVRegister dest, RiscVRegister src, RegisterAccess access,
-											RiscVRegister temp, bool cleared) {
+									   RiscVRegister temp, bool cleared) {
 	switch (access) {
 		case RegisterAccess::QWORD:
 			batch += encoding::ADD(dest, src, RiscVRegister::zero);
@@ -131,4 +131,12 @@ void codegen::helper::append_eob(CodeBatch& batch, encoding::RiscVRegister reg) 
 	}
 
 	jump_table::jump_reroute_dynamic(batch);
+}
+
+void codegen::helper::sign_extend_register(codegen::CodeBatch& batch, RiscVRegister dest, RiscVRegister src, size_t byte) {
+	const auto shamt = (sizeof(size_t) - byte) * 8;
+	if (shamt > 0) {
+		batch += encoding::SLLI(dest, src, shamt);
+		batch += encoding::SRAI(dest, dest, shamt);
+	}
 }

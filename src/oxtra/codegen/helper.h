@@ -30,6 +30,18 @@ namespace codegen::helper {
 	};
 
 	/**
+	 * Get the register access for a given operand size.
+	 * @param op_size The size of the operand in bytes. May only be 1,2,4 or 8.
+	 * @return The correct RegisterAccess. The lower byte will be returned for an operand size of 1.
+	 */
+	static constexpr RegisterAccess operand_to_register_access(size_t op_size) {
+		if (op_size == 1) return RegisterAccess::LBYTE;
+		if (op_size == 2) return RegisterAccess::WORD;
+		if (op_size == 4) return RegisterAccess::DWORD;
+		return RegisterAccess::QWORD;
+	}
+
+	/**
 	 * Writes a register with x86-style sub-manipulation to an existing register without
 	 * invalidating the rest of the value.
 	 *
@@ -47,7 +59,7 @@ namespace codegen::helper {
 	 * @param cleared If true the upper bits of the source register are expected to be 0.
 	 */
 	void move_to_register(CodeBatch& batch, encoding::RiscVRegister dest, encoding::RiscVRegister src,
-								 RegisterAccess access, encoding::RiscVRegister temp, bool cleared = false);
+						  RegisterAccess access, encoding::RiscVRegister temp, bool cleared = false);
 
 	/**
 	 * Load an immediate of up to 64 bit into the register.
@@ -63,6 +75,7 @@ namespace codegen::helper {
 	/**
 	 * Loads an address into a riscv register. Unconditionally generates 8 instruction.
 	 */
+
 	 void load_address(CodeBatch& batch, uintptr_t ptr, encoding::RiscVRegister dest);
 
 	 /**
@@ -78,28 +91,37 @@ namespace codegen::helper {
 	 void append_eob(CodeBatch& batch, encoding::RiscVRegister reg);
 
 	/**
+		* Sign extend a given source register (which will not be modified) into a destination register.
+		* @param batch Store the current riscv-batch.
+		* @param dest The register where the sign extended value will be stored.
+		* @param src The register that contains the value that will be sign extended.
+		* @param byte The number of bytes that are stored in the given register (e.g. EAX: 4, AX: 2).
+		*/
+	void sign_extend_register(codegen::CodeBatch& batch, encoding::RiscVRegister dest, encoding::RiscVRegister src, size_t byte);
+
+	/**
 	 * Returns the riscv-register, which maps to the x86-register.
 	 * @param reg The x86-register.
 	 * @return The riscv-register.
 	 */
 	constexpr encoding::RiscVRegister map_reg(const fadec::Register reg) {
 		constexpr encoding::RiscVRegister register_mapping[] = {
-				encoding::RiscVRegister::a0, // rax
-				encoding::RiscVRegister::a2, // rcx
-				encoding::RiscVRegister::a3, // rdx
-				encoding::RiscVRegister::a1, // rbx
-				encoding::RiscVRegister::sp, // rsp
-				encoding::RiscVRegister::s0, // rbp
-				encoding::RiscVRegister::a4, // rsi
-				encoding::RiscVRegister::a5, // rdi
-				encoding::RiscVRegister::a6, // r8
-				encoding::RiscVRegister::a7, // r9
-				encoding::RiscVRegister::s2, // r10
-				encoding::RiscVRegister::s3, // r11
-				encoding::RiscVRegister::s4, // r12
-				encoding::RiscVRegister::s5, // r13
-				encoding::RiscVRegister::s6, // r14
-				encoding::RiscVRegister::s7  // r15
+				encoding::RiscVRegister::rax,
+				encoding::RiscVRegister::rcx,
+				encoding::RiscVRegister::rdx,
+				encoding::RiscVRegister::rbx,
+				encoding::RiscVRegister::rsp,
+				encoding::RiscVRegister::rbp,
+				encoding::RiscVRegister::rsi,
+				encoding::RiscVRegister::rdi,
+				encoding::RiscVRegister::r8,
+				encoding::RiscVRegister::r9,
+				encoding::RiscVRegister::r10,
+				encoding::RiscVRegister::r11,
+				encoding::RiscVRegister::r12,
+				encoding::RiscVRegister::r13,
+				encoding::RiscVRegister::r14,
+				encoding::RiscVRegister::r15
 		};
 
 		return register_mapping[static_cast<uint8_t>(reg)];
