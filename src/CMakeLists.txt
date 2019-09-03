@@ -19,22 +19,22 @@ add_library(oxtra_libs
 		oxtra/codegen/code_batch.cpp
 		oxtra/codegen/instruction.cpp
 		oxtra/codegen/transform_instruction.cpp
-		oxtra/codegen/jumptable/jump_table.cpp
-		oxtra/codegen/jumptable/jump_table.s
+		oxtra/codegen/jump-table/jump_table.cpp
+		oxtra/codegen/jump-table/jump_table.s
 		oxtra/codegen/binary_operation.cpp
 		oxtra/codegen/unary_operation.cpp
-		oxtra/codegen/instructions/mov.cpp
-		oxtra/codegen/instructions/add.cpp
-		oxtra/codegen/instructions/shl.cpp
-		oxtra/codegen/instructions/shr.cpp
-		oxtra/codegen/instructions/sar.cpp
-		oxtra/codegen/instructions/sub.cpp
-		oxtra/codegen/instructions/inc.cpp
-		oxtra/codegen/instructions/dec.cpp
-		oxtra/codegen/instructions/imul.cpp
-		oxtra/codegen/instructions/syscall.cpp
-		oxtra/codegen/instructions/call.cpp
-		oxtra/codegen/instructions/jmp.cpp)
+		oxtra/codegen/instructions/memory/mov.cpp
+		oxtra/codegen/instructions/arithmetic/add.cpp
+		oxtra/codegen/instructions/logic/shl.cpp
+		oxtra/codegen/instructions/logic/shr.cpp
+		oxtra/codegen/instructions/logic/sar.cpp
+		oxtra/codegen/instructions/arithmetic/sub.cpp
+		oxtra/codegen/instructions/arithmetic/inc.cpp
+		oxtra/codegen/instructions/arithmetic/dec.cpp
+		oxtra/codegen/instructions/arithmetic/imul.cpp
+		oxtra/codegen/instructions/control-flow/syscall.cpp
+		oxtra/codegen/instructions/control-flow/call.cpp
+		oxtra/codegen/instructions/control-flow/jmp.cpp)
 
 target_link_libraries(oxtra_libs
 		fadec

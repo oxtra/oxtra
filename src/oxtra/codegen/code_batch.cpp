@@ -1,5 +1,5 @@
 #include "code_batch.h"
-#include "jumptable/jump_table.h"
+#include "jump-table/jump_table.h"
 #include <spdlog/spdlog.h>
 
 size_t codegen::CodeBatch::size() const {

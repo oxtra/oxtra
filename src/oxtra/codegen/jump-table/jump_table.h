@@ -9,7 +9,7 @@ namespace codegen::jump_table {
 	// define the jump-table object
 	void table_address();
 
-	// This jump-table-enum must correspond to the order of the assembly-jumptable
+	// This jump-table-enum must correspond to the order of the assembly-jump-table
 	struct Entries {
 		static constexpr uint16_t virtual_syscall 	= 0;
 		static constexpr uint16_t reroute_static 	= 1;

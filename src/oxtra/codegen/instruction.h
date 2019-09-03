@@ -2,7 +2,7 @@
 #define OXTRA_INSTRUCTION_H
 
 #include "oxtra/utils/types.h"
-#include "jumptable/jump_table.h"
+#include "jump-table/jump_table.h"
 
 namespace codegen {
 	class Instruction : protected fadec::Instruction {

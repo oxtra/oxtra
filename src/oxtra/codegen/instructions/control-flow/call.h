@@ -2,7 +2,7 @@
 #define OXTRA_CALL_H
 
 #include "oxtra/codegen/instruction.h"
-#include "oxtra/codegen/instructions/jmp.h"
+#include "jmp.h"
 
 namespace codegen {
 	class Call : public Jmp {
