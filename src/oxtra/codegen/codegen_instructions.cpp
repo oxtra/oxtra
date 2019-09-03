@@ -270,72 +270,98 @@ void CodeGenerator::translate_ret(const fadec::Instruction& inst, utils::riscv_i
 }
 
 void CodeGenerator::translate_div(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
-	// TODO: currently using two of the tmps reserved for helper-functions, maybe change
+	// currently using two of the tmps are marked as reserved for helper-functions, maybe change
+	// currently employing the "risky" version of 64 bit division
 
 	const auto idiv = (inst.get_type() == fadec::InstructionType::IDIV) ? true : false;
 	const auto op_size = inst.get_operand(0).get_size();
+	constexpr auto rax = map_reg(fadec::Register::rax);
+	constexpr auto rdx = map_reg(fadec::Register::rdx);
+	constexpr auto tmp = RiscVRegister::t4;
 
+	// dividend / divisor = quotient ; remainder
 	constexpr auto quotient = RiscVRegister::t3;
 	constexpr auto remainder = RiscVRegister::t2;
 	constexpr auto dividend = RiscVRegister::t1;
 	constexpr auto divisor = RiscVRegister::t0;
 	translate_operand(inst, 0, divisor, RiscVRegister::t1, RiscVRegister::t2, riscv, count);
+	// if (divisor == 0) raise #DE (divide by zero)
 
-	constexpr auto rax = map_reg(fadec::Register::rax);
-	constexpr auto rdx = map_reg(fadec::Register::rdx);
-	constexpr auto tmp = RiscVRegister::t4;
-
-	if (op_size == 8) {
-		// TODO
-	} else if (op_size == 1) {
-		constexpr auto quotient_dest = rax;
-		constexpr auto remainder_dest = rax;
-
+	// 1. build dividend
+	if (op_size == 1) {
 		// dividend = ax
 		riscv[count++] = encoding::MV(dividend, RiscVRegister::zero);
 		move_to_register(dividend, rax, RegisterAccess::WORD, tmp, riscv, count);
-
-		if (idiv) {
-			riscv[count++] = encoding::DIV(quotient, dividend, divisor);
-			riscv[count++] = encoding::REM(remainder, dividend, divisor);
-		} else {
-			riscv[count++] = encoding::REMU(remainder, dividend, divisor);
-			riscv[count++] = encoding::DIVU(quotient, dividend, divisor);
-		}
-
-		move_to_register(quotient_dest, quotient, RegisterAccess::LBYTE, tmp, riscv, count);
-		move_to_register(remainder_dest, remainder, RegisterAccess::HBYTE, tmp, riscv, count);
-	} else {
-		constexpr auto quotient_dest = rax;
-		constexpr auto remainder_dest = rdx;
-		RegisterAccess reg_access;
-		size_t shamt;
-		if (op_size == 2) {
-			reg_access = RegisterAccess::WORD;
-			shamt = 16;
-		} else {
-			reg_access = RegisterAccess::DWORD;
-			shamt = 32;
-		}
-
+	} else if (op_size == 2 || op_size == 4) {
 		// dividend = dx:ax bzw. edx:eax
+		const auto reg_access = (op_size < 3) ? RegisterAccess::WORD : RegisterAccess::DWORD;
+		const auto shamt = (op_size < 3) ? 16 : 32;
 		riscv[count++] = encoding::MV(dividend, RiscVRegister::zero);
 		move_to_register(dividend, rdx, reg_access, tmp, riscv, count);
 		riscv[count++] = encoding::SLLI(dividend, dividend, shamt);
 		move_to_register(RiscVRegister::t2, rax, reg_access, tmp, riscv, count);
 		riscv[count++] = encoding::ADD(dividend, dividend, RiscVRegister::t2);
-
-		if (idiv) {
-			riscv[count++] = encoding::DIV(quotient, dividend, divisor);
-			riscv[count++] = encoding::REM(remainder, dividend, divisor);
-		} else {
-			riscv[count++] = encoding::DIVU(quotient, dividend, divisor);
-			riscv[count++] = encoding::REMU(remainder, dividend, divisor);
-		}
-
-		move_to_register(quotient_dest, quotient, reg_access, tmp, riscv, count);
-		move_to_register(remainder_dest, remainder, reg_access, tmp, riscv, count);
+	} else {
+		// "risky" version, neglect rdx, assume that numbers bigger than INT_MAX are never used
+		riscv[count++] = encoding::MV(dividend, rax);
 	}
+
+	// 1b. check for overflow
+	/*
+	if (idiv)
+		if (dividend == -2^(xlen-1) && divisor == -1)
+			// raise #DE (overflow)
+	*/
+
+	// 2. do the division
+	if (idiv) {
+		riscv[count++] = encoding::DIV(quotient, dividend, divisor);
+		riscv[count++] = encoding::REM(remainder, dividend, divisor);
+	} else {
+		riscv[count++] = encoding::DIVU(quotient, dividend, divisor);
+		riscv[count++] = encoding::REMU(remainder, dividend, divisor);
+	}
+
+	// 3. store the result
+	if (op_size == 1) {
+		move_to_register(rax, quotient, RegisterAccess::LBYTE, tmp, riscv, count);
+		move_to_register(rax, remainder, RegisterAccess::HBYTE, tmp, riscv, count);
+	} else if (op_size == 2 || op_size == 4) {
+		RegisterAccess reg_access = (op_size < 3) ? RegisterAccess::WORD : RegisterAccess::DWORD;
+		move_to_register(rax, quotient, reg_access, tmp, riscv, count);
+		move_to_register(rdx, remainder, reg_access, tmp, riscv, count);
+	} else {
+		riscv[count++] = encoding::MV(rax, quotient);
+		riscv[count++] = encoding::MV(rdx, remainder);
+	}
+
+	// if anyone wants to implement 64 bit division in riscv assembly, please consult
+	// Knuth, Donald E.: The Art of Computer Programming, Volume 2: Seminumerical Algorithms, Chapter 4.3 Multiple-Precision Arithmetic
+
+	// software implementation, using gcc feature __int128
+	// need access to guest context to read the registers
+	/* 128_bit_division() {
+			uint64_t upper = *rdx;
+			uint64_t lower = *rax;
+			if (idiv) {
+				__int128 dividend = (upper << 64) + lower;
+				__int128 divisor_raw = *divisor; // from translate_operand
+				//if (dividend == -2^(xlen-1) && divisor == -1)
+				//	// raise #DE (overflow)
+				int64_t quotient = dividend / divisor_raw;
+				int64_t remainder = dividend % divisor_raw;
+				*rax = quotient;
+				*rdx = remainder;
+			} else {
+				unsigned __int128 dividend = (upper << 64) + lower;
+				unsigned __int128 divisor_raw = *divisor;
+				uint64_t quotient = dividend / divisor_raw;
+				uint64_t remainder = dividend % divisor_raw;
+				*rax = quotient;
+				*rdx = remainder;
+			}
+		}
+	*/
 }
 
 void CodeGenerator::translate_call(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
