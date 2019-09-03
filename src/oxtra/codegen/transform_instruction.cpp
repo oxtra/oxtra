@@ -4,21 +4,22 @@
 #include "oxtra/codegen/instructions/arithmetic/sub.h"
 #include "oxtra/codegen/instructions/arithmetic/inc.h"
 #include "oxtra/codegen/instructions/arithmetic/dec.h"
+#include "oxtra/codegen/instructions/arithmetic/imul.h"
 #include "oxtra/codegen/instructions/memory/mov.h"
 #include "oxtra/codegen/instructions/memory/pop.h"
 #include "oxtra/codegen/instructions/memory/push.h"
 #include "oxtra/codegen/instructions/memory/movsx.h"
 #include "oxtra/codegen/instructions/memory/movzx.h"
+#include "oxtra/codegen/instructions/memory/cex.h"
 #include "oxtra/codegen/instructions/logic/shl.h"
 #include "oxtra/codegen/instructions/logic/shr.h"
 #include "oxtra/codegen/instructions/logic/sar.h"
-#include "oxtra/codegen/instructions/arithmetic/imul.h"
+#include "oxtra/codegen/instructions/logic/nop.h"
 #include "oxtra/codegen/instructions/control-flow/syscall.h"
 #include "oxtra/codegen/instructions/control-flow/jmp.h"
 #include "oxtra/codegen/instructions/control-flow/call.h"
 #include "oxtra/codegen/instructions/control-flow/ret.h"
-#include "oxtra/codegen/instructions/memory/cex.h"
-#include "oxtra/codegen/instructions/logic/nop.h"
+#include "oxtra/codegen/instructions/control-flow/leave.h"
 
 using namespace codegen;
 using namespace fadec;
@@ -73,6 +74,9 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 		case InstructionType::RET:
 		case InstructionType::RET_IMM:
 			return std::make_unique<Ret>(inst);
+
+		case InstructionType::LEAVE:
+			return std::make_unique<Leave>(inst);
 
 		case InstructionType::PUSH:
 			return std::make_unique<Push>(inst);
