@@ -12,7 +12,21 @@ using namespace encoding;
 using namespace dispatcher;
 
 CodeGenerator::CodeGenerator(const arguments::Arguments& args, const elf::Elf& elf)
-		: _args{args}, _elf{elf}, _codestore{args, elf} {}
+		: _elf{elf}, _codestore{args, elf} {
+	// instantiate the code-batch
+	switch (args.get_step_mode()) {
+		case arguments::StepMode::x86:
+			_batch = std::make_unique<X86Step>();
+			break;
+		case arguments::StepMode::riscv:
+			_batch = std::make_unique<RiscVStep>();
+			break;
+		case arguments::StepMode::none:
+		default:
+			_batch = std::make_unique<CodeStash>();
+			break;
+	}
+}
 
 host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 	/* Validate the page-protection for the new basic block.
@@ -70,33 +84,31 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 
 	// iterate through the instructions and translate them to riscv-code
 	// TODO: instatiate code batch here based on the debug settings
-	CodeBatchImpl batch{};
 	auto&& codeblock = _codestore.create_block();
 	for (size_t i = 0; i < instructions.size(); i++) {
 		auto&& inst = instructions[i];
-		batch.reset();
+		_batch->reset();
 
 		// translate the instruction
-		inst->generate(batch);
+		inst->generate(*_batch);
 
 		// check if the instruction is the last instruction and the upcoming block is known
 		if (next_block) {
 			if (i == instructions.size() - 1) {
 				// append the forcing connection to the next block
-				helper::load_immediate(batch, next_block->riscv_start, helper::address_destination);
-				batch += encoding::JALR(RiscVRegister::zero, helper::address_destination, 0);
+				helper::load_immediate(*_batch, next_block->riscv_start, helper::address_destination);
+				*_batch += encoding::JALR(RiscVRegister::zero, helper::address_destination, 0);
 			}
 		}
 
-		batch.end();
+		_batch->end();
 
-#ifdef DEBUG
+		// print some debug-information
 		spdlog::debug("decoded {}", inst->string());
-		batch.print();
-#endif
+		_batch->print();
 
 		// add the instruction to the store
-		_codestore.add_instruction(codeblock, inst->get_address(), inst->get_size(), batch.get(), batch.size());
+		_codestore.add_instruction(codeblock, inst->get_address(), inst->get_size(), _batch->get(), _batch->size());
 	}
 
 	// add dynamic tracing-information for the basic-block

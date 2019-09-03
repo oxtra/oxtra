@@ -10,9 +10,9 @@
 namespace codegen {
 	class CodeGenerator {
 	private:
-		const arguments::Arguments& _args;
 		const elf::Elf& _elf;
 		codestore::CodeStore _codestore;
+		std::unique_ptr<codegen::CodeStash> _batch;
 
 	public:
 		CodeGenerator(const arguments::Arguments& args, const elf::Elf& elf);

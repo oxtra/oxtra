@@ -14,25 +14,25 @@ void codegen::CodeMemory::add(utils::riscv_instruction_t inst) {
 	address[count++] = inst;
 }
 
-void codegen::CodeBatchImpl::add(utils::riscv_instruction_t inst) {
+void codegen::CodeStash::add(utils::riscv_instruction_t inst) {
 	riscv[count++] = inst;
 }
 
-void codegen::CodeBatchImpl::end() {
+void codegen::CodeStash::end() {
 
 }
 
-void codegen::CodeBatchImpl::print() const {
+void codegen::CodeStash::print() const {
 	for (size_t i = 0; i < count; ++i) {
 		spdlog::trace(" - instruction[{}] = {}", i, decoding::parse_riscv(riscv[i]));
 	}
 }
 
-utils::riscv_instruction_t* codegen::CodeBatchImpl::get() {
+utils::riscv_instruction_t* codegen::CodeStash::get() {
 	return riscv;
 }
 
-void codegen::CodeBatchImpl::reset() {
+void codegen::CodeStash::reset() {
 	count = 0;
 }
 

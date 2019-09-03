@@ -38,7 +38,7 @@ namespace codegen {
 	/**
 	 * Manages an internal storage of riscv code.
 	 */
-	class CodeBatchImpl : public CodeBatch {
+	class CodeStash : public CodeBatch {
 	protected:
 		utils::riscv_instruction_t riscv[codestore::max_riscv_instructions];
 	public:
@@ -56,7 +56,7 @@ namespace codegen {
 	/**
 	 * Generates a call into the debugger after every x86 instruction.
 	 */
-	class X86Step : public CodeBatchImpl {
+	class X86Step : public CodeStash {
 	public:
 		void end() final;
 
@@ -66,7 +66,7 @@ namespace codegen {
 	/**
 	 * Generates a call into the debugger after every riscv instruction.
 	 */
-	class RiscVStep : public CodeBatchImpl {
+	class RiscVStep : public CodeStash {
 	public:
 		void add(utils::riscv_instruction_t inst) final;
 
