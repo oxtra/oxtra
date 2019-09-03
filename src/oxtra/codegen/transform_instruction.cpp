@@ -6,6 +6,7 @@
 #include "oxtra/codegen/instructions/arithmetic/dec.h"
 #include "oxtra/codegen/instructions/arithmetic/imul.h"
 #include "oxtra/codegen/instructions/memory/mov.h"
+#include "oxtra/codegen/instructions/memory/lea.h"
 #include "oxtra/codegen/instructions/memory/pop.h"
 #include "oxtra/codegen/instructions/memory/push.h"
 #include "oxtra/codegen/instructions/memory/movsx.h"
@@ -96,6 +97,9 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 
 		case InstructionType::C_EX:
 			return std::make_unique<Cex>(inst);
+
+		case InstructionType::LEA:
+			return std::make_unique<Lea>(inst);
 
 		default:
 			return nullptr;
