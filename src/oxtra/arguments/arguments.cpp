@@ -72,7 +72,8 @@ static int parse_string(struct argp_state* state, char* str,
 	int ret = parse_string(state, str, min_value, failure_string);
 
 	if (ret > max_value) {
-		argp_failure(state, 1, 0, "%s: %s", failure_string, str);
+		argp_failure(state, 1, 0, "%s: %s. %s %d-%d.", failure_string, str, "Please specify a value between", min_value,
+					 max_value);
 	}
 
 	return ret;
@@ -110,13 +111,13 @@ error_t Arguments::parse_opt(int key, char* arg, struct argp_state* state) {
 			arguments->guest_arguments = string_split(arg, ' ');
 			break;
 		case _instruction_list_size_id:
-			arguments->instruction_list_size = parse_string(state, arg, 1, "Illegal size");
+			arguments->instruction_list_size = parse_string(state, arg, 1, "Illegal size, must be a positive integer");
 			break;
 		case _offset_list_size_id:
-			arguments->offset_list_size = parse_string(state, arg, 1, "Illegal size");
+			arguments->offset_list_size = parse_string(state, arg, 1, "Illegal size, must be a positive integer");
 			break;
 		case _entry_list_size_id:
-			arguments->entry_list_size = parse_string(state, arg, 1, "Illegal size");
+			arguments->entry_list_size = parse_string(state, arg, 1, "Illegal size, must be a positive integer.");
 			break;
 		case 'l': {
 			int parsed = parse_string(state, arg, 0, 6, "Illegal log level");
@@ -131,7 +132,7 @@ error_t Arguments::parse_opt(int key, char* arg, struct argp_state* state) {
 			else if (strcasecmp("riscv", arg) == 0)
 				arguments->step_mode = StepMode::riscv;
 			else
-				argp_failure(state, 1, 0, "%s: %s", "Illegal debug step mode", arg);
+				argp_failure(state, 1, 0, "%s: %s. %s.", "Illegal debug step mode", arg, "Allowed are: none, x86, riscv");
 
 			break;
 		case ARGP_KEY_NO_ARGS:
