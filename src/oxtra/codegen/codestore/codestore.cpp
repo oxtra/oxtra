@@ -1,5 +1,4 @@
 #include "oxtra/codegen/codestore/codestore.h"
-#include "oxtra/dispatcher/dispatcher.h"
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
@@ -37,7 +36,7 @@ host_addr_t CodeStore::find(guest_addr_t x86_code) const {
 			 * That means that the x86_code points inside of an instruction. We could just start translating the block from that point onwards,
 			 * but usually only obfuscated programs require this.
 			 */
-			dispatcher::Dispatcher::fault_exit("Jump inside instruction.");
+			throw std::runtime_error("Jump inside instruction.");
 		}
 	}
 	return 0;
@@ -63,19 +62,18 @@ BlockEntry& CodeStore::create_block() {
 	return _block_entries.allocate_entry();
 }
 
-void CodeStore::add_instruction(BlockEntry& block, const fadec::Instruction& x86_instruction,
+void CodeStore::add_instruction(BlockEntry& block, utils::guest_addr_t address, uint8_t size,
 								riscv_instruction_t* riscv_instructions, size_t num_instructions) {
-
-	insert_block(block, x86_instruction.get_address());
+	insert_block(block, address);
 
 	block.riscv_start = reinterpret_cast<host_addr_t>(
 			_code_buffer.add(reinterpret_cast<riscv_instruction_t*>(block.riscv_start), riscv_instructions,
 							 num_instructions));
 
-	block.offsets = _instruction_offset_buffer.add(block.offsets, {x86_instruction.get_size(),
+	block.offsets = _instruction_offset_buffer.add(block.offsets, {size,
 																   static_cast<uint8_t>(num_instructions)});
 	block.instruction_count++;
-	block.x86_end = x86_instruction.get_address() + x86_instruction.get_size();
+	block.x86_end = address + size;
 
 	//check if the block overlaps into another page
 	if ((block.x86_start >> page_shift) < (block.x86_end >> page_shift)) {
@@ -113,7 +111,7 @@ void CodeStore::insert_block(codegen::codestore::BlockEntry& block, utils::guest
 
 	else if (block.x86_end != x86_address) {
 		// maybe do this for the debug build only?
-		dispatcher::Dispatcher::fault_exit("Tried to add a non-consecutive instruction to a block.");
+		throw std::runtime_error("Tried to add a non-consecutive instruction to a block.");
 	}
 
 }

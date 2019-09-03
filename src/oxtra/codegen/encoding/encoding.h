@@ -309,7 +309,7 @@ namespace encoding {
 
 	// probably not needed: FENCE, FENCE.I, EBREAK, CSRRW, CSRRS, CSRRC, CSRRWI, CSRRSI, CSRRCI
 
-	/* --- RV64I Base Integer Instructions --- */
+	/* --- RV64I Base Integer instructions --- */
 	//*W instructions maybe necessary
 
 	/* --- M Standard Extension --- */

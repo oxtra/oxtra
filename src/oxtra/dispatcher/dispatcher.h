@@ -4,13 +4,14 @@
 #include "oxtra/utils/types.h"
 #include "oxtra/arguments/arguments.h"
 #include "oxtra/codegen/codegen.h"
-#include "execution_context.h"
+#include "oxtra/codegen/helper.h"
 #include "oxtra/elf/elf.h"
+#include "execution_context.h"
 
 namespace dispatcher {
-	static_assert(codegen::CodeGenerator::address_destination == encoding::RiscVRegister::t3,
+	static_assert(codegen::helper::address_destination == encoding::RiscVRegister::t3,
 				  "dispatcher::reroute_static, reroute_dynamic requires t3");
-	static_assert(codegen::CodeGenerator::context_address == encoding::RiscVRegister::s11,
+	static_assert(codegen::helper::context_address == encoding::RiscVRegister::s11,
 				  "dispatcher::reroute_static, reroute_dynamic requires s11");
 
 	class Dispatcher {
@@ -19,11 +20,6 @@ namespace dispatcher {
 		const elf::Elf& _elf;
 		const arguments::Arguments& _args;
 		codegen::CodeGenerator _codegen;
-
-		/**
-		 * HACK HACK! This is a jump table pointer and not a normal function. We need this for name mangling.
-		 */
-		static void jump_table();
 
 	public:
 		Dispatcher(const elf::Elf& elf, const arguments::Arguments& args);

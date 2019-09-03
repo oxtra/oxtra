@@ -1,4 +1,4 @@
-image: plainerman/qemuriscv:gcc
+image: plainerman/qemuriscv:oxtra
 
 cache:
   key: ${CI_COMMIT_REF_SLUG}
@@ -15,8 +15,11 @@ build:
     paths:
       - oxtra
       - test/unit_tests
-test:
+
+unit_test:
     stage: test
+    dependencies:
+      - build
     script:
       - set +e # disable exit on error
       - qemu-riscv64 test/unit_tests
@@ -25,3 +28,11 @@ test:
     artifacts:
       reports:
         junit: test/report.xml
+
+integration_test:
+    stage: test
+    dependencies:
+      - build
+    script:
+      - shelltest --version
+      - shelltest --all --timeout=30 --threads=4 test/integration/*.otest --with="qemu-riscv64 oxtra"

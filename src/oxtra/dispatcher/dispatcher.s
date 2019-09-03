@@ -4,8 +4,6 @@
 .global _ZN10dispatcher10Dispatcher14reroute_staticEv # reroute_static
 .global _ZN10dispatcher10Dispatcher15reroute_dynamicEv # reroute_dynamic
 .global _ZN10dispatcher10Dispatcher15syscall_handlerEv # syscall_handler
-.global _ZN10dispatcher10Dispatcher10jump_tableEv # jump_table
-
 
 # address of the context in reg
 .macro capture_context reg
@@ -233,36 +231,3 @@ _ZN10dispatcher10Dispatcher15syscall_handlerEv:
 syscall_handled:
     restore_context s11
     ret
-
-# don't use the 'j' pseudo-instruction as it might unwrap to multiple instructions
-.align 8
-_ZN10dispatcher10Dispatcher10jump_tableEv:
-	jal zero, _ZN10dispatcher10Dispatcher15syscall_handlerEv
-	jal zero, _ZN10dispatcher10Dispatcher14reroute_staticEv
-	jal zero, _ZN10dispatcher10Dispatcher15reroute_dynamicEv
-
-	jal zero, carry_clear
-	jal zero, carry_set
-
-	jal zero, carry_add_8
-	jal zero, carry_add_16
-	jal zero, carry_add_32
-	jal zero, carry_add_64
-
-	jal zero, carry_adc_8
-    jal zero, carry_adc_16
-    jal zero, carry_adc_32
-    jal zero, carry_adc_64
-
-	jal zero, overflow_clear
-	jal zero, overflow_set
-
-	jal zero, overflow_add_8
-	jal zero, overflow_add_16
-	jal zero, overflow_add_32
-	jal zero, overflow_add_64
-
-	jal zero, overflow_adc_8
-	jal zero, overflow_adc_16
-	jal zero, overflow_adc_32
-	jal zero, overflow_adc_64

@@ -4,8 +4,9 @@
 #include <cstdint>
 #include <array>
 #include <spdlog/fmt/bundled/ostream.h>
+//#include "oxtra/codegen/codegen.h"
+//#include "oxtra/codegen/Test/instruction.h"
 
-#include "oxtra/codegen/codegen.h"
 
 namespace dispatcher {
 	struct ExecutionContext {
@@ -30,7 +31,7 @@ namespace dispatcher {
 			public:
 				uintptr_t rbp, rflags, rax, rbx, rcx, rdx, rsi, rdi, r8, r9, r10, r11, r12, r13, r14, r15;
 			private:
-				uintptr_t _r8, _r9;
+				uintptr_t _s8, _s9;
 			public:
 				uintptr_t jump_table, context;
 			private:
@@ -77,22 +78,22 @@ namespace dispatcher {
 			}
 		};
 
-		/**
+		/*
 		 * The order and size of these attributes must not be changed!
-		 * (dispatcher.s requires these offsets)
+		 * (dispatcher.s has these offsets hardcoded)
 		 */
 
-		// 0x0
+		// 0x000
 		Context guest;
 
-		// 0xF8
+		// 0x0F8
 		Context host;
 
 		// 0x1F0
 		codegen::CodeGenerator* codegen;
 
 		// 0x1F8
-		codegen::flags::FlagUpdateInfo flag_info;
+		codegen::Instruction::FlagInfo flag_info;
 	};
 }
 
