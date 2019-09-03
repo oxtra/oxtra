@@ -154,10 +154,9 @@ RiscVRegister codegen::Instruction::translate_memory(CodeBatch& batch, size_t in
 	}
 
 	// add the displacement
-	if (get_displacement() > 0) {
-		const auto displacement = get_displacement();
+	if (const auto displacement = get_displacement()) {
 		// less or equal than 12 bits
-		if (displacement < 0x800) {
+		if (displacement >= -0x800 && displacement < 0x800) {
 			batch += encoding::ADDI(temp_a, temp_reg, static_cast<uint16_t>(displacement));
 			if (temp_reg == RiscVRegister::zero)
 				temp_reg = temp_a;

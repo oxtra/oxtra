@@ -7,7 +7,7 @@ using namespace encoding;
 
 
 void codegen::helper::move_to_register(CodeBatch& batch, RiscVRegister dest, RiscVRegister src, RegisterAccess access,
-											RiscVRegister temp, bool cleared) {
+									   RiscVRegister temp, bool cleared) {
 	switch (access) {
 		case RegisterAccess::QWORD:
 			batch += encoding::ADD(dest, src, RiscVRegister::zero);
@@ -118,4 +118,12 @@ void codegen::helper::load_immediate(CodeBatch& batch, uintptr_t imm, encoding::
 
 void codegen::helper::load_address(codegen::CodeBatch& batch, uintptr_t ptr, encoding::RiscVRegister dest) {
 	load_64bit_immediate(batch, ptr, dest, false);
+}
+
+void codegen::helper::sign_extend_register(codegen::CodeBatch& batch, RiscVRegister dest, RiscVRegister src, size_t byte) {
+	const auto shamt = (sizeof(size_t) - byte) * 8;
+	if (shamt > 0) {
+		batch += encoding::SLLI(dest, src, shamt);
+		batch += encoding::SRAI(dest, dest, shamt);
+	}
 }

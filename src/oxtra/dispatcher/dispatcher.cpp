@@ -66,7 +66,7 @@ long Dispatcher::virtualize_syscall(const ExecutionContext* context) {
 
 #ifdef DEBUG
 		// print the systemcall with its attributes
-		spdlog::info("syscall: {}({}, {}, {}, {}, {}, {})", syscall_index,
+		spdlog::info("syscall {} mapped to: {} ({}, {}, {}, {}, {}, {})", guest_index, syscall_index,
 					 context->guest.map.rdi, context->guest.map.rsi, context->guest.map.rdx,
 					 context->guest.map.r10, context->guest.map.r8, context->guest.map.r9);
 #endif

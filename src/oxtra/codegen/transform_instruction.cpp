@@ -17,7 +17,8 @@
 #include "oxtra/codegen/instructions/control-flow/jmp.h"
 #include "oxtra/codegen/instructions/control-flow/call.h"
 #include "oxtra/codegen/instructions/control-flow/ret.h"
-
+#include "oxtra/codegen/instructions/memory/cex.h"
+#include "oxtra/codegen/instructions/logic/nop.h"
 
 using namespace codegen;
 using namespace fadec;
@@ -84,6 +85,13 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 
 		case InstructionType::MOVZX:
 			return std::make_unique<Movzx>(inst);
+
+		case InstructionType::NOP:
+		case InstructionType::FNOP:
+			return std::make_unique<Nop>(inst);
+
+		case InstructionType::C_EX:
+			return std::make_unique<Cex>(inst);
 
 		default:
 			return nullptr;

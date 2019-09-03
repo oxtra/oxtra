@@ -7,7 +7,7 @@ namespace codegen {
 	class Ret : public codegen::Instruction {
 	public:
 		explicit Ret(const fadec::Instruction& inst)
-				: codegen::Instruction{inst, Flags::none, Flags::none} {}
+				: codegen::Instruction{inst, Flags::none, Flags::none, true} {}
 
 		void generate(CodeBatch& batch) const override;
 	};
