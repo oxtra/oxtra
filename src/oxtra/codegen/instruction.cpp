@@ -181,33 +181,61 @@ RiscVRegister codegen::Instruction::translate_memory(CodeBatch& batch, size_t in
 
 encoding::RiscVRegister codegen::Instruction::evalute_zero(CodeBatch& batch) {
 	batch += encoding::LD(RiscVRegister::t4, context_address, FlagInfo::zero_value_offset);
-	batch += encoding::SNEZ(RiscVRegister::t4, RiscVRegister::t4);
+	batch += encoding::SNEZ(RiscVRegister::t4, RiscVRegister::t4); // TODO: decide if we actually need this
 	return RiscVRegister::t4;
 }
 
 encoding::RiscVRegister codegen::Instruction::evalute_sign(CodeBatch& batch, encoding::RiscVRegister temp) {
 	// load the shift amount
-	batch += LBU(RiscVRegister::t4, context_address, FlagInfo::sign_size_offset);
+	batch += encoding::LBU(RiscVRegister::t4, context_address, FlagInfo::sign_size_offset);
 
 	// load the value
-	batch += LD(temp, context_address, FlagInfo::sign_value_offset);
+	batch += encoding::LD(temp, context_address, FlagInfo::sign_value_offset);
 
 	// shift the value
-	batch += SRL(temp, temp, RiscVRegister::t4);
-	batch += ANDI(RiscVRegister::t4, temp, 1);
+	batch += encoding::SRL(temp, temp, RiscVRegister::t4);
+	batch += encoding::ANDI(RiscVRegister::t4, temp, 1);
 	return RiscVRegister::t4;
 }
 
-encoding::RiscVRegister codegen::Instruction::evalute_parity(CodeBatch& batch) {
+encoding::RiscVRegister codegen::Instruction::evalute_parity(CodeBatch& batch, encoding::RiscVRegister temp) {
+	// load the pf_value
+	batch += encoding::LBU(temp, helper::context_address, FlagInfo::parity_value_offset);
 
+	// calculate the pf
+	batch += encoding::SRLI(RiscVRegister::t4, temp, 4);
+	batch += encoding::XOR(temp, temp, RiscVRegister::t4);
+	batch += encoding::SRLI(RiscVRegister::t4, temp, 2);
+	batch += encoding::XOR(temp, temp, RiscVRegister::t4);
+	batch += encoding::SRLI(RiscVRegister::t4, temp, 1);
+	batch += encoding::XOR(temp, temp, RiscVRegister::t4);
+
+	// only look at the least significant bit
+	batch += encoding::ANDI(temp, temp, 1);
+
+	// set if the parity flag is set (bit is 0)
+	batch += encoding::SEQZ(RiscVRegister::t4, temp);
+	return RiscVRegister::t4;
 }
 
 encoding::RiscVRegister codegen::Instruction::evalute_overflow(CodeBatch& batch) {
+	// load the jump table offset
+	batch += LHU(RiscVRegister::t4, helper::context_address, FlagInfo::overflow_operation_offset);
 
+	// jump into the jump table
+	jump_table::jump_table_offset(batch, RiscVRegister::t4);
+
+	return RiscVRegister::t4;
 }
 
 encoding::RiscVRegister codegen::Instruction::evalute_carry(CodeBatch& batch) {
+	// load the jump table offset
+	batch += LHU(RiscVRegister::t4, helper::context_address, FlagInfo::carry_operation_offset);
 
+	// jump into the jump table
+	jump_table::jump_table_offset(batch, RiscVRegister::t4);
+
+	return RiscVRegister::t4;
 }
 
 void codegen::Instruction::update_zero(CodeBatch& batch, bool set, encoding::RiscVRegister temp) {
@@ -312,7 +340,7 @@ void codegen::Instruction::update_overflow(CodeBatch& batch, bool set, encoding:
 		return;
 
 	// TODO: implement this when the overflow set and reset indices are chosen
-	//batch += encoding::ADDI(temp, RiscVRegister::zero, set ? set_idx : rst_idx);
+	//batch += encoding::ADDI(temp, RiscVRegister::zero, set ? set_idx * 4 : rst_idx * 4);
 	//batch += encoding::SH(helper::context_address, temp, FlagInfo::overflow_operation_offset);
 }
 
@@ -327,7 +355,7 @@ void codegen::Instruction::update_overflow(CodeBatch& batch, uint16_t index, enc
 	batch += encoding::SD(helper::context_address, vb, FlagInfo::overflow_values_offset + 8);
 
 	// store the jump table index
-	batch += encoding::ADDI(temp, RiscVRegister::zero, index);
+	batch += encoding::ADDI(temp, RiscVRegister::zero, index * 4);
 	batch += encoding::SH(helper::context_address, temp, FlagInfo::overflow_operation_offset);
 }
 
@@ -337,7 +365,7 @@ void codegen::Instruction::update_carry(CodeBatch& batch, bool set, encoding::Ri
 		return;
 
 	// TODO: implement this when the carry set and reset indices are chosen
-	//batch += encoding::ADDI(temp, RiscVRegister::zero, set ? set_idx : rst_idx);
+	//batch += encoding::ADDI(temp, RiscVRegister::zero, set ? set_idx * 4 : rst_idx * 4);
 	//batch += encoding::SH(helper::context_address, temp, FlagInfo::carry_operation_offset);
 }
 
@@ -352,6 +380,6 @@ void codegen::Instruction::update_carry(CodeBatch& batch, uint16_t index, encodi
 	batch += encoding::SD(helper::context_address, vb, FlagInfo::carry_values_offset + 8);
 
 	// store the jump table index
-	batch += encoding::ADDI(temp, RiscVRegister::zero, index);
+	batch += encoding::ADDI(temp, RiscVRegister::zero, index * 4);
 	batch += encoding::SH(helper::context_address, temp, FlagInfo::carry_operation_offset);
 }
