@@ -1,5 +1,6 @@
 #include "code_batch.h"
 #include "jumptable/jump_table.h"
+#include <spdlog/spdlog.h>
 
 size_t codegen::CodeBatch::size() const {
 	return count;
@@ -21,16 +22,10 @@ void codegen::CodeStash::end() {
 
 }
 
-std::string codegen::CodeStash::string() const {
-	std::string str{};
-
+void codegen::CodeStash::print() const {
 	for (size_t i = 0; i < count; ++i) {
-		char buffer[128];
-		sprintf(buffer, " - instruction[%llu] = %s", i, decoding::parse_riscv(riscv[i]).c_str());
-		str += buffer;
+		spdlog::trace(" - instruction[{}] = {}", i, decoding::parse_riscv(riscv[i]));
 	}
-
-	return str;
 }
 
 utils::riscv_instruction_t* codegen::CodeStash::get() {
@@ -45,16 +40,10 @@ void codegen::X86Step::end() {
 	jump_table::jump_debug_break(*this, encoding::RiscVRegister::ra);
 }
 
-std::string codegen::X86Step::string() const {
-	std::string str{};
-
+void codegen::X86Step::print() const {
 	for (size_t i = 0; i < count - 1; ++i) {
-		char buffer[128];
-		sprintf(buffer, " - instruction[%llu] = %s", i, decoding::parse_riscv(riscv[i]).c_str());
-		str += buffer;
+		spdlog::trace(" - instruction[{}] = {}", i, decoding::parse_riscv(riscv[i]));
 	}
-
-	return str;
 }
 
 void codegen::RiscVStep::add(utils::riscv_instruction_t inst) {
@@ -62,14 +51,8 @@ void codegen::RiscVStep::add(utils::riscv_instruction_t inst) {
 	jump_table::jump_debug_break(*this, encoding::RiscVRegister::ra);
 }
 
-std::string codegen::RiscVStep::string() const {
-	std::string str{};
-
+void codegen::RiscVStep::print() const {
 	for (size_t i = 0; i < count; i += 2) {
-		char buffer[128];
-		sprintf(buffer, " - instruction[%llu] = %s", i, decoding::parse_riscv(riscv[i]).c_str());
-		str += buffer;
+		spdlog::trace(" - instruction[{}] = {}", i, decoding::parse_riscv(riscv[i]));
 	}
-
-	return str;
 }

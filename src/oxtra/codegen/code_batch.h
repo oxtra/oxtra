@@ -41,13 +41,12 @@ namespace codegen {
 	class CodeStash : public CodeBatch {
 	protected:
 		utils::riscv_instruction_t riscv[codestore::max_riscv_instructions];
-		size_t count;
 	public:
 		virtual void add(utils::riscv_instruction_t inst);
 
 		virtual void end();
 
-		virtual std::string string() const;
+		virtual void print() const;
 
 		utils::riscv_instruction_t* get();
 
@@ -61,7 +60,7 @@ namespace codegen {
 	public:
 		void end() final;
 
-		std::string string() const final;
+		void print() const final;
 	};
 
 	/**
@@ -71,7 +70,7 @@ namespace codegen {
 	public:
 		void add(utils::riscv_instruction_t inst) final;
 
-		std::string string() const final;
+		void print() const final;
 	};
 }
 

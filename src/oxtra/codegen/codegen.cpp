@@ -92,7 +92,7 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 
 #ifdef DEBUG
 		spdlog::debug("decoded {}", inst->string());
-		spdlog::trace(batch.string());
+		batch.print();
 #endif
 
 		// add the instruction to the store
@@ -146,7 +146,7 @@ codegen::Instruction& CodeGenerator::decode_instruction(utils::guest_addr_t& add
 
 	// adjust the address and add the instruction to the vector
 	addr += inst_object->get_size();
-	inst_vec.push_back(std::move(inst_object));
+	inst_vec.emplace_back(std::move(inst_object));
 
 	return *inst_vec.back();
 }

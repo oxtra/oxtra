@@ -46,7 +46,7 @@ namespace codegen {
 		bool end_of_block;
 
 	protected:
-		explicit Instruction(const fadec::Instruction& inst, uint8_t update, uint8_t require, bool eob);
+		explicit Instruction(const fadec::Instruction& inst, uint8_t update, uint8_t require, bool eob = false);
 
 	public:
 		virtual void generate(CodeBatch& batch) const = 0;
