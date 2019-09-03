@@ -38,8 +38,7 @@ add_library(oxtra_libs
 		oxtra/codegen/instructions/memory/pop.cpp
 		oxtra/codegen/instructions/control-flow/ret.cpp
 		oxtra/codegen/instructions/memory/movsx.cpp
-		oxtra/codegen/instructions/memory/movzx.cpp
-		oxtra/codegen/instructions/memory/c_ex.cpp)
+		oxtra/codegen/instructions/memory/movzx.cpp)
 
 target_link_libraries(oxtra_libs
 		fadec
