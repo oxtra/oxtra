@@ -31,6 +31,10 @@ void codegen::BinaryOperation::generate(CodeBatch& batch) const {
 	// call the callback to apply the changes
 	execute_operation(batch, dest_register, source_register);
 
+	update_zero(batch, dest_register, dst.get_size());
+	update_sign(batch, dest_register, dst.get_size(), RiscVRegister::t4);
+	update_parity(batch, dest_register);
+
 	// write the value back to the destination
 	translate_destination(batch, dest_register, address, RiscVRegister::t2, RiscVRegister::t3);
 }

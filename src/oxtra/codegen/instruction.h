@@ -106,37 +106,37 @@ namespace codegen {
 		encoding::RiscVRegister translate_memory(CodeBatch& batch, size_t index,
 												 encoding::RiscVRegister temp_a, encoding::RiscVRegister temp_b) const;
 
-		encoding::RiscVRegister evalute_zero(CodeBatch& batch);
+		encoding::RiscVRegister evalute_zero(CodeBatch& batch) const;
 
-		encoding::RiscVRegister evalute_sign(CodeBatch& batch, encoding::RiscVRegister temp);
+		encoding::RiscVRegister evalute_sign(CodeBatch& batch, encoding::RiscVRegister temp) const;
 
-		encoding::RiscVRegister evalute_parity(CodeBatch& batch, encoding::RiscVRegister temp);
+		encoding::RiscVRegister evalute_parity(CodeBatch& batch, encoding::RiscVRegister temp) const;
 
-		encoding::RiscVRegister evalute_overflow(CodeBatch& batch);
+		encoding::RiscVRegister evalute_overflow(CodeBatch& batch) const;
 
-		encoding::RiscVRegister evalute_carry(CodeBatch& batch);
+		encoding::RiscVRegister evalute_carry(CodeBatch& batch) const;
 
-		void update_zero(CodeBatch& batch, bool set, encoding::RiscVRegister temp);
+		void update_zero(CodeBatch& batch, bool set, encoding::RiscVRegister temp) const;
 
-		void update_zero(CodeBatch& batch, encoding::RiscVRegister va, uint8_t size);
+		void update_zero(CodeBatch& batch, encoding::RiscVRegister va, uint8_t size) const;
 
-		void update_sign(CodeBatch& batch, bool set, encoding::RiscVRegister temp);
+		void update_sign(CodeBatch& batch, bool set, encoding::RiscVRegister temp) const;
 
-		void update_sign(CodeBatch& batch, encoding::RiscVRegister va, uint8_t size, encoding::RiscVRegister temp);
+		void update_sign(CodeBatch& batch, encoding::RiscVRegister va, uint8_t size, encoding::RiscVRegister temp) const;
 
-		void update_parity(CodeBatch& batch, bool set, encoding::RiscVRegister temp);
+		void update_parity(CodeBatch& batch, bool set, encoding::RiscVRegister temp) const;
 
-		void update_parity(CodeBatch& batch, encoding::RiscVRegister va);
+		void update_parity(CodeBatch& batch, encoding::RiscVRegister va) const;
 
-		void update_overflow(CodeBatch& batch, bool set, encoding::RiscVRegister temp);
+		void update_overflow(CodeBatch& batch, bool set, encoding::RiscVRegister temp) const;
 
 		void update_overflow(CodeBatch& batch, uint16_t index,
-							 encoding::RiscVRegister va, encoding::RiscVRegister vb, encoding::RiscVRegister temp);
+							 encoding::RiscVRegister va, encoding::RiscVRegister vb, encoding::RiscVRegister temp) const;
 
-		void update_carry(CodeBatch& batch, bool set, encoding::RiscVRegister temp);
+		void update_carry(CodeBatch& batch, bool set, encoding::RiscVRegister temp) const;
 
 		void update_carry(CodeBatch& batch, uint16_t index,
-						  encoding::RiscVRegister va, encoding::RiscVRegister vb, encoding::RiscVRegister temp);
+						  encoding::RiscVRegister va, encoding::RiscVRegister vb, encoding::RiscVRegister temp) const;
 	};
 }
 

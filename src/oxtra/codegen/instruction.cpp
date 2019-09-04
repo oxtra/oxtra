@@ -179,13 +179,13 @@ RiscVRegister codegen::Instruction::translate_memory(CodeBatch& batch, size_t in
 	return temp_reg;
 }
 
-encoding::RiscVRegister codegen::Instruction::evalute_zero(CodeBatch& batch) {
+encoding::RiscVRegister codegen::Instruction::evalute_zero(CodeBatch& batch) const {
 	batch += encoding::LD(RiscVRegister::t4, context_address, FlagInfo::zero_value_offset);
 	batch += encoding::SNEZ(RiscVRegister::t4, RiscVRegister::t4); // TODO: decide if we actually need this
 	return RiscVRegister::t4;
 }
 
-encoding::RiscVRegister codegen::Instruction::evalute_sign(CodeBatch& batch, encoding::RiscVRegister temp) {
+encoding::RiscVRegister codegen::Instruction::evalute_sign(CodeBatch& batch, encoding::RiscVRegister temp) const {
 	// load the shift amount
 	batch += encoding::LBU(RiscVRegister::t4, context_address, FlagInfo::sign_size_offset);
 
@@ -198,7 +198,7 @@ encoding::RiscVRegister codegen::Instruction::evalute_sign(CodeBatch& batch, enc
 	return RiscVRegister::t4;
 }
 
-encoding::RiscVRegister codegen::Instruction::evalute_parity(CodeBatch& batch, encoding::RiscVRegister temp) {
+encoding::RiscVRegister codegen::Instruction::evalute_parity(CodeBatch& batch, encoding::RiscVRegister temp) const {
 	// load the pf_value
 	batch += encoding::LBU(temp, helper::context_address, FlagInfo::parity_value_offset);
 
@@ -218,7 +218,7 @@ encoding::RiscVRegister codegen::Instruction::evalute_parity(CodeBatch& batch, e
 	return RiscVRegister::t4;
 }
 
-encoding::RiscVRegister codegen::Instruction::evalute_overflow(CodeBatch& batch) {
+encoding::RiscVRegister codegen::Instruction::evalute_overflow(CodeBatch& batch) const {
 	// load the jump table offset
 	batch += LHU(RiscVRegister::t4, helper::context_address, FlagInfo::overflow_operation_offset);
 
@@ -228,7 +228,7 @@ encoding::RiscVRegister codegen::Instruction::evalute_overflow(CodeBatch& batch)
 	return RiscVRegister::t4;
 }
 
-encoding::RiscVRegister codegen::Instruction::evalute_carry(CodeBatch& batch) {
+encoding::RiscVRegister codegen::Instruction::evalute_carry(CodeBatch& batch) const {
 	// load the jump table offset
 	batch += LHU(RiscVRegister::t4, helper::context_address, FlagInfo::carry_operation_offset);
 
@@ -238,7 +238,7 @@ encoding::RiscVRegister codegen::Instruction::evalute_carry(CodeBatch& batch) {
 	return RiscVRegister::t4;
 }
 
-void codegen::Instruction::update_zero(CodeBatch& batch, bool set, encoding::RiscVRegister temp) {
+void codegen::Instruction::update_zero(CodeBatch& batch, bool set, encoding::RiscVRegister temp) const {
 	// check if the instruction has to update the zero-flag
 	if ((update_flags & Flags::zero) == 0)
 		return;
@@ -251,7 +251,7 @@ void codegen::Instruction::update_zero(CodeBatch& batch, bool set, encoding::Ris
 	}
 }
 
-void codegen::Instruction::update_zero(CodeBatch& batch, encoding::RiscVRegister va, uint8_t size) {
+void codegen::Instruction::update_zero(CodeBatch& batch, encoding::RiscVRegister va, uint8_t size) const {
 	// check if the instruction has to update the zero-flag
 	if ((update_flags & Flags::zero) == 0)
 		return;
@@ -285,7 +285,7 @@ void codegen::Instruction::update_zero(CodeBatch& batch, encoding::RiscVRegister
 
 }
 
-void codegen::Instruction::update_sign(CodeBatch& batch, bool set, encoding::RiscVRegister temp) {
+void codegen::Instruction::update_sign(CodeBatch& batch, bool set, encoding::RiscVRegister temp) const {
 	// check if the instruction has to update the sign-flag
 	if ((update_flags & Flags::sign) == 0)
 		return;
@@ -299,7 +299,7 @@ void codegen::Instruction::update_sign(CodeBatch& batch, bool set, encoding::Ris
 }
 
 void codegen::Instruction::update_sign(CodeBatch& batch, encoding::RiscVRegister va,
-									   uint8_t size, encoding::RiscVRegister temp) {
+									   uint8_t size, encoding::RiscVRegister temp) const {
 	// check if the instruction has to update the sign-flag
 	if ((update_flags & Flags::sign) == 0)
 		return;
@@ -313,7 +313,7 @@ void codegen::Instruction::update_sign(CodeBatch& batch, encoding::RiscVRegister
 
 }
 
-void codegen::Instruction::update_parity(CodeBatch& batch, bool set, encoding::RiscVRegister temp) {
+void codegen::Instruction::update_parity(CodeBatch& batch, bool set, encoding::RiscVRegister temp) const {
 	// check if the instruction has to update the parity-flag
 	if ((update_flags & Flags::parity) == 0)
 		return;
@@ -326,7 +326,7 @@ void codegen::Instruction::update_parity(CodeBatch& batch, bool set, encoding::R
 	}
 }
 
-void codegen::Instruction::update_parity(CodeBatch& batch, encoding::RiscVRegister va) {
+void codegen::Instruction::update_parity(CodeBatch& batch, encoding::RiscVRegister va) const {
 	// check if the instruction has to update the parity-flag
 	if ((update_flags & Flags::parity) == 0)
 		return;
@@ -334,7 +334,7 @@ void codegen::Instruction::update_parity(CodeBatch& batch, encoding::RiscVRegist
 	batch += encoding::SB(helper::context_address, va, FlagInfo::parity_value_offset);
 }
 
-void codegen::Instruction::update_overflow(CodeBatch& batch, bool set, encoding::RiscVRegister temp) {
+void codegen::Instruction::update_overflow(CodeBatch& batch, bool set, encoding::RiscVRegister temp) const {
 	// check if the instruction has to update the overflow-flag
 	if ((update_flags & Flags::overflow) == 0)
 		return;
@@ -345,7 +345,7 @@ void codegen::Instruction::update_overflow(CodeBatch& batch, bool set, encoding:
 }
 
 void codegen::Instruction::update_overflow(CodeBatch& batch, uint16_t index, encoding::RiscVRegister va,
-										   encoding::RiscVRegister vb, encoding::RiscVRegister temp) {
+										   encoding::RiscVRegister vb, encoding::RiscVRegister temp) const {
 	// check if the instruction has to update the overflow-flag
 	if ((update_flags & Flags::overflow) == 0)
 		return;
@@ -359,7 +359,7 @@ void codegen::Instruction::update_overflow(CodeBatch& batch, uint16_t index, enc
 	batch += encoding::SH(helper::context_address, temp, FlagInfo::overflow_operation_offset);
 }
 
-void codegen::Instruction::update_carry(CodeBatch& batch, bool set, encoding::RiscVRegister temp) {
+void codegen::Instruction::update_carry(CodeBatch& batch, bool set, encoding::RiscVRegister temp) const {
 	// check if the instruction has to update the carry-flag
 	if ((update_flags & Flags::carry) == 0)
 		return;
@@ -370,7 +370,7 @@ void codegen::Instruction::update_carry(CodeBatch& batch, bool set, encoding::Ri
 }
 
 void codegen::Instruction::update_carry(CodeBatch& batch, uint16_t index, encoding::RiscVRegister va,
-										encoding::RiscVRegister vb, encoding::RiscVRegister temp) {
+										encoding::RiscVRegister vb, encoding::RiscVRegister temp) const {
 	// check if the instruction has to update the carry-flag
 	if ((update_flags & Flags::carry) == 0)
 		return;
