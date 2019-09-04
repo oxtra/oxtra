@@ -59,6 +59,7 @@ add_library(oxtra_libs
 		oxtra/codegen/instructions/control-flow/conditional-jumps/jge.cpp
 		oxtra/codegen/instructions/control-flow/conditional-jumps/jl.cpp
 		oxtra/codegen/instructions/control-flow/conditional-jumps/jle.cpp
+		oxtra/codegen/instructions/control-flow/conditional-jumps/jcxz.cpp
 		)
 
 target_link_libraries(oxtra_libs
