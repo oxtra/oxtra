@@ -21,10 +21,17 @@
 #include "oxtra/codegen/instructions/control-flow/call.h"
 #include "oxtra/codegen/instructions/control-flow/ret.h"
 #include "oxtra/codegen/instructions/control-flow/leave.h"
-#include "oxtra/codegen/instructions/control-flow/conditional-jumps/ja.h"
 #include "oxtra/codegen/instructions/control-flow/conditional-jumps/jc.h"
 #include "oxtra/codegen/instructions/control-flow/conditional-jumps/jo.h"
 #include "oxtra/codegen/instructions/control-flow/conditional-jumps/jz.h"
+#include "oxtra/codegen/instructions/control-flow/conditional-jumps/js.h"
+#include "oxtra/codegen/instructions/control-flow/conditional-jumps/jp.h"
+#include "oxtra/codegen/instructions/control-flow/conditional-jumps/jnc.h"
+#include "oxtra/codegen/instructions/control-flow/conditional-jumps/jno.h"
+#include "oxtra/codegen/instructions/control-flow/conditional-jumps/jnz.h"
+#include "oxtra/codegen/instructions/control-flow/conditional-jumps/jns.h"
+#include "oxtra/codegen/instructions/control-flow/conditional-jumps/jnp.h"
+#include "oxtra/codegen/instructions/control-flow/conditional-jumps/ja.h"
 
 using namespace codegen;
 using namespace fadec;
@@ -35,8 +42,6 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 		case InstructionType::ADD_IMM:
 			return std::make_unique<Add>(inst);
 
-		case InstructionType::JA:
-			return std::make_unique<Ja>(inst);
 		case InstructionType::JZ:
 			return std::make_unique<Jz>(inst);
 		case InstructionType::JO:
@@ -44,19 +49,21 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 		case InstructionType::JC:
 			return std::make_unique<Jc>(inst);
 		case InstructionType::JS:
-			return 0;
+			return std::make_unique<Js>(inst);
 		case InstructionType::JP:
-			return 0;
+			return std::make_unique<Jp>(inst);
 		case InstructionType::JNZ:
-			return 0;
-		case InstructionType::JNS:
-			return 0;
-		case InstructionType::JNP:
-			return 0;
+			return std::make_unique<Jnz>(inst);
 		case InstructionType::JNO:
-			return 0;
+			return std::make_unique<Jno>(inst);
 		case InstructionType::JNC:
-			return 0;
+			return std::make_unique<Jnc>(inst);
+		case InstructionType::JNS:
+			return std::make_unique<Jns>(inst);
+		case InstructionType::JNP:
+			return std::make_unique<Jnp>(inst);
+		case InstructionType::JA:
+			return std::make_unique<Ja>(inst);
 
 		case InstructionType::JBE:
 			return 0;

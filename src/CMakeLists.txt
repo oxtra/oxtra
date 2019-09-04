@@ -43,10 +43,17 @@ add_library(oxtra_libs
 		oxtra/codegen/instructions/memory/movzx.cpp
 		oxtra/codegen/instructions/memory/cex.cpp
 		oxtra/codegen/instructions/memory/lea.cpp
-		oxtra/codegen/instructions/control-flow/conditional-jumps/ja.cpp
 		oxtra/codegen/instructions/control-flow/conditional-jumps/jz.cpp
 		oxtra/codegen/instructions/control-flow/conditional-jumps/jc.cpp
 		oxtra/codegen/instructions/control-flow/conditional-jumps/jo.cpp
+		oxtra/codegen/instructions/control-flow/conditional-jumps/js.cpp
+		oxtra/codegen/instructions/control-flow/conditional-jumps/jp.cpp
+		oxtra/codegen/instructions/control-flow/conditional-jumps/jnz.cpp
+		oxtra/codegen/instructions/control-flow/conditional-jumps/jnc.cpp
+		oxtra/codegen/instructions/control-flow/conditional-jumps/jno.cpp
+		oxtra/codegen/instructions/control-flow/conditional-jumps/jns.cpp
+		oxtra/codegen/instructions/control-flow/conditional-jumps/jnp.cpp
+		oxtra/codegen/instructions/control-flow/conditional-jumps/ja.cpp
 		)
 
 target_link_libraries(oxtra_libs
