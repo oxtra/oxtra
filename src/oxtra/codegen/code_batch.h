@@ -15,9 +15,7 @@ namespace codegen {
 		size_t count = 0;
 
 	public:
-		virtual size_t add(utils::riscv_instruction_t inst) = 0;
-
-		virtual void insert(size_t index, utils::riscv_instruction_t inst) = 0;
+		virtual utils::riscv_instruction_t& add(utils::riscv_instruction_t inst) = 0;
 
 		size_t size() const;
 
@@ -34,9 +32,7 @@ namespace codegen {
 		explicit CodeMemory(utils::riscv_instruction_t* address)
 			: address{address} {}
 
-		virtual size_t add(utils::riscv_instruction_t inst);
-
-		virtual void insert(size_t index, utils::riscv_instruction_t inst);
+		virtual utils::riscv_instruction_t& add(utils::riscv_instruction_t inst);
 	};
 
 	/**
@@ -46,9 +42,7 @@ namespace codegen {
 	protected:
 		utils::riscv_instruction_t riscv[codestore::max_riscv_instructions];
 	public:
-		virtual size_t add(utils::riscv_instruction_t inst);
-
-		virtual void insert(size_t index, utils::riscv_instruction_t inst);
+		virtual utils::riscv_instruction_t& add(utils::riscv_instruction_t inst);
 
 		virtual void end();
 
@@ -74,7 +68,7 @@ namespace codegen {
 	 */
 	class RiscVStep : public CodeStash {
 	public:
-		size_t add(utils::riscv_instruction_t inst) final;
+		utils::riscv_instruction_t& add(utils::riscv_instruction_t inst) final;
 
 		void print() const final;
 	};
