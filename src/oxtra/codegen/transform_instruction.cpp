@@ -14,6 +14,7 @@
 #include "oxtra/codegen/instructions/memory/movzx.h"
 #include "oxtra/codegen/instructions/memory/cex.h"
 #include "oxtra/codegen/instructions/logic/and.h"
+#include "oxtra/codegen/instructions/logic/or.h"
 #include "oxtra/codegen/instructions/logic/not.h"
 #include "oxtra/codegen/instructions/logic/xor.h"
 #include "oxtra/codegen/instructions/logic/shl.h"
@@ -59,6 +60,10 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 		case InstructionType::AND:
 		case InstructionType::AND_IMM:
 			return std::make_unique<And>(inst);
+
+		case InstructionType::OR:
+		case InstructionType::OR_IMM:
+			return std::make_unique<Or>(inst);
 
 		case InstructionType::NOT:
 			return std::make_unique<Not>(inst);

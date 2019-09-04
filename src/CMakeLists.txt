@@ -29,6 +29,7 @@ add_library(oxtra_libs
 		oxtra/codegen/instructions/arithmetic/dec.cpp
 		oxtra/codegen/instructions/arithmetic/imul.cpp
 		oxtra/codegen/instructions/logic/and.cpp
+		oxtra/codegen/instructions/logic/or.cpp
 		oxtra/codegen/instructions/logic/not.cpp
 		oxtra/codegen/instructions/logic/xor.cpp
 		oxtra/codegen/instructions/logic/shl.cpp
