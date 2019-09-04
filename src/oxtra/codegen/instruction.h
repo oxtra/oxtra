@@ -106,14 +106,29 @@ namespace codegen {
 		encoding::RiscVRegister translate_memory(CodeBatch& batch, size_t index,
 												 encoding::RiscVRegister temp_a, encoding::RiscVRegister temp_b) const;
 
+		/**
+		 * The value of the zero flag is returned in t4 = 0/1. Registers t4, t5, t6 may be modified.
+		 */
 		void evaluate_zero(CodeBatch& batch) const;
 
+		/**
+		 * The value of the sign flag is returned in t4 = 0/1. Registers t4, t5, t6 may be modified.
+		 */
 		void evaluate_sign(CodeBatch& batch, encoding::RiscVRegister temp) const;
 
+		/**
+		 * The value of the parity flag is returned in t4 = 0/1. Registers t4, t5, t6 may be modified.
+		 */
 		void evaluate_parity(CodeBatch& batch, encoding::RiscVRegister temp) const;
 
+		/**
+		 * The value of the overflow flag is returned in t4 = 0/1. Registers t4, t5, t6 may be modified.
+		 */
 		void evaluate_overflow(CodeBatch& batch) const;
 
+		/**
+		 * The value of the carry flag is returned in t4 = 0/1. Registers t4, t5, t6 may be modified.
+		 */
 		void evaluate_carry(CodeBatch& batch) const;
 
 		void update_zero(CodeBatch& batch, bool set, encoding::RiscVRegister temp) const;

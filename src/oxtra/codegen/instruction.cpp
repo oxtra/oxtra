@@ -258,7 +258,6 @@ void codegen::Instruction::update_zero(CodeBatch& batch, encoding::RiscVRegister
 	// clear the zf_value because the upper bits may still be set
 	batch += SD(helper::context_address, RiscVRegister::zero, FlagInfo::zero_value_offset);
 
-
 	switch (size) {
 		case 1:
 			batch += SB(helper::context_address, va, FlagInfo::zero_value_offset);
