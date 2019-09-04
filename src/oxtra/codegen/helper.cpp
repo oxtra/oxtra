@@ -1,7 +1,7 @@
 #include "oxtra/codegen/helper.h"
 #include "oxtra/codegen/encoding/encoding.h"
-#include "instruction.h"
 #include <spdlog/spdlog.h>
+#include <oxtra/dispatcher/dispatcher.h>
 
 using namespace encoding;
 
@@ -137,5 +137,26 @@ void codegen::helper::sign_extend_register(codegen::CodeBatch& batch, RiscVRegis
 	if (shamt > 0) {
 		batch += encoding::SLLI(dest, src, shamt);
 		batch += encoding::SRAI(dest, dest, shamt);
+	}
+}
+
+std::pair<codegen::jump_table::Entry, codegen::jump_table::Entry> codegen::helper::calculate_entries(
+		jump_table::Entry carry, jump_table::Entry overflow, uint8_t size) {
+	switch (size) {
+		case 8:
+			return {jump_table::Entry(static_cast<uint16_t>(carry) + 3),
+					jump_table::Entry(static_cast<uint16_t>(overflow) + 3)};
+		case 4:
+			return {jump_table::Entry(static_cast<uint16_t>(carry) + 2),
+				jump_table::Entry(static_cast<uint16_t>(overflow) + 2)};
+		case 2:
+			return {jump_table::Entry(static_cast<uint16_t>(carry) + 1),
+					jump_table::Entry(static_cast<uint16_t>(overflow) + 1)};
+		case 1:
+			return {carry, overflow};
+
+		default:
+			dispatcher::Dispatcher::fault_exit("Invalid operand size");
+			return {};
 	}
 }

@@ -22,6 +22,10 @@ add_library(oxtra_libs
 		oxtra/codegen/jump-table/jump_table.s
 		oxtra/codegen/binary_operation.cpp
 		oxtra/codegen/unary_operation.cpp
+		oxtra/codegen/instructions/arithmetic/flags_carry.s
+		oxtra/codegen/instructions/arithmetic/flags_overflow.s
+		oxtra/codegen/instructions/logic/flags_carry.s
+		oxtra/codegen/instructions/logic/flags_overflow.s
 		oxtra/codegen/instructions/arithmetic/add.cpp
 		oxtra/codegen/instructions/arithmetic/neg.cpp
 		oxtra/codegen/instructions/arithmetic/sub.cpp

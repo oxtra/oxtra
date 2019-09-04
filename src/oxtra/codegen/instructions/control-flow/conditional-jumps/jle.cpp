@@ -4,7 +4,7 @@
 //(ZF == 1 || SF != OF)
 void codegen::Jle::generate(codegen::CodeBatch& batch) const {
 	// load the zero-flag (first, as it is easier to compute)
-	encoding::RiscVRegister flag = evaluate_zero(batch);
+	evaluate_zero(batch);
 
 	// append a dummy-branch
 	size_t index = batch.add(encoding::NOP());
@@ -16,18 +16,18 @@ void codegen::Jle::generate(codegen::CodeBatch& batch) const {
 
 	// compute the offset and generate the jump
 	size_t offset = batch.size() - index;
-	batch[index] = encoding::BEQZ(flag, offset * 4);
+	batch[index] = encoding::BEQZ(encoding::RiscVRegister::t4, offset * 4);
 
 	// load the carry flag
-	flag = evaluate_carry(batch);
-	batch += encoding::MV(encoding::RiscVRegister::t0, flag);
+	evaluate_carry(batch);
+	batch += encoding::MV(encoding::RiscVRegister::t0, encoding::RiscVRegister::t4);
 
 	// load the overflow-flag
-	flag = evaluate_overflow(batch);
+	evaluate_overflow(batch);
 
 	// generate the jump to the result
 	offset = batch.size() - finish;
-	batch += encoding::BNE(flag, encoding::RiscVRegister::t0, offset * 4);
+	batch += encoding::BNE(encoding::RiscVRegister::t4, encoding::RiscVRegister::t0, offset * 4);
 
 	// generate the code to leave the jump
 	helper::append_eob(batch, get_address() + get_size());

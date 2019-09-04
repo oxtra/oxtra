@@ -34,6 +34,13 @@ long Dispatcher::run() {
 	_context.guest.map.context = reinterpret_cast<uintptr_t>(&_context);
 	_context.codegen = &_codegen;
 
+	// set the flags indirectly
+	_context.flag_info.overflow_operation = static_cast<uint16_t>(jump_table::Entry::overflow_clear);
+	_context.flag_info.carry_operation = static_cast<uint16_t>(jump_table::Entry::carry_clear);
+	_context.flag_info.zero_value = 1;
+	_context.flag_info.sign_size = 0;
+	_context.flag_info.parity_value = 1;
+
 	// switch the context and begin translation
 	const char* error_string = nullptr;
 	const auto exit_code = guest_enter(&_context, _elf.get_entry_point(), &error_string);

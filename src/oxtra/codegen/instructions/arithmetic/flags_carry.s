@@ -14,8 +14,8 @@
 .section .text
 
 # execution context defintions
-.equ value0, 0x208
-.equ value1, 0x210
+.equ value0, 0x218
+.equ value1, 0x220
 .equ operation, 0x22A
 
 # returns the value of the carry flag in t4

@@ -4,7 +4,7 @@
 //(PF == 0)
 void codegen::Jnp::generate(codegen::CodeBatch& batch) const {
 	// load the parity-flag
-	encoding::RiscVRegister flag = evaluate_parity(batch, encoding::RiscVRegister::t0);
+	evaluate_parity(batch, encoding::RiscVRegister::t0);
 
 	// append a dummy-branch
 	size_t index = batch.add(encoding::NOP());
@@ -14,7 +14,7 @@ void codegen::Jnp::generate(codegen::CodeBatch& batch) const {
 
 	// compute the offset and generate the jump
 	size_t offset = batch.size() - index;
-	batch[index] = encoding::BEQZ(flag, offset * 4);
+	batch[index] = encoding::BEQZ(encoding::RiscVRegister::t4, offset * 4);
 
 	// compute the resulting operand
 	translate_operand(batch, 0, helper::address_destination, encoding::RiscVRegister::t1, encoding::RiscVRegister::t2);
