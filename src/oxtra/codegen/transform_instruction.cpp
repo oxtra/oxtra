@@ -1,9 +1,10 @@
 #include "transform_instruction.h"
 
 #include "oxtra/codegen/instructions/arithmetic/add.h"
-#include "oxtra/codegen/instructions/arithmetic/sub.h"
 #include "oxtra/codegen/instructions/arithmetic/inc.h"
+#include "oxtra/codegen/instructions/arithmetic/sub.h"
 #include "oxtra/codegen/instructions/arithmetic/dec.h"
+#include "oxtra/codegen/instructions/arithmetic/neg.h"
 #include "oxtra/codegen/instructions/arithmetic/imul.h"
 #include "oxtra/codegen/instructions/memory/mov.h"
 #include "oxtra/codegen/instructions/memory/lea.h"
@@ -13,6 +14,10 @@
 #include "oxtra/codegen/instructions/memory/movzx.h"
 #include "oxtra/codegen/instructions/memory/cex.h"
 #include "oxtra/codegen/instructions/memory/csep.h"
+#include "oxtra/codegen/instructions/logic/and.h"
+#include "oxtra/codegen/instructions/logic/or.h"
+#include "oxtra/codegen/instructions/logic/not.h"
+#include "oxtra/codegen/instructions/logic/xor.h"
 #include "oxtra/codegen/instructions/logic/shl.h"
 #include "oxtra/codegen/instructions/logic/shr.h"
 #include "oxtra/codegen/instructions/logic/sar.h"
@@ -32,14 +37,41 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 		case InstructionType::ADD_IMM:
 			return std::make_unique<Add>(inst);
 
+		case InstructionType::INC:
+			return std::make_unique<Inc>(inst);
+
 		case InstructionType::SUB:
 		case InstructionType::SUB_IMM:
 			return std::make_unique<Sub>(inst);
+
+		case InstructionType::DEC:
+			return std::make_unique<Dec>(inst);
+
+		case InstructionType::NEG:
+			return std::make_unique<Neg>(inst);
+
+		case InstructionType::IMUL2:
+			return std::make_unique<Imul>(inst);
 
 		case InstructionType::MOV_IMM:
 		case InstructionType::MOVABS_IMM:
 		case InstructionType::MOV:
 			return std::make_unique<Mov>(inst);
+
+		case InstructionType::AND:
+		case InstructionType::AND_IMM:
+			return std::make_unique<And>(inst);
+
+		case InstructionType::OR:
+		case InstructionType::OR_IMM:
+			return std::make_unique<Or>(inst);
+
+		case InstructionType::NOT:
+			return std::make_unique<Not>(inst);
+
+		case InstructionType::XOR:
+		case InstructionType::XOR_IMM:
+			return std::make_unique<Xor>(inst);
 
 		case InstructionType::SHL_CL:
 		case InstructionType::SHL_IMM:
@@ -52,15 +84,6 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 		case InstructionType::SAR_CL:
 		case InstructionType::SAR_IMM:
 			return std::make_unique<Sar>(inst);
-
-		case InstructionType::INC:
-			return std::make_unique<Inc>(inst);
-
-		case InstructionType::DEC:
-			return std::make_unique<Dec>(inst);
-
-		case InstructionType::IMUL2:
-			return std::make_unique<Imul>(inst);
 
 		case InstructionType::SYSCALL:
 			return std::make_unique<Syscall>(inst);
