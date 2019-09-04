@@ -35,7 +35,7 @@ add_library(oxtra_libs
 		oxtra/codegen/instructions/control-flow/call.cpp
 		oxtra/codegen/instructions/control-flow/jmp.cpp
 		oxtra/codegen/instructions/control-flow/ret.cpp
-		oxtra/codegen/instructions/control-flow/leave.cpp
+		oxtra/codegen/instructions/memory/leave.cpp
 		oxtra/codegen/instructions/memory/pop.cpp
 		oxtra/codegen/instructions/memory/push.cpp
 		oxtra/codegen/instructions/memory/mov.cpp

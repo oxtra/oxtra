@@ -12,6 +12,7 @@
 #include "oxtra/codegen/instructions/memory/movsx.h"
 #include "oxtra/codegen/instructions/memory/movzx.h"
 #include "oxtra/codegen/instructions/memory/cex.h"
+#include "oxtra/codegen/instructions/memory/leave.h"
 #include "oxtra/codegen/instructions/logic/shl.h"
 #include "oxtra/codegen/instructions/logic/shr.h"
 #include "oxtra/codegen/instructions/logic/sar.h"
@@ -20,7 +21,6 @@
 #include "oxtra/codegen/instructions/control-flow/jmp.h"
 #include "oxtra/codegen/instructions/control-flow/call.h"
 #include "oxtra/codegen/instructions/control-flow/ret.h"
-#include "oxtra/codegen/instructions/control-flow/leave.h"
 #include "oxtra/codegen/instructions/control-flow/conditional-jumps/jc.h"
 #include "oxtra/codegen/instructions/control-flow/conditional-jumps/jo.h"
 #include "oxtra/codegen/instructions/control-flow/conditional-jumps/jz.h"
@@ -31,7 +31,6 @@
 #include "oxtra/codegen/instructions/control-flow/conditional-jumps/jnz.h"
 #include "oxtra/codegen/instructions/control-flow/conditional-jumps/jns.h"
 #include "oxtra/codegen/instructions/control-flow/conditional-jumps/jnp.h"
-
 #include "oxtra/codegen/instructions/control-flow/conditional-jumps/ja.h"
 #include "oxtra/codegen/instructions/control-flow/conditional-jumps/jbe.h"
 #include "oxtra/codegen/instructions/control-flow/conditional-jumps/jg.h"
