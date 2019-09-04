@@ -1,7 +1,15 @@
-.include "oxtra/dispatcher/dispatcher.s"
-
 .global _ZN7codegen10jump_table13table_addressEv # jump_table
 .global c_wrapper
+.global unsupported_overflow
+.global unsupported_carry
+
+.include "oxtra/dispatcher/dispatcher.s"
+
+.section .rodata
+unsupported_overflow_string: .string "the overflow flag has been read from an Instruction which doesn't implement it."
+unsupported_carry_string: .string "the carry flag has been read from an Instruction which doesn't implement it."
+
+.section .text
 
 # implement wrapper to call c function in register t4 -> t4
 # prototype: static uintptr_t c_wrapper(Context* context)
@@ -19,6 +27,27 @@ c_wrapper:
 	# restore the guest context and return to caller
     restore_context s11
     ret
+
+
+# throw an error if the overflow is not supported
+unsupported_overflow:
+	# set the string-pointer and the exit-code
+	la a0, unsupported_overflow_string
+	li a1, -1
+
+	# call the fault-exit
+	j _ZN10dispatcher10Dispatcher10fault_exitEPKcl
+
+
+# throw an error if the carry is not supported
+unsupported_carry:
+	# set the string-pointer and the exit-code
+	la a0, unsupported_carry_string
+	li a1, -1
+
+	# call the fault-exit
+	j _ZN10dispatcher10Dispatcher10fault_exitEPKcl
+
 
 # don't use the 'j' pseudo-instruction as it might unwrap to multiple instructions
 .align 8
