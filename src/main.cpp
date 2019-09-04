@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
 
 	// startup the translation and execution of the source-code
 	const auto return_value = dispatcher.run();
-	spdlog::info("guest returned: {0:x} ({0:d})", return_value);
+	spdlog::info("guest returned: 0x{0:x} ({1:d})", static_cast<unsigned long>(return_value), return_value);
 
 	return return_value;
 }

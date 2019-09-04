@@ -132,6 +132,7 @@ void codegen::helper::append_eob(CodeBatch& batch, encoding::RiscVRegister reg) 
 }
 
 void codegen::helper::sign_extend_register(codegen::CodeBatch& batch, RiscVRegister dest, RiscVRegister src, size_t byte) {
+	//TODO: ADDIW for better performance
 	const auto shamt = (sizeof(size_t) - byte) * 8;
 	if (shamt > 0) {
 		batch += encoding::SLLI(dest, src, shamt);
