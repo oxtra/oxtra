@@ -27,10 +27,15 @@ add_library(oxtra_libs
 		oxtra/codegen/instructions/logic/flags_carry.s
 		oxtra/codegen/instructions/logic/flags_overflow.s
 		oxtra/codegen/instructions/arithmetic/add.cpp
+		oxtra/codegen/instructions/arithmetic/neg.cpp
 		oxtra/codegen/instructions/arithmetic/sub.cpp
 		oxtra/codegen/instructions/arithmetic/inc.cpp
 		oxtra/codegen/instructions/arithmetic/dec.cpp
 		oxtra/codegen/instructions/arithmetic/imul.cpp
+		oxtra/codegen/instructions/logic/and.cpp
+		oxtra/codegen/instructions/logic/or.cpp
+		oxtra/codegen/instructions/logic/not.cpp
+		oxtra/codegen/instructions/logic/xor.cpp
 		oxtra/codegen/instructions/logic/shl.cpp
 		oxtra/codegen/instructions/logic/shr.cpp
 		oxtra/codegen/instructions/logic/sar.cpp
@@ -46,6 +51,7 @@ add_library(oxtra_libs
 		oxtra/codegen/instructions/memory/movsx.cpp
 		oxtra/codegen/instructions/memory/movzx.cpp
 		oxtra/codegen/instructions/memory/cex.cpp
+		oxtra/codegen/instructions/memory/csep.cpp
 		oxtra/codegen/instructions/memory/lea.cpp
 		)
 
