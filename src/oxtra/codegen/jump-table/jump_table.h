@@ -3,7 +3,6 @@
 
 #include "oxtra/codegen/code_batch.h"
 #include "oxtra/codegen/encoding/encoding.h"
-#include "oxtra/codegen/instruction.h"
 
 namespace codegen::jump_table {
 	// define the jump-table object
@@ -19,22 +18,26 @@ namespace codegen::jump_table {
 		// the flag evaluation functions modify t4, t5 and t6
 		carry_clear,
 		carry_set,
-		carry_add_8,
+		carry_add,
+		carry_add_8 = carry_add,
 		carry_add_16,
 		carry_add_32,
 		carry_add_64,
-		carry_adc_8,
+		carry_adc,
+		carry_adc_8 = carry_adc,
 		carry_adc_16,
 		carry_adc_32,
 		carry_adc_64,
 
 		overflow_clear,
 		overflow_set,
-		overflow_add_8,
+		overflow_add,
+		overflow_add_8 = overflow_add,
 		overflow_add_16,
 		overflow_add_32,
 		overflow_add_64,
-		overflow_adc_8,
+		overflow_adc,
+		overflow_adc_8 = overflow_adc,
 		overflow_adc_16,
 		overflow_adc_32,
 		overflow_adc_64,

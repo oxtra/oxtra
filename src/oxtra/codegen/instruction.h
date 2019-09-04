@@ -145,12 +145,12 @@ namespace codegen {
 
 		void update_overflow(CodeBatch& batch, bool set, encoding::RiscVRegister temp) const;
 
-		void update_overflow(CodeBatch& batch, uint16_t index,
+		void update_overflow(CodeBatch& batch, jump_table::Entry entry,
 							 encoding::RiscVRegister va, encoding::RiscVRegister vb, encoding::RiscVRegister temp) const;
 
 		void update_carry(CodeBatch& batch, bool set, encoding::RiscVRegister temp) const;
 
-		void update_carry(CodeBatch& batch, uint16_t index,
+		void update_carry(CodeBatch& batch, jump_table::Entry entry,
 						  encoding::RiscVRegister va, encoding::RiscVRegister vb, encoding::RiscVRegister temp) const;
 	};
 }
