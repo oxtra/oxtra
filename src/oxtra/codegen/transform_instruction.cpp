@@ -21,6 +21,7 @@
 #include "oxtra/codegen/instructions/control-flow/call.h"
 #include "oxtra/codegen/instructions/control-flow/ret.h"
 #include "oxtra/codegen/instructions/control-flow/leave.h"
+#include "oxtra/codegen/instructions/control-flow/conditional-jumps/ja.h"
 
 using namespace codegen;
 using namespace fadec;
@@ -30,6 +31,9 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 		case InstructionType::ADD:
 		case InstructionType::ADD_IMM:
 			return std::make_unique<Add>(inst);
+
+		case InstructionType::JA:
+			return std::make_unique<Ja>(inst);
 
 		case InstructionType::SUB:
 		case InstructionType::SUB_IMM:

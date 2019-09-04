@@ -126,10 +126,8 @@ void codegen::helper::append_eob(CodeBatch& batch, uintptr_t ptr) {
 }
 
 void codegen::helper::append_eob(CodeBatch& batch, encoding::RiscVRegister reg) {
-	if (reg != helper::address_destination) {
+	if (reg != helper::address_destination)
 		batch += encoding::MV(helper::address_destination, reg);
-	}
-
 	jump_table::jump_reroute_dynamic(batch);
 }
 

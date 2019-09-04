@@ -10,14 +10,30 @@ void codegen::CodeBatch::operator+=(utils::riscv_instruction_t inst) {
 	add(inst);
 }
 
-utils::riscv_instruction_t& codegen::CodeMemory::add(utils::riscv_instruction_t inst) {
+size_t codegen::CodeMemory::add(utils::riscv_instruction_t inst) {
 	address[count] = inst;
-	return address[count++];
+	return count++;
 }
 
-utils::riscv_instruction_t& codegen::CodeStash::add(utils::riscv_instruction_t inst) {
+void codegen::CodeMemory::insert(size_t index, utils::riscv_instruction_t inst) {
+	address[index] = inst;
+}
+
+utils::riscv_instruction_t& codegen::CodeMemory::operator[](size_t index) {
+	return address[index];
+}
+
+size_t codegen::CodeStash::add(utils::riscv_instruction_t inst) {
 	riscv[count] = inst;
-	return riscv[count++];
+	return count++;
+}
+
+void codegen::CodeStash::insert(size_t index, utils::riscv_instruction_t inst) {
+	riscv[index] = inst;
+}
+
+utils::riscv_instruction_t& codegen::CodeStash::operator[](size_t index) {
+	return riscv[index];
 }
 
 void codegen::CodeStash::end() {
@@ -48,11 +64,11 @@ void codegen::X86Step::print() const {
 	}
 }
 
-utils::riscv_instruction_t& codegen::RiscVStep::add(utils::riscv_instruction_t inst) {
+size_t codegen::RiscVStep::add(utils::riscv_instruction_t inst) {
 	size_t index = count;
 	riscv[count++] = inst;
 	jump_table::jump_debug_break(*this);
-	return riscv[index];
+	return index;
 }
 
 void codegen::RiscVStep::print() const {

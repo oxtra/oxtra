@@ -179,13 +179,13 @@ RiscVRegister codegen::Instruction::translate_memory(CodeBatch& batch, size_t in
 	return temp_reg;
 }
 
-encoding::RiscVRegister codegen::Instruction::evalute_zero(CodeBatch& batch) const {
+encoding::RiscVRegister codegen::Instruction::evaluate_zero(CodeBatch& batch) const {
 	batch += encoding::LD(RiscVRegister::t4, context_address, FlagInfo::zero_value_offset);
 	batch += encoding::SNEZ(RiscVRegister::t4, RiscVRegister::t4); // TODO: decide if we actually need this
 	return RiscVRegister::t4;
 }
 
-encoding::RiscVRegister codegen::Instruction::evalute_sign(CodeBatch& batch, encoding::RiscVRegister temp) const {
+encoding::RiscVRegister codegen::Instruction::evaluate_sign(CodeBatch& batch, encoding::RiscVRegister temp) const {
 	// load the shift amount
 	batch += encoding::LBU(RiscVRegister::t4, context_address, FlagInfo::sign_size_offset);
 
@@ -198,7 +198,7 @@ encoding::RiscVRegister codegen::Instruction::evalute_sign(CodeBatch& batch, enc
 	return RiscVRegister::t4;
 }
 
-encoding::RiscVRegister codegen::Instruction::evalute_parity(CodeBatch& batch, encoding::RiscVRegister temp) const {
+encoding::RiscVRegister codegen::Instruction::evaluate_parity(CodeBatch& batch, encoding::RiscVRegister temp) const {
 	// load the pf_value
 	batch += encoding::LBU(temp, helper::context_address, FlagInfo::parity_value_offset);
 
@@ -218,7 +218,7 @@ encoding::RiscVRegister codegen::Instruction::evalute_parity(CodeBatch& batch, e
 	return RiscVRegister::t4;
 }
 
-encoding::RiscVRegister codegen::Instruction::evalute_overflow(CodeBatch& batch) const {
+encoding::RiscVRegister codegen::Instruction::evaluate_overflow(CodeBatch& batch) const {
 	// load the jump table offset
 	batch += LHU(RiscVRegister::t4, helper::context_address, FlagInfo::overflow_operation_offset);
 
@@ -228,7 +228,7 @@ encoding::RiscVRegister codegen::Instruction::evalute_overflow(CodeBatch& batch)
 	return RiscVRegister::t4;
 }
 
-encoding::RiscVRegister codegen::Instruction::evalute_carry(CodeBatch& batch) const {
+encoding::RiscVRegister codegen::Instruction::evaluate_carry(CodeBatch& batch) const {
 	// load the jump table offset
 	batch += LHU(RiscVRegister::t4, helper::context_address, FlagInfo::carry_operation_offset);
 
