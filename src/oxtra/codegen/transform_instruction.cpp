@@ -12,6 +12,7 @@
 #include "oxtra/codegen/instructions/memory/movsx.h"
 #include "oxtra/codegen/instructions/memory/movzx.h"
 #include "oxtra/codegen/instructions/memory/cex.h"
+#include "oxtra/codegen/instructions/memory/csep.h"
 #include "oxtra/codegen/instructions/logic/shl.h"
 #include "oxtra/codegen/instructions/logic/shr.h"
 #include "oxtra/codegen/instructions/logic/sar.h"
@@ -97,6 +98,9 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 
 		case InstructionType::C_EX:
 			return std::make_unique<Cex>(inst);
+
+		case InstructionType::C_SEP:
+			return std::make_unique<CSep>(inst);
 
 		case InstructionType::LEA:
 			return std::make_unique<Lea>(inst);

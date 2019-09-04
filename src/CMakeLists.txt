@@ -42,6 +42,7 @@ add_library(oxtra_libs
 		oxtra/codegen/instructions/memory/movsx.cpp
 		oxtra/codegen/instructions/memory/movzx.cpp
 		oxtra/codegen/instructions/memory/cex.cpp
+		oxtra/codegen/instructions/memory/csep.cpp
 		oxtra/codegen/instructions/memory/lea.cpp
 		)
 
