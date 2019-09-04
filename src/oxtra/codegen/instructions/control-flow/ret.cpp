@@ -16,5 +16,5 @@ void codegen::Ret::generate(CodeBatch& batch) const {
 	}
 
 	// attach the rerouting
-	jump_table::jump_reroute_dynamic(batch);
+	helper::append_eob(batch, helper::address_destination);
 }

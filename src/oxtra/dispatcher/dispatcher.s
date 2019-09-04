@@ -62,7 +62,7 @@
 	ld s11, 0xD0(\reg)
 .endm
 
-.section .data
+.section .rodata
 reroute_static_fmt: .string "reroute_static: 0x{0:x}"
 reroute_dynamic_fmt: .string "reroute_dynamic: 0x{0:x}"
 
