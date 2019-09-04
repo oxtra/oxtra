@@ -10,13 +10,35 @@ namespace codegen::jump_table {
 	void table_address();
 
 	// This jump-table-enum must correspond to the order of the assembly-jump-table
-	struct Entries {
-		static constexpr uint16_t virtual_syscall 	= 0;
-		static constexpr uint16_t reroute_static 	= 1;
-		static constexpr uint16_t reroute_dynamic 	= 2;
-		static constexpr uint16_t debug_callback	= 3;
-	};
+	enum class Entry : uint16_t {
+		virtual_syscall = 0,
+		reroute_static,
+		reroute_dynamic,
+		debug_callback,
 
+		// the flag evaluation functions modify t4, t5 and t6
+		carry_clear,
+		carry_set,
+		carry_add_8,
+		carry_add_16,
+		carry_add_32,
+		carry_add_64,
+		carry_adc_8,
+		carry_adc_16,
+		carry_adc_32,
+		carry_adc_64,
+
+		overflow_clear,
+		overflow_set,
+		overflow_add_8,
+		overflow_add_16,
+		overflow_add_32,
+		overflow_add_64,
+		overflow_adc_8,
+		overflow_adc_16,
+		overflow_adc_32,
+		overflow_adc_64,
+	};
 	/**
 	 * Generates a jump to the syscall handler.
 	 */
@@ -47,7 +69,7 @@ namespace codegen::jump_table {
 	 * Generates a jump into the jump table to the designated index.
 	 * @param jump_entry The index into the jump-table
 	 */
-	void jump_table_entry(CodeBatch& batch, uint16_t jump_entry);
+	void jump_table_entry(CodeBatch& batch, Entry jump_entry);
 }
 
 

@@ -106,15 +106,15 @@ namespace codegen {
 		encoding::RiscVRegister translate_memory(CodeBatch& batch, size_t index,
 												 encoding::RiscVRegister temp_a, encoding::RiscVRegister temp_b) const;
 
-		encoding::RiscVRegister evalute_zero(CodeBatch& batch) const;
+		void evaluate_zero(CodeBatch& batch) const;
 
-		encoding::RiscVRegister evalute_sign(CodeBatch& batch, encoding::RiscVRegister temp) const;
+		void evaluate_sign(CodeBatch& batch, encoding::RiscVRegister temp) const;
 
-		encoding::RiscVRegister evalute_parity(CodeBatch& batch, encoding::RiscVRegister temp) const;
+		void evaluate_parity(CodeBatch& batch, encoding::RiscVRegister temp) const;
 
-		encoding::RiscVRegister evalute_overflow(CodeBatch& batch) const;
+		void evaluate_overflow(CodeBatch& batch) const;
 
-		encoding::RiscVRegister evalute_carry(CodeBatch& batch) const;
+		void evaluate_carry(CodeBatch& batch) const;
 
 		void update_zero(CodeBatch& batch, bool set, encoding::RiscVRegister temp) const;
 

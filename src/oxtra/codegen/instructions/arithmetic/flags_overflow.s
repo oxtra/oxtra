@@ -14,9 +14,9 @@
 .section .text
 
 # execution context defintions
-.equ value0, 0x218
-.equ value1, 0x220
-.equ operation, 0x22C
+.equ value0, 0x208
+.equ value1, 0x210
+.equ operation, 0x228
 
 # returns the value of the overflow flag in t4
 
