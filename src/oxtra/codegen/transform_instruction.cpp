@@ -31,7 +31,13 @@
 #include "oxtra/codegen/instructions/control-flow/conditional-jumps/jnz.h"
 #include "oxtra/codegen/instructions/control-flow/conditional-jumps/jns.h"
 #include "oxtra/codegen/instructions/control-flow/conditional-jumps/jnp.h"
+
 #include "oxtra/codegen/instructions/control-flow/conditional-jumps/ja.h"
+#include "oxtra/codegen/instructions/control-flow/conditional-jumps/jbe.h"
+#include "oxtra/codegen/instructions/control-flow/conditional-jumps/jg.h"
+#include "oxtra/codegen/instructions/control-flow/conditional-jumps/jge.h"
+#include "oxtra/codegen/instructions/control-flow/conditional-jumps/jl.h"
+#include "oxtra/codegen/instructions/control-flow/conditional-jumps/jle.h"
 
 using namespace codegen;
 using namespace fadec;
@@ -64,18 +70,18 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 			return std::make_unique<Jnp>(inst);
 		case InstructionType::JA:
 			return std::make_unique<Ja>(inst);
-
 		case InstructionType::JBE:
-			return 0;
-		case InstructionType::JCXZ:
-			return 0;
+			return std::make_unique<Jbe>(inst);
 		case InstructionType::JG:
-			return 0;
+			return std::make_unique<Jg>(inst);
 		case InstructionType::JGE:
-			return 0;
+			return std::make_unique<Jge>(inst);
 		case InstructionType::JL:
-			return 0;
+			return std::make_unique<Jl>(inst);
 		case InstructionType::JLE:
+			return std::make_unique<Jle>(inst);
+
+		case InstructionType::JCXZ:
 			return 0;
 
 

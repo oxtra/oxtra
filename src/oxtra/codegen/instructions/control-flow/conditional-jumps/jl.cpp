@@ -1,10 +1,14 @@
-#include "jp.h"
+#include "jl.h"
 #include "oxtra/codegen/helper.h"
 
-//(PF == 1)
-void codegen::Jp::generate(codegen::CodeBatch& batch) const {
-	// load the parity-flag
-	encoding::RiscVRegister flag = evaluate_parity(batch, encoding::RiscVRegister::t0);
+//(SF != OF)
+void codegen::Jl::generate(codegen::CodeBatch& batch) const {
+	// load the carry flag
+	encoding::RiscVRegister flag = evaluate_carry(batch);
+	batch += encoding::MV(encoding::RiscVRegister::t0, flag);
+
+	// load the overflow-flag
+	flag = evaluate_overflow(batch);
 
 	// append a dummy-branch
 	size_t index = batch.add(encoding::NOP());
@@ -14,7 +18,7 @@ void codegen::Jp::generate(codegen::CodeBatch& batch) const {
 
 	// compute the offset and generate the jump
 	size_t offset = batch.size() - index;
-	batch[index] = encoding::BNQZ(flag, offset * 4);
+	batch[index] = encoding::BNE(flag, encoding::RiscVRegister::t0, offset * 4);
 
 	// compute the resulting operand
 	translate_operand(batch, 0, helper::address_destination, encoding::RiscVRegister::t1, encoding::RiscVRegister::t2);

@@ -14,7 +14,7 @@ void codegen::Js::generate(codegen::CodeBatch& batch) const {
 
 	// compute the offset and generate the jump
 	size_t offset = batch.size() - index;
-	batch[index] = encoding::BNQZ(flag, offset);
+	batch[index] = encoding::BNQZ(flag, offset * 4);
 
 	// compute the resulting operand
 	translate_operand(batch, 0, helper::address_destination, encoding::RiscVRegister::t1, encoding::RiscVRegister::t2);
