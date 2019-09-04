@@ -29,13 +29,12 @@ namespace codegen::helper {
 		LBYTE
 	};
 
-
 	/**
 	 * Get the register access for a given operand size.
 	 * @param op_size The size of the operand in bytes. May only be 1,2,4 or 8.
 	 * @return The correct RegisterAccess. The lower byte will be returned for an operand size of 1.
 	 */
-	static RegisterAccess operand_to_register_access(size_t op_size) {
+	static constexpr RegisterAccess operand_to_register_access(size_t op_size) {
 		if (op_size == 1) return RegisterAccess::LBYTE;
 		if (op_size == 2) return RegisterAccess::WORD;
 		if (op_size == 4) return RegisterAccess::DWORD;
@@ -76,7 +75,20 @@ namespace codegen::helper {
 	/**
 	 * Loads an address into a riscv register. Unconditionally generates 8 instruction.
 	 */
-	void load_address(CodeBatch& batch, uintptr_t ptr, encoding::RiscVRegister dest);
+
+	 void load_address(CodeBatch& batch, uintptr_t ptr, encoding::RiscVRegister dest);
+
+	 /**
+	  * Appends a jump into reroute_static.
+	  * @param ptr The address of the next block.
+	  */
+	 void append_eob(CodeBatch& batch, uintptr_t ptr);
+
+	 /**
+	  * Appends a jump into reroute_dynamic.
+	  * @param reg The register that contains the address of the next block.
+	  */
+	 void append_eob(CodeBatch& batch, encoding::RiscVRegister reg);
 
 	/**
 		* Sign extend a given source register (which will not be modified) into a destination register.
