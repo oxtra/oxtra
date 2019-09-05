@@ -11,16 +11,16 @@
 namespace encoding {
 
 	enum class RiscVRegister {
-		zero = 0,    // hardwired zero
-		ra,            // return address
-		sp,            // stack pointer
-		gp,            // global pointer
-		tp,            // thread pointer
-		t0,            // temporary/alternate link register
-		t1, t2,        // temporaries
-		s0,            // saved register/frame pointer
-		s1,            // saved register
-		a0, a1,        // function arguments/return values
+		zero = 0,	// hardwired zero
+		ra,			// return address
+		sp,			// stack pointer
+		gp,			// global pointer
+		tp,			// thread pointer
+		t0,			// temporary/alternate link register
+		t1, t2,		// temporaries
+		s0,    		// saved register/frame pointer
+		s1,    		// saved register
+		a0, a1,		// function arguments/return values
 		a2, a3, a4, a5, a6, a7, // function arguments
 		s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, // saved registers
 		t3, t4, t5, t6, // temporaries
