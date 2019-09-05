@@ -14,10 +14,14 @@ namespace codegen::jump_table {
 		reroute_static,
 		reroute_dynamic,
 		debug_callback,
-
-		// the flag evaluation functions modify t4, t5 and t6
+		unsupported_carry,
+		unsupported_overflow,
 		carry_clear,
 		carry_set,
+		overflow_clear,
+		overflow_set,
+
+		// the flag evaluation functions modify t4, t5 and t6
 		carry_add,
 		carry_add_8 = carry_add,
 		carry_add_16,
@@ -29,8 +33,6 @@ namespace codegen::jump_table {
 		carry_adc_32,
 		carry_adc_64,
 
-		overflow_clear,
-		overflow_set,
 		overflow_add,
 		overflow_add_8 = overflow_add,
 		overflow_add_16,
