@@ -30,7 +30,7 @@ namespace codegen {
 		utils::riscv_instruction_t* address;
 	public:
 		explicit CodeMemory(utils::riscv_instruction_t* address)
-			: address{address} {}
+				: address{address} {}
 
 		virtual void add(utils::riscv_instruction_t inst);
 	};

@@ -62,7 +62,8 @@ BlockEntry& CodeStore::create_block() {
 	return _block_entries.allocate_entry();
 }
 
-void CodeStore::add_instruction(BlockEntry& block, utils::guest_addr_t address, uint8_t size, riscv_instruction_t* riscv_instructions, size_t num_instructions) {
+void CodeStore::add_instruction(BlockEntry& block, utils::guest_addr_t address, uint8_t size,
+								riscv_instruction_t* riscv_instructions, size_t num_instructions) {
 	insert_block(block, address);
 
 	block.riscv_start = reinterpret_cast<host_addr_t>(
@@ -106,9 +107,7 @@ void CodeStore::insert_block(codegen::codestore::BlockEntry& block, utils::guest
 
 		page_array.push_back(&block);
 
-	}
-
-	else if (block.x86_end != x86_address) {
+	} else if (block.x86_end != x86_address) {
 		// maybe do this for the debug build only?
 		throw std::runtime_error("Tried to add a non-consecutive instruction to a block.");
 	}

@@ -41,7 +41,8 @@ std::string codegen::Instruction::string() const {
 	return buffer;
 }
 
-RiscVRegister codegen::Instruction::translate_operand(CodeBatch& batch, size_t index, RiscVRegister reg, RiscVRegister temp_a, RiscVRegister temp_b) const {
+RiscVRegister codegen::Instruction::translate_operand(CodeBatch& batch, size_t index, RiscVRegister reg, RiscVRegister temp_a,
+													  RiscVRegister temp_b) const {
 	// extract the operand
 	auto& operand = get_operand(index);
 
@@ -77,7 +78,9 @@ RiscVRegister codegen::Instruction::translate_operand(CodeBatch& batch, size_t i
 	return encoding::RiscVRegister::zero;
 }
 
-void codegen::Instruction::translate_destination(CodeBatch& batch, RiscVRegister reg, RiscVRegister address, RiscVRegister temp_a, RiscVRegister temp_b) const {
+void
+codegen::Instruction::translate_destination(CodeBatch& batch, RiscVRegister reg, RiscVRegister address, RiscVRegister temp_a,
+											RiscVRegister temp_b) const {
 	auto& operand = get_operand(0);
 
 	// check if the destination is a register
@@ -128,7 +131,8 @@ void codegen::Instruction::translate_destination(CodeBatch& batch, RiscVRegister
 	}
 }
 
-RiscVRegister codegen::Instruction::translate_memory(CodeBatch& batch, size_t index, RiscVRegister temp_a, RiscVRegister temp_b) const {
+RiscVRegister
+codegen::Instruction::translate_memory(CodeBatch& batch, size_t index, RiscVRegister temp_a, RiscVRegister temp_b) const {
 	if (get_address_size() < 4)
 		dispatcher::Dispatcher::fault_exit("invalid addressing-size");
 	const auto& operand = get_operand(index);
@@ -136,7 +140,8 @@ RiscVRegister codegen::Instruction::translate_memory(CodeBatch& batch, size_t in
 	// analyze the input (0 = doesn't exist, 1 = optimizable, 2 = unoptimizable)
 	uint8_t disp_exists = get_displacement() == 0 ? 0 : (get_displacement() >= -0x800 && get_displacement() < 0x800 ? 1 : 2);
 	uint8_t index_exists = get_index_register() == fadec::Register::none ? 0 : (get_index_scale() == 1 ? 1 : 2);
-	uint8_t base_exists = operand.get_register() == fadec::Register::none ? 0 : (get_address_size() == 8 && disp_exists == 0 && index_exists == 0 ? 1 : 2);
+	uint8_t base_exists = operand.get_register() == fadec::Register::none ? 0 : (get_address_size() == 8 && disp_exists == 0 &&
+																				 index_exists == 0 ? 1 : 2);
 	uint64_t disp_mask = get_address_size() == 8 ? 0xffffffffffffffffull : 0x00000000ffffffffull;
 
 	// verify the operands
@@ -324,7 +329,8 @@ void codegen::Instruction::update_sign(CodeBatch& batch, bool set, encoding::Ris
 	}
 }
 
-void codegen::Instruction::update_sign(CodeBatch& batch, encoding::RiscVRegister va, uint8_t size, encoding::RiscVRegister temp) const {
+void codegen::Instruction::update_sign(CodeBatch& batch, encoding::RiscVRegister va, uint8_t size,
+									   encoding::RiscVRegister temp) const {
 	// check if the instruction has to update the sign-flag
 	if ((update_flags & Flags::sign) == 0)
 		return;
@@ -370,7 +376,8 @@ void codegen::Instruction::update_overflow(CodeBatch& batch, bool set, encoding:
 	batch += encoding::SH(helper::context_address, temp, FlagInfo::overflow_operation_offset);
 }
 
-void codegen::Instruction::update_overflow(CodeBatch& batch, jump_table::Entry entry, encoding::RiscVRegister va, encoding::RiscVRegister vb, encoding::RiscVRegister temp) const {
+void codegen::Instruction::update_overflow(CodeBatch& batch, jump_table::Entry entry, encoding::RiscVRegister va,
+										   encoding::RiscVRegister vb, encoding::RiscVRegister temp) const {
 	// check if the instruction has to update the overflow-flag
 	if ((update_flags & Flags::overflow) == 0)
 		return;
@@ -394,7 +401,8 @@ void codegen::Instruction::update_carry(CodeBatch& batch, bool set, encoding::Ri
 	batch += encoding::SH(helper::context_address, temp, FlagInfo::carry_operation_offset);
 }
 
-void codegen::Instruction::update_carry(CodeBatch& batch, jump_table::Entry entry, encoding::RiscVRegister va, encoding::RiscVRegister vb, encoding::RiscVRegister temp) const {
+void codegen::Instruction::update_carry(CodeBatch& batch, jump_table::Entry entry, encoding::RiscVRegister va,
+										encoding::RiscVRegister vb, encoding::RiscVRegister temp) const {
 	// check if the instruction has to update the carry-flag
 	if ((update_flags & Flags::carry) == 0)
 		return;
