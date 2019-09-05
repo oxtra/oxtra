@@ -370,8 +370,7 @@ void codegen::Instruction::update_overflow(CodeBatch& batch, bool set, encoding:
 	batch += encoding::SH(helper::context_address, temp, FlagInfo::overflow_operation_offset);
 }
 
-void codegen::Instruction::update_overflow(CodeBatch& batch, jump_table::Entry entry, encoding::RiscVRegister va, encoding::RiscVRegister vb,
-										   encoding::RiscVRegister temp) const {
+void codegen::Instruction::update_overflow(CodeBatch& batch, jump_table::Entry entry, encoding::RiscVRegister va, encoding::RiscVRegister vb, encoding::RiscVRegister temp) const {
 	// check if the instruction has to update the overflow-flag
 	if ((update_flags & Flags::overflow) == 0)
 		return;
@@ -395,8 +394,7 @@ void codegen::Instruction::update_carry(CodeBatch& batch, bool set, encoding::Ri
 	batch += encoding::SH(helper::context_address, temp, FlagInfo::carry_operation_offset);
 }
 
-void codegen::Instruction::update_carry(CodeBatch& batch, jump_table::Entry entry, encoding::RiscVRegister va, encoding::RiscVRegister vb,
-										encoding::RiscVRegister temp) const {
+void codegen::Instruction::update_carry(CodeBatch& batch, jump_table::Entry entry, encoding::RiscVRegister va, encoding::RiscVRegister vb, encoding::RiscVRegister temp) const {
 	// check if the instruction has to update the carry-flag
 	if ((update_flags & Flags::carry) == 0)
 		return;

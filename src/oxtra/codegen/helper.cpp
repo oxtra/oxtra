@@ -6,8 +6,7 @@
 using namespace encoding;
 
 
-void codegen::helper::move_to_register(CodeBatch& batch, RiscVRegister dest, RiscVRegister src, RegisterAccess access,
-									   RiscVRegister temp, bool cleared) {
+void codegen::helper::move_to_register(CodeBatch& batch, RiscVRegister dest, RiscVRegister src, RegisterAccess access, RiscVRegister temp, bool cleared) {
 	switch (access) {
 		case RegisterAccess::QWORD:
 			batch += encoding::ADD(dest, src, RiscVRegister::zero);
@@ -142,15 +141,14 @@ void codegen::helper::sign_extend_register(codegen::CodeBatch& batch, RiscVRegis
 	}
 }
 
-std::pair<codegen::jump_table::Entry, codegen::jump_table::Entry> codegen::helper::calculate_entries(
-		jump_table::Entry carry, jump_table::Entry overflow, uint8_t size) {
+std::pair<codegen::jump_table::Entry, codegen::jump_table::Entry> codegen::helper::calculate_entries(jump_table::Entry carry, jump_table::Entry overflow, uint8_t size) {
 	switch (size) {
 		case 8:
 			return {jump_table::Entry(static_cast<uint16_t>(carry) + 3),
 					jump_table::Entry(static_cast<uint16_t>(overflow) + 3)};
 		case 4:
 			return {jump_table::Entry(static_cast<uint16_t>(carry) + 2),
-				jump_table::Entry(static_cast<uint16_t>(overflow) + 2)};
+					jump_table::Entry(static_cast<uint16_t>(overflow) + 2)};
 		case 2:
 			return {jump_table::Entry(static_cast<uint16_t>(carry) + 1),
 					jump_table::Entry(static_cast<uint16_t>(overflow) + 1)};

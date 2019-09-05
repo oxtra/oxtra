@@ -62,8 +62,7 @@ BlockEntry& CodeStore::create_block() {
 	return _block_entries.allocate_entry();
 }
 
-void CodeStore::add_instruction(BlockEntry& block, utils::guest_addr_t address, uint8_t size,
-								riscv_instruction_t* riscv_instructions, size_t num_instructions) {
+void CodeStore::add_instruction(BlockEntry& block, utils::guest_addr_t address, uint8_t size, riscv_instruction_t* riscv_instructions, size_t num_instructions) {
 	insert_block(block, address);
 
 	block.riscv_start = reinterpret_cast<host_addr_t>(

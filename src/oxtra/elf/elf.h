@@ -170,4 +170,5 @@ namespace elf {
 		size_t get_size(uintptr_t vaddr, size_t max_page = 1) const;
 	};
 }
+
 #endif //OXTRA_ELF_H

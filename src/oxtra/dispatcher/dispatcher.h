@@ -9,10 +9,8 @@
 #include "execution_context.h"
 
 namespace dispatcher {
-	static_assert(codegen::helper::address_destination == encoding::RiscVRegister::t3,
-				  "dispatcher::reroute_static, reroute_dynamic requires t3");
-	static_assert(codegen::helper::context_address == encoding::RiscVRegister::s11,
-				  "dispatcher::reroute_static, reroute_dynamic requires s11");
+	static_assert(codegen::helper::address_destination == encoding::RiscVRegister::t3, "dispatcher::reroute_static, reroute_dynamic requires t3");
+	static_assert(codegen::helper::context_address == encoding::RiscVRegister::s11, "dispatcher::reroute_static, reroute_dynamic requires s11");
 
 	class Dispatcher {
 	private:

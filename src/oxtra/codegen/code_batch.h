@@ -74,5 +74,4 @@ namespace codegen {
 	};
 }
 
-
 #endif //OXTRA_CODE_BATCH_H
