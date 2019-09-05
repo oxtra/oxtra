@@ -1,6 +1,10 @@
 #include "oxtra/codegen/helper.h"
 #include "mul.h"
 
+using namespace encoding;
+using namespace fadec;
+using namespace codegen::helper;
+
 /**
  * This implementation can handle MUL, IMUL, IMUL2, and IMUL3.
  * Two source operands (s1 and s2) are multiplied and stored in the correct destination register.
@@ -8,68 +12,93 @@
 void codegen::Mul::generate(codegen::CodeBatch& batch) const {
 	const auto op_size = get_operand(0).get_size();
 
-	const auto is_signed = get_type() != fadec::InstructionType::MUL;
+	const auto is_signed = get_type() != InstructionType::MUL;
 	const auto has_upper_destination =
-			get_type() == fadec::InstructionType::MUL || get_type() == fadec::InstructionType::IMUL;
+			get_type() == InstructionType::MUL || get_type() == InstructionType::IMUL;
 
 	// the default values are for MUL and IMUL
-	encoding::RiscVRegister upper_destination = encoding::RiscVRegister::rdx;
-	encoding::RiscVRegister lower_destination = encoding::RiscVRegister::rax;
-	encoding::RiscVRegister src1 = encoding::RiscVRegister::rax; // t1 reserved for this register
-	encoding::RiscVRegister src2 = helper::map_reg(get_operand(0).get_register()); // t2 reserverd for this register
+	auto upper_destination = RiscVRegister::rdx;
+	auto lower_destination = RiscVRegister::rax;
 
-	if (get_type() == fadec::InstructionType::IMUL2) {
-		lower_destination = helper::map_reg(get_operand(0).get_register());
-		src1 = helper::map_reg(get_operand(0).get_register());
-		src2 = helper::map_reg(get_operand(1).get_register());
-	} else if (get_type() == fadec::InstructionType::IMUL3) {
-		lower_destination = helper::map_reg(get_operand(0).get_register());
-		src1 = encoding::RiscVRegister::t1;
-		helper::load_immediate(batch, get_immediate(), src1);
+	auto src1 = RiscVRegister::t1;
+	auto src2 = RiscVRegister::t2;
+
+	if (get_type() == InstructionType::IMUL2) {
+		lower_destination = map_reg(get_operand(0).get_register());
+
+		src1 = translate_operand_lazy(batch, 0, src1, RiscVRegister::t4, RiscVRegister::t5);
+		src2 = translate_operand_lazy(batch, 1, src2, RiscVRegister::t4, RiscVRegister::t5);
+	} else if (get_type() == InstructionType::IMUL3) {
+		lower_destination = map_reg(get_operand(0).get_register());
+
+		src1 = translate_operand_lazy(batch, 1, src1, RiscVRegister::t4, RiscVRegister::t5);
+		load_immediate(batch, get_immediate(), src2);
+	} else { // MUL, or IMUL
+		if (op_size == 8) {
+			src1 = RiscVRegister::rax;
+		} else {
+			src1 = RiscVRegister::t1;
+			move_to_register(batch, RiscVRegister::t1, RiscVRegister::rax, operand_to_register_access(op_size), RiscVRegister::t4, false);
+		}
+		src2 = translate_operand_lazy(batch, 0, src2, RiscVRegister::t4, RiscVRegister::t5);
 	}
 
 	if (op_size == 8) {
 		// if the first multiplication would override a source, we have to use a temporary register
-		encoding::RiscVRegister upper_result = (upper_destination == src1 || upper_destination == src2)
-											   ? encoding::RiscVRegister::t4 : upper_destination;
+		RiscVRegister upper_result = (upper_destination == src1 || upper_destination == src2)
+									 ? RiscVRegister::t4 : upper_destination;
 		if (has_upper_destination) {
-			batch += (is_signed ? encoding::MULH : encoding::MULHU)(upper_result, src1, src2);
+			batch += (is_signed ? MULH : MULHU)(upper_result, src1, src2);
 		}
 
-		batch += encoding::MUL(lower_destination, src1, src2);
+		batch += MUL(lower_destination, src1, src2);
 
 		if (upper_result != upper_destination) {
-			batch += encoding::MV(upper_destination, upper_result);
+			batch += MV(upper_destination, upper_result);
 		}
 	} else {
 		// in here we do not need MULH(U) because the result can be stored in 64 bit (hence MUL).
 
-		// move src1 and src2 into t1 and t2 respectively and prepare them for multiplication
-		if (is_signed) {
-			//TODO:
+		//if (is_signed) {
+			//TODO: sign_extend? load specially?
+		//}
+
+
+
+		const auto mul_result = RiscVRegister::t0;
+		batch += MUL(mul_result, src1, src2);
+
+		if (op_size == 1) {
+			//batch, lower_destination, RiscVRegister::t0, codegen::RegisterAccess::WORD, );
+			move_to_register(batch, lower_destination, RiscVRegister::t0,
+							 RegisterAccess::WORD, RiscVRegister::t4, false);
 		} else {
-			// IMUL3 loads the immediate directly, no need to load it
-			if (src1 != encoding::RiscVRegister::t1) {
-				batch += encoding::MV(encoding::RiscVRegister::t1, encoding::RiscVRegister::zero);
-				helper::move_to_register(batch, encoding::RiscVRegister::t1, src1, helper::operand_to_register_access(op_size), encoding::RiscVRegister::t4, true);
-			}
-			//TODO: load t2
+			move_to_register(batch, lower_destination, RiscVRegister::t0,
+							 operand_to_register_access(op_size), RiscVRegister::t4, false);
+			batch += SRLI(mul_result, mul_result, op_size * 8);
+			move_to_register(batch, upper_destination, RiscVRegister::t0,
+							 operand_to_register_access(op_size), RiscVRegister::t4, false);
 		}
-
-		//TODO: multiply
-
-		//TODO: store
-
-		//TODO: test
 	}
 }
+
+RiscVRegister codegen::Mul::translate_operand_lazy(codegen::CodeBatch& batch, size_t index,
+												   RiscVRegister reg, RiscVRegister temp_a, RiscVRegister temp_b) const {
+	if (get_operand(index).get_type() == OperandType::reg && get_operand(index).get_size() == 8) {
+		return map_reg(get_operand(index).get_register());
+	}
+
+	translate_operand(batch, index, reg, temp_a, temp_b);
+
+	return reg;
+}
 /*
-void CodeGenerator::translate_mul(const fadec::Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
-	const auto is_unsigned = (inst.get_type() == fadec::InstructionType::MUL ||
-							  inst.get_type() == fadec::InstructionType::MULX);
+void CodeGenerator::translate_mul(const Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
+	const auto is_unsigned = (inst.get_type() == InstructionType::MUL ||
+							  inst.get_type() == InstructionType::MULX);
 
 	const auto op_size = inst.get_operand(0).get_size();
-	const auto mul_with_constant = inst.get_type() == fadec::InstructionType::IMUL3;
+	const auto mul_with_constant = inst.get_type() == InstructionType::IMUL3;
 
 	const auto lower_destination = mul_with_constant ? map_reg(inst.get_operand(0).get_register()) : RiscVRegister::rax;
 	constexpr auto upper_destination = RiscVRegister::rdx;
