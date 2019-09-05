@@ -59,8 +59,8 @@ namespace codegen::helper {
 	 * @param temp A temporary that might be changed.
 	 * @param cleared If true the upper bits of the source register are expected to be 0.
 	 */
-	void move_to_register(CodeBatch& batch, encoding::RiscVRegister dest, encoding::RiscVRegister src,
-						  RegisterAccess access, encoding::RiscVRegister temp, bool cleared = false);
+	void move_to_register(CodeBatch& batch, encoding::RiscVRegister dest, encoding::RiscVRegister src, RegisterAccess access,
+						  encoding::RiscVRegister temp, bool cleared = false);
 
 	/**
 	 * Load an immediate of up to 64 bit into the register.
@@ -98,8 +98,8 @@ namespace codegen::helper {
 	 * @param src The register that contains the value that will be sign extended.
 	 * @param byte The number of bytes that are stored in the given register (e.g. EAX: 4, AX: 2).
 	 */
-	void sign_extend_register(codegen::CodeBatch& batch,
-							  encoding::RiscVRegister dest, encoding::RiscVRegister src, size_t byte);
+	void
+	sign_extend_register(codegen::CodeBatch& batch, encoding::RiscVRegister dest, encoding::RiscVRegister src, size_t byte);
 
 	/**
 	 * Calculates the jump table indices for the carry and overflow flags based on the size of the operand.
@@ -108,8 +108,8 @@ namespace codegen::helper {
 	 * @param size The operand size.
 	 * @return The pair consisting of {new_carry_index, new_overflow_index}.
 	 */
-	std::pair<jump_table::Entry, jump_table::Entry> calculate_entries(jump_table::Entry carry, jump_table::Entry overflow,
-																	  uint8_t size);
+	std::pair<jump_table::Entry, jump_table::Entry>
+	calculate_entries(jump_table::Entry carry, jump_table::Entry overflow, uint8_t size);
 
 	/**
 	 * Returns the riscv-register, which maps to the x86-register.

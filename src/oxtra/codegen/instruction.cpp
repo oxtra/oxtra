@@ -41,8 +41,8 @@ std::string codegen::Instruction::string() const {
 	return buffer;
 }
 
-RiscVRegister codegen::Instruction::translate_operand(CodeBatch& batch, size_t index,
-													  RiscVRegister reg, RiscVRegister temp_a, RiscVRegister temp_b) const {
+RiscVRegister codegen::Instruction::translate_operand(CodeBatch& batch, size_t index, RiscVRegister reg, RiscVRegister temp_a,
+													  RiscVRegister temp_b) const {
 	// extract the operand
 	auto& operand = get_operand(index);
 
@@ -78,8 +78,9 @@ RiscVRegister codegen::Instruction::translate_operand(CodeBatch& batch, size_t i
 	return encoding::RiscVRegister::zero;
 }
 
-void codegen::Instruction::translate_destination(CodeBatch& batch, RiscVRegister reg,
-												 RiscVRegister address, RiscVRegister temp_a, RiscVRegister temp_b) const {
+void
+codegen::Instruction::translate_destination(CodeBatch& batch, RiscVRegister reg, RiscVRegister address, RiscVRegister temp_a,
+											RiscVRegister temp_b) const {
 	auto& operand = get_operand(0);
 
 	// check if the destination is a register
@@ -130,53 +131,91 @@ void codegen::Instruction::translate_destination(CodeBatch& batch, RiscVRegister
 	}
 }
 
-RiscVRegister codegen::Instruction::translate_memory(CodeBatch& batch, size_t index,
-													 RiscVRegister temp_a, RiscVRegister temp_b) const {
+RiscVRegister
+codegen::Instruction::translate_memory(CodeBatch& batch, size_t index, RiscVRegister temp_a, RiscVRegister temp_b) const {
 	if (get_address_size() < 4)
 		dispatcher::Dispatcher::fault_exit("invalid addressing-size");
 	const auto& operand = get_operand(index);
 
-	// check if its only a base-register
-	if (get_index_register() == fadec::Register::none && get_displacement() == 0 && operand.get_size() == 8)
-		return map_reg(operand.get_register());
+	// analyze the input (0 = doesn't exist, 1 = optimizable, 2 = unoptimizable)
+	uint8_t disp_exists = get_displacement() == 0 ? 0 : (get_displacement() >= -0x800 && get_displacement() < 0x800 ? 1 : 2);
+	uint8_t index_exists = get_index_register() == fadec::Register::none ? 0 : (get_index_scale() == 1 ? 1 : 2);
+	uint8_t base_exists = operand.get_register() == fadec::Register::none ? 0 : (get_address_size() == 8 && disp_exists == 0 &&
+																				 index_exists == 0 ? 1 : 2);
+	uint64_t disp_mask = get_address_size() == 8 ? 0xffffffffffffffffull : 0x00000000ffffffffull;
 
-	// add the scale & index
-	RiscVRegister temp_reg = RiscVRegister::zero;
-	if (get_index_register() != fadec::Register::none) {
-		batch += encoding::SLLI(temp_a, map_reg(get_index_register()), get_index_scale());
-		temp_reg = temp_a;
-	}
+	// verify the operands
+	if (disp_exists == 0 && index_exists == 0 && base_exists == 0)
+		dispatcher::Dispatcher::fault_exit("invalid addressing-mode");
 
-	// add the base-register
-	if (operand.get_register() != fadec::Register::none) {
-		batch += encoding::ADD(temp_a, temp_reg, map_reg(operand.get_register()));
-		temp_reg = temp_a;
-	}
+	// build the output
+	RiscVRegister result = temp_a;
+	if (base_exists) {
+		// [base + ???]
+		if (disp_exists == 1) {
+			// [base + sDisp + ???]
+			batch += encoding::ADDI(result, map_reg(operand.get_register()), get_displacement());
 
-	// add the displacement
-	if (const auto displacement = get_displacement()) {
-		// less or equal than 12 bits
-		if (displacement >= -0x800 && displacement < 0x800) {
-			batch += encoding::ADDI(temp_a, temp_reg, static_cast<uint16_t>(displacement));
-			if (temp_reg == RiscVRegister::zero)
-				temp_reg = temp_a;
-		} else {
-			if (temp_reg == RiscVRegister::zero) {
-				load_immediate(batch, displacement, temp_a);
-				temp_reg = temp_a;
-			} else {
-				load_immediate(batch, displacement, temp_b);
-				batch += encoding::ADD(temp_a, temp_reg, temp_b);
+			if (index_exists == 1)
+				// [base + sDisp + index]
+				batch += encoding::ADD(result, result, map_reg(get_index_register()));
+			else if (index_exists == 2) {
+				// [base + sDisp + index * n]
+				batch += encoding::SLLI(temp_b, map_reg(get_index_register()), get_index_scale());
+				batch += encoding::ADD(result, result, temp_b);
+			}
+		} else if (index_exists == 1) {
+			// [base + index*1 + ???]
+			batch += encoding::ADD(result, map_reg(operand.get_register()), map_reg(get_index_register()));
+
+			if (disp_exists) {
+				// [base + index*1 + lDisp]
+				helper::load_immediate(batch, get_displacement() & disp_mask, temp_b);
+				batch += encoding::ADD(result, result, temp_b);
+			}
+		} else if (base_exists == 1)
+			// [base]
+			result = map_reg(operand.get_register());
+		else {
+			// nothing can be optimized
+			batch += encoding::ADD(result, RiscVRegister::zero, map_reg(operand.get_register()));
+			if (disp_exists) {
+				helper::load_immediate(batch, get_displacement() & disp_mask, temp_b);
+				batch += encoding::ADD(result, result, temp_b);
+			}
+			if (index_exists) {
+				batch += encoding::SLLI(temp_b, map_reg(get_index_register()), get_index_scale());
+				batch += encoding::ADD(result, result, temp_b);
 			}
 		}
-	}
+	} else if (index_exists && disp_exists)
+		if (index_exists == 1 && disp_exists == 1)
+			// [index*1 + sDisp]
+			batch += encoding::ADDI(result, map_reg(get_index_register()), get_displacement());
+		else {
+			// [index*n + lDisp]
+			batch += encoding::SLLI(result, map_reg(get_index_register()), get_index_scale());
+			helper::load_immediate(batch, get_displacement() & disp_mask, temp_b);
+			batch += encoding::ADD(result, result, temp_b);
+		}
+	else if (index_exists) {
+		// [index*n]
+		if (get_address_size() == 8 && index_exists == 1)
+			result = map_reg(get_index_register());
+		else if (index_exists == 1)
+			batch += encoding::ADD(result, RiscVRegister::zero, map_reg(get_index_register()));
+		else
+			batch += encoding::SLLI(result, map_reg(get_index_register()), get_index_scale());
+	} else
+		// [disp]
+		load_immediate(batch, get_displacement() & disp_mask, result);
 
 	// check if the addressing-mode is a 32-bit mode
-	if (get_address_size() == 4) {
-		batch += encoding::SLLI(temp_reg, temp_reg, 32);
-		batch += encoding::SRLI(temp_reg, temp_reg, 32);
+	if (get_address_size() == 4 && (index_exists || base_exists)) {
+		batch += encoding::SLLI(result, result, 32);
+		batch += encoding::SRLI(result, result, 32);
 	}
-	return temp_reg;
+	return result;
 }
 
 void codegen::Instruction::evaluate_zero(CodeBatch& batch) const {
@@ -290,8 +329,8 @@ void codegen::Instruction::update_sign(CodeBatch& batch, bool set, encoding::Ris
 	}
 }
 
-void codegen::Instruction::update_sign(CodeBatch& batch, encoding::RiscVRegister va,
-									   uint8_t size, encoding::RiscVRegister temp) const {
+void codegen::Instruction::update_sign(CodeBatch& batch, encoding::RiscVRegister va, uint8_t size,
+									   encoding::RiscVRegister temp) const {
 	// check if the instruction has to update the sign-flag
 	if ((update_flags & Flags::sign) == 0)
 		return;
@@ -331,8 +370,9 @@ void codegen::Instruction::update_overflow(CodeBatch& batch, bool set, encoding:
 	if ((update_flags & Flags::overflow) == 0)
 		return;
 
-	batch += encoding::ADDI(temp, RiscVRegister::zero,static_cast<uint16_t>(
-			set ? jump_table::Entry::overflow_set : jump_table::Entry::overflow_clear) * 4);
+	batch += encoding::ADDI(temp, RiscVRegister::zero, static_cast<uint16_t>(
+															   set ? jump_table::Entry::overflow_set
+																   : jump_table::Entry::overflow_clear) * 4);
 	batch += encoding::SH(helper::context_address, temp, FlagInfo::overflow_operation_offset);
 }
 
@@ -357,7 +397,7 @@ void codegen::Instruction::update_carry(CodeBatch& batch, bool set, encoding::Ri
 		return;
 
 	batch += encoding::ADDI(temp, RiscVRegister::zero,
-			static_cast<uint16_t>(set ? jump_table::Entry::carry_set : jump_table::Entry::carry_clear) * 4);
+							static_cast<uint16_t>(set ? jump_table::Entry::carry_set : jump_table::Entry::carry_clear) * 4);
 	batch += encoding::SH(helper::context_address, temp, FlagInfo::carry_operation_offset);
 }
 

@@ -34,7 +34,7 @@ namespace codegen {
 		utils::riscv_instruction_t* address;
 	public:
 		explicit CodeMemory(utils::riscv_instruction_t* address)
-			: address{address} {}
+				: address{address} {}
 
 		virtual size_t add(utils::riscv_instruction_t inst) override;
 
