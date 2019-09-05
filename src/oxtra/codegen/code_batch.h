@@ -30,7 +30,7 @@ namespace codegen {
 		utils::riscv_instruction_t* address;
 	public:
 		explicit CodeMemory(utils::riscv_instruction_t* address)
-			: address{address} {}
+				: address{address} {}
 
 		virtual void add(utils::riscv_instruction_t inst);
 	};
@@ -73,6 +73,5 @@ namespace codegen {
 		void print() const final;
 	};
 }
-
 
 #endif //OXTRA_CODE_BATCH_H

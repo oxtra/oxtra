@@ -78,8 +78,9 @@ namespace codegen {
 		 * @return If this operation was a memory-operation,
 		 * 		   the return-register will contain the address (either temp_a, or a base-register)
 		 */
-		encoding::RiscVRegister translate_operand(CodeBatch& batch, size_t index, encoding::RiscVRegister reg,
-												  encoding::RiscVRegister temp_a, encoding::RiscVRegister temp_b) const;
+		encoding::RiscVRegister
+		translate_operand(CodeBatch& batch, size_t index, encoding::RiscVRegister reg, encoding::RiscVRegister temp_a,
+						  encoding::RiscVRegister temp_b) const;
 
 		/**
 		 * Writes the value in the register to the destination-operand of the instruction
@@ -103,8 +104,8 @@ namespace codegen {
 		 * @param temp_b A temporary that might be changed.
 		 * @return Returns the register containing the address (either temp_a, or a base-register)
 		 */
-		encoding::RiscVRegister translate_memory(CodeBatch& batch, size_t index,
-												 encoding::RiscVRegister temp_a, encoding::RiscVRegister temp_b) const;
+		encoding::RiscVRegister
+		translate_memory(CodeBatch& batch, size_t index, encoding::RiscVRegister temp_a, encoding::RiscVRegister temp_b) const;
 
 		/**
 		 * The value of the zero flag is returned in t4 = 0/1. Registers t4, t5, t6 may be modified.
@@ -145,13 +146,13 @@ namespace codegen {
 
 		void update_overflow(CodeBatch& batch, bool set, encoding::RiscVRegister temp) const;
 
-		void update_overflow(CodeBatch& batch, jump_table::Entry entry,
-							 encoding::RiscVRegister va, encoding::RiscVRegister vb, encoding::RiscVRegister temp) const;
+		void update_overflow(CodeBatch& batch, jump_table::Entry entry, encoding::RiscVRegister va, encoding::RiscVRegister vb,
+							 encoding::RiscVRegister temp) const;
 
 		void update_carry(CodeBatch& batch, bool set, encoding::RiscVRegister temp) const;
 
-		void update_carry(CodeBatch& batch, jump_table::Entry entry,
-						  encoding::RiscVRegister va, encoding::RiscVRegister vb, encoding::RiscVRegister temp) const;
+		void update_carry(CodeBatch& batch, jump_table::Entry entry, encoding::RiscVRegister va, encoding::RiscVRegister vb,
+						  encoding::RiscVRegister temp) const;
 	};
 }
 
