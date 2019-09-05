@@ -129,10 +129,9 @@ void codegen::helper::load_address(codegen::CodeBatch& batch, uintptr_t ptr, enc
 	constexpr uint32_t high_bit[5] = {0x00000000u, 0x00000800u, 0x00000800u, 0x00000800u, 0x00080000u};
 
 	// in case of negative numbers, increase the next component
-	for (int i = 3; i >= 1; i--) {
-		size_t j = i;
-		while(packages[j] & high_bit[j] && j < 4)
-			packages[j++ + 1]++;
+	for (uint8_t i = 1; i < 4; i++) {
+		if (packages[i] >= high_bit[i])
+			packages[i + 1]++;
 	}
 
 	// generate the code to set the immediates
