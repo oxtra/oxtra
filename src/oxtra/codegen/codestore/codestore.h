@@ -87,11 +87,12 @@ namespace codegen::codestore {
 		/**
 		 * Adds an x86 instruction with the corresponding risc-v instructions to a block.
 		 * @param block The basic block that the x86 instruction belongs to.
-		 * @param x86_instruction The decoded x86 instruction (contains address and size).
+		 * @param address The address of the x86 instruction.
+		 * @param size The size of the x86 instruction.
 		 * @param riscv_instructions A pointer to an array of encoded risc-v instructions.
 		 * @param num_instructions The size of the array of encoded risc-v instructions.
 		 */
-		void add_instruction(BlockEntry& block, const fadec::Instruction& x86_instruction,
+		void add_instruction(BlockEntry& block, utils::guest_addr_t address, uint8_t size,
 							 utils::riscv_instruction_t* riscv_instructions, size_t num_instructions);
 
 	private:

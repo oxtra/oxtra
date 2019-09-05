@@ -1,10 +1,9 @@
-.global _ZN10dispatcher10Dispatcher11guest_enterEPNS_7ContextEmPPKc # guest_enter
+.global _ZN10dispatcher10Dispatcher11guest_enterEPNS_16ExecutionContextEmPPKc # guest_enter
 .global _ZN10dispatcher10Dispatcher10guest_exitEl # guest_exit
 .global _ZN10dispatcher10Dispatcher10fault_exitEPKcl # fault_exit
 .global _ZN10dispatcher10Dispatcher14reroute_staticEv # reroute_static
 .global _ZN10dispatcher10Dispatcher15reroute_dynamicEv # reroute_dynamic
 .global _ZN10dispatcher10Dispatcher15syscall_handlerEv # syscall_handler
-
 
 # address of the context in reg
 .macro capture_context reg
@@ -63,14 +62,14 @@
 	ld s11, 0xD0(\reg)
 .endm
 
-.section .data
+.section .rodata
 reroute_static_fmt: .string "reroute_static: 0x{0:x}"
 reroute_dynamic_fmt: .string "reroute_dynamic: 0x{0:x}"
 
 .section .text
 
 # guest_enter
-_ZN10dispatcher10Dispatcher11guest_enterEPNS_7ContextEmPPKc:
+_ZN10dispatcher10Dispatcher11guest_enterEPNS_16ExecutionContextEmPPKc:
 	# store a pointer to the guest context
 	mv t0, a0
 	mv t3, a1
@@ -85,7 +84,7 @@ _ZN10dispatcher10Dispatcher11guest_enterEPNS_7ContextEmPPKc:
 	restore_context t0
 
 	# call reroute_dynamic to translate the address in t3
-	jalr ra, s9, 0
+	call _ZN10dispatcher10Dispatcher15reroute_dynamicEv
 	jalr zero, t3, 0
 
 
@@ -152,7 +151,7 @@ _ZN10dispatcher10Dispatcher14reroute_staticEv:
 	addi sp, sp, 8
 
 	# _codegen.translate(t3)
-	addi a0, s11, 512
+	ld a0, 496(s11)
 	mv a1, s0
 	jal ra, _ZN7codegen13CodeGenerator9translateEm
 
@@ -160,7 +159,7 @@ _ZN10dispatcher10Dispatcher14reroute_staticEv:
 	mv s0, a0
 
 	# _codegen.update_basic_block(ra, translated_address);
-	addi a0, s11, 512
+	ld a0, 496(s11)
 	mv a1, s1
 	mv a2, s0
 	jal ra, _ZN7codegen13CodeGenerator18update_basic_blockEmm
@@ -192,10 +191,10 @@ _ZN10dispatcher10Dispatcher15reroute_dynamicEv:
 	jal ra, _ZN6spdlog4infoIJmEEEvPKcDpRKT_
 	addi sp, sp, 8
 
-	# _codegen.translate(t3)
-	addi a0, s11, 512
-	mv a1, s0
-	jal ra, _ZN7codegen13CodeGenerator9translateEm
+    # _codegen.translate(t3)
+    ld a0, 496(s11)
+    mv a1, s0
+    jal ra, _ZN7codegen13CodeGenerator9translateEm
 
 	# a0 will be overridden by restore_context so we have to save the translated address
 	mv t3, a0
@@ -211,9 +210,9 @@ _ZN10dispatcher10Dispatcher15syscall_handlerEv:
 	capture_context s11
 
 	# invoke virtualize_syscall and check if it should be forwarded
-	mv a0, s11
-	jal ra, _ZN10dispatcher10Dispatcher18virtualize_syscallEv
-	bltz a0, syscall_handled
+    mv a0, s11
+    jal ra, _ZN10dispatcher10Dispatcher18virtualize_syscallEPKNS_16ExecutionContextE
+    bltz a0, syscall_handled
 
 	# arguments
 	mv a7, a0 # syscall index -> a7
@@ -230,5 +229,5 @@ _ZN10dispatcher10Dispatcher15syscall_handlerEv:
 
 	# restore the guest context and return to caller
 syscall_handled:
-	restore_context s11
-	ret
+    restore_context s11
+    ret
