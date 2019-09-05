@@ -98,7 +98,7 @@ static void load_64bit_immediate(codegen::CodeBatch& batch, uint64_t imm, RiscVR
 }
 
 void codegen::helper::load_immediate(CodeBatch& batch, uintptr_t imm, encoding::RiscVRegister dest) {
-	/* 00000000 00000000 00001111 11111111 22222222 22223333 33333333 44444444 */
+	/* Number-structure: 00 00 01 11 22 23 33 44 */
 
 	// < 12-bit
 	if (imm < 0x800) {
@@ -117,7 +117,31 @@ void codegen::helper::load_immediate(CodeBatch& batch, uintptr_t imm, encoding::
 }
 
 void codegen::helper::load_address(codegen::CodeBatch& batch, uintptr_t ptr, encoding::RiscVRegister dest) {
-	load_64bit_immediate(batch, ptr, dest, false);
+	/* Number-structure: 00 00 01 11 22 23 33 44 */
+
+	// extract the number-packages
+	uint32_t packages[5];
+	packages[0] = static_cast<uint32_t>(ptr & 0x00000000000000ffu);
+	packages[1] = static_cast<uint32_t>((ptr & 0x00000000000fff00ul) >> 8u);
+	packages[2] = static_cast<uint32_t>((ptr & 0x00000000fff00000ul) >> 20u);
+	packages[3] = static_cast<uint32_t>((ptr & 0x00000fff00000000ull) >> 32u);
+	packages[4] = static_cast<uint32_t>((ptr & 0xfffff00000000000ull) >> 44u);
+	constexpr uint32_t high_bit[5] = {0x00000000u, 0x00000800u, 0x00000800u, 0x00000800u, 0x00080000u};
+
+	// in case of negative numbers, increase the next component
+	for (int i = 3; i >= 1; i--) {
+		size_t j = i;
+		while(packages[j] & high_bit[j] && j < 4)
+			packages[j++ + 1]++;
+	}
+
+	// generate the code to set the immediates
+	batch += encoding::LUI(dest, packages[4]);
+	for (size_t i = 4; i > 0; i--) {
+		batch += encoding::ADDI(dest, dest, packages[i - 1]);
+		if (i > 1)
+			batch += encoding::SLLI(dest, dest, i == 2 ? 8 : 12);
+	}
 }
 
 void codegen::helper::append_eob(CodeBatch& batch, uintptr_t ptr) {
@@ -150,7 +174,7 @@ std::pair<codegen::jump_table::Entry, codegen::jump_table::Entry> codegen::helpe
 					jump_table::Entry(static_cast<uint16_t>(overflow) + 3)};
 		case 4:
 			return {jump_table::Entry(static_cast<uint16_t>(carry) + 2),
-				jump_table::Entry(static_cast<uint16_t>(overflow) + 2)};
+					jump_table::Entry(static_cast<uint16_t>(overflow) + 2)};
 		case 2:
 			return {jump_table::Entry(static_cast<uint16_t>(carry) + 1),
 					jump_table::Entry(static_cast<uint16_t>(overflow) + 1)};
