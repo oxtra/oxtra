@@ -1,4 +1,4 @@
-#include "leave.h"
+#include "oxtra/codegen/instructions/memory/leave.h"
 #include "oxtra/codegen/helper.h"
 
 void codegen::Leave::generate(CodeBatch& batch) const {
