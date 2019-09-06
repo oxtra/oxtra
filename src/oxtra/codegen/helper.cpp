@@ -81,7 +81,9 @@ void codegen::helper::move_to_register(CodeBatch& batch, RiscVRegister dest, Ris
 			batch += encoding::SRLI(temp, dest, 8);
 			batch += encoding::XOR(temp, temp, src);
 
-			load_register(batch, temp, temp, access, false);
+			// clear the upper 48 bits of the temp register and keep the lower 8 cleared
+			batch += encoding::SLLI(temp, temp, 56);
+			batch += encoding::SRLI(temp, temp, 48);
 
 			// xor the temporary register to the destination
 			batch += encoding::XOR(dest, temp, dest);
