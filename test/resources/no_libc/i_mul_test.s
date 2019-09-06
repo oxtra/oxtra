@@ -1,0 +1,17 @@
+.intel_syntax noprefix
+.global _start
+_start:
+MOV RAX, 0xffff
+MOV RDX, 0xf8abc1f128fccbb1
+IMUL RDX
+IMUL DX
+IMUL RAX
+MUL RAX
+MOV DX, 819
+IMUL AX, DX
+IMUL AX, AX, 3
+IMUL EAX, EAX, -1
+MUL AX
+MOV RDI, RAX
+MOV RAX, 60
+SYSCALL
