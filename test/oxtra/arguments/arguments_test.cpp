@@ -12,6 +12,7 @@ TEST_CASE("Arguments support parsing valid arguments", "[arguments]") {
 		const auto arguments = Arguments(2, const_cast<char**>(args_string));
 
 		REQUIRE(arguments.get_guest_arguments().size() == 0);
+		REQUIRE(arguments.get_stack_size() > 0);
 		REQUIRE(arguments.get_instruction_list_size() > 0);
 		REQUIRE(arguments.get_entry_list_size() > 0);
 		REQUIRE(arguments.get_offset_list_size() > 0);

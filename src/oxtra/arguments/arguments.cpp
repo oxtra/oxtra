@@ -10,7 +10,7 @@ Arguments::Arguments(int argc, char** argv) :
 		_argp_parser{_options, parse_opt, _argument_description, _documentation, nullptr, nullptr, nullptr},
 		_executable_path{argv[0]},
 		_stored_arguments{nullptr, std::vector<std::string>(), spdlog::level::level_enum::warn, StepMode::none,
-						  0x3200000, 128, 128, 128} {
+						  0x200000‬, 128, 128, 128} {
 
 	parse_arguments(argc, argv);
 }
