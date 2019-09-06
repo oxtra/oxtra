@@ -91,12 +91,12 @@ namespace encoding {
 
 	union JType {
 		struct {
-		uint32_t opcode : 7;
-		uint32_t rd : 5;
-		uint32_t imm_19_12 : 8;
-		uint32_t imm_11 : 1;
-		uint32_t imm_10_1 : 10;
-		uint32_t imm_20 : 1;
+			uint32_t opcode : 7;
+			uint32_t rd : 5;
+			uint32_t imm_19_12 : 8;
+			uint32_t imm_11 : 1;
+			uint32_t imm_10_1 : 10;
+			uint32_t imm_20 : 1;
 		};
 		uint32_t raw;
 	};
@@ -309,12 +309,16 @@ namespace encoding {
 	/**
 	 * system call
 	 */
-	 utils::riscv_instruction_t ECALL();
+	utils::riscv_instruction_t ECALL();
 
 	// probably not needed: FENCE, FENCE.I, EBREAK, CSRRW, CSRRS, CSRRC, CSRRWI, CSRRSI, CSRRCI
 
 	/* --- RV64I Base Integer instructions --- */
 	//*W instructions maybe necessary
+	/**
+	* rd = (rs1 + rs2) [31:0] sign extended to 64bit
+	*/
+	utils::riscv_instruction_t ADDW(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2);
 
 	/* --- M Standard Extension --- */
 

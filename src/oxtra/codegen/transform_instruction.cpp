@@ -6,7 +6,7 @@
 #include "oxtra/codegen/instructions/arithmetic/sub.h"
 #include "oxtra/codegen/instructions/arithmetic/dec.h"
 #include "oxtra/codegen/instructions/arithmetic/neg.h"
-#include "oxtra/codegen/instructions/arithmetic/imul.h"
+#include "oxtra/codegen/instructions/arithmetic/mul.h"
 #include "oxtra/codegen/instructions/memory/mov.h"
 #include "oxtra/codegen/instructions/memory/lea.h"
 #include "oxtra/codegen/instructions/memory/pop.h"
@@ -105,8 +105,11 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 		case InstructionType::NEG:
 			return std::make_unique<Neg>(inst);
 
+		case InstructionType::MUL:
+		case InstructionType::IMUL:
 		case InstructionType::IMUL2:
-			return std::make_unique<Imul>(inst);
+		case InstructionType::IMUL3:
+			return std::make_unique<Mul>(inst);
 
 		case InstructionType::MOV_IMM:
 		case InstructionType::MOVABS_IMM:

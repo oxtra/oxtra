@@ -19,6 +19,10 @@ namespace codegen {
 		};
 
 		struct FlagInfo {
+			/*
+			 * IMPORTANT: If a new attribute is needed, append it to the list. Otherwise the assembler
+			 * won't function anymore.
+			 */
 			uint64_t zero_value;
 			uint64_t sign_value;
 			uint64_t overflow_value[2];
@@ -27,6 +31,9 @@ namespace codegen {
 			uint16_t carry_operation;
 			uint8_t sign_size;
 			uint8_t parity_value;
+			uint16_t __padding0;
+			uint64_t overflow_pointer;
+			uint64_t carry_pointer;
 
 			static constexpr uint32_t
 					flag_info_offset = 0x1F8,
@@ -37,7 +44,9 @@ namespace codegen {
 					overflow_operation_offset = flag_info_offset + sizeof(uint64_t) * 6,
 					carry_operation_offset = flag_info_offset + sizeof(uint64_t) * 6 + sizeof(uint16_t),
 					sign_size_offset = flag_info_offset + sizeof(uint64_t) * 6 + sizeof(uint16_t) * 2,
-					parity_value_offset = flag_info_offset + sizeof(uint64_t) * 6 + sizeof(uint16_t) * 2 + sizeof(uint8_t);
+					parity_value_offset = flag_info_offset + sizeof(uint64_t) * 6 + sizeof(uint16_t) * 2 + sizeof(uint8_t),
+					overflow_ptr_offset = flag_info_offset + sizeof(uint64_t) * 6 + sizeof(uint16_t) * 3 + sizeof(uint8_t) * 2,
+					carry_ptr_offset = flag_info_offset + sizeof(uint64_t) * 7 + sizeof(uint16_t) * 3 + sizeof(uint8_t) * 2;
 		};
 
 	private:
@@ -68,7 +77,8 @@ namespace codegen {
 
 	protected:
 		/**
-		 * Translates a single operand (either register, or memory or immediate value)
+		 * Translates a single operand (either register, or memory or immediate value) into the specified register. This method
+		 * does not ensure, that upper bits are cleared, or sign extended. Use load_operand if this functionality is required.
 		 * @param batch Store the current riscv-batch.
 		 * @param inst The x86 instruction object.
 		 * @param index operand-index of instruction.
@@ -81,6 +91,25 @@ namespace codegen {
 		encoding::RiscVRegister
 		translate_operand(CodeBatch& batch, size_t index, encoding::RiscVRegister reg, encoding::RiscVRegister temp_a,
 						  encoding::RiscVRegister temp_b) const;
+
+		/**
+		 * This method can be used to load a part of a register / value (e.g. a byte if op_size is a byte) and store it in a
+		 * register. Optionally, this value will be sign extended. Use this method when you do not change the operand but require
+		 * the plain value to be stored for further calculation.
+		 *
+		 * Contrary to the normal translate_operand method, this method can sign extend and ensures
+		 * that the destination register will only have the correct bits set. Further, the destination register itself will be
+		 * returned instead of the memory address. This can be used so that 64 bit registers do not have to be moved.
+		 * @param index The index of
+		 * @param reg The register that will be used to move the register to (if required). 64 bit registers do not have to be moved.
+		 * @param temp_a A temporary that might be changed.
+		 * @param temp_b A temporary that might be changed.
+		 * @param sign_extend If set to true, the value will be sign extended. This variable does not influence immediates.
+		 * @return The register where the operand has been loaded to (if it is e.g. just RAX, just RAX will be returned).
+		 */
+		encoding::RiscVRegister load_operand(codegen::CodeBatch& batch, size_t index,
+											 encoding::RiscVRegister reg, encoding::RiscVRegister temp_a,
+											 encoding::RiscVRegister temp_b, bool sign_extend) const;
 
 		/**
 		 * Writes the value in the register to the destination-operand of the instruction
@@ -102,7 +131,7 @@ namespace codegen {
 		 * @param index operand-index of instruction.
 		 * @param temp_a A temporary that might be changed.
 		 * @param temp_b A temporary that might be changed.
-		 * @return Returns the register containing the address (either temp_a, or a base-register)
+		 * @return Returns the register containing the address (either temp_a, a base-register/index-register or zero)
 		 */
 		encoding::RiscVRegister
 		translate_memory(CodeBatch& batch, size_t index, encoding::RiscVRegister temp_a, encoding::RiscVRegister temp_b) const;
@@ -159,6 +188,30 @@ namespace codegen {
 
 		void update_carry(CodeBatch& batch, encoding::RiscVRegister entry,
 							 encoding::RiscVRegister va, encoding::RiscVRegister vb) const;
+
+		void update_carry_unsupported(CodeBatch& batch, const char* instruction, encoding::RiscVRegister temp) const;
+
+		/*
+		 * Invokes the callback with ExecutionContext* as argument and stores the returnvalue in t4.
+		 * t4 Value will be overriden before reaching the callback
+		 */
+		void update_carry_high_level(CodeBatch& batch, uintptr_t(*callback)(void*),
+				encoding::RiscVRegister temp) const;
+
+		void update_overflow_unsupported(CodeBatch& batch, const char* instruction, encoding::RiscVRegister temp) const;
+
+		/*
+		 * Invokes the callback with ExecutionContext* as argument and stores the returnvalue in t4.
+		 * t4 Value will be overriden before reaching the callback
+		 */
+		void update_overflow_high_level(CodeBatch& batch, uintptr_t(*callback)(void*),
+				encoding::RiscVRegister temp) const;
+
+		/*
+		 * Invokes the callback with ExecutionContext* as argument and stores the returnvalue in t4.
+		 * t4 Value will be overriden before reaching the callback
+		 */
+		void call_high_level(CodeBatch& batch, uintptr_t(*callback)(void*)) const;
 	};
 }
 

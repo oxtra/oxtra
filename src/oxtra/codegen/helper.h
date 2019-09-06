@@ -43,8 +43,34 @@ namespace codegen::helper {
 	}
 
 	/**
-	 * Writes a register with x86-style sub-manipulation to an existing register without
-	 * invalidating the rest of the value.
+	 * Get the register access for a given operand. It is not checked, whether the operand is a register or not.
+	 * @param op_size The operand that should be translated..
+	 * @return The correct RegisterAccess for the specified operand.
+	 */
+	RegisterAccess operand_to_register_access(const fadec::Operand& operand);
+
+	/**
+	 * Load a given src register lazily into a given destination register but only the required parts, optionally with sign extension.
+	 * All other bits are 0 (0/1 if sign extension is enabled).
+	 *
+	 * Lazy in this context means, that if the register is a 64bit register, it will not be moved into the destination and the
+	 * src itself will be returned.
+	 *
+	 * Only moving the relevant parts, means that depending on the operand size, only the operand will be loaded into the destination register.
+	 *
+	 *
+	 * @param src The source register that will be used as input.
+	 * @param dest The register the source will be loaded into if loading is required.
+	 * @param operand_size The type of register that will be used.
+	 * @param sign_extend Whether the operand_size interpretation of the register should be sign-extended to 64bit.
+	 * @return The address where the value was loaded into (either src, or dest).
+	 */
+	encoding::RiscVRegister load_register(codegen::CodeBatch& batch, encoding::RiscVRegister src, encoding::RiscVRegister dest,
+										  RegisterAccess access, bool sign_extend);
+
+	/**
+	 * Writes a register with x86-style sub-manipulation to an existing register WITHOUT
+	 * invalidating the rest of the value. (see load_register for different behavior)
 	 *
 	 * for example:
 	 * 		- read x86:ah from riscv:a1
@@ -64,19 +90,15 @@ namespace codegen::helper {
 
 	/**
 	 * Load an immediate of up to 64 bit into the register.
-	 * The immediate will not be sign extended (i.e. treated as unsigned) unless it is 64 bit (where sign extension
-	 * never happens).
 	 * This function always optimizes the number of instructions generated.
-	 * @param batch Store the current riscv-batch.
 	 * @param imm The immediate that will be loaded.
-	 * @param dest The regiser in which the immediate will be loaded.
+	 * @param dest The register in which the immediate will be loaded.
 	 */
 	void load_immediate(CodeBatch& batch, uintptr_t imm, encoding::RiscVRegister dest);
 
 	/**
 	 * Loads an address into a riscv register. Unconditionally generates 8 instruction.
 	 */
-
 	void load_address(CodeBatch& batch, uintptr_t ptr, encoding::RiscVRegister dest);
 
 	/**
