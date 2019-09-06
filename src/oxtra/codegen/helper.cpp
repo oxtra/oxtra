@@ -5,19 +5,14 @@
 
 using namespace encoding;
 
-/**
- * This moves (lazily) moves a register to another while clearing the destination register. The register will be
- * sign extended if specified. If it is a high register (e.g. gph), while shifting back, 8 bits are added to the shift.
- *
- * If the register is specified with an operand size of 64 bit, nothing will happen and the src register simply returned.
- */
 RiscVRegister codegen::helper::load_register(codegen::CodeBatch& batch, RiscVRegister src, RiscVRegister dest,
 											 uint8_t operand_size, bool high_register, bool sign_extend) {
 	uint8_t shamt = 64 - operand_size * 8;
 	if (high_register) shamt -= 8;
 
-	if (shamt == 0) return src;
-	else {
+	if (shamt == 0) {
+		return src;
+	} else {
 		if (operand_size == 4 && sign_extend) {
 			batch += encoding::ADDW(dest, src, RiscVRegister::zero);
 		} else {
@@ -36,19 +31,16 @@ void codegen::helper::move_to_register(CodeBatch& batch, RiscVRegister dest, Ris
 									   RiscVRegister temp, bool cleared) {
 	switch (access) {
 		case RegisterAccess::QWORD:
-			batch += encoding::ADD(dest, src, RiscVRegister::zero);
+			batch += encoding::MV(dest, src);
 			return;
 		case RegisterAccess::DWORD:
-			// copy the source-register and clear the upper bits by shifting
-			batch += encoding::SLLI(dest, src, 32);
-			batch += encoding::SRLI(dest, dest, 32);
+			load_register(batch, src, dest, 4, false, false);
 			return;
 		case RegisterAccess::WORD:
 			// check if the upper source-register has to be cleared
 			if (!cleared) {
 				batch += encoding::XOR(temp, src, dest);
-				batch += encoding::SLLI(temp, temp, 48);
-				batch += encoding::SRLI(temp, temp, 48);
+				load_register(batch, temp, temp, 2, false, false);
 				batch += encoding::XOR(dest, temp, dest);
 			} else {
 				// clear the lower bits of the destination-register by shifting
@@ -71,9 +63,7 @@ void codegen::helper::move_to_register(CodeBatch& batch, RiscVRegister dest, Ris
 			batch += encoding::SRLI(temp, dest, 8);
 			batch += encoding::XOR(temp, temp, src);
 
-			// clear the upper 48 bits of the temp register and keep the lower 8 cleared
-			batch += encoding::SLLI(temp, temp, 56);
-			batch += encoding::SRLI(temp, temp, 48);
+			load_register(batch, temp, temp, 8, true, false);
 
 			// xor the temporary register to the destination
 			batch += encoding::XOR(dest, temp, dest);
@@ -244,7 +234,11 @@ void codegen::helper::append_eob(CodeBatch& batch, encoding::RiscVRegister reg) 
 }
 
 void codegen::helper::sign_extend_register(codegen::CodeBatch& batch, RiscVRegister dest, RiscVRegister src, size_t byte) {
-	//TODO: ADDIW for better performance
+	if (byte == 4) {
+		batch += encoding::ADDW(dest, src, RiscVRegister::zero);
+		return;
+	}
+
 	const auto shamt = (sizeof(size_t) - byte) * 8;
 	if (shamt > 0) {
 		batch += encoding::SLLI(dest, src, shamt);
