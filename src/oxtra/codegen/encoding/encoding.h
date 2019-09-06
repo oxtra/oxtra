@@ -315,6 +315,10 @@ namespace encoding {
 
 	/* --- RV64I Base Integer instructions --- */
 	//*W instructions maybe necessary
+	/**
+	* rd = (rs1 + rs2) [31:0] sign extended to 64bit
+	*/
+	utils::riscv_instruction_t ADDW(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2);
 
 	/* --- M Standard Extension --- */
 

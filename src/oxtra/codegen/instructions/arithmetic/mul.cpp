@@ -6,29 +6,6 @@ using namespace fadec;
 using namespace codegen::helper;
 
 /**
- * This moves (lazily) moves a register to another while clearing the destination register. The register will be
- * sign extended if specified. If it is a high register (e.g. gph), while shifting back, 8 bits are added to the shift.
- *
- * If the register is specified with an operand size of 64 bit, nothing will happen and the src register simply returned.
- */
-static RiscVRegister load_register(codegen::CodeBatch& batch, RiscVRegister src, RiscVRegister dest,
-								   uint8_t operand_size, bool high_register, bool sign_extend) {
-	uint8_t shamt = 64 - operand_size * 8;
-	if (high_register) shamt -= 8;
-
-	if (shamt == 0) return src;
-	else {
-		batch += encoding::SLLI(dest, src, shamt);
-
-		if (high_register) shamt += 8;
-
-		batch += (sign_extend ? encoding::SRAI : encoding::SRLI)(dest, dest, shamt);
-	}
-
-	return dest;
-}
-
-/**
  * This implementation can handle MUL, IMUL, IMUL2, and IMUL3.
  * Two source operands (s1 and s2) are multiplied and stored in the correct destination register.
  */
@@ -97,44 +74,4 @@ void codegen::Mul::generate(codegen::CodeBatch& batch) const {
 					encoding::RiscVRegister::zero, encoding::RiscVRegister::t4);
 	update_carry(batch, jump_table::Entry::unsupported_carry, encoding::RiscVRegister::zero,
 				 encoding::RiscVRegister::zero, encoding::RiscVRegister::t4);
-}
-
-RiscVRegister codegen::Mul::load_operand(codegen::CodeBatch& batch, size_t index,
-										 RiscVRegister reg, RiscVRegister temp_a, RiscVRegister temp_b,
-										 bool sign_extend) const {
-	const auto& operand = get_operand(index);
-	uint8_t shamt = 64 - operand.get_size() * 8;
-
-	if (operand.get_type() == OperandType::reg) {
-		const auto gph = operand.get_register_type() == RegisterType::gph;
-		const auto destination_register = (gph ? map_reg_high : map_reg)(operand.get_register());
-
-		return load_register(batch, destination_register, reg, operand.get_size(), gph, sign_extend);
-	} else if (operand.get_type() == OperandType::mem) {
-		temp_a = translate_memory(batch, index, temp_a, temp_b);
-		switch (operand.get_size()) {
-			case 8:
-				batch += encoding::LD(reg, temp_a, 0);
-				break;
-			case 4:
-				batch += encoding::LW(reg, temp_a, 0);
-				break;
-			case 2:
-				batch += encoding::LH(reg, temp_a, 0);
-				break;
-			case 1:
-				batch += encoding::LB(reg, temp_a, 0);
-				break;
-		}
-		// memory instructions sign extend per default, so we undo it (if required)
-		if (!sign_extend && operand.get_size() != 8) {
-			batch += SLLI(reg, reg, shamt);
-			batch += SRLI(reg, reg, shamt);
-		}
-	} else if (operand.get_type() == OperandType::imm) {
-		load_immediate(batch, get_immediate(), reg);
-		// Immediates are interpreted sign_extended by both riscv and fadec, so we do nothing in here
-	}
-
-	return reg;
 }

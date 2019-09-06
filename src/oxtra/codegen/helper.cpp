@@ -5,6 +5,32 @@
 
 using namespace encoding;
 
+/**
+ * This moves (lazily) moves a register to another while clearing the destination register. The register will be
+ * sign extended if specified. If it is a high register (e.g. gph), while shifting back, 8 bits are added to the shift.
+ *
+ * If the register is specified with an operand size of 64 bit, nothing will happen and the src register simply returned.
+ */
+RiscVRegister codegen::helper::load_register(codegen::CodeBatch& batch, RiscVRegister src, RiscVRegister dest,
+											 uint8_t operand_size, bool high_register, bool sign_extend) {
+	uint8_t shamt = 64 - operand_size * 8;
+	if (high_register) shamt -= 8;
+
+	if (shamt == 0) return src;
+	else {
+		if (operand_size == 4 && sign_extend) {
+			batch += encoding::ADDW(dest, src, RiscVRegister::zero);
+		} else {
+			batch += encoding::SLLI(dest, src, shamt);
+
+			if (high_register) shamt += 8;
+
+			batch += (sign_extend ? encoding::SRAI : encoding::SRLI)(dest, dest, shamt);
+		}
+	}
+
+	return dest;
+}
 
 void codegen::helper::move_to_register(CodeBatch& batch, RiscVRegister dest, RiscVRegister src, RegisterAccess access,
 									   RiscVRegister temp, bool cleared) {

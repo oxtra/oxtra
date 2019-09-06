@@ -41,10 +41,30 @@ namespace codegen::helper {
 		if (op_size == 4) return RegisterAccess::DWORD;
 		return RegisterAccess::QWORD;
 	}
+	
+	/**
+	 * Load a given src register lazily into a given destination register but only the required parts, optionally with sign extension.
+	 * All other bits are 0 (0/1 if sign extension is enabled).
+	 *
+	 * Lazy in this context means, that if the register is a 64bit register, it will not be moved into the destination and the
+	 * src itself will be returned.
+	 *
+	 * Only moving the relevant parts, means that depending on the operand size, only the operand will be loaded into the destination register.
+	 *
+	 *
+	 * @param src The source register that will be used as input.
+	 * @param dest The register the source will be loaded into if loading is required.
+	 * @param operand_size The size that will be loaded in bytes.
+	 * @param high_register If the register is a high register. This only works with 1byte operand_size.
+	 * @param sign_extend Whether the operand_size interpretation of the register should be sign-extended to 64bit.
+	 * @return The address where the value was loaded into (either src, or dest).
+	 */
+	encoding::RiscVRegister load_register(codegen::CodeBatch& batch, encoding::RiscVRegister src, encoding::RiscVRegister dest,
+										  uint8_t operand_size, bool high_register, bool sign_extend);
 
 	/**
-	 * Writes a register with x86-style sub-manipulation to an existing register without
-	 * invalidating the rest of the value.
+	 * Writes a register with x86-style sub-manipulation to an existing register WITHOUT
+	 * invalidating the rest of the value. (see load_register for different behavior)
 	 *
 	 * for example:
 	 * 		- read x86:ah from riscv:a1
