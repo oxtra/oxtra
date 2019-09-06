@@ -18,7 +18,6 @@ Dispatcher::Dispatcher(const elf::Elf& elf, const arguments::Arguments& args)
 		: _elf(elf), _args(args), _codegen(args, elf) {}
 
 long Dispatcher::run() {
-	//TODO: add argument for stack-size (default: 0x3200000)
 	//TODO: initialize registers (ABI-conform)
 	//TODO: initialize stack (ABI-Conform)
 
@@ -28,7 +27,7 @@ long Dispatcher::run() {
 	// initialize guest-context
 	_context.guest.gp = gp_reg;
 	_context.guest.tp = tp_reg;
-	_context.guest.map.rsp = reinterpret_cast<uintptr_t>(new uint8_t[0x3200000]) + 0x3200000;
+	_context.guest.map.rsp = reinterpret_cast<uintptr_t>(new uint8_t[_args.get_stack_size()]) + _args.get_stack_size();
 	_context.guest.map.rbp = _context.guest.map.rsp;
 	_context.guest.map.jump_table = reinterpret_cast<uintptr_t>(jump_table::table_address);
 	_context.guest.map.context = reinterpret_cast<uintptr_t>(&_context);
