@@ -7,7 +7,7 @@ using namespace fadec;
 using namespace codegen::helper;
 
 codegen::Instruction::Instruction(const fadec::Instruction& inst, uint8_t update, uint8_t require, bool eob)
-	: fadec::Instruction{inst} {
+		: fadec::Instruction{inst} {
 	update_flags = update;
 	require_flags = eob ? Flags::all : require;
 	end_of_block = eob;
@@ -41,8 +41,8 @@ std::string codegen::Instruction::string() const {
 	return buffer;
 }
 
-RiscVRegister codegen::Instruction::translate_operand(CodeBatch& batch, size_t index,
-													  RiscVRegister reg, RiscVRegister temp_a, RiscVRegister temp_b) const {
+RiscVRegister codegen::Instruction::translate_operand(CodeBatch& batch, size_t index, RiscVRegister reg, RiscVRegister temp_a,
+													  RiscVRegister temp_b) const {
 	// extract the operand
 	auto& operand = get_operand(index);
 
@@ -78,8 +78,9 @@ RiscVRegister codegen::Instruction::translate_operand(CodeBatch& batch, size_t i
 	return encoding::RiscVRegister::zero;
 }
 
-void codegen::Instruction::translate_destination(CodeBatch& batch, RiscVRegister reg,
-												 RiscVRegister address, RiscVRegister temp_a, RiscVRegister temp_b) const {
+void
+codegen::Instruction::translate_destination(CodeBatch& batch, RiscVRegister reg, RiscVRegister address, RiscVRegister temp_a,
+											RiscVRegister temp_b) const {
 	auto& operand = get_operand(0);
 
 	// check if the destination is a register
@@ -130,175 +131,287 @@ void codegen::Instruction::translate_destination(CodeBatch& batch, RiscVRegister
 	}
 }
 
-RiscVRegister codegen::Instruction::translate_memory(CodeBatch& batch, size_t index,
-													 RiscVRegister temp_a, RiscVRegister temp_b) const {
+RiscVRegister
+codegen::Instruction::translate_memory(CodeBatch& batch, size_t index, RiscVRegister temp_a, RiscVRegister temp_b) const {
 	if (get_address_size() < 4)
 		dispatcher::Dispatcher::fault_exit("invalid addressing-size");
 	const auto& operand = get_operand(index);
 
-	// check if its only a base-register
-	if (get_index_register() == fadec::Register::none && get_displacement() == 0 && operand.get_size() == 8)
-		return map_reg(operand.get_register());
+	// analyze the input (0 = doesn't exist, 1 = optimizable, 2 = unoptimizable)
+	uint8_t disp_exists = get_displacement() == 0 ? 0 : (get_displacement() >= -0x800 && get_displacement() < 0x800 ? 1 : 2);
+	uint8_t index_exists = get_index_register() == fadec::Register::none ? 0 : (get_index_scale() == 1 ? 1 : 2);
+	uint8_t base_exists = operand.get_register() == fadec::Register::none ? 0 : (get_address_size() == 8 && disp_exists == 0 &&
+																				 index_exists == 0 ? 1 : 2);
+	uint64_t disp_mask = get_address_size() == 8 ? 0xffffffffffffffffull : 0x00000000ffffffffull;
 
-	// add the scale & index
-	RiscVRegister temp_reg = RiscVRegister::zero;
-	if (get_index_register() != fadec::Register::none) {
-		batch += encoding::SLLI(temp_a, map_reg(get_index_register()), get_index_scale());
-		temp_reg = temp_a;
-	}
+	// verify the operands
+	if (disp_exists == 0 && index_exists == 0 && base_exists == 0)
+		dispatcher::Dispatcher::fault_exit("invalid addressing-mode");
 
-	// add the base-register
-	if (operand.get_register() != fadec::Register::none) {
-		batch += encoding::ADD(temp_a, temp_reg, map_reg(operand.get_register()));
-		temp_reg = temp_a;
-	}
+	// build the output
+	RiscVRegister result = temp_a;
+	if (base_exists) {
+		// [base + ???]
+		if (disp_exists == 1) {
+			// [base + sDisp + ???]
+			batch += encoding::ADDI(result, map_reg(operand.get_register()), get_displacement());
 
-	// add the displacement
-	if (get_displacement() > 0) {
-		const auto displacement = get_displacement();
-		// less or equal than 12 bits
-		if (displacement < 0x800) {
-			batch += encoding::ADDI(temp_a, temp_reg, static_cast<uint16_t>(displacement));
-			if (temp_reg == RiscVRegister::zero)
-				temp_reg = temp_a;
-		} else {
-			if (temp_reg == RiscVRegister::zero) {
-				load_immediate(batch, displacement, temp_a);
-				temp_reg = temp_a;
-			} else {
-				load_immediate(batch, displacement, temp_b);
-				batch += encoding::ADD(temp_a, temp_reg, temp_b);
+			if (index_exists == 1)
+				// [base + sDisp + index]
+				batch += encoding::ADD(result, result, map_reg(get_index_register()));
+			else if (index_exists == 2) {
+				// [base + sDisp + index * n]
+				batch += encoding::SLLI(temp_b, map_reg(get_index_register()), get_index_scale());
+				batch += encoding::ADD(result, result, temp_b);
+			}
+		} else if (index_exists == 1) {
+			// [base + index*1 + ???]
+			batch += encoding::ADD(result, map_reg(operand.get_register()), map_reg(get_index_register()));
+
+			if (disp_exists) {
+				// [base + index*1 + lDisp]
+				helper::load_immediate(batch, get_displacement() & disp_mask, temp_b);
+				batch += encoding::ADD(result, result, temp_b);
+			}
+		} else if (base_exists == 1)
+			// [base]
+			result = map_reg(operand.get_register());
+		else {
+			// nothing can be optimized
+			batch += encoding::ADD(result, RiscVRegister::zero, map_reg(operand.get_register()));
+			if (disp_exists) {
+				helper::load_immediate(batch, get_displacement() & disp_mask, temp_b);
+				batch += encoding::ADD(result, result, temp_b);
+			}
+			if (index_exists) {
+				batch += encoding::SLLI(temp_b, map_reg(get_index_register()), get_index_scale());
+				batch += encoding::ADD(result, result, temp_b);
 			}
 		}
-	}
+	} else if (index_exists && disp_exists)
+		if (index_exists == 1 && disp_exists == 1)
+			// [index*1 + sDisp]
+			batch += encoding::ADDI(result, map_reg(get_index_register()), get_displacement());
+		else {
+			// [index*n + lDisp]
+			batch += encoding::SLLI(result, map_reg(get_index_register()), get_index_scale());
+			helper::load_immediate(batch, get_displacement() & disp_mask, temp_b);
+			batch += encoding::ADD(result, result, temp_b);
+		}
+	else if (index_exists) {
+		// [index*n]
+		if (get_address_size() == 8 && index_exists == 1)
+			result = map_reg(get_index_register());
+		else if (index_exists == 1)
+			batch += encoding::ADD(result, RiscVRegister::zero, map_reg(get_index_register()));
+		else
+			batch += encoding::SLLI(result, map_reg(get_index_register()), get_index_scale());
+	} else
+		// [disp]
+		load_immediate(batch, get_displacement() & disp_mask, result);
 
 	// check if the addressing-mode is a 32-bit mode
-	if (get_address_size() == 4) {
-		batch += encoding::SLLI(temp_reg, temp_reg, 32);
-		batch += encoding::SRLI(temp_reg, temp_reg, 32);
+	if (get_address_size() == 4 && (index_exists || base_exists)) {
+		batch += encoding::SLLI(result, result, 32);
+		batch += encoding::SRLI(result, result, 32);
 	}
-	return temp_reg;
+	return result;
 }
 
-encoding::RiscVRegister codegen::Instruction::evalute_zero(CodeBatch& batch) {
+void codegen::Instruction::evaluate_zero(CodeBatch& batch) const {
 	batch += encoding::LD(RiscVRegister::t4, context_address, FlagInfo::zero_value_offset);
-	batch += encoding::SNEZ(RiscVRegister::t4, RiscVRegister::t4);
-	return RiscVRegister::t4;
+	batch += encoding::SEQZ(RiscVRegister::t4, RiscVRegister::t4);
 }
 
-encoding::RiscVRegister codegen::Instruction::evalute_sign(CodeBatch& batch, encoding::RiscVRegister temp) {
+void codegen::Instruction::evaluate_sign(CodeBatch& batch, encoding::RiscVRegister temp) const {
 	// load the shift amount
-	batch += LBU(RiscVRegister::t4, context_address, FlagInfo::sign_size_offset);
+	batch += encoding::LBU(RiscVRegister::t4, context_address, FlagInfo::sign_size_offset);
 
 	// load the value
-	batch += LD(temp, context_address, FlagInfo::sign_value_offset);
+	batch += encoding::LD(temp, context_address, FlagInfo::sign_value_offset);
 
 	// shift the value
-	batch += SRL(temp, temp, RiscVRegister::t4);
-	batch += ANDI(RiscVRegister::t4, temp, 1);
-	return RiscVRegister::t4;
+	batch += encoding::SRL(temp, temp, RiscVRegister::t4);
+	batch += encoding::ANDI(RiscVRegister::t4, temp, 1);
 }
 
-encoding::RiscVRegister codegen::Instruction::evalute_parity(CodeBatch& batch) {
+void codegen::Instruction::evaluate_parity(CodeBatch& batch, encoding::RiscVRegister temp) const {
+	// load the pf_value
+	batch += encoding::LBU(temp, helper::context_address, FlagInfo::parity_value_offset);
 
+	// calculate the pf
+	batch += encoding::SRLI(RiscVRegister::t4, temp, 4);
+	batch += encoding::XOR(temp, temp, RiscVRegister::t4);
+	batch += encoding::SRLI(RiscVRegister::t4, temp, 2);
+	batch += encoding::XOR(temp, temp, RiscVRegister::t4);
+	batch += encoding::SRLI(RiscVRegister::t4, temp, 1);
+	batch += encoding::XOR(temp, temp, RiscVRegister::t4);
+
+	// only look at the least significant bit
+	batch += encoding::ANDI(temp, temp, 1);
+
+	// set if the parity flag is set (bit is 0)
+	batch += encoding::SEQZ(RiscVRegister::t4, temp);
 }
 
-encoding::RiscVRegister codegen::Instruction::evalute_overflow(CodeBatch& batch) {
+void codegen::Instruction::evaluate_overflow(CodeBatch& batch) const {
+	// load the jump table offset
+	batch += LHU(RiscVRegister::t4, helper::context_address, FlagInfo::overflow_operation_offset);
 
+	// jump into the jump table
+	jump_table::jump_table_offset(batch, RiscVRegister::t4);
 }
 
-encoding::RiscVRegister codegen::Instruction::evalute_carry(CodeBatch& batch) {
+void codegen::Instruction::evaluate_carry(CodeBatch& batch) const {
+	// load the jump table offset
+	batch += LHU(RiscVRegister::t4, helper::context_address, FlagInfo::carry_operation_offset);
 
+	// jump into the jump table
+	jump_table::jump_table_offset(batch, RiscVRegister::t4);
 }
 
-void codegen::Instruction::update_zero(CodeBatch& batch, bool set) {
+void codegen::Instruction::update_zero(CodeBatch& batch, bool set, encoding::RiscVRegister temp) const {
 	// check if the instruction has to update the zero-flag
 	if ((update_flags & Flags::zero) == 0)
 		return;
-	/*
-	 * implement the flag
-	 */
+
+	if (set) {
+		batch += encoding::SD(helper::context_address, RiscVRegister::zero, FlagInfo::zero_value_offset);
+	} else {
+		batch += encoding::ADDI(temp, encoding::RiscVRegister::zero, 1);
+		batch += encoding::SD(helper::context_address, temp, FlagInfo::zero_value_offset);
+	}
 }
 
-void codegen::Instruction::update_zero(CodeBatch& batch, encoding::RiscVRegister va, size_t size) {
+void codegen::Instruction::update_zero(CodeBatch& batch, encoding::RiscVRegister va, uint8_t size) const {
 	// check if the instruction has to update the zero-flag
 	if ((update_flags & Flags::zero) == 0)
 		return;
-	/*
-	 * implement the flag
-	 */
+
+	// if the register size is 8 then we don't need to store 0 into the memory operand
+	if (size == 8) {
+		batch += encoding::SD(helper::context_address, va, FlagInfo::zero_value_offset);
+		return;
+	}
+
+	// clear the zf_value because the upper bits may still be set
+	batch += SD(helper::context_address, RiscVRegister::zero, FlagInfo::zero_value_offset);
+
+	switch (size) {
+		case 1:
+			batch += SB(helper::context_address, va, FlagInfo::zero_value_offset);
+			break;
+
+		case 2:
+			batch += SH(helper::context_address, va, FlagInfo::zero_value_offset);
+			break;
+
+		case 4:
+			batch += SW(helper::context_address, va, FlagInfo::zero_value_offset);
+			break;
+
+		default:
+			throw std::runtime_error("Invalid register size.");
+	}
+
 }
 
-void codegen::Instruction::update_sign(CodeBatch& batch, bool set) {
+void codegen::Instruction::update_sign(CodeBatch& batch, bool set, encoding::RiscVRegister temp) const {
 	// check if the instruction has to update the sign-flag
 	if ((update_flags & Flags::sign) == 0)
 		return;
-	/*
-	 * implement the flag
-	 */
+
+	if (set) {
+		batch += encoding::ADDI(temp, encoding::RiscVRegister::zero, -1);
+		batch += encoding::SD(helper::context_address, temp, FlagInfo::sign_value_offset);
+	} else {
+		batch += encoding::SD(helper::context_address, RiscVRegister::zero, FlagInfo::sign_value_offset);
+	}
 }
 
-void codegen::Instruction::update_sign(CodeBatch& batch, encoding::RiscVRegister va, size_t size) {
+void codegen::Instruction::update_sign(CodeBatch& batch, encoding::RiscVRegister va, uint8_t size,
+									   encoding::RiscVRegister temp) const {
 	// check if the instruction has to update the sign-flag
 	if ((update_flags & Flags::sign) == 0)
 		return;
-	/*
-	 * implement the flag
-	 */
+
+	// store the sf_value
+	batch += encoding::SD(helper::context_address, va, FlagInfo::sign_value_offset);
+
+	// store the size in bits - 1 (the evaluate function shifts by that amount to get the value of the carry flag)
+	batch += encoding::ADDI(temp, RiscVRegister::zero, size * 8 - 1);
+	batch += encoding::SB(helper::context_address, temp, FlagInfo::sign_size_offset);
+
 }
 
-void codegen::Instruction::update_parity(CodeBatch& batch, bool set) {
+void codegen::Instruction::update_parity(CodeBatch& batch, bool set, encoding::RiscVRegister temp) const {
 	// check if the instruction has to update the parity-flag
 	if ((update_flags & Flags::parity) == 0)
 		return;
-	/*
-	 * implement the flag
-	 */
+
+	if (set) {
+		batch += encoding::SB(helper::context_address, RiscVRegister::zero, FlagInfo::parity_value_offset);
+	} else {
+		batch += encoding::ADDI(temp, RiscVRegister::zero, 1);
+		batch += encoding::SB(helper::context_address, temp, FlagInfo::parity_value_offset);
+	}
 }
 
-void codegen::Instruction::update_parity(CodeBatch& batch, encoding::RiscVRegister va, size_t size) {
+void codegen::Instruction::update_parity(CodeBatch& batch, encoding::RiscVRegister va) const {
 	// check if the instruction has to update the parity-flag
 	if ((update_flags & Flags::parity) == 0)
 		return;
-	/*
-	 * implement the flag
-	 */
+
+	batch += encoding::SB(helper::context_address, va, FlagInfo::parity_value_offset);
 }
 
-void codegen::Instruction::update_overflow(CodeBatch& batch, uint16_t index, bool set) {
+void codegen::Instruction::update_overflow(CodeBatch& batch, bool set, encoding::RiscVRegister temp) const {
 	// check if the instruction has to update the overflow-flag
 	if ((update_flags & Flags::overflow) == 0)
 		return;
-	/*
-	 * implement the flag
-	 */
+
+	batch += encoding::ADDI(temp, RiscVRegister::zero, static_cast<uint16_t>(
+															   set ? jump_table::Entry::overflow_set
+																   : jump_table::Entry::overflow_clear) * 4);
+	batch += encoding::SH(helper::context_address, temp, FlagInfo::overflow_operation_offset);
 }
 
-void codegen::Instruction::update_overflow(CodeBatch& batch, uint16_t index, encoding::RiscVRegister va,
-										   encoding::RiscVRegister vb) {
+void codegen::Instruction::update_overflow(CodeBatch& batch, jump_table::Entry entry, encoding::RiscVRegister va,
+										   encoding::RiscVRegister vb, encoding::RiscVRegister temp) const {
 	// check if the instruction has to update the overflow-flag
 	if ((update_flags & Flags::overflow) == 0)
 		return;
-	/*
-	 * implement the flag
-	 */
+
+	// store the values
+	batch += encoding::SD(helper::context_address, va, FlagInfo::overflow_values_offset);
+	batch += encoding::SD(helper::context_address, vb, FlagInfo::overflow_values_offset + 8);
+
+	// store the jump table index
+	batch += encoding::ADDI(temp, RiscVRegister::zero, static_cast<uint16_t>(entry) * 4);
+	batch += encoding::SH(helper::context_address, temp, FlagInfo::overflow_operation_offset);
 }
 
-void codegen::Instruction::update_carry(CodeBatch& batch, uint16_t index, bool set) {
+void codegen::Instruction::update_carry(CodeBatch& batch, bool set, encoding::RiscVRegister temp) const {
 	// check if the instruction has to update the carry-flag
 	if ((update_flags & Flags::carry) == 0)
 		return;
-	/*
-	 * implement the flag
-	 */
+
+	batch += encoding::ADDI(temp, RiscVRegister::zero,
+							static_cast<uint16_t>(set ? jump_table::Entry::carry_set : jump_table::Entry::carry_clear) * 4);
+	batch += encoding::SH(helper::context_address, temp, FlagInfo::carry_operation_offset);
 }
 
-void codegen::Instruction::update_carry(CodeBatch& batch, uint16_t index, encoding::RiscVRegister va,
-										encoding::RiscVRegister vb) {
+void codegen::Instruction::update_carry(CodeBatch& batch, jump_table::Entry entry, encoding::RiscVRegister va,
+										encoding::RiscVRegister vb, encoding::RiscVRegister temp) const {
 	// check if the instruction has to update the carry-flag
 	if ((update_flags & Flags::carry) == 0)
 		return;
-	/*
-	 * implement the flag
-	 */
+
+	// store the values
+	batch += encoding::SD(helper::context_address, va, FlagInfo::carry_values_offset);
+	batch += encoding::SD(helper::context_address, vb, FlagInfo::carry_values_offset + 8);
+
+	// store the jump table index
+	batch += encoding::ADDI(temp, RiscVRegister::zero, static_cast<uint16_t>(entry) * 4);
+	batch += encoding::SH(helper::context_address, temp, FlagInfo::carry_operation_offset);
 }

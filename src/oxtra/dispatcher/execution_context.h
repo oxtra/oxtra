@@ -4,9 +4,7 @@
 #include <cstdint>
 #include <array>
 #include <spdlog/fmt/bundled/ostream.h>
-//#include "oxtra/codegen/codegen.h"
-//#include "oxtra/codegen/Test/instruction.h"
-
+#include <oxtra/codegen/codegen.h>
 
 namespace dispatcher {
 	struct ExecutionContext {

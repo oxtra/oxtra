@@ -3,7 +3,7 @@
 
 void codegen::Idiv::generate(codegen::CodeBatch& batch) const {
 	// currently using two of the tmps are marked as reserved for helper-functions, maybe change
-	// currently employing the "risky" version of 64 bit division
+	// currently using the "risky" version of 128 bit division
 
 	const auto idiv = (get_type() == fadec::InstructionType::IDIV) ? true : false;
 	const auto op_size = get_operand(0).get_size();
@@ -18,6 +18,18 @@ void codegen::Idiv::generate(codegen::CodeBatch& batch) const {
 	constexpr auto divisor = encoding::RiscVRegister::t0;
 	translate_operand(batch, 0, divisor, encoding::RiscVRegister::t1, encoding::RiscVRegister::t2);
 	// if (divisor == 0) raise #DE (divide by zero)
+
+#if 0
+	if (op_size == 8) {
+		if (idiv)
+			batch += ADDI(encoding::RiscVRegister::t1, encoding::RiscVRegister::zero, 1);
+		else
+			batch += MV(encoding::RiscVRegister::t1, encoding::RiscVRegister::zero);
+		batch += ADDI(encoding::RiscVRegister::t2, encoding::RiscVRegister::zero, 4);
+		helper::load_address(batch, reinterpret_cast<uintptr_t>(&helper::idiv_128_bits), encoding::RiscVRegister::t4);
+		jump_table_entry(batch, jump_table::Entry::debug_callback);
+	}
+#endif
 
 	// 1. build dividend
 	if (op_size == 1) {
@@ -34,7 +46,7 @@ void codegen::Idiv::generate(codegen::CodeBatch& batch) const {
 		move_to_register(batch, encoding::RiscVRegister::t2, rax, reg_access, tmp);
 		batch += encoding::ADD(dividend, dividend, encoding::RiscVRegister::t2);
 	} else {
-		// "risky" version, neglect rdx, assume that numbers bigger than INT_MAX are never used
+		// assumes values larger than INT_MAX are never used
 		batch += encoding::MV(dividend, rax);
 	}
 
@@ -63,35 +75,7 @@ void codegen::Idiv::generate(codegen::CodeBatch& batch) const {
 		move_to_register(batch, rax, quotient, reg_access, tmp);
 		move_to_register(batch, rdx, remainder, reg_access, tmp);
 	} else {
-		batch += encoding::MV(rax, quotient);
-		batch += encoding::MV(rdx, remainder);
+		batch += MV(rax, quotient);
+		batch += MV(rdx, remainder);
 	}
-
-	// if anyone wants to implement 64 bit division in riscv assembly, please consult
-	// Knuth, Donald E.: The Art of Computer Programming, Volume 2: Seminumerical Algorithms, Chapter 4.3 Multiple-Precision Arithmetic
-
-	// software implementation, using gcc feature __int128
-	// need access to guest context to read the registers
-	/* 128_bit_division() {
-			uint64_t upper = *rdx;
-			uint64_t lower = *rax;
-			if (idiv) {
-				__int128 dividend = (upper << 64) + lower;
-				__int128 divisor_raw = *divisor; // from translate_operand
-				//if (dividend == -2^(xlen-1) && divisor == -1)
-				//	// raise #DE (overflow)
-				int64_t quotient = dividend / divisor_raw;
-				int64_t remainder = dividend % divisor_raw;
-				*rax = quotient;
-				*rdx = remainder;
-			} else {
-				unsigned __int128 dividend = (upper << 64) + lower;
-				unsigned __int128 divisor_raw = *divisor;
-				uint64_t quotient = dividend / divisor_raw;
-				uint64_t remainder = dividend % divisor_raw;
-				*rax = quotient;
-				*rdx = remainder;
-			}
-		}
-	*/
 }

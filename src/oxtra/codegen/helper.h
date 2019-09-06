@@ -2,6 +2,8 @@
 #define OXTRA_HELPER_H
 
 #include "code_batch.h"
+#include "jump-table/jump_table.h"
+#include "oxtra/dispatcher/execution_context.h"
 
 namespace codegen::helper {
 	// If these registers are changed, the documentation has to be updated
@@ -30,6 +32,18 @@ namespace codegen::helper {
 	};
 
 	/**
+	 * Get the register access for a given operand size.
+	 * @param op_size The size of the operand in bytes. May only be 1,2,4 or 8.
+	 * @return The correct RegisterAccess. The lower byte will be returned for an operand size of 1.
+	 */
+	static constexpr RegisterAccess operand_to_register_access(size_t op_size) {
+		if (op_size == 1) return RegisterAccess::LBYTE;
+		if (op_size == 2) return RegisterAccess::WORD;
+		if (op_size == 4) return RegisterAccess::DWORD;
+		return RegisterAccess::QWORD;
+	}
+
+	/**
 	 * Writes a register with x86-style sub-manipulation to an existing register without
 	 * invalidating the rest of the value.
 	 *
@@ -46,24 +60,53 @@ namespace codegen::helper {
 	 * @param temp A temporary that might be changed.
 	 * @param cleared If true the upper bits of the source register are expected to be 0.
 	 */
-	void move_to_register(CodeBatch& batch, encoding::RiscVRegister dest, encoding::RiscVRegister src,
-								 RegisterAccess access, encoding::RiscVRegister temp, bool cleared = false);
+	void move_to_register(CodeBatch& batch, encoding::RiscVRegister dest, encoding::RiscVRegister src, RegisterAccess access,
+						  encoding::RiscVRegister temp, bool cleared = false);
 
 	/**
 	 * Load an immediate of up to 64 bit into the register.
-	 * The immediate will not be sign extended (i.e. treated as unsigned) unless it is 64 bit (where sign extension
-	 * never happens).
 	 * This function always optimizes the number of instructions generated.
-	 * @param batch Store the current riscv-batch.
 	 * @param imm The immediate that will be loaded.
-	 * @param dest The regiser in which the immediate will be loaded.
+	 * @param dest The register in which the immediate will be loaded.
 	 */
 	void load_immediate(CodeBatch& batch, uintptr_t imm, encoding::RiscVRegister dest);
 
 	/**
 	 * Loads an address into a riscv register. Unconditionally generates 8 instruction.
 	 */
-	 void load_address(CodeBatch& batch, uintptr_t ptr, encoding::RiscVRegister dest);
+	void load_address(CodeBatch& batch, uintptr_t ptr, encoding::RiscVRegister dest);
+
+	/**
+	 * Appends a jump into reroute_static.
+	 * @param ptr The address of the next block.
+	 */
+	void append_eob(CodeBatch& batch, uintptr_t ptr);
+
+	/**
+	 * Appends a jump into reroute_dynamic.
+	 * @param reg The register that contains the address of the next block.
+	 */
+	void append_eob(CodeBatch& batch, encoding::RiscVRegister reg);
+
+	/**
+	 * Sign extend a given source register (which will not be modified) into a destination register.
+	 * @param batch Store the current riscv-batch.
+	 * @param dest The register where the sign extended value will be stored.
+	 * @param src The register that contains the value that will be sign extended.
+	 * @param byte The number of bytes that are stored in the given register (e.g. EAX: 4, AX: 2).
+	 */
+	void
+	sign_extend_register(codegen::CodeBatch& batch, encoding::RiscVRegister dest, encoding::RiscVRegister src, size_t byte);
+
+	/**
+	 * Calculates the jump table indices for the carry and overflow flags based on the size of the operand.
+	 * @param carry The carry index.
+	 * @param overflow The overflow index.
+	 * @param size The operand size.
+	 * @return The pair consisting of {new_carry_index, new_overflow_index}.
+	 */
+	std::pair<jump_table::Entry, jump_table::Entry>
+	calculate_entries(jump_table::Entry carry, jump_table::Entry overflow, uint8_t size);
 
 	/**
 	 * Returns the riscv-register, which maps to the x86-register.
@@ -72,22 +115,22 @@ namespace codegen::helper {
 	 */
 	constexpr encoding::RiscVRegister map_reg(const fadec::Register reg) {
 		constexpr encoding::RiscVRegister register_mapping[] = {
-				encoding::RiscVRegister::a0, // rax
-				encoding::RiscVRegister::a2, // rcx
-				encoding::RiscVRegister::a3, // rdx
-				encoding::RiscVRegister::a1, // rbx
-				encoding::RiscVRegister::sp, // rsp
-				encoding::RiscVRegister::s0, // rbp
-				encoding::RiscVRegister::a4, // rsi
-				encoding::RiscVRegister::a5, // rdi
-				encoding::RiscVRegister::a6, // r8
-				encoding::RiscVRegister::a7, // r9
-				encoding::RiscVRegister::s2, // r10
-				encoding::RiscVRegister::s3, // r11
-				encoding::RiscVRegister::s4, // r12
-				encoding::RiscVRegister::s5, // r13
-				encoding::RiscVRegister::s6, // r14
-				encoding::RiscVRegister::s7  // r15
+				encoding::RiscVRegister::rax,
+				encoding::RiscVRegister::rcx,
+				encoding::RiscVRegister::rdx,
+				encoding::RiscVRegister::rbx,
+				encoding::RiscVRegister::rsp,
+				encoding::RiscVRegister::rbp,
+				encoding::RiscVRegister::rsi,
+				encoding::RiscVRegister::rdi,
+				encoding::RiscVRegister::r8,
+				encoding::RiscVRegister::r9,
+				encoding::RiscVRegister::r10,
+				encoding::RiscVRegister::r11,
+				encoding::RiscVRegister::r12,
+				encoding::RiscVRegister::r13,
+				encoding::RiscVRegister::r14,
+				encoding::RiscVRegister::r15
 		};
 
 		return register_mapping[static_cast<uint8_t>(reg)];
@@ -101,6 +144,15 @@ namespace codegen::helper {
 	constexpr encoding::RiscVRegister map_reg_high(const fadec::Register reg) {
 		return map_reg(static_cast<fadec::Register>(static_cast<uint8_t>(reg) - 4));
 	}
+
+#if 0
+	/**
+	 * Software implementation of 128 by 64 bit division.
+	 * Expects the result of translate_operand in t0.
+	 * Expects a 1 in t1 if the division is signed, 0 if unsigned.
+	 */
+	uintptr_t idiv_128_bits(dispatcher::ExecutionContext::Context *context);
+#endif
 }
 
 #endif //OXTRA_HELPER_H
