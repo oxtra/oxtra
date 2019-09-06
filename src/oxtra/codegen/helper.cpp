@@ -59,7 +59,7 @@ void codegen::helper::load_immediate(CodeBatch& batch, uintptr_t imm, encoding::
 
 	/* Number-structure: 00 00 01 11 22 23 33 44 */
 
-	// create the member-stack
+	// initialize the variables used for the generation
 	uint32_t packages[5] = {0};
 	bool increase[5] = {true, true, true, true, true};
 	uint8_t shifts[4] = {0};

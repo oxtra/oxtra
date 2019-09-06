@@ -144,9 +144,9 @@ codegen::Instruction::translate_memory(CodeBatch& batch, size_t index, RiscVRegi
 																				 index_exists == 0 ? 1 : 2);
 	uint64_t disp_mask = get_address_size() == 8 ? 0xffffffffffffffffull : 0x00000000ffffffffull;
 
-	// verify the operands
+	// check if zero is addressed
 	if (disp_exists == 0 && index_exists == 0 && base_exists == 0)
-		dispatcher::Dispatcher::fault_exit("invalid addressing-mode");
+		return RiscVRegister::zero;
 
 	// build the output
 	RiscVRegister result = temp_a;
