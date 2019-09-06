@@ -45,7 +45,7 @@ namespace arguments {
 		 */
 		const struct argp_option _options[7] = {
 				{"args",         'a',                       "\"ARGUMENTS...\"", 0, "Specify the arguments that will be passed to the x86 executable. The default is no arguments",                                                          0},
-				{"linst-size",   _instruction_list_size_id, "SIZE",             0, "The size of the list containing instructions. Limit for consecutive instructions.\nThe default is 128.",                                                0},
+				{"linst-size",   _instruction_list_size_id, "SIZE",             0, "The size of the list containing instructions. Limit for generated RISCV instructions in a block.\nThe default is 128.",                                                0},
 				{"loffset-size", _offset_list_size_id,      "SIZE",             0, "The size of the list containing offset. Limit for consecutive offsets.\nThe default is 128.",                                                           0},
 				{"lentry-size",  _entry_list_size_id,       "SIZE",             0, "The size of the list containing block entires. Limit for consecutive block entries.\nThe default is 128.",                                              0},
 				{"log-level",    'l',                       "LEVEL",            0, "Specify the log level. 0=trace, 1=debug, 2=info, 3=warn, 4=error, 5=critical, 6=off.\nThe default is 3.",                                               0},

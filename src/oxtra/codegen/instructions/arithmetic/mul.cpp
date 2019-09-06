@@ -24,12 +24,12 @@ void codegen::Mul::generate(codegen::CodeBatch& batch) const {
 	auto src2 = RiscVRegister::t2;
 
 	if (get_type() == InstructionType::IMUL2) {
-		lower_destination = map_reg(get_operand(0).get_register());
+		lower_destination = map_reg(get_operand(0).get_register()); // as of manual >= 16bit
 
 		src1 = load_operand(batch, 0, src1, RiscVRegister::t4, RiscVRegister::t5, true);
 		src2 = load_operand(batch, 1, src2, RiscVRegister::t4, RiscVRegister::t5, true);
 	} else if (get_type() == InstructionType::IMUL3) {
-		lower_destination = map_reg(get_operand(0).get_register());
+		lower_destination = map_reg(get_operand(0).get_register()); // as of manual >= 16bit
 
 		src1 = load_operand(batch, 1, src1, RiscVRegister::t4, RiscVRegister::t5, true);
 		src2 = load_operand(batch, 2, src2, RiscVRegister::t4, RiscVRegister::t5, true);
