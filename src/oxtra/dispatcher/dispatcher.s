@@ -37,7 +37,6 @@
 	sd t1, 0x28(\reg)
 	sd t2, 0x30(\reg)
 	sd t3, 0xD8(\reg)
-	sd t4, 0xE0(\reg)
 	sd t5, 0xE8(\reg)
 	sd t6, 0xF0(\reg)
 .endm
@@ -74,7 +73,6 @@
 	ld t1, 0x28(\reg)
 	ld t2, 0x30(\reg)
 	ld t3, 0xD8(\reg)
-	ld t4, 0xE0(\reg)
 	ld t5, 0xE8(\reg)
 	ld t6, 0xF0(\reg)
 .endm
