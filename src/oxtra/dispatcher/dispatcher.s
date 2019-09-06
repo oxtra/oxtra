@@ -32,7 +32,15 @@
 	sd s10, 0xC8(\reg)
 	sd s11, 0xD0(\reg)
 .endm
-
+.macro capture_context_temp reg
+	sd t0, 0x20(\reg)
+	sd t1, 0x28(\reg)
+	sd t2, 0x30(\reg)
+	sd t3, 0xD8(\reg)
+	sd t4, 0xE0(\reg)
+	sd t5, 0xE8(\reg)
+	sd t6, 0xF0(\reg)
+.endm
 
 # address of the context in reg (has to be a temporary register)
 .macro restore_context reg
@@ -60,6 +68,15 @@
 	ld s9, 0xC0(\reg)
 	ld s10, 0xC8(\reg)
 	ld s11, 0xD0(\reg)
+.endm
+.macro restore_context_temp reg
+	ld t0, 0x20(\reg)
+	ld t1, 0x28(\reg)
+	ld t2, 0x30(\reg)
+	ld t3, 0xD8(\reg)
+	ld t4, 0xE0(\reg)
+	ld t5, 0xE8(\reg)
+	ld t6, 0xF0(\reg)
 .endm
 
 .section .rodata

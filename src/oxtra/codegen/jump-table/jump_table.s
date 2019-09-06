@@ -1,7 +1,4 @@
 .global _ZN7codegen10jump_table13table_addressEv # jump_table
-.global c_wrapper
-.global unsupported_overflow
-.global unsupported_carry
 
 .include "oxtra/dispatcher/dispatcher.s"
 
@@ -21,6 +18,7 @@ unsupported_carry_string: .string "the carry flag of an instruction which doesn'
 c_wrapper:
 	# capture the context
 	capture_context s11
+	capture_context_temp s11
 
 	# invoke the function
     mv a0, s11
@@ -30,6 +28,7 @@ c_wrapper:
     mv t4, a0
 
 	# restore the guest context and return to caller
+	restore_context_temp s11
     restore_context s11
     ret
 
