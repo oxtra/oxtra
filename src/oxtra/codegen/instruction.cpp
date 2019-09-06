@@ -79,8 +79,8 @@ RiscVRegister codegen::Instruction::translate_operand(CodeBatch& batch, size_t i
 }
 
 RiscVRegister codegen::Instruction::load_operand(codegen::CodeBatch& batch, size_t index,
-										 RiscVRegister reg, RiscVRegister temp_a, RiscVRegister temp_b,
-										 bool sign_extend) const {
+												 RiscVRegister reg, RiscVRegister temp_a, RiscVRegister temp_b,
+												 bool sign_extend) const {
 	const auto& operand = get_operand(index);
 	uint8_t shamt = 64 - operand.get_size() * 8;
 
@@ -454,4 +454,66 @@ void codegen::Instruction::update_carry(CodeBatch& batch, jump_table::Entry entr
 	// store the jump table index
 	batch += encoding::ADDI(temp, RiscVRegister::zero, static_cast<uint16_t>(entry) * 4);
 	batch += encoding::SH(helper::context_address, temp, FlagInfo::carry_operation_offset);
+}
+
+void codegen::Instruction::update_carry_unsupported(CodeBatch& batch, const char* instruction,
+													encoding::RiscVRegister temp) const {
+	// check if the instruction has to update the carry-flag
+	if ((update_flags & Flags::carry) == 0)
+		return;
+
+	// store the jump table index
+	batch += encoding::ADDI(temp, RiscVRegister::zero, static_cast<uint16_t>(jump_table::Entry::unsupported_carry) * 4);
+	batch += encoding::SH(helper::context_address, temp, FlagInfo::carry_operation_offset);
+
+	// store the pointer
+	helper::load_immediate(batch, reinterpret_cast<uintptr_t>(instruction), temp);
+	batch += encoding::SD(helper::context_address, temp, FlagInfo::carry_ptr_offset);
+}
+
+void codegen::Instruction::update_carry_high_level(CodeBatch& batch,
+												   uintptr_t(* callback)(void*),
+												   encoding::RiscVRegister temp) const {
+	// check if the instruction has to update the carry-flag
+	if ((update_flags & Flags::carry) == 0)
+		return;
+
+	// store the jump table index
+	batch += encoding::ADDI(temp, RiscVRegister::zero, static_cast<uint16_t>(jump_table::Entry::high_level_carry) * 4);
+	batch += encoding::SH(helper::context_address, temp, FlagInfo::carry_operation_offset);
+
+	// store the pointer
+	helper::load_immediate(batch, reinterpret_cast<uintptr_t>(callback), temp);
+	batch += encoding::SD(helper::context_address, temp, FlagInfo::carry_ptr_offset);
+}
+
+void codegen::Instruction::update_overflow_unsupported(CodeBatch& batch, const char* instruction,
+													   encoding::RiscVRegister temp) const {
+	// check if the instruction has to update the overflow-flag
+	if ((update_flags & Flags::overflow) == 0)
+		return;
+
+	// store the jump table index
+	batch += encoding::ADDI(temp, RiscVRegister::zero, static_cast<uint16_t>(jump_table::Entry::unsupported_overflow) * 4);
+	batch += encoding::SH(helper::context_address, temp, FlagInfo::overflow_operation_offset);
+
+	// store the pointer
+	helper::load_immediate(batch, reinterpret_cast<uintptr_t>(instruction), temp);
+	batch += encoding::SD(helper::context_address, temp, FlagInfo::overflow_ptr_offset);
+}
+
+void codegen::Instruction::update_overflow_high_level(CodeBatch& batch,
+													  uintptr_t(* callback)(void*),
+													  encoding::RiscVRegister temp) const {
+	// check if the instruction has to update the overflow-flag
+	if ((update_flags & Flags::overflow) == 0)
+		return;
+
+	// store the jump table index
+	batch += encoding::ADDI(temp, RiscVRegister::zero, static_cast<uint16_t>(jump_table::Entry::high_level_overflow) * 4);
+	batch += encoding::SH(helper::context_address, temp, FlagInfo::overflow_operation_offset);
+
+	// store the pointer
+	helper::load_immediate(batch, reinterpret_cast<uintptr_t>(callback), temp);
+	batch += encoding::SD(helper::context_address, temp, FlagInfo::overflow_ptr_offset);
 }

@@ -16,6 +16,8 @@ namespace codegen::jump_table {
 		debug_callback,
 		unsupported_carry,
 		unsupported_overflow,
+		high_level_carry,
+		high_level_overflow,
 		carry_clear,
 		carry_set,
 		overflow_clear,

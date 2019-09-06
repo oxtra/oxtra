@@ -77,9 +77,7 @@ void codegen::Mul::generate(codegen::CodeBatch& batch) const {
 			}
 		}
 	}
-	update_overflow(batch, jump_table::Entry::unsupported_overflow, encoding::RiscVRegister::zero,
-					encoding::RiscVRegister::zero, encoding::RiscVRegister::t4);
-	update_carry(batch, jump_table::Entry::unsupported_carry, encoding::RiscVRegister::zero,
-				 encoding::RiscVRegister::zero, encoding::RiscVRegister::t4);
+	update_overflow_unsupported(batch, "MUL", encoding::RiscVRegister::t4);
+	update_carry_unsupported(batch, "MUL", encoding::RiscVRegister::t4);
 
 }
