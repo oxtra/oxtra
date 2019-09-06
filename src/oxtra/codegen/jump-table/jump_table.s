@@ -47,13 +47,13 @@ unsupported_overflow:
 	# t1 = length of the string
 	ld a0, overflow_ptr(s11)
 	addi t1, zero, 0
-	overflow_label_1:
+overflow_label_1:
 	lb t0, 0(a0)
 	beqz t0, overflow_label_2
 	addi a0, a0, 1
 	addi t1, t1, 1
 	j overflow_label_1
-	overflow_label_2:
+overflow_label_2:
 
 	# iterate through the string and write it onto the stack
 	beqz t1, overflow_label_3
@@ -63,7 +63,7 @@ unsupported_overflow:
 	addi sp, sp, -1
 	addi t1, t1, -1
 	j overflow_label_2
-	overflow_label_3:
+overflow_label_3:
 
 	# append the closing bracket
 	addi t0, zero, '['
@@ -75,13 +75,13 @@ unsupported_overflow:
 	# t1 = length of the string
 	la a0, unsupported_overflow_string
 	addi t1, zero, 0
-	overflow_label_4:
+overflow_label_4:
 	lb t0, 0(a0)
 	beqz t0, overflow_label_5
 	addi a0, a0, 1
 	addi t1, t1, 1
 	j overflow_label_4
-	overflow_label_5:
+overflow_label_5:
 
 	# iterate through the string and write it onto the stack
 	beqz t1, overflow_label_6
@@ -91,7 +91,7 @@ unsupported_overflow:
 	addi sp, sp, -1
 	addi t1, t1, -1
 	j overflow_label_5
-	overflow_label_6:
+overflow_label_6:
 
 	# set the string-pointer to the stack-pointer and the exit-code
 	addi a0, sp, 1
@@ -115,13 +115,13 @@ unsupported_carry:
 	# t1 = length of the string
 	ld a0, carry_ptr(s11)
 	addi t1, zero, 0
-	carry_label_1:
+carry_label_1:
 	lb t0, 0(a0)
 	beqz t0, carry_label_2
 	addi a0, a0, 1
 	addi t1, t1, 1
 	j carry_label_1
-	carry_label_2:
+carry_label_2:
 
 	# iterate through the string and write it onto the stack
 	beqz t1, carry_label_3
@@ -131,7 +131,7 @@ unsupported_carry:
 	addi sp, sp, -1
 	addi t1, t1, -1
 	j carry_label_2
-	carry_label_3:
+carry_label_3:
 
 	# append the closing bracket
 	addi t0, zero, '['
@@ -143,13 +143,13 @@ unsupported_carry:
 	# t1 = length of the string
 	la a0, unsupported_carry_string
 	addi t1, zero, 0
-	carry_label_4:
+carry_label_4:
 	lb t0, 0(a0)
 	beqz t0, carry_label_5
 	addi a0, a0, 1
 	addi t1, t1, 1
 	j carry_label_4
-	carry_label_5:
+carry_label_5:
 
 	# iterate through the string and write it onto the stack
 	beqz t1, carry_label_6
@@ -159,7 +159,7 @@ unsupported_carry:
 	addi sp, sp, -1
 	addi t1, t1, -1
 	j carry_label_5
-	carry_label_6:
+carry_label_6:
 
 	# set the string-pointer to the stack-pointer and the exit-code
 	addi a0, sp, 1
