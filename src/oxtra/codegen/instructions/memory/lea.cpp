@@ -23,7 +23,7 @@ void codegen::Lea::generate(CodeBatch& batch) const {
 		// the register-encoding is a 16-bit register. Let move_to_register handle it
 		auto lea = translate_memory(batch, 1, encoding::RiscVRegister::t0, encoding::RiscVRegister::t1);
 		codegen::helper::move_to_register(batch, dest, lea,
-										  codegen::helper::operand_to_register_access(get_operand(0).get_size()),
+										  codegen::helper::operand_to_register_access(get_operand(0)),
 										  encoding::RiscVRegister::t2);
 	}
 

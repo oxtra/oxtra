@@ -78,6 +78,46 @@ RiscVRegister codegen::Instruction::translate_operand(CodeBatch& batch, size_t i
 	return encoding::RiscVRegister::zero;
 }
 
+RiscVRegister codegen::Instruction::load_operand(codegen::CodeBatch& batch, size_t index,
+										 RiscVRegister reg, RiscVRegister temp_a, RiscVRegister temp_b,
+										 bool sign_extend) const {
+	const auto& operand = get_operand(index);
+	uint8_t shamt = 64 - operand.get_size() * 8;
+
+	if (operand.get_type() == OperandType::reg) {
+		const auto gph = operand.get_register_type() == RegisterType::gph;
+		const auto destination_register = (gph ? map_reg_high : map_reg)(operand.get_register());
+
+		return load_register(batch, destination_register, reg, helper::operand_to_register_access(operand), sign_extend);
+	} else if (operand.get_type() == OperandType::mem) {
+		temp_a = translate_memory(batch, index, temp_a, temp_b);
+		switch (operand.get_size()) {
+			case 8:
+				batch += encoding::LD(reg, temp_a, 0);
+				break;
+			case 4:
+				batch += encoding::LW(reg, temp_a, 0);
+				break;
+			case 2:
+				batch += encoding::LH(reg, temp_a, 0);
+				break;
+			case 1:
+				batch += encoding::LB(reg, temp_a, 0);
+				break;
+		}
+		// memory instructions sign extend per default, so we undo it (if required)
+		if (!sign_extend && operand.get_size() != 8) {
+			batch += SLLI(reg, reg, shamt);
+			batch += SRLI(reg, reg, shamt);
+		}
+	} else if (operand.get_type() == OperandType::imm) {
+		load_immediate(batch, get_immediate(), reg);
+		// Immediates are interpreted sign_extended by both riscv and fadec, so we do nothing in here
+	}
+
+	return reg;
+}
+
 void
 codegen::Instruction::translate_destination(CodeBatch& batch, RiscVRegister reg, RiscVRegister address, RiscVRegister temp_a,
 											RiscVRegister temp_b) const {

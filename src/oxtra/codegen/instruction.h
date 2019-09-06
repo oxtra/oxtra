@@ -68,7 +68,8 @@ namespace codegen {
 
 	protected:
 		/**
-		 * Translates a single operand (either register, or memory or immediate value)
+		 * Translates a single operand (either register, or memory or immediate value) into the specified register. This method
+		 * does not ensure, that upper bits are cleared, or sign extended. Use load_operand if this functionality is required.
 		 * @param batch Store the current riscv-batch.
 		 * @param inst The x86 instruction object.
 		 * @param index operand-index of instruction.
@@ -81,6 +82,25 @@ namespace codegen {
 		encoding::RiscVRegister
 		translate_operand(CodeBatch& batch, size_t index, encoding::RiscVRegister reg, encoding::RiscVRegister temp_a,
 						  encoding::RiscVRegister temp_b) const;
+
+		/**
+		 * This method can be used to load a part of a register / value (e.g. a byte if op_size is a byte) and store it in a
+		 * register. Optionally, this value will be sign extended. Use this method when you do not change the operand but require
+		 * the plain value to be stored for further calculation.
+		 *
+		 * Contrary to the normal translate_operand method, this method can sign extend and ensures
+		 * that the destination register will only have the correct bits set. Further, the destination register itself will be
+		 * returned instead of the memory address. This can be used so that 64 bit registers do not have to be moved.
+		 * @param index The index of
+		 * @param reg The register that will be used to move the register to (if required). 64 bit registers do not have to be moved.
+		 * @param temp_a A temporary that might be changed.
+		 * @param temp_b A temporary that might be changed.
+		 * @param sign_extend If set to true, the value will be sign extended. This variable does not influence immediates.
+		 * @return The register where the operand has been loaded to (if it is e.g. just RAX, just RAX will be returned).
+		 */
+		encoding::RiscVRegister load_operand(codegen::CodeBatch& batch, size_t index,
+											 encoding::RiscVRegister reg, encoding::RiscVRegister temp_a,
+											 encoding::RiscVRegister temp_b, bool sign_extend) const;
 
 		/**
 		 * Writes the value in the register to the destination-operand of the instruction
