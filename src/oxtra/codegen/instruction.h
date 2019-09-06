@@ -68,7 +68,7 @@ namespace codegen {
 
 	protected:
 		/**
-		 * Translates a single operand (either register, or memory or immediate value)
+		 * Translates a single operand (either register, or memory or immediate value) into the specified register.
 		 * @param batch Store the current riscv-batch.
 		 * @param inst The x86 instruction object.
 		 * @param index operand-index of instruction.

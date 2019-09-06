@@ -6,6 +6,29 @@ using namespace fadec;
 using namespace codegen::helper;
 
 /**
+ * This moves (lazily) moves a register to another while clearing the destination register. The register will be
+ * sign extended if specified. If it is a high register (e.g. gph), while shifting back, 8 bits are added to the shift.
+ *
+ * If the register is specified with an operand size of 64 bit, nothing will happen and the src register simply returned.
+ */
+static RiscVRegister load_register(codegen::CodeBatch& batch, RiscVRegister src, RiscVRegister dest,
+								   uint8_t operand_size, bool high_register, bool sign_extend) {
+	uint8_t shamt = 64 - operand_size * 8;
+	if (high_register) shamt -= 8;
+
+	if (shamt == 0) return src;
+	else {
+		batch += encoding::SLLI(dest, src, shamt);
+
+		if (high_register) shamt += 8;
+
+		batch += (sign_extend ? encoding::SRAI : encoding::SRLI)(dest, dest, shamt);
+	}
+
+	return dest;
+}
+
+/**
  * This implementation can handle MUL, IMUL, IMUL2, and IMUL3.
  * Two source operands (s1 and s2) are multiplied and stored in the correct destination register.
  */
@@ -26,21 +49,18 @@ void codegen::Mul::generate(codegen::CodeBatch& batch) const {
 	if (get_type() == InstructionType::IMUL2) {
 		lower_destination = map_reg(get_operand(0).get_register());
 
-		src1 = translate_operand_lazy(batch, 0, src1, RiscVRegister::t4, RiscVRegister::t5);
-		src2 = translate_operand_lazy(batch, 1, src2, RiscVRegister::t4, RiscVRegister::t5);
+		src1 = load_operand(batch, 0, src1, RiscVRegister::t4, RiscVRegister::t5, true);
+		src2 = load_operand(batch, 1, src2, RiscVRegister::t4, RiscVRegister::t5, true);
 	} else if (get_type() == InstructionType::IMUL3) {
 		lower_destination = map_reg(get_operand(0).get_register());
 
-		src1 = translate_operand_lazy(batch, 1, src1, RiscVRegister::t4, RiscVRegister::t5);
-		load_immediate(batch, get_immediate(), src2);
+		src1 = load_operand(batch, 1, src1, RiscVRegister::t4, RiscVRegister::t5, true);
+		src2 = load_operand(batch, 2, src2, RiscVRegister::t4, RiscVRegister::t5, true);
+		//TODO: with r64 you can only specify a 32 bit immediate
+		//TODO: is is sign extended?
 	} else { // MUL, or IMUL
-		if (op_size == 8) {
-			src1 = RiscVRegister::rax;
-		} else {
-			src1 = RiscVRegister::t1;
-			move_to_register(batch, RiscVRegister::t1, RiscVRegister::rax, operand_to_register_access(op_size), RiscVRegister::t4, false);
-		}
-		src2 = translate_operand_lazy(batch, 0, src2, RiscVRegister::t4, RiscVRegister::t5);
+		src1 = load_register(batch, RiscVRegister::rax, src1, op_size, false, is_signed);
+		src2 = load_operand(batch, 0, src2, RiscVRegister::t4, RiscVRegister::t5, is_signed);
 	}
 
 	if (op_size == 8) {
@@ -58,101 +78,61 @@ void codegen::Mul::generate(codegen::CodeBatch& batch) const {
 		}
 	} else {
 		// in here we do not need MULH(U) because the result can be stored in 64 bit (hence MUL).
-
-		//if (is_signed) {
-			//TODO: sign_extend? load specially?
-		//}
-
-
-
 		const auto mul_result = RiscVRegister::t0;
 		batch += MUL(mul_result, src1, src2);
 
 		if (op_size == 1) {
 			//batch, lower_destination, RiscVRegister::t0, codegen::RegisterAccess::WORD, );
-			move_to_register(batch, lower_destination, RiscVRegister::t0,
+			move_to_register(batch, lower_destination, mul_result,
 							 RegisterAccess::WORD, RiscVRegister::t4, false);
 		} else {
-			move_to_register(batch, lower_destination, RiscVRegister::t0,
+			move_to_register(batch, lower_destination, mul_result,
 							 operand_to_register_access(op_size), RiscVRegister::t4, false);
-			batch += SRLI(mul_result, mul_result, op_size * 8);
-			move_to_register(batch, upper_destination, RiscVRegister::t0,
-							 operand_to_register_access(op_size), RiscVRegister::t4, false);
+			if (has_upper_destination) {
+				batch += SRLI(mul_result, mul_result, op_size * 8);
+				move_to_register(batch, upper_destination, mul_result,
+								 operand_to_register_access(op_size), RiscVRegister::t4, false);
+			}
 		}
 	}
 }
 
-RiscVRegister codegen::Mul::translate_operand_lazy(codegen::CodeBatch& batch, size_t index,
-												   RiscVRegister reg, RiscVRegister temp_a, RiscVRegister temp_b) const {
-	if (get_operand(index).get_type() == OperandType::reg && get_operand(index).get_size() == 8) {
-		return map_reg(get_operand(index).get_register());
-	}
+RiscVRegister codegen::Mul::load_operand(codegen::CodeBatch& batch, size_t index,
+										 RiscVRegister reg, RiscVRegister temp_a, RiscVRegister temp_b,
+										 bool sign_extend) const {
+	const auto& operand = get_operand(index);
+	uint8_t shamt = 64 - operand.get_size() * 8;
 
-	translate_operand(batch, index, reg, temp_a, temp_b);
+	if (operand.get_type() == OperandType::reg) {
+		const auto gph = operand.get_register_type() == RegisterType::gph;
+		const auto destination_register = (gph ? map_reg_high : map_reg)(operand.get_register());
+
+		return load_register(batch, destination_register, reg, operand.get_size(), gph, sign_extend);
+	} else if (operand.get_type() == OperandType::mem) {
+		temp_a = translate_memory(batch, index, temp_a, temp_b);
+		switch (operand.get_size()) {
+			case 8:
+				batch += encoding::LD(reg, temp_a, 0);
+				break;
+			case 4:
+				batch += encoding::LW(reg, temp_a, 0);
+				break;
+			case 2:
+				batch += encoding::LH(reg, temp_a, 0);
+				break;
+			case 1:
+				batch += encoding::LB(reg, temp_a, 0);
+				break;
+		}
+		// memory instructions sign extend per default, so we undo it (if required)
+		if (!sign_extend && operand.get_size() != 8) {
+			batch += SLLI(reg, reg, shamt);
+			batch += SRLI(reg, reg, shamt);
+		}
+	} else if (operand.get_type() == OperandType::imm) {
+		//TODO: are immediates sign extended?
+		load_immediate(batch, get_immediate(), reg);
+	}
 
 	return reg;
 }
-/*
-void CodeGenerator::translate_mul(const Instruction& inst, utils::riscv_instruction_t* riscv, size_t& count) {
-	const auto is_unsigned = (inst.get_type() == InstructionType::MUL ||
-							  inst.get_type() == InstructionType::MULX);
-
-	const auto op_size = inst.get_operand(0).get_size();
-	const auto mul_with_constant = inst.get_type() == InstructionType::IMUL3;
-
-	const auto lower_destination = mul_with_constant ? map_reg(inst.get_operand(0).get_register()) : RiscVRegister::rax;
-	constexpr auto upper_destination = RiscVRegister::rdx;
-
-	constexpr auto operand_register = RiscVRegister::t0;
-	const auto base_register = op_size == 8 ? lower_destination : RiscVRegister::t1;
-
-	if (mul_with_constant) {
-		load_unsigned_immediate(inst.get_immediate(), base_register, riscv, count);
-		translate_operand(inst, 1, operand_register, RiscVRegister::t1, RiscVRegister::t2, riscv, count);
-	} else {
-		translate_operand(inst, 0, operand_register, RiscVRegister::t1, RiscVRegister::t2, riscv, count);
-	}
-
-	if (op_size == 8) {
-		if (is_unsigned) {
-			riscv[count++] = MULHU(upper_destination, base_register, operand_register);
-		} else {
-			riscv[count++] = MULH(upper_destination, base_register, operand_register);
-		}
-		riscv[count++] = MUL(lower_destination, base_register, operand_register);
-	} else {
-		// 32 bit multiplication only requires a single MUL command, since the result fits in a single 64 bit register
-		const RegisterAccess register_type = operand_to_register_access(op_size);
-
-		if (is_unsigned) {
-			//since we use the base register as destination, we have to clear it first
-			riscv[count++] = ADDI(base_register, RiscVRegister::zero, 0);
-			move_to_register(base_register, lower_destination, register_type, RiscVRegister::t2, riscv, count, true);
-		} else {
-			sign_extend_register(operand_register, operand_register, op_size, riscv, count);
-
-			if (!mul_with_constant) {
-				sign_extend_register(base_register, lower_destination, op_size, riscv, count);
-				riscv[count++] = MULH(RiscVRegister::t2, base_register, operand_register);
-			}
-		}
-
-		riscv[count++] = MUL(base_register, base_register, operand_register);
-
-		if (is_unsigned) {
-			if (op_size == 1) {
-				move_to_register(lower_destination, base_register, RegisterAccess::WORD, RiscVRegister::t2, riscv, count);
-			} else {
-				move_to_register(lower_destination, base_register, register_type, RiscVRegister::t2, riscv, count);
-				riscv[count++] = SRLI(base_register, base_register, op_size * 8);
-				move_to_register(upper_destination, base_register, register_type, RiscVRegister::t2, riscv, count);
-			}
-		} else {
-			if (!mul_with_constant) {
-				move_to_register(upper_destination, RiscVRegister::t2, register_type, RiscVRegister::t3, riscv, count);
-			}
-			move_to_register(lower_destination, base_register, register_type, RiscVRegister::t3, riscv, count);
-		}
-	}
-}
- */
