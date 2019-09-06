@@ -12,6 +12,7 @@ TEST_CASE("Arguments support parsing valid arguments", "[arguments]") {
 		const auto arguments = Arguments(2, const_cast<char**>(args_string));
 
 		REQUIRE(arguments.get_guest_arguments().size() == 0);
+		REQUIRE(arguments.get_stack_size() > 0);
 		REQUIRE(arguments.get_instruction_list_size() > 0);
 		REQUIRE(arguments.get_entry_list_size() > 0);
 		REQUIRE(arguments.get_offset_list_size() > 0);
@@ -20,15 +21,16 @@ TEST_CASE("Arguments support parsing valid arguments", "[arguments]") {
 		REQUIRE(((int)arguments.get_step_mode()) == (int)StepMode::none);
 	}
 	SECTION("use modified arguments") {
-		constexpr const char* args_string[] = {"./oxtra", "-l", "5", "--linst-size=1337", "--lentry-size=42",
+		constexpr const char* args_string[] = {"./oxtra", "-l", "5", "--stack-size=1338", "--linst-size=1337", "--lentry-size=42",
 											   "--loffset-size=50", "app", "-a", "this is  a test", "--debug=RiscV"};
-		const auto arguments = Arguments(10, const_cast<char**>(args_string));
+		const auto arguments = Arguments(11, const_cast<char**>(args_string));
 
 		REQUIRE(arguments.get_guest_arguments().size() == 4);
 		REQUIRE(arguments.get_guest_arguments()[0] == "this");
 		REQUIRE(arguments.get_guest_arguments()[1] == "is");
 		REQUIRE(arguments.get_guest_arguments()[2] == "a");
 		REQUIRE(arguments.get_guest_arguments()[3] == "test");
+		REQUIRE(arguments.get_stack_size() == 1338);
 		REQUIRE(arguments.get_instruction_list_size() == 1337);
 		REQUIRE(arguments.get_entry_list_size() == 42);
 		REQUIRE(arguments.get_offset_list_size() == 50);

@@ -93,7 +93,7 @@ void codegen::helper::load_immediate(CodeBatch& batch, uintptr_t imm, encoding::
 
 	/* Number-structure: 00 00 01 11 22 23 33 44 */
 
-	// create the member-stack
+	// initialize the variables used for the generation
 	uint32_t packages[5] = {0};
 	bool increase[5] = {true, true, true, true, true};
 	uint8_t shifts[4] = {0};
@@ -152,12 +152,23 @@ void codegen::helper::load_immediate(CodeBatch& batch, uintptr_t imm, encoding::
 		 * of the number is set, or the two others before, we have to move the entire
 		 * digit up one, to have two zero's at its beginning. Otherwise the sign-extension
 		 * might lead to all of the zeros in front of the number to become one's. */
-		if (upper_value == 0 && equal_digits > 0 && current_bit >= 1) {
-			if (((imm >> static_cast<uint8_t>(current_bit + 1)) & 0x01u) &&
-				(((imm >> static_cast<uint8_t>(current_bit)) & 0x01u) ||
-				 ((imm >> static_cast<uint8_t>(current_bit - 1)) & 0x01u))) {
-				equal_digits--;
-				current_bit++;
+		if (upper_value == 0 && equal_digits > 0 && current_bit >= 11) {
+			// check if the lowest bit is set
+			if ((imm >> static_cast<uint8_t>(current_bit + 1)) & 0x01u) {
+				bool move_bit = true;
+				if (((imm >> static_cast<uint8_t>(current_bit)) & 0x01u) == 0) {
+					// look for another zero, which could catch a bit-flip in the upcoming 11 bits
+					for (uint8_t i = 1; i < 12; i++) {
+						if (i > current_bit)
+							break;
+						else if (((imm >> static_cast<uint8_t>(current_bit - i)) & 0x01u) == 0)
+							move_bit = false;
+					}
+				}
+				if (move_bit) {
+					equal_digits--;
+					current_bit++;
+				}
 			}
 		}
 

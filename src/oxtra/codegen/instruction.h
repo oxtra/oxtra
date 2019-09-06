@@ -122,7 +122,7 @@ namespace codegen {
 		 * @param index operand-index of instruction.
 		 * @param temp_a A temporary that might be changed.
 		 * @param temp_b A temporary that might be changed.
-		 * @return Returns the register containing the address (either temp_a, or a base-register)
+		 * @return Returns the register containing the address (either temp_a, a base-register/index-register or zero)
 		 */
 		encoding::RiscVRegister
 		translate_memory(CodeBatch& batch, size_t index, encoding::RiscVRegister temp_a, encoding::RiscVRegister temp_b) const;
