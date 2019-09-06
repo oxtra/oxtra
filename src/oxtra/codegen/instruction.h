@@ -149,10 +149,16 @@ namespace codegen {
 		void update_overflow(CodeBatch& batch, jump_table::Entry entry, encoding::RiscVRegister va, encoding::RiscVRegister vb,
 							 encoding::RiscVRegister temp) const;
 
+		void update_overflow(CodeBatch& batch, encoding::RiscVRegister entry,
+				encoding::RiscVRegister va, encoding::RiscVRegister vb) const;
+
 		void update_carry(CodeBatch& batch, bool set, encoding::RiscVRegister temp) const;
 
 		void update_carry(CodeBatch& batch, jump_table::Entry entry, encoding::RiscVRegister va, encoding::RiscVRegister vb,
 						  encoding::RiscVRegister temp) const;
+
+		void update_carry(CodeBatch& batch, encoding::RiscVRegister entry,
+							 encoding::RiscVRegister va, encoding::RiscVRegister vb) const;
 	};
 }
 

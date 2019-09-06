@@ -1,6 +1,7 @@
 #include "transform_instruction.h"
 
 #include "oxtra/codegen/instructions/arithmetic/add.h"
+#include "oxtra/codegen/instructions/arithmetic/adc.h"
 #include "oxtra/codegen/instructions/arithmetic/inc.h"
 #include "oxtra/codegen/instructions/arithmetic/sub.h"
 #include "oxtra/codegen/instructions/arithmetic/dec.h"
@@ -88,7 +89,11 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 		case InstructionType::JCXZ:
 			return std::make_unique<Jcxz>(inst);
 
-			case InstructionType::SUB:
+		case InstructionType::ADC:
+		case InstructionType::ADC_IMM:
+			return std::make_unique<Adc>(inst);
+
+		case InstructionType::SUB:
 		case InstructionType::SUB_IMM:
 			return std::make_unique<Sub>(inst);
 

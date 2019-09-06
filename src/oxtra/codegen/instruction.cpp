@@ -391,6 +391,16 @@ void codegen::Instruction::update_overflow(CodeBatch& batch, jump_table::Entry e
 	batch += encoding::SH(helper::context_address, temp, FlagInfo::overflow_operation_offset);
 }
 
+void codegen::Instruction::update_overflow(codegen::CodeBatch& batch, encoding::RiscVRegister entry, encoding::RiscVRegister va,
+										   encoding::RiscVRegister vb) const {
+	// store the values
+	batch += encoding::SD(helper::context_address, va, FlagInfo::overflow_values_offset);
+	batch += encoding::SD(helper::context_address, vb, FlagInfo::overflow_values_offset + 8);
+
+	// store the jump table index
+	batch += encoding::SH(helper::context_address, entry, FlagInfo::overflow_operation_offset);
+}
+
 void codegen::Instruction::update_carry(CodeBatch& batch, bool set, encoding::RiscVRegister temp) const {
 	// check if the instruction has to update the carry-flag
 	if ((update_flags & Flags::carry) == 0)
@@ -414,4 +424,14 @@ void codegen::Instruction::update_carry(CodeBatch& batch, jump_table::Entry entr
 	// store the jump table index
 	batch += encoding::ADDI(temp, RiscVRegister::zero, static_cast<uint16_t>(entry) * 4);
 	batch += encoding::SH(helper::context_address, temp, FlagInfo::carry_operation_offset);
+}
+
+void codegen::Instruction::update_carry(codegen::CodeBatch& batch, encoding::RiscVRegister entry, encoding::RiscVRegister va,
+										encoding::RiscVRegister vb) const {
+	// store the values
+	batch += encoding::SD(helper::context_address, va, FlagInfo::carry_values_offset);
+	batch += encoding::SD(helper::context_address, vb, FlagInfo::carry_values_offset + 8);
+
+	// store the jump table index
+	batch += encoding::SH(helper::context_address, entry, FlagInfo::carry_operation_offset);
 }
