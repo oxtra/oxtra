@@ -5,10 +5,28 @@
 
 using namespace encoding;
 
+codegen::helper::RegisterAccess codegen::helper::operand_to_register_access(const fadec::Operand& operand)  {
+	const auto op_size = operand.get_size();
+	if (op_size == 8) return RegisterAccess::QWORD;
+	if (op_size == 4) return RegisterAccess::DWORD;
+	if (op_size == 2) return RegisterAccess::WORD;
+
+	return operand.get_register_type() == fadec::RegisterType::gph ? RegisterAccess::HBYTE : RegisterAccess::LBYTE;
+}
+
 RiscVRegister codegen::helper::load_register(codegen::CodeBatch& batch, RiscVRegister src, RiscVRegister dest,
-											 uint8_t operand_size, bool high_register, bool sign_extend) {
+											 RegisterAccess access, bool sign_extend) {
+	uint8_t operand_size = 1;
+	if (access == RegisterAccess::QWORD) {
+		operand_size = 8;
+	} else if (access == RegisterAccess::DWORD) {
+		operand_size = 4;
+	} else if (access == RegisterAccess::WORD) {
+		operand_size = 2;
+	}
+
 	uint8_t shamt = 64 - operand_size * 8;
-	if (high_register) shamt -= 8;
+	if (access == RegisterAccess::HBYTE) shamt -= 8;
 
 	if (shamt == 0) {
 		return src;
@@ -18,7 +36,7 @@ RiscVRegister codegen::helper::load_register(codegen::CodeBatch& batch, RiscVReg
 		} else {
 			batch += encoding::SLLI(dest, src, shamt);
 
-			if (high_register) shamt += 8;
+			if (access == RegisterAccess::HBYTE) shamt += 8;
 
 			batch += (sign_extend ? encoding::SRAI : encoding::SRLI)(dest, dest, shamt);
 		}
@@ -34,13 +52,13 @@ void codegen::helper::move_to_register(CodeBatch& batch, RiscVRegister dest, Ris
 			batch += encoding::MV(dest, src);
 			return;
 		case RegisterAccess::DWORD:
-			load_register(batch, src, dest, 4, false, false);
+			load_register(batch, src, dest, access, false);
 			return;
 		case RegisterAccess::WORD:
 			// check if the upper source-register has to be cleared
 			if (!cleared) {
 				batch += encoding::XOR(temp, src, dest);
-				load_register(batch, temp, temp, 2, false, false);
+				load_register(batch, temp, temp, access, false);
 				batch += encoding::XOR(dest, temp, dest);
 			} else {
 				// clear the lower bits of the destination-register by shifting
@@ -63,7 +81,7 @@ void codegen::helper::move_to_register(CodeBatch& batch, RiscVRegister dest, Ris
 			batch += encoding::SRLI(temp, dest, 8);
 			batch += encoding::XOR(temp, temp, src);
 
-			load_register(batch, temp, temp, 8, true, false);
+			load_register(batch, temp, temp, access, false);
 
 			// xor the temporary register to the destination
 			batch += encoding::XOR(dest, temp, dest);

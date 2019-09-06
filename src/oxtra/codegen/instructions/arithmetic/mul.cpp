@@ -34,7 +34,7 @@ void codegen::Mul::generate(codegen::CodeBatch& batch) const {
 		src1 = load_operand(batch, 1, src1, RiscVRegister::t4, RiscVRegister::t5, true);
 		src2 = load_operand(batch, 2, src2, RiscVRegister::t4, RiscVRegister::t5, true);
 	} else { // MUL, or IMUL
-		src1 = load_register(batch, RiscVRegister::rax, src1, op_size, false, is_signed);
+		src1 = load_register(batch, RiscVRegister::rax, src1, operand_to_register_access(op_size), is_signed);
 		src2 = load_operand(batch, 0, src2, RiscVRegister::t4, RiscVRegister::t5, is_signed);
 	}
 
@@ -57,16 +57,23 @@ void codegen::Mul::generate(codegen::CodeBatch& batch) const {
 		batch += MUL(mul_result, src1, src2);
 
 		if (op_size == 1) {
-			//batch, lower_destination, RiscVRegister::t0, codegen::RegisterAccess::WORD, );
+			// if there is no upper destination, we have (I)MUL and store the result in AX
+			// otherwise, we have to store it in the first operand.
 			move_to_register(batch, lower_destination, mul_result,
-							 RegisterAccess::WORD, RiscVRegister::t4, false);
+							 has_upper_destination ? RegisterAccess::WORD : operand_to_register_access(get_operand(0)),
+							 RiscVRegister::t4, false);
 		} else {
 			move_to_register(batch, lower_destination, mul_result,
 							 operand_to_register_access(op_size), RiscVRegister::t4, false);
+
 			if (has_upper_destination) {
-				batch += SRLI(mul_result, mul_result, op_size * 8);
-				move_to_register(batch, upper_destination, mul_result,
-								 operand_to_register_access(op_size), RiscVRegister::t4, false);
+				if (op_size == 4) { // 32bit multiplication clears the upper bits, so we can omit the expensive moving
+					batch += SRLI(upper_destination, mul_result, 32);
+				} else {
+					batch += SRLI(mul_result, mul_result, op_size * 8);
+					move_to_register(batch, upper_destination, mul_result,
+									 operand_to_register_access(op_size), RiscVRegister::t4, false);
+				}
 			}
 		}
 	}
@@ -74,4 +81,5 @@ void codegen::Mul::generate(codegen::CodeBatch& batch) const {
 					encoding::RiscVRegister::zero, encoding::RiscVRegister::t4);
 	update_carry(batch, jump_table::Entry::unsupported_carry, encoding::RiscVRegister::zero,
 				 encoding::RiscVRegister::zero, encoding::RiscVRegister::t4);
+
 }

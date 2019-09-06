@@ -88,7 +88,7 @@ RiscVRegister codegen::Instruction::load_operand(codegen::CodeBatch& batch, size
 		const auto gph = operand.get_register_type() == RegisterType::gph;
 		const auto destination_register = (gph ? map_reg_high : map_reg)(operand.get_register());
 
-		return load_register(batch, destination_register, reg, operand.get_size(), gph, sign_extend);
+		return load_register(batch, destination_register, reg, helper::operand_to_register_access(operand), sign_extend);
 	} else if (operand.get_type() == OperandType::mem) {
 		temp_a = translate_memory(batch, index, temp_a, temp_b);
 		switch (operand.get_size()) {

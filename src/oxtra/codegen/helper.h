@@ -41,7 +41,14 @@ namespace codegen::helper {
 		if (op_size == 4) return RegisterAccess::DWORD;
 		return RegisterAccess::QWORD;
 	}
-	
+
+	/**
+	 * Get the register access for a given operand. It is not checked, whether the operand is a register or not.
+	 * @param op_size The operand that should be translated..
+	 * @return The correct RegisterAccess for the specified operand.
+	 */
+	RegisterAccess operand_to_register_access(const fadec::Operand& operand);
+
 	/**
 	 * Load a given src register lazily into a given destination register but only the required parts, optionally with sign extension.
 	 * All other bits are 0 (0/1 if sign extension is enabled).
@@ -54,13 +61,12 @@ namespace codegen::helper {
 	 *
 	 * @param src The source register that will be used as input.
 	 * @param dest The register the source will be loaded into if loading is required.
-	 * @param operand_size The size that will be loaded in bytes.
-	 * @param high_register If the register is a high register. This only works with 1byte operand_size.
+	 * @param operand_size The type of register that will be used.
 	 * @param sign_extend Whether the operand_size interpretation of the register should be sign-extended to 64bit.
 	 * @return The address where the value was loaded into (either src, or dest).
 	 */
 	encoding::RiscVRegister load_register(codegen::CodeBatch& batch, encoding::RiscVRegister src, encoding::RiscVRegister dest,
-										  uint8_t operand_size, bool high_register, bool sign_extend);
+										  RegisterAccess access, bool sign_extend);
 
 	/**
 	 * Writes a register with x86-style sub-manipulation to an existing register WITHOUT
