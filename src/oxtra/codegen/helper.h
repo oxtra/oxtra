@@ -64,19 +64,15 @@ namespace codegen::helper {
 
 	/**
 	 * Load an immediate of up to 64 bit into the register.
-	 * The immediate will not be sign extended (i.e. treated as unsigned) unless it is 64 bit (where sign extension
-	 * never happens).
 	 * This function always optimizes the number of instructions generated.
-	 * @param batch Store the current riscv-batch.
 	 * @param imm The immediate that will be loaded.
-	 * @param dest The regiser in which the immediate will be loaded.
+	 * @param dest The register in which the immediate will be loaded.
 	 */
 	void load_immediate(CodeBatch& batch, uintptr_t imm, encoding::RiscVRegister dest);
 
 	/**
 	 * Loads an address into a riscv register. Unconditionally generates 8 instruction.
 	 */
-
 	void load_address(CodeBatch& batch, uintptr_t ptr, encoding::RiscVRegister dest);
 
 	/**
