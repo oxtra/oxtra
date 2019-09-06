@@ -192,6 +192,8 @@ namespace codegen {
 
 		void update_overflow_high_level(CodeBatch& batch, uintptr_t(*callback)(void*),
 				encoding::RiscVRegister temp) const;
+
+		void call_high_level(CodeBatch& batch, uintptr_t(*callback)(void*)) const;
 	};
 }
 

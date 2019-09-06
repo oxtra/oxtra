@@ -14,6 +14,7 @@ namespace codegen::jump_table {
 		reroute_static,
 		reroute_dynamic,
 		debug_callback,
+		c_wrapper,
 		unsupported_carry,
 		unsupported_overflow,
 		high_level_carry,

@@ -517,3 +517,11 @@ void codegen::Instruction::update_overflow_high_level(CodeBatch& batch,
 	helper::load_immediate(batch, reinterpret_cast<uintptr_t>(callback), temp);
 	batch += encoding::SD(helper::context_address, temp, FlagInfo::overflow_ptr_offset);
 }
+
+void codegen::Instruction::call_high_level(CodeBatch& batch, uintptr_t(* callback)(void*)) const {
+	// load the address into t4
+	load_immediate(batch, reinterpret_cast<uintptr_t>(callback), encoding::RiscVRegister::t4);
+
+	// generate the code to invoke the jump-table-entry
+	jump_table::jump_table_entry(batch, jump_table::Entry::c_wrapper);
+}
