@@ -212,10 +212,8 @@ void codegen::helper::append_eob(CodeBatch& batch, uintptr_t ptr) {
 }
 
 void codegen::helper::append_eob(CodeBatch& batch, encoding::RiscVRegister reg) {
-	if (reg != helper::address_destination) {
+	if (reg != helper::address_destination)
 		batch += encoding::MV(helper::address_destination, reg);
-	}
-
 	jump_table::jump_reroute_dynamic(batch);
 }
 
@@ -228,8 +226,8 @@ void codegen::helper::sign_extend_register(codegen::CodeBatch& batch, RiscVRegis
 	}
 }
 
-std::pair<codegen::jump_table::Entry, codegen::jump_table::Entry> codegen::helper::calculate_entries(
-		jump_table::Entry carry, jump_table::Entry overflow, uint8_t size) {
+std::pair<codegen::jump_table::Entry, codegen::jump_table::Entry>
+codegen::helper::calculate_entries(jump_table::Entry carry, jump_table::Entry overflow, uint8_t size) {
 	switch (size) {
 		case 8:
 			return {jump_table::Entry(static_cast<uint16_t>(carry) + 3),

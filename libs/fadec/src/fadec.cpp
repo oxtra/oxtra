@@ -241,7 +241,7 @@ int fadec::decode_modrm(const uint8_t *buffer, size_t len, DecodeMode mode, Inst
 		auto reg_idx = rm;
 
 #if defined(ARCH_X86_64)
-		reg_idx += (prefixes & prefix_rexr) ? 8 : 0;
+		reg_idx += (prefixes & prefix_rexb) ? 8 : 0;
 #endif
 
 		o1->type = OperandType::reg;
