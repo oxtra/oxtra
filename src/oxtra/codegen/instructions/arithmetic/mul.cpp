@@ -56,8 +56,6 @@ void codegen::Mul::generate(codegen::CodeBatch& batch) const {
 
 		src1 = load_operand(batch, 1, src1, RiscVRegister::t4, RiscVRegister::t5, true);
 		src2 = load_operand(batch, 2, src2, RiscVRegister::t4, RiscVRegister::t5, true);
-		//TODO: with r64 you can only specify a 32 bit immediate
-		//TODO: is is sign extended?
 	} else { // MUL, or IMUL
 		src1 = load_register(batch, RiscVRegister::rax, src1, op_size, false, is_signed);
 		src2 = load_operand(batch, 0, src2, RiscVRegister::t4, RiscVRegister::t5, is_signed);
@@ -73,7 +71,7 @@ void codegen::Mul::generate(codegen::CodeBatch& batch) const {
 
 		batch += MUL(lower_destination, src1, src2);
 
-		if (upper_result != upper_destination) {
+		if (has_upper_destination && upper_result != upper_destination) {
 			batch += MV(upper_destination, upper_result);
 		}
 	} else {
@@ -130,8 +128,8 @@ RiscVRegister codegen::Mul::load_operand(codegen::CodeBatch& batch, size_t index
 			batch += SRLI(reg, reg, shamt);
 		}
 	} else if (operand.get_type() == OperandType::imm) {
-		//TODO: are immediates sign extended?
 		load_immediate(batch, get_immediate(), reg);
+		// Immediates are interpreted sign_extended by both riscv and fadec, so we do nothing in here
 	}
 
 	return reg;
