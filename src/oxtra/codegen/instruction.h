@@ -19,6 +19,10 @@ namespace codegen {
 		};
 
 		struct FlagInfo {
+			/*
+			 * IMPORTANT: If a new attribute is needed, append it to the list. Otherwise the assembler
+			 * won't function anymore.
+			 */
 			uint64_t zero_value;
 			uint64_t sign_value;
 			uint64_t overflow_value[2];
@@ -27,6 +31,9 @@ namespace codegen {
 			uint16_t carry_operation;
 			uint8_t sign_size;
 			uint8_t parity_value;
+			uint16_t __padding0;
+			uint64_t overflow_pointer;
+			uint64_t carry_pointer;
 
 			static constexpr uint32_t
 					flag_info_offset = 0x1F8,
@@ -37,7 +44,9 @@ namespace codegen {
 					overflow_operation_offset = flag_info_offset + sizeof(uint64_t) * 6,
 					carry_operation_offset = flag_info_offset + sizeof(uint64_t) * 6 + sizeof(uint16_t),
 					sign_size_offset = flag_info_offset + sizeof(uint64_t) * 6 + sizeof(uint16_t) * 2,
-					parity_value_offset = flag_info_offset + sizeof(uint64_t) * 6 + sizeof(uint16_t) * 2 + sizeof(uint8_t);
+					parity_value_offset = flag_info_offset + sizeof(uint64_t) * 6 + sizeof(uint16_t) * 2 + sizeof(uint8_t),
+					overflow_ptr_offset = flag_info_offset + sizeof(uint64_t) * 6 + sizeof(uint16_t) * 3 + sizeof(uint8_t) * 2,
+					carry_ptr_offset = flag_info_offset + sizeof(uint64_t) * 7 + sizeof(uint16_t) * 3 + sizeof(uint8_t) * 2;
 		};
 
 	private:
@@ -173,6 +182,30 @@ namespace codegen {
 
 		void update_carry(CodeBatch& batch, jump_table::Entry entry, encoding::RiscVRegister va, encoding::RiscVRegister vb,
 						  encoding::RiscVRegister temp) const;
+
+		void update_carry_unsupported(CodeBatch& batch, const char* instruction, encoding::RiscVRegister temp) const;
+
+		/*
+		 * Invokes the callback with ExecutionContext* as argument and stores the returnvalue in t4.
+		 * t4 Value will be overriden before reaching the callback
+		 */
+		void update_carry_high_level(CodeBatch& batch, uintptr_t(*callback)(void*),
+				encoding::RiscVRegister temp) const;
+
+		void update_overflow_unsupported(CodeBatch& batch, const char* instruction, encoding::RiscVRegister temp) const;
+
+		/*
+		 * Invokes the callback with ExecutionContext* as argument and stores the returnvalue in t4.
+		 * t4 Value will be overriden before reaching the callback
+		 */
+		void update_overflow_high_level(CodeBatch& batch, uintptr_t(*callback)(void*),
+				encoding::RiscVRegister temp) const;
+
+		/*
+		 * Invokes the callback with ExecutionContext* as argument and stores the returnvalue in t4.
+		 * t4 Value will be overriden before reaching the callback
+		 */
+		void call_high_level(CodeBatch& batch, uintptr_t(*callback)(void*)) const;
 	};
 }
 
