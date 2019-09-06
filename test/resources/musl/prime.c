@@ -25,7 +25,7 @@ int isPrimeNumber(int number) {
 }
 
 int getNextPrime(int start) {
-    start++;
+	start++;
 	while (1) {
 		if (isPrimeNumber(start)) return start;
 		
