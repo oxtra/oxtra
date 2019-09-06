@@ -93,6 +93,10 @@ void codegen::Mul::generate(codegen::CodeBatch& batch) const {
 			}
 		}
 	}
+	update_overflow(batch, jump_table::Entry::unsupported_overflow, encoding::RiscVRegister::zero,
+					encoding::RiscVRegister::zero, encoding::RiscVRegister::t4);
+	update_carry(batch, jump_table::Entry::unsupported_carry, encoding::RiscVRegister::zero,
+				 encoding::RiscVRegister::zero, encoding::RiscVRegister::t4);
 }
 
 RiscVRegister codegen::Mul::load_operand(codegen::CodeBatch& batch, size_t index,

@@ -59,24 +59,20 @@ namespace codegen::helper {
 	 * @param temp A temporary that might be changed.
 	 * @param cleared If true the upper bits of the source register are expected to be 0.
 	 */
-	void move_to_register(CodeBatch& batch, encoding::RiscVRegister dest, encoding::RiscVRegister src,
-						  RegisterAccess access, encoding::RiscVRegister temp, bool cleared = false);
+	void move_to_register(CodeBatch& batch, encoding::RiscVRegister dest, encoding::RiscVRegister src, RegisterAccess access,
+						  encoding::RiscVRegister temp, bool cleared = false);
 
 	/**
 	 * Load an immediate of up to 64 bit into the register.
-	 * The immediate will not be sign extended (i.e. treated as unsigned) unless it is 64 bit (where sign extension
-	 * never happens).
 	 * This function always optimizes the number of instructions generated.
-	 * @param batch Store the current riscv-batch.
 	 * @param imm The immediate that will be loaded.
-	 * @param dest The regiser in which the immediate will be loaded.
+	 * @param dest The register in which the immediate will be loaded.
 	 */
 	void load_immediate(CodeBatch& batch, uintptr_t imm, encoding::RiscVRegister dest);
 
 	/**
 	 * Loads an address into a riscv register. Unconditionally generates 8 instruction.
 	 */
-
 	void load_address(CodeBatch& batch, uintptr_t ptr, encoding::RiscVRegister dest);
 
 	/**
@@ -98,8 +94,8 @@ namespace codegen::helper {
 	 * @param src The register that contains the value that will be sign extended.
 	 * @param byte The number of bytes that are stored in the given register (e.g. EAX: 4, AX: 2).
 	 */
-	void sign_extend_register(codegen::CodeBatch& batch,
-							  encoding::RiscVRegister dest, encoding::RiscVRegister src, size_t byte);
+	void
+	sign_extend_register(codegen::CodeBatch& batch, encoding::RiscVRegister dest, encoding::RiscVRegister src, size_t byte);
 
 	/**
 	 * Calculates the jump table indices for the carry and overflow flags based on the size of the operand.
@@ -108,8 +104,8 @@ namespace codegen::helper {
 	 * @param size The operand size.
 	 * @return The pair consisting of {new_carry_index, new_overflow_index}.
 	 */
-	std::pair<jump_table::Entry, jump_table::Entry> calculate_entries(jump_table::Entry carry, jump_table::Entry overflow,
-																	  uint8_t size);
+	std::pair<jump_table::Entry, jump_table::Entry>
+	calculate_entries(jump_table::Entry carry, jump_table::Entry overflow, uint8_t size);
 
 	/**
 	 * Returns the riscv-register, which maps to the x86-register.

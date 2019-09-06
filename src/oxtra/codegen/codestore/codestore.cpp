@@ -107,9 +107,7 @@ void CodeStore::insert_block(codegen::codestore::BlockEntry& block, utils::guest
 
 		page_array.push_back(&block);
 
-	}
-
-	else if (block.x86_end != x86_address) {
+	} else if (block.x86_end != x86_address) {
 		// maybe do this for the debug build only?
 		throw std::runtime_error("Tried to add a non-consecutive instruction to a block.");
 	}
