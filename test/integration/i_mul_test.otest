@@ -1,4 +1,4 @@
 # Testing if the basic (I)-MUL functionality works as expected.
-./oxtra -l 2 test/resources/no_libc/i_mul_test
->>> /.*guest returned: 0x38c7b351 \(952611665\).*/
->>>= 81
+./oxtra -l 2 test/resources/no_libc/i_mul_test --linst-size=500
+>>> /.*guest returned: 0xe06bfa30 \(3765172784\).*/
+>>>= 48
