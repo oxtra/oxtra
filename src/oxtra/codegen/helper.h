@@ -83,7 +83,6 @@ namespace codegen::helper {
 	/**
 	 * Reads a register with x86-style sub-manipulation into a temporary register.
 	 * Undefined behavior if src == temp.
-	 *
 	 * @param src The source to copy.
 	 * @param access The Operand-size (8=QWORD, 4=DWORD, 2=WORD, 1=LBYTE, 0=HBYTE)
 	 * @param modifiable The resulting register must be modifiable (Enforces returning the temp register).

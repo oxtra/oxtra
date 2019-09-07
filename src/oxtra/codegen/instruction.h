@@ -82,7 +82,7 @@ namespace codegen {
 		 * @param inst The x86 instruction object.
 		 * @param index operand-index of instruction.
 		 * @param address If the operation was a memory-operation, this register will contain the address (for optimizations).
-		 * 		  Either: zero, temp_b or one of the mapped registers.
+		 * 		  Either: zero, temp_b or one of the mapped registers. (can be Null)
 		 * @param temp_a A temporary that might be changed.
 		 * @param temp_b A temporary that might be changed.
 		 * @param modifiable If true, the function will ensure to load the value into a temporary register.
@@ -93,13 +93,13 @@ namespace codegen {
 		 * @return The register which contains the value.
 		 * 		   Either: temp_a or one of the mapped registers (or zero, if the operand-type is unknown).
 		 */
-		encoding::RiscVRegister translate_operand(CodeBatch& batch, size_t index, encoding::RiscVRegister& address,
+		encoding::RiscVRegister translate_operand(CodeBatch& batch, size_t index, encoding::RiscVRegister* address,
 												  encoding::RiscVRegister temp_a, encoding::RiscVRegister temp_b,
 												  bool modifiable, bool full_load, bool sign_extend) const;
 
 		/**
 		 * Writes the value in the register to the destination-operand of the instruction.
-		 * The register will be preserved.
+		 * The register will be preserved. Undefined behavior for reg == operand->reg.
 		 * @param batch Store the current riscv-batch.
 		 * @param inst The x86 instruction object.
 		 * @param reg This value will be written to the destination.
