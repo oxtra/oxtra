@@ -35,11 +35,6 @@ namespace codegen::jump_table {
 		carry_adc_16,
 		carry_adc_32,
 		carry_adc_64,
-		carry_sub,
-		carry_sub_8 = carry_sub,
-		carry_sub_16,
-		carry_sub_32,
-		carry_sub_64,
 
 		overflow_add,
 		overflow_add_8 = overflow_add,

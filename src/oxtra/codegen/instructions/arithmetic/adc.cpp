@@ -38,3 +38,7 @@ void codegen::Adc::execute_operation(CodeBatch& batch, encoding::RiscVRegister d
 		batch += encoding::ADD(dst, encoding::RiscVRegister::t4, dst);
 	}
 }
+
+void codegen::Adc::execute_operation(CodeBatch& batch, encoding::RiscVRegister dst, intptr_t imm) const {
+	
+}

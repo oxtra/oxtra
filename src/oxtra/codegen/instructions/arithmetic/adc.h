@@ -10,6 +10,8 @@ namespace codegen {
 				: BinaryOperation{inst, flags::all, flags::carry, true} {}
 
 		void execute_operation(CodeBatch& batch, encoding::RiscVRegister dst, encoding::RiscVRegister src) const override;
+
+		void execute_operation(CodeBatch& batch, encoding::RiscVRegister dst, intptr_t imm) const override;
 	};
 }
 

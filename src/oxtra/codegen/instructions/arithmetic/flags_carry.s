@@ -11,11 +11,6 @@
 .global carry_adc_32
 .global carry_adc_64
 
-.global carry_sub_8
-.global carry_sub_16
-.global carry_sub_32
-.global carry_sub_64
-
 .section .text
 
 # execution context defintions
@@ -84,25 +79,3 @@ carry_adc_64:
 	sltu t4, t4, t5 # (dst <= src) == !(dst > src) == !(src < dst)
 	xori t4, t4, 1 # carry = !t4
 	ret
-
-# handle sub
-carry_sub_8:
-	lbu t4, value0(s11) # old_dst
-    lbu t5, value1(s11) # new_dst
-    sgtu t4, t5, t4 # result = (new_dst > old_dst)
-    ret
-carry_sub_16:
-	lhu t4, value0(s11) # old_dst
-    lhu t5, value1(s11) # new_dst
-    sgtu t4, t5, t4 # result = (new_dst > old_dst)
-    ret
-carry_sub_32:
-	lwu t4, value0(s11) # old_dst
-    lwu t5, value1(s11) # new_dst
-    sgtu t4, t5, t4 # result = (new_dst > old_dst)
-    ret
-carry_sub_64:
-	ld t4, value0(s11) # old_dst
-    ld t5, value1(s11) # new_dst
-    sgtu t4, t5, t4 # result = (new_dst > old_dst)
-    ret
