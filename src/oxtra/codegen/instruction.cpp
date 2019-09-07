@@ -41,110 +41,55 @@ std::string codegen::Instruction::string() const {
 	return buffer;
 }
 
-RiscVRegister codegen::Instruction::translate_operand(CodeBatch& batch, size_t index, RiscVRegister reg, RiscVRegister temp_a,
-													  RiscVRegister temp_b) const {
+RiscVRegister codegen::Instruction::translate_operand(CodeBatch& batch, size_t index, RiscVRegister& address,
+													  RiscVRegister temp_a, RiscVRegister temp_b,
+													  bool modifiable, bool full_load, bool sign_extend) const {
 	// extract the operand
 	auto& operand = get_operand(index);
 
-	// load the source-operand into the temporary-register
-	if (operand.get_type() == OperandType::reg) {
-		/* read the value from the register (read the whole register
-		 * (unless HBYTE is required), and just cut the rest when writing the register */
-		if (operand.get_register_type() == RegisterType::gph) {
-			batch += encoding::SRLI(reg, map_reg_high(operand.get_register()), 8);
-		} else
-			batch += encoding::ADD(reg, map_reg(operand.get_register()), RiscVRegister::zero);
-	} else if (operand.get_type() == OperandType::imm)
-		load_immediate(batch, get_immediate(), reg);
-	else if (operand.get_type() == OperandType::mem) {
-		// read the value from memory
-		temp_a = translate_memory(batch, index, temp_a, temp_b);
-		switch (operand.get_size()) {
-			case 8:
-				batch += encoding::LD(reg, temp_a, 0);
-				break;
-			case 4:
-				batch += encoding::LW(reg, temp_a, 0);
-				break;
-			case 2:
-				batch += encoding::LH(reg, temp_a, 0);
-				break;
-			case 1:
-				batch += encoding::LB(reg, temp_a, 0);
-				break;
-		}
+	// check if the operand is a memory-access
+	if (operand.get_type() == OperandType::mem) {
+		address = read_from_memory(batch, index, temp_a, temp_b, sign_extend);
 		return temp_a;
 	}
-	return encoding::RiscVRegister::zero;
-}
 
-RiscVRegister codegen::Instruction::load_operand(codegen::CodeBatch& batch, size_t index,
-												 RiscVRegister reg, RiscVRegister temp_a, RiscVRegister temp_b,
-												 bool sign_extend) const {
-	const auto& operand = get_operand(index);
-	uint8_t shamt = 64 - operand.get_size() * 8;
+	// clear the address-register
+	address = RiscVRegister::zero;
 
+	// check if the operand describes a register
 	if (operand.get_type() == OperandType::reg) {
-		const auto gph = operand.get_register_type() == RegisterType::gph;
-		const auto destination_register = (gph ? map_reg_high : map_reg)(operand.get_register());
+		// extract the mapped register
+		const bool high_reg = operand.get_register_type() == RegisterType::gph;
+		const auto mapped_reg = (high_reg ? map_reg_high : map_reg)(operand.get_register());
 
-		return load_register(batch, destination_register, reg, helper::operand_to_register_access(operand), sign_extend);
-	} else if (operand.get_type() == OperandType::mem) {
-		temp_a = translate_memory(batch, index, temp_a, temp_b);
-		switch (operand.get_size()) {
-			case 8:
-				batch += encoding::LD(reg, temp_a, 0);
-				break;
-			case 4:
-				batch += encoding::LW(reg, temp_a, 0);
-				break;
-			case 2:
-				batch += encoding::LH(reg, temp_a, 0);
-				break;
-			case 1:
-				batch += encoding::LB(reg, temp_a, 0);
-				break;
-		}
-		// memory instructions sign extend per default, so we undo it (if required)
-		if (!sign_extend && operand.get_size() != 8) {
-			batch += SLLI(reg, reg, shamt);
-			batch += SRLI(reg, reg, shamt);
-		}
-	} else if (operand.get_type() == OperandType::imm) {
-		load_immediate(batch, get_immediate(), reg);
-		// Immediates are interpreted sign_extended by both riscv and fadec, so we do nothing in here
+		// extract the register
+		return helper::load_from_register(batch, mapped_reg, high_reg ? 0 : operand.get_size(),
+										  temp_a, modifiable, full_load, sign_extend);
 	}
 
-	return reg;
+	// check if the operand describes an immediate
+	if (operand.get_type() == OperandType::imm) {
+		load_immediate(batch, get_immediate(), temp_a);
+		return temp_a;
+	}
+
+	// If this point is reached, the operand-type is unknown
+	return RiscVRegister::zero;
 }
 
-void
-codegen::Instruction::translate_destination(CodeBatch& batch, RiscVRegister reg, RiscVRegister address, RiscVRegister temp_a,
-											RiscVRegister temp_b) const {
+void codegen::Instruction::translate_destination(CodeBatch& batch, RiscVRegister reg, RiscVRegister address,
+												 RiscVRegister temp_a, RiscVRegister temp_b) const {
 	auto& operand = get_operand(0);
 
 	// check if the destination is a register
 	if (operand.get_type() == OperandType::reg) {
-		const auto temp_reg = map_reg(operand.get_register());
-		switch (operand.get_size()) {
-			case 8:
-				if (temp_reg != reg)
-					move_to_register(batch, temp_reg, reg, RegisterAccess::QWORD, temp_b);
-				break;
-			case 4:
-				move_to_register(batch, temp_reg, reg, RegisterAccess::DWORD, temp_b);
-				break;
-			case 2:
-				move_to_register(batch, temp_reg, reg, RegisterAccess::WORD, temp_b);
-				break;
-			case 1:
-				if (operand.get_register_type() == RegisterType::gph) {
-					move_to_register(batch, map_reg_high(operand.get_register()), reg, RegisterAccess::HBYTE, temp_b);
-				} else {
-					move_to_register(batch, temp_reg, reg, RegisterAccess::LBYTE, temp_b);
-				}
-				break;
-		}
+		// extract the mapped register
+		const bool high_reg = operand.get_register_type() == RegisterType::gph;
+		const auto mapped_reg = (high_reg ? map_reg_high : map_reg)(operand.get_register());
+
+		// write the register to the destination
+		if (operand.get_size() != 8 || mapped_reg != reg)
+			move_to_register(batch, mapped_reg, reg, high_reg ? 0 : operand.get_size(), temp_a, false);
 		return;
 	}
 
@@ -152,38 +97,25 @@ codegen::Instruction::translate_destination(CodeBatch& batch, RiscVRegister reg,
 	if (operand.get_type() != OperandType::mem)
 		return;
 
-	// translate the memory-address and write the value to it
-	if (address == encoding::RiscVRegister::zero)
-		address = translate_memory(batch, 0, temp_a, temp_b);
-	switch (operand.get_size()) {
-		case 8:
-			batch += encoding::SD(address, reg, 0);
-			break;
-		case 4:
-			batch += encoding::SW(address, reg, 0);
-			break;
-		case 2:
-			batch += encoding::SH(address, reg, 0);
-			break;
-		case 1:
-			batch += encoding::SB(address, reg, 0);
-			break;
-	}
+	// write the value to memory
+	write_to_memory(batch, 0, reg, temp_a, temp_b, address);
 }
 
-RiscVRegister
-codegen::Instruction::translate_memory(CodeBatch& batch, size_t index, RiscVRegister temp_a, RiscVRegister temp_b) const {
+RiscVRegister codegen::Instruction::translate_memory(CodeBatch& batch, size_t index, RiscVRegister temp_a,
+													 RiscVRegister temp_b) const {
 	if (get_address_size() < 4)
 		dispatcher::Dispatcher::fault_exit("invalid addressing-size");
 	const auto& operand = get_operand(index);
 
+	// extract the displacement
+	const auto displacement = static_cast<intptr_t>(static_cast<uintptr_t>(get_displacement()) &
+													(get_address_size() == 8 ? 0xffffffffffffffffull : 0x00000000ffffffffull));
+
 	// analyze the input (0 = doesn't exist, 1 = optimizable, 2 = unoptimizable)
-	uint8_t disp_exists = get_displacement() == 0 ? 0 : (get_displacement() >= -0x800 && get_displacement() < 0x800 ? 1 : 2);
+	uint8_t disp_exists = displacement == 0 ? 0 : (displacement >= -0x800 && displacement < 0x800 ? 1 : 2);
 	uint8_t index_exists = get_index_register() == fadec::Register::none ? 0 : (get_index_scale() == 1 ? 1 : 2);
 	uint8_t base_exists = operand.get_register() == fadec::Register::none ? 0 : (get_address_size() == 8 && disp_exists == 0 &&
 																				 index_exists == 0 ? 1 : 2);
-	uint64_t disp_mask = get_address_size() == 8 ? 0xffffffffffffffffull : 0x00000000ffffffffull;
-
 	// check if zero is addressed
 	if (disp_exists == 0 && index_exists == 0 && base_exists == 0)
 		return RiscVRegister::zero;
@@ -210,7 +142,7 @@ codegen::Instruction::translate_memory(CodeBatch& batch, size_t index, RiscVRegi
 
 			if (disp_exists) {
 				// [base + index*1 + lDisp]
-				helper::load_immediate(batch, get_displacement() & disp_mask, temp_b);
+				helper::load_immediate(batch, displacement, temp_b);
 				batch += encoding::ADD(result, result, temp_b);
 			}
 		} else if (base_exists == 1)
@@ -220,7 +152,7 @@ codegen::Instruction::translate_memory(CodeBatch& batch, size_t index, RiscVRegi
 			// nothing can be optimized
 			batch += encoding::ADD(result, RiscVRegister::zero, map_reg(operand.get_register()));
 			if (disp_exists) {
-				helper::load_immediate(batch, get_displacement() & disp_mask, temp_b);
+				helper::load_immediate(batch, displacement, temp_b);
 				batch += encoding::ADD(result, result, temp_b);
 			}
 			if (index_exists) {
@@ -235,7 +167,7 @@ codegen::Instruction::translate_memory(CodeBatch& batch, size_t index, RiscVRegi
 		else {
 			// [index*n + lDisp]
 			batch += encoding::SLLI(result, map_reg(get_index_register()), get_index_scale());
-			helper::load_immediate(batch, get_displacement() & disp_mask, temp_b);
+			helper::load_immediate(batch, displacement, temp_b);
 			batch += encoding::ADD(result, result, temp_b);
 		}
 	else if (index_exists) {
@@ -248,7 +180,7 @@ codegen::Instruction::translate_memory(CodeBatch& batch, size_t index, RiscVRegi
 			batch += encoding::SLLI(result, map_reg(get_index_register()), get_index_scale());
 	} else
 		// [disp]
-		load_immediate(batch, get_displacement() & disp_mask, result);
+		load_immediate(batch, displacement, result);
 
 	// check if the addressing-mode is a 32-bit mode
 	if (get_address_size() == 4 && (index_exists || base_exists)) {
@@ -256,6 +188,124 @@ codegen::Instruction::translate_memory(CodeBatch& batch, size_t index, RiscVRegi
 		batch += encoding::SRLI(result, result, 32);
 	}
 	return result;
+}
+
+RiscVRegister codegen::Instruction::read_from_memory(CodeBatch& batch, size_t index, encoding::RiscVRegister dest,
+													 encoding::RiscVRegister temp, bool sign_extended) const {
+	if (get_address_size() < 4)
+		dispatcher::Dispatcher::fault_exit("invalid addressing-size");
+	const auto& operand = get_operand(index);
+
+	// extract the displacement
+	auto displacement = static_cast<intptr_t>(static_cast<uintptr_t>(get_displacement()) &
+											  (get_address_size() == 8 ? 0xffffffffffffffffull : 0x00000000ffffffffull));
+
+	// check if the memory-access is simple and compute the address
+	RiscVRegister base;
+	if (displacement >= -0x800 && displacement < 0x800) {
+		base = RiscVRegister::zero;
+		// check if a base exists
+		if (operand.get_register() != Register::none)
+			base = map_reg(operand.get_register());
+
+		// check if an index exists
+		if (get_index_register() != Register::none) {
+			if (base != RiscVRegister::zero) {
+				if (get_index_scale() == 1)
+					batch += encoding::ADD(temp, base, map_reg(get_index_register()));
+				else {
+					batch += encoding::SLLI(temp, map_reg(get_index_register()), get_index_scale());
+					batch += encoding::ADD(temp, temp, base);
+				}
+				base = temp;
+			} else if (get_index_scale() == 1)
+				base = map_reg(get_index_register());
+			else {
+				batch += encoding::SLLI(temp, map_reg(get_index_register()), get_index_scale());
+				base = temp;
+			}
+		}
+	} else {
+		base = translate_memory(batch, index, temp, dest);
+		displacement = 0;
+	}
+
+	// generate the memory-access
+	switch (operand.get_size()) {
+		case 8:
+			batch += encoding::LD(dest, base, displacement);
+			break;
+		case 4:
+			batch += (sign_extended ? encoding::LW : encoding::LWU)(dest, base, displacement);
+			break;
+		case 2:
+			batch += (sign_extended ? encoding::LH : encoding::LHU)(dest, base, displacement);
+			break;
+		case 1:
+		default:
+			batch += (sign_extended ? encoding::LB : encoding::LBU)(dest, base, displacement);
+			break;
+	}
+	return base;
+}
+
+void codegen::Instruction::write_to_memory(CodeBatch& batch, size_t index, encoding::RiscVRegister src,
+										   encoding::RiscVRegister temp_a, encoding::RiscVRegister temp_b,
+										   encoding::RiscVRegister address) const {
+	if (get_address_size() < 4)
+		dispatcher::Dispatcher::fault_exit("invalid addressing-size");
+	const auto& operand = get_operand(index);
+
+	// extract the displacement
+	auto displacement = static_cast<intptr_t>(static_cast<uintptr_t>(get_displacement()) &
+											  (get_address_size() == 8 ? 0xffffffffffffffffull : 0x00000000ffffffffull));
+
+	// check if the memory-access is simple and compute the address
+	if (address == encoding::RiscVRegister::zero) {
+		if (displacement >= -0x800 && displacement < 0x800) {
+			// check if a base exists
+			if (operand.get_register() != Register::none)
+				address = map_reg(operand.get_register());
+
+			// check if an index exists
+			if (get_index_register() != Register::none) {
+				if (address != RiscVRegister::zero) {
+					if (get_index_scale() == 1)
+						batch += encoding::ADD(temp_a, address, map_reg(get_index_register()));
+					else {
+						batch += encoding::SLLI(temp_a, map_reg(get_index_register()), get_index_scale());
+						batch += encoding::ADD(temp_a, temp_a, address);
+					}
+					address = temp_a;
+				} else if (get_index_scale() == 1)
+					address = map_reg(get_index_register());
+				else {
+					batch += encoding::SLLI(temp_a, map_reg(get_index_register()), get_index_scale());
+					address = temp_a;
+				}
+			}
+		} else {
+			address = translate_memory(batch, index, temp_a, temp_b);
+			displacement = 0;
+		}
+	}
+
+	// generate the memory-access
+	switch (operand.get_size()) {
+		case 8:
+			batch += encoding::SD(address, src, displacement);
+			break;
+		case 4:
+			batch += encoding::SW(address, src, displacement);
+			break;
+		case 2:
+			batch += encoding::SH(address, src, displacement);
+			break;
+		case 1:
+		default:
+			batch += encoding::SB(address, src, displacement);
+			break;
+	}
 }
 
 void codegen::Instruction::evaluate_zero(CodeBatch& batch) const {
