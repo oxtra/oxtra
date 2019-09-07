@@ -2,53 +2,11 @@
 #define OXTRA_INSTRUCTION_H
 
 #include "oxtra/utils/types.h"
-#include "jump-table/jump_table.h"
+#include "oxtra/codegen/jump-table/jump_table.h"
+#include "oxtra/dispatcher/execution_context.h"
 
 namespace codegen {
 	class Instruction : protected fadec::Instruction {
-	public:
-		struct Flags {
-			static constexpr uint8_t
-					none = 0x00,
-					carry = 0x01,
-					zero = 0x02,
-					sign = 0x04,
-					overflow = 0x08,
-					parity = 0x10,
-					all = carry | zero | sign | overflow | parity;
-		};
-
-		struct FlagInfo {
-			/*
-			 * IMPORTANT: If a new attribute is needed, append it to the list. Otherwise the assembler
-			 * won't function anymore.
-			 */
-			uint64_t zero_value;
-			uint64_t sign_value;
-			uint64_t overflow_value[2];
-			uint64_t carry_value[2];
-			uint16_t overflow_operation;
-			uint16_t carry_operation;
-			uint8_t sign_size;
-			uint8_t parity_value;
-			uint16_t __padding0;
-			uint64_t overflow_pointer;
-			uint64_t carry_pointer;
-
-			static constexpr uint32_t
-					flag_info_offset = 0x1F8,
-					zero_value_offset = flag_info_offset + sizeof(uint64_t) * 0,
-					sign_value_offset = flag_info_offset + sizeof(uint64_t) * 1,
-					overflow_values_offset = flag_info_offset + sizeof(uint64_t) * 2,
-					carry_values_offset = flag_info_offset + sizeof(uint64_t) * 4,
-					overflow_operation_offset = flag_info_offset + sizeof(uint64_t) * 6,
-					carry_operation_offset = flag_info_offset + sizeof(uint64_t) * 6 + sizeof(uint16_t),
-					sign_size_offset = flag_info_offset + sizeof(uint64_t) * 6 + sizeof(uint16_t) * 2,
-					parity_value_offset = flag_info_offset + sizeof(uint64_t) * 6 + sizeof(uint16_t) * 2 + sizeof(uint8_t),
-					overflow_ptr_offset = flag_info_offset + sizeof(uint64_t) * 6 + sizeof(uint16_t) * 3 + sizeof(uint8_t) * 2,
-					carry_ptr_offset = flag_info_offset + sizeof(uint64_t) * 7 + sizeof(uint16_t) * 3 + sizeof(uint8_t) * 2;
-		};
-
 	private:
 		uint8_t update_flags;
 		uint8_t require_flags;
@@ -56,6 +14,8 @@ namespace codegen {
 
 	protected:
 		explicit Instruction(const fadec::Instruction& inst, uint8_t update, uint8_t require, bool eob = false);
+
+		using c_callback_t = uintptr_t(*)(dispatcher::ExecutionContext*);
 
 	public:
 		virtual void generate(CodeBatch& batch) const = 0;
@@ -189,7 +149,7 @@ namespace codegen {
 		 * Invokes the callback with ExecutionContext* as argument and stores the returnvalue in t4.
 		 * t4 Value will be overriden before reaching the callback
 		 */
-		void update_carry_high_level(CodeBatch& batch, uintptr_t(*callback)(void*),
+		void update_carry_high_level(CodeBatch& batch, c_callback_t callback,
 				encoding::RiscVRegister temp) const;
 
 		void update_overflow_unsupported(CodeBatch& batch, const char* instruction, encoding::RiscVRegister temp) const;
@@ -198,14 +158,14 @@ namespace codegen {
 		 * Invokes the callback with ExecutionContext* as argument and stores the returnvalue in t4.
 		 * t4 Value will be overriden before reaching the callback
 		 */
-		void update_overflow_high_level(CodeBatch& batch, uintptr_t(*callback)(void*),
+		void update_overflow_high_level(CodeBatch& batch, c_callback_t callback,
 				encoding::RiscVRegister temp) const;
 
 		/*
 		 * Invokes the callback with ExecutionContext* as argument and stores the returnvalue in t4.
 		 * t4 Value will be overriden before reaching the callback
 		 */
-		void call_high_level(CodeBatch& batch, uintptr_t(*callback)(void*)) const;
+		void call_high_level(CodeBatch& batch, c_callback_t callback) const;
 	};
 }
 
