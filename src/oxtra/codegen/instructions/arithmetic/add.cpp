@@ -13,8 +13,21 @@ void codegen::Add::execute_operation(CodeBatch& batch, encoding::RiscVRegister d
 }
 
 void codegen::Add::execute_operation(CodeBatch& batch, encoding::RiscVRegister dst, intptr_t imm) const {
-	batch += encoding::ADDI(dst, dst, imm);
+	const auto get_entries = [](intptr_t imm, uint8_t size) -> std::pair<jump_table::Entry, jump_table::Entry> {
+		if (imm >= 0) {
+			return helper::calculate_entries(
+					jump_table::Entry::carry_add, jump_table::Entry::overflow_add_pos, size);
+		} else {
+			return helper::calculate_entries(
+					jump_table::Entry::carry_add, jump_table::Entry::overflow_add_neg, size);
+		}
+	};
 
-	update_carry_unsupported(batch, "ADD - Imm", encoding::RiscVRegister::t4);
-	update_overflow_unsupported(batch, "ADD - Imm", encoding::RiscVRegister::t4);
+	const auto [carry, overflow] = get_entries(imm, get_operand(0).get_size());
+
+	update_carry_single(batch, dst);
+	update_overflow_single(batch, dst);
+	batch += encoding::ADDI(dst, dst, imm);
+	update_carry_single(batch, carry, dst, encoding::RiscVRegister::t4);
+	update_overflow_single(batch, overflow, dst, encoding::RiscVRegister::t4);
 }

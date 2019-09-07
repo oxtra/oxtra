@@ -225,7 +225,27 @@ _ZN7codegen10jump_table13table_addressEv:
 	jal zero, overflow_adc_32
 	jal zero, overflow_adc_64
 
+	jal zero, overflow_add_pos_8
+	jal zero, overflow_add_pos_16
+	jal zero, overflow_add_pos_32
+	jal zero, overflow_add_pos_64
+
+	jal zero, overflow_add_neg_8
+	jal zero, overflow_add_neg_16
+	jal zero, overflow_add_neg_32
+	jal zero, overflow_add_neg_64
+
 	jal zero, overflow_sub_8
 	jal zero, overflow_sub_16
 	jal zero, overflow_sub_32
 	jal zero, overflow_sub_64
+
+	jal zero, overflow_inc_8
+	jal zero, overflow_inc_16
+	jal zero, overflow_inc_32
+	jal zero, overflow_inc_64
+
+	jal zero, overflow_dec_8
+	jal zero, overflow_dec_16
+	jal zero, overflow_dec_32
+	jal zero, overflow_dec_64

@@ -145,6 +145,17 @@ namespace codegen {
 		void update_overflow(CodeBatch& batch, jump_table::Entry entry, encoding::RiscVRegister va, encoding::RiscVRegister vb,
 							 encoding::RiscVRegister temp) const;
 
+		/**
+		 * Updates the first overflow value with the value in register va.
+		 */
+		void update_overflow_single(CodeBatch& batch, encoding::RiscVRegister va) const;
+
+		/**
+		 * Updates the second overflow value with the value in register vb and sets the operation.
+		 */
+		void update_overflow_single(CodeBatch& batch, jump_table::Entry entry, encoding::RiscVRegister vb,
+									encoding::RiscVRegister temp) const;
+
 		void update_overflow(CodeBatch& batch, encoding::RiscVRegister entry,
 							 encoding::RiscVRegister va, encoding::RiscVRegister vb) const;
 
@@ -174,7 +185,7 @@ namespace codegen {
 		 * t4 Value will be overriden before reaching the callback
 		 */
 		void update_carry_high_level(CodeBatch& batch, c_callback_t callback,
-				encoding::RiscVRegister temp) const;
+									 encoding::RiscVRegister temp) const;
 
 		void update_overflow_unsupported(CodeBatch& batch, const char* instruction, encoding::RiscVRegister temp) const;
 
@@ -183,7 +194,7 @@ namespace codegen {
 		 * t4 Value will be overriden before reaching the callback
 		 */
 		void update_overflow_high_level(CodeBatch& batch, c_callback_t callback,
-				encoding::RiscVRegister temp) const;
+										encoding::RiscVRegister temp) const;
 
 		/*
 		 * Invokes the callback with ExecutionContext* as argument and stores the returnvalue in t4.

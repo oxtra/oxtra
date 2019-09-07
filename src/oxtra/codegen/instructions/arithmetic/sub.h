@@ -1,7 +1,7 @@
 #ifndef OXTRA_SUB_H
 #define OXTRA_SUB_H
 
-#include "oxtra/codegen/binary_operation.h"
+#include "oxtra/codegen/instructions/binary_operation.h"
 
 namespace codegen {
 	class Sub : public BinaryOperation {

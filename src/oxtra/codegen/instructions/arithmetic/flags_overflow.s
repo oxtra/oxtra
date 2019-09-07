@@ -11,10 +11,30 @@
 .global overflow_adc_32
 .global overflow_adc_64
 
+.global overflow_add_pos_8
+.global overflow_add_pos_16
+.global overflow_add_pos_32
+.global overflow_add_pos_64
+
+.global overflow_add_neg_8
+.global overflow_add_neg_16
+.global overflow_add_neg_32
+.global overflow_add_neg_64
+
 .global overflow_sub_8
 .global overflow_sub_16
 .global overflow_sub_32
 .global overflow_sub_64
+
+.global overflow_inc_8
+.global overflow_inc_16
+.global overflow_inc_32
+.global overflow_inc_64
+
+.global overflow_dec_8
+.global overflow_dec_16
+.global overflow_dec_32
+.global overflow_dec_64
 
 .section .text
 
@@ -70,6 +90,50 @@ overflow_add_64:
 	slt t5, t6, t5
 	sub t4, t4, t5
 	snez t4, t4
+	ret
+
+# handle add if the immediate added is positive
+overflow_add_pos_8:
+	lb t4, value0(s11) # src
+	lb t5, value1(s11) # dst
+	slt t4, t5, t4 # of = (dst < src) positive number added and the result is less than the operand
+	ret
+overflow_add_pos_16:
+	lh t4, value0(s11) # src
+	lh t5, value1(s11) # dst
+	slt t4, t5, t4 # of = (dst < src) positive number added and the result is less than the operand
+	ret
+overflow_add_pos_32:
+	lw t4, value0(s11) # src
+	lw t5, value1(s11) # dst
+	slt t4, t5, t4 # of = (dst < src) positive number added and the result is less than the operand
+	ret
+overflow_add_pos_64:
+	ld t4, value0(s11) # src
+	ld t5, value1(s11) # dst
+	slt t4, t5, t4 # of = (dst < src) positive number added and the result is less than the operand
+	ret
+
+# handle add if the immediate added is negative
+overflow_add_neg_8:
+	lb t4, value0(s11) # src
+	lb t5, value1(s11) # dst
+	slt t4, t4, t5 # of = (src < dst) negative number added and the result is bigger than the operand
+	ret
+overflow_add_neg_16:
+	lh t4, value0(s11) # src
+	lh t5, value1(s11) # dst
+	slt t4, t4, t5 # of = (src < dst) negative number added and the result is bigger than the operand
+	ret
+overflow_add_neg_32:
+	lw t4, value0(s11) # src
+	lw t5, value1(s11) # dst
+	slt t4, t4, t5 # of = (src < dst) negative number added and the result is bigger than the operand
+	ret
+overflow_add_neg_64:
+	ld t4, value0(s11) # src
+	ld t5, value1(s11) # dst
+	slt t4, t4, t5 # of = (src < dst) negative number added and the result is bigger than the operand
 	ret
 
 # handle adc operation with carry flag set
@@ -153,4 +217,48 @@ overflow_sub_64: # add rax, -x = sub rax, x
 	slt t5, t5, t6 # t5 = (src2 < dst) == (dst > src2)
 	sub t4, t4, t5 # sgn(src1) == (dst > src2)
 	snez t4, t4
+	ret
+
+# handle inc
+overflow_inc_8:
+	lbu t4, value0(s11)
+	addi t5, t4, 1
+	slt t4, t5, t4 # of = (dst + 1 < dst)
+	ret
+overflow_inc_16:
+	lhu t4, value0(s11)
+	addi t5, t4, 1
+	slt t4, t5, t4 # of = (dst + 1 < dst)
+	ret
+overflow_inc_32:
+	lwu t4, value0(s11)
+	addi t5, t4, 1
+	slt t4, t5, t4 # of = (dst + 1 < dst)
+	ret
+overflow_inc_64:
+	ld t4, value0(s11)
+	addi t5, t4, 1
+	slt t4, t5, t4 # of = (dst + 1 < dst)
+	ret
+
+# handle dec
+overflow_dec_8:
+	lbu t4, value0(s11)
+	addi t5, t4, -1
+	slt t4, t4, t5 # of = (dst < dst - 1)
+	ret
+overflow_dec_16:
+	lhu t4, value0(s11)
+	addi t5, t4, -1
+	slt t4, t4, t5 # of = (dst < dst - 1)
+	ret
+overflow_dec_32:
+	lwu t4, value0(s11)
+	addi t5, t4, -1
+	slt t4, t4, t5 # of = (dst < dst - 1)
+	ret
+overflow_dec_64:
+	ld t4, value0(s11)
+	addi t5, t4, -1
+	slt t4, t4, t5 # of = (dst < dst - 1)
 	ret

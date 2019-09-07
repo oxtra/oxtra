@@ -489,6 +489,28 @@ void codegen::Instruction::update_overflow(CodeBatch& batch, jump_table::Entry e
 	batch += encoding::SH(helper::context_address, temp, flags::Info::overflow_operation_offset);
 }
 
+void codegen::Instruction::update_overflow_single(codegen::CodeBatch& batch, encoding::RiscVRegister va) const {
+	// check if the instruction has to update the overflow-flag
+	if ((update_flags & flags::overflow) == 0)
+		return;
+
+	// store the values
+	batch += encoding::SD(helper::context_address, va, flags::Info::overflow_values_offset);
+}
+
+void codegen::Instruction::update_overflow_single(codegen::CodeBatch& batch, codegen::jump_table::Entry entry,
+											   encoding::RiscVRegister vb, encoding::RiscVRegister temp) const {
+	// check if the instruction has to update the overflow-flag
+	if ((update_flags & flags::overflow) == 0)
+		return;
+
+	batch += encoding::SD(helper::context_address, vb, flags::Info::overflow_values_offset + 8);
+
+	// store the jump table index
+	batch += encoding::ADDI(temp, RiscVRegister::zero, static_cast<uint16_t>(entry) * 4);
+	batch += encoding::SH(helper::context_address, temp, flags::Info::overflow_operation_offset);
+}
+
 void codegen::Instruction::update_overflow(codegen::CodeBatch& batch, encoding::RiscVRegister entry, encoding::RiscVRegister va,
 										   encoding::RiscVRegister vb) const {
 	// store the values
