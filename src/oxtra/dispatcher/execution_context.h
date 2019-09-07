@@ -12,6 +12,9 @@
 namespace codegen {
 	class CodeGenerator;
 }
+namespace debugger{
+	class Debugger;
+}
 
 namespace dispatcher {
 	struct ExecutionContext {
@@ -99,6 +102,9 @@ namespace dispatcher {
 
 		// 0x1F8
 		codegen::flags::Info flag_info;
+
+		// Offset not relevant and offset of flag_info is volatile
+		debugger::Debugger* debugger;
 	};
 }
 

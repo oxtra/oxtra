@@ -6,12 +6,6 @@
 #include <argp.h>
 
 namespace arguments {
-	enum class StepMode {
-		none,
-		x86,
-		riscv
-	};
-
 	class Arguments {
 	private:
 		/**
@@ -30,8 +24,8 @@ namespace arguments {
 		struct StoredArguments {
 			char* guest_path;
 			std::vector<std::string> guest_arguments;
-			enum spdlog::level::level_enum spdlog_log_level;
-			enum StepMode step_mode;
+			spdlog::level::level_enum spdlog_log_level;
+			bool debugging;
 			size_t stack_size;
 			size_t instruction_list_size, offset_list_size, entry_list_size;
 		};
@@ -41,15 +35,15 @@ namespace arguments {
 		 * Unprintable ASCII strings will not be able to be accessed (only long variant available).
 		 */
 		const struct argp_option _options[8] = {
-				{"args",         'a', "\"ARGUMENTS...\"", 0, "Specify the arguments that will be passed to the x86 executable. The default is no arguments",                                                         0},
-				{"debug",        'd', "STEP_MODE",        0, "Specify the stepping behavior. Allowed step modes are: none, x86, or riscv specifying the granularity of possible breakpoints. The default ist none.", 0},
-				{"lentry-size",  'e', "SIZE",             0, "The size of the list containing block entires. Limit for consecutive block entries. The default is 64.",                                               0},
-				{"linst-size",   'i', "SIZE",             0, "The size of the list containing instructions. Limit for generated RISCV instructions in a block. The default is 4096.",                                0},
-				{"log-level",    'l', "LEVEL",            0, "Specify the log level. 0=trace, 1=debug, 2=info, 3=warn, 4=error, 5=critical, 6=off. The default is 3.",                                               0},
-				{"loffset-size", 'o', "SIZE",             0, "The size of the list containing offset. Limit for consecutive offsets. The default is 512.",                                                           0},
-				{"stack-size",   's', "SIZE",             0, "The size of the stack in decimal. The default size is 2MiB (0x200000).",                                                                               0},
+				{"args",         'a', "\"ARGUMENTS...\"", 0, "Specify the arguments that will be passed to the x86 executable. The default is no arguments",                          0},
+				{"debug",        'd', "BOOL",             0, "Specify the debugging-behavior. The default ist false.",                                                                0},
+				{"lentry-size",  'e', "SIZE",             0, "The size of the list containing block entires. Limit for consecutive block entries. The default is 64.",                0},
+				{"linst-size",   'i', "SIZE",             0, "The size of the list containing instructions. Limit for generated RISCV instructions in a block. The default is 4096.", 0},
+				{"log-level",    'l', "LEVEL",            0, "Specify the log level. 0=trace, 1=debug, 2=info, 3=warn, 4=error, 5=critical, 6=off. The default is 3.",                0},
+				{"loffset-size", 'o', "SIZE",             0, "The size of the list containing offset. Limit for consecutive offsets. The default is 512.",                            0},
+				{"stack-size",   's', "SIZE",             0, "The size of the stack in decimal. The default size is 2MiB (0x200000).",                                                0},
 				// This specifies the required x86 executable argument
-				{nullptr,        0,   nullptr,            0, nullptr,                                                                                                                                                0}
+				{nullptr,        0,   nullptr,            0, nullptr,                                                                                                                 0}
 		};
 
 	private:
@@ -79,7 +73,7 @@ namespace arguments {
 
 		size_t get_entry_list_size() const;
 
-		StepMode get_step_mode() const;
+		bool get_debugging() const;
 
 	private:
 		/**

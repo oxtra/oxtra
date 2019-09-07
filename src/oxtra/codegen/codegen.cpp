@@ -2,6 +2,7 @@
 #include "transform_instruction.h"
 #include "oxtra/dispatcher/dispatcher.h"
 #include "helper.h"
+#include "oxtra/dispatcher/debugger/debugger.h"
 #include <spdlog/spdlog.h>
 
 using namespace codegen;
@@ -14,18 +15,10 @@ using namespace dispatcher;
 CodeGenerator::CodeGenerator(const arguments::Arguments& args, const elf::Elf& elf)
 		: _elf{elf}, _codestore{args, elf} {
 	// instantiate the code-batch
-	switch (args.get_step_mode()) {
-		case arguments::StepMode::x86:
-			_batch = std::make_unique<X86Step>();
-			break;
-		case arguments::StepMode::riscv:
-			_batch = std::make_unique<RiscVStep>();
-			break;
-		case arguments::StepMode::none:
-		default:
-			_batch = std::make_unique<CodeStash>();
-			break;
-	}
+	if(args.get_debugging())
+		_batch = std::make_unique<debugger::DebuggerBatch>();
+	else
+		_batch = std::make_unique<CodeBatchImpl>();
 }
 
 host_addr_t CodeGenerator::translate(guest_addr_t addr) {
@@ -121,7 +114,7 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 void CodeGenerator::update_basic_block(utils::host_addr_t addr, utils::host_addr_t absolute_address) {
 	// compute new base-address where the new absolute address will be written to t0
 	// 9 = 8 [load_64bit_immediate] + 1 [JALR]
-	CodeMemory code{reinterpret_cast<riscv_instruction_t*>(addr - 9 * sizeof(riscv_instruction_t))};
+	CodeMemory code{reinterpret_cast<riscv_instruction_t*>(addr - 9 * sizeof(riscv_instruction_t)), 9};
 
 	// write the new instructions
 	helper::load_immediate(code, absolute_address, helper::address_destination);
