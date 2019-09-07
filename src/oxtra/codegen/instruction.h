@@ -179,15 +179,26 @@ namespace codegen {
 							 encoding::RiscVRegister temp) const;
 
 		void update_overflow(CodeBatch& batch, encoding::RiscVRegister entry,
-				encoding::RiscVRegister va, encoding::RiscVRegister vb) const;
+							 encoding::RiscVRegister va, encoding::RiscVRegister vb) const;
 
 		void update_carry(CodeBatch& batch, bool set, encoding::RiscVRegister temp) const;
 
 		void update_carry(CodeBatch& batch, jump_table::Entry entry, encoding::RiscVRegister va, encoding::RiscVRegister vb,
 						  encoding::RiscVRegister temp) const;
 
+		/**
+		 * Updates the first carry value with the value in register va.
+		 */
+		void update_carry_single(CodeBatch& batch, encoding::RiscVRegister va) const;
+
+		/**
+		 * Updates the second carry value with the value in register vb and sets the operation.
+		 */
+		void update_carry_single(CodeBatch& batch, jump_table::Entry entry, encoding::RiscVRegister vb,
+								 encoding::RiscVRegister temp) const;
+
 		void update_carry(CodeBatch& batch, encoding::RiscVRegister entry,
-							 encoding::RiscVRegister va, encoding::RiscVRegister vb) const;
+						  encoding::RiscVRegister va, encoding::RiscVRegister vb) const;
 
 		void update_carry_unsupported(CodeBatch& batch, const char* instruction, encoding::RiscVRegister temp) const;
 
@@ -195,8 +206,8 @@ namespace codegen {
 		 * Invokes the callback with ExecutionContext* as argument and stores the returnvalue in t4.
 		 * t4 Value will be overriden before reaching the callback
 		 */
-		void update_carry_high_level(CodeBatch& batch, uintptr_t(*callback)(void*),
-				encoding::RiscVRegister temp) const;
+		void update_carry_high_level(CodeBatch& batch, uintptr_t(* callback)(void*),
+									 encoding::RiscVRegister temp) const;
 
 		void update_overflow_unsupported(CodeBatch& batch, const char* instruction, encoding::RiscVRegister temp) const;
 
@@ -204,14 +215,14 @@ namespace codegen {
 		 * Invokes the callback with ExecutionContext* as argument and stores the returnvalue in t4.
 		 * t4 Value will be overriden before reaching the callback
 		 */
-		void update_overflow_high_level(CodeBatch& batch, uintptr_t(*callback)(void*),
-				encoding::RiscVRegister temp) const;
+		void update_overflow_high_level(CodeBatch& batch, uintptr_t(* callback)(void*),
+										encoding::RiscVRegister temp) const;
 
 		/*
 		 * Invokes the callback with ExecutionContext* as argument and stores the returnvalue in t4.
 		 * t4 Value will be overriden before reaching the callback
 		 */
-		void call_high_level(CodeBatch& batch, uintptr_t(*callback)(void*)) const;
+		void call_high_level(CodeBatch& batch, uintptr_t(* callback)(void*)) const;
 	};
 }
 

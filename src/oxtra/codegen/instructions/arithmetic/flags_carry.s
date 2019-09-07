@@ -87,22 +87,22 @@ carry_adc_64:
 
 # handle sub
 carry_sub_8:
-	lbu t4, value0(s11) # src
-    lbu t5, value1(s11) # dst
-    sgtu t4, t5, t4 # result = (dst > src)
+	lbu t4, value0(s11) # old_dst
+    lbu t5, value1(s11) # new_dst
+    sgtu t4, t5, t4 # result = (new_dst > old_dst)
     ret
 carry_sub_16:
-	lhu t4, value0(s11) # src
-	lhu t5, value1(s11) # dst
-	sgtu t4, t5, t4 # result = (dst > src)
-	ret
+	lhu t4, value0(s11) # old_dst
+    lhu t5, value1(s11) # new_dst
+    sgtu t4, t5, t4 # result = (new_dst > old_dst)
+    ret
 carry_sub_32:
-	lwu t4, value0(s11) # src
-    lwu t5, value1(s11) # dst
-    sgtu t4, t5, t4 # result = (dst > src)
+	lwu t4, value0(s11) # old_dst
+    lwu t5, value1(s11) # new_dst
+    sgtu t4, t5, t4 # result = (new_dst > old_dst)
     ret
 carry_sub_64:
-	ld t4, value0(s11) # src
-    ld t5, value1(s11) # dst
-    sgtu t4, t5, t4 # result = (dst > src)
+	ld t4, value0(s11) # old_dst
+    ld t5, value1(s11) # new_dst
+    sgtu t4, t5, t4 # result = (new_dst > old_dst)
     ret

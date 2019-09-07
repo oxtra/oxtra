@@ -466,6 +466,28 @@ void codegen::Instruction::update_carry(CodeBatch& batch, jump_table::Entry entr
 	batch += encoding::SH(helper::context_address, temp, FlagInfo::carry_operation_offset);
 }
 
+void codegen::Instruction::update_carry_single(codegen::CodeBatch& batch, encoding::RiscVRegister va) const {
+	// check if the instruction has to update the carry-flag
+	if ((update_flags & Flags::carry) == 0)
+		return;
+
+	// store the values
+	batch += encoding::SD(helper::context_address, va, FlagInfo::carry_values_offset);
+}
+
+void codegen::Instruction::update_carry_single(codegen::CodeBatch& batch, codegen::jump_table::Entry entry,
+											   encoding::RiscVRegister vb, encoding::RiscVRegister temp) const {
+	// check if the instruction has to update the carry-flag
+	if ((update_flags & Flags::carry) == 0)
+		return;
+
+	batch += encoding::SD(helper::context_address, vb, FlagInfo::carry_values_offset + 8);
+
+	// store the jump table index
+	batch += encoding::ADDI(temp, RiscVRegister::zero, static_cast<uint16_t>(entry) * 4);
+	batch += encoding::SH(helper::context_address, temp, FlagInfo::carry_operation_offset);
+}
+
 void codegen::Instruction::update_carry(codegen::CodeBatch& batch, encoding::RiscVRegister entry, encoding::RiscVRegister va,
 										encoding::RiscVRegister vb) const {
 	// store the values
