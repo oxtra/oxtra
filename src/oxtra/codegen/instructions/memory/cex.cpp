@@ -8,7 +8,6 @@ void codegen::Cex::generate(CodeBatch& batch) const {
 		codegen::helper::sign_extend_register(batch, encoding::RiscVRegister::t0, encoding::RiscVRegister::rax,
 											  get_operand_size() / 2);
 		codegen::helper::move_to_register(batch, encoding::RiscVRegister::rax, encoding::RiscVRegister::t0,
-										  codegen::helper::operand_to_register_access(get_operand_size()),
-										  encoding::RiscVRegister::t1);
+										  get_operand_size(), encoding::RiscVRegister::t1, false);
 	}
 }
