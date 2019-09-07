@@ -7,7 +7,7 @@ namespace codegen {
 	class Jmp : public codegen::Instruction {
 	public:
 		explicit Jmp(const fadec::Instruction& inst)
-				: codegen::Instruction{inst, Flags::none, Flags::none, true} {}
+				: codegen::Instruction{inst, flags::none, flags::none, true} {}
 
 		void generate(CodeBatch& batch) const override;
 	};
