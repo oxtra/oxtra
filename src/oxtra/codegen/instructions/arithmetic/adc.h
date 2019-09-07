@@ -7,7 +7,7 @@ namespace codegen {
 	class Adc : public BinaryOperation {
 	public:
 		explicit Adc(const fadec::Instruction& inst)
-				: BinaryOperation{inst, Flags::all, Flags::carry} {}
+				: BinaryOperation{inst, flags::all, flags::carry} {}
 
 		void execute_operation(CodeBatch& batch, encoding::RiscVRegister dst, encoding::RiscVRegister src) const override;
 	};

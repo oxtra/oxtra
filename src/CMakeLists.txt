@@ -27,6 +27,7 @@ add_library(oxtra_libs
 		oxtra/codegen/instructions/logic/flags_carry.s
 		oxtra/codegen/instructions/logic/flags_overflow.s
 		oxtra/codegen/instructions/arithmetic/add.cpp
+		oxtra/codegen/instructions/arithmetic/adc.cpp
 		oxtra/codegen/instructions/arithmetic/neg.cpp
 		oxtra/codegen/instructions/arithmetic/sub.cpp
 		oxtra/codegen/instructions/arithmetic/inc.cpp
@@ -70,7 +71,7 @@ add_library(oxtra_libs
 		oxtra/codegen/instructions/control-flow/conditional-jumps/jl.cpp
 		oxtra/codegen/instructions/control-flow/conditional-jumps/jle.cpp
 		oxtra/codegen/instructions/control-flow/conditional-jumps/jcxz.cpp
-		oxtra/codegen/instructions/arithmetic/adc.cpp oxtra/codegen/instructions/arithmetic/adc.h)
+		oxtra/codegen/flags.h)
 
 target_link_libraries(oxtra_libs
 		fadec

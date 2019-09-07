@@ -7,7 +7,7 @@ namespace codegen {
 	class Jnp : public codegen::Instruction {
 	public:
 		explicit Jnp(const fadec::Instruction& inst)
-				: codegen::Instruction{inst, Flags::none, Flags::parity, true} {}
+				: codegen::Instruction{inst, flags::none, flags::parity, true} {}
 
 		void generate(CodeBatch& batch) const override;
 	};

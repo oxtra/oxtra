@@ -7,7 +7,7 @@ namespace codegen {
 	class Lea : public codegen::Instruction {
 	public:
 		explicit Lea(const fadec::Instruction& inst)
-				: codegen::Instruction{inst, Flags::none, Flags::none} {}
+				: codegen::Instruction{inst, flags::none, flags::none} {}
 
 		void generate(CodeBatch& batch) const override;
 	};
