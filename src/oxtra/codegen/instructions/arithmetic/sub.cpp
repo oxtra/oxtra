@@ -4,9 +4,6 @@ void codegen::Sub::execute_operation(CodeBatch& batch, encoding::RiscVRegister d
 	batch += encoding::SUB(dst, dst, src);
 	update_overflow_unsupported(batch, "SUB", encoding::RiscVRegister::t4);
 	update_carry_unsupported(batch, "SUB", encoding::RiscVRegister::t4);
-
-	update_carry_unsupported(batch, "SUB - Imm", encoding::RiscVRegister::t4);
-	update_overflow_unsupported(batch, "SUB - Imm", encoding::RiscVRegister::t4);
 }
 
 void codegen::Sub::execute_operation(CodeBatch& batch, encoding::RiscVRegister dst, intptr_t imm) const {
