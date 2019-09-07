@@ -22,7 +22,7 @@ void codegen::Mov::generate(CodeBatch& batch) const {
 	}
 
 	// extract the source-operand
-	auto source_operand = translate_operand(batch, 1, nullptr, encoding::RiscVRegister::t1, encoding::RiscVRegister::t2,
+	auto source_operand = translate_operand(batch, 1, nullptr, encoding::RiscVRegister::t0, encoding::RiscVRegister::t2,
 											false, false, false);
 
 	// write the value to the destination-register
