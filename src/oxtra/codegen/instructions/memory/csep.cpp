@@ -10,7 +10,6 @@ void codegen::CSep::generate(CodeBatch& batch) const {
 		batch += encoding::SRAI(encoding::RiscVRegister::t0, encoding::RiscVRegister::t0, 63);
 
 		codegen::helper::move_to_register(batch, encoding::RiscVRegister::rdx, encoding::RiscVRegister::t0,
-										  codegen::helper::operand_to_register_access(get_operand_size()),
-										  encoding::RiscVRegister::t1);
+										  get_operand_size(), encoding::RiscVRegister::t1, false);
 	}
 }

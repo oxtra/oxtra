@@ -77,8 +77,7 @@ namespace codegen {
 
 	protected:
 		/**
-		 * Translates a single operand (either register, or memory or immediate value) into the specified register. This method
-		 * does not ensure, that upper bits are cleared, or sign extended. Use load_operand if this functionality is required.
+		 * Translates a single operand (either register, or memory or immediate value) into the specified register.
 		 * @param inst The x86 instruction object.
 		 * @param index operand-index of instruction.
 		 * @param address If the operation was a memory-operation, this register will contain the address (for optimizations).
@@ -86,10 +85,8 @@ namespace codegen {
 		 * @param temp_a A temporary that might be changed.
 		 * @param temp_b A temporary that might be changed.
 		 * @param modifiable If true, the function will ensure to load the value into a temporary register.
-		 * @param full_load If true, the register will only contain the value loaded. Otherwise the upper bits might still
-		 * 		  contain other contents.
-		 * @param sign_extend If full_load is true, this attribute allows to indicate whether or not the value should be stored
-		 * 		  as sign-extended or not.
+		 * @param full_load If true, the register will only contain the value loaded. Otherwise the upper bits might still contain other contents.
+		 * @param sign_extend If full_load is true, this attribute allows to indicate whether or not the value should be stored as sign-extended or not.
 		 * @return The register which contains the value.
 		 * 		   Either: temp_a or one of the mapped registers (or zero, if the operand-type is unknown).
 		 */

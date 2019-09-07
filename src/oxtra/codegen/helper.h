@@ -22,51 +22,13 @@ namespace codegen::helper {
 	 * s1, s8, s9: unmapped
 	 */
 
-	enum class RegisterAccess : uint8_t {
-		QWORD,
-		DWORD,
-		WORD,
-		HBYTE,
-		LBYTE
+	struct RegisterAccess {
+		static constexpr uint8_t QWORD = 8;
+		static constexpr uint8_t DWORD = 4;
+		static constexpr uint8_t WORD = 2;
+		static constexpr uint8_t LBYTE = 1;
+		static constexpr uint8_t HBYTE = 0;
 	};
-
-	/**
-	 * Get the register access for a given operand size.
-	 * @param op_size The size of the operand in bytes. May only be 1,2,4 or 8.
-	 * @return The correct RegisterAccess. The lower byte will be returned for an operand size of 1.
-	 */
-	static constexpr RegisterAccess operand_to_register_access(size_t op_size) {
-		if (op_size == 1) return RegisterAccess::LBYTE;
-		if (op_size == 2) return RegisterAccess::WORD;
-		if (op_size == 4) return RegisterAccess::DWORD;
-		return RegisterAccess::QWORD;
-	}
-
-	/**
-	 * Get the register access for a given operand. It is not checked, whether the operand is a register or not.
-	 * @param op_size The operand that should be translated..
-	 * @return The correct RegisterAccess for the specified operand.
-	 */
-	RegisterAccess operand_to_register_access(const fadec::Operand& operand);
-
-	/**
-	 * Load a given src register lazily into a given destination register but only the required parts, optionally with sign extension.
-	 * All other bits are 0 (0/1 if sign extension is enabled).
-	 *
-	 * Lazy in this context means, that if the register is a 64bit register, it will not be moved into the destination and the
-	 * src itself will be returned.
-	 *
-	 * Only moving the relevant parts, means that depending on the operand size, only the operand will be loaded into the destination register.
-	 *
-	 *
-	 * @param src The source register that will be used as input.
-	 * @param dest The register the source will be loaded into if loading is required.
-	 * @param operand_size The type of register that will be used.
-	 * @param sign_extend Whether the operand_size interpretation of the register should be sign-extended to 64bit.
-	 * @return The address where the value was loaded into (either src, or dest).
-	 */
-	encoding::RiscVRegister load_register(codegen::CodeBatch& batch, encoding::RiscVRegister src, encoding::RiscVRegister dest,
-										  RegisterAccess access, bool sign_extend);
 
 	/**
 	 * Writes a register with x86-style sub-manipulation to an existing register WITHOUT

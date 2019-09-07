@@ -5,3 +5,9 @@ void codegen::Sar::execute_operation(CodeBatch& batch, encoding::RiscVRegister d
 	update_overflow_unsupported(batch, "SAR", encoding::RiscVRegister::t4);
 	update_carry_unsupported(batch, "SAR", encoding::RiscVRegister::t4);
 }
+
+void codegen::Sar::execute_operation(CodeBatch& batch, encoding::RiscVRegister dst, intptr_t imm) const {
+	batch += encoding::SRAI(dst, dst, imm);
+	update_overflow_unsupported(batch, "SAR - Imm", encoding::RiscVRegister::t4);
+	update_carry_unsupported(batch, "SAR - Imm", encoding::RiscVRegister::t4);
+}

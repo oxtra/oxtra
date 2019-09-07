@@ -129,9 +129,9 @@ RiscVRegister codegen::Instruction::translate_memory(CodeBatch& batch, size_t in
 	// build the output
 	RiscVRegister result = temp_a;
 	if (base_exists) {
-		// [base + ???]
+		// [base + ?]
 		if (disp_exists == 1) {
-			// [base + sDisp + ???]
+			// [base + sDisp + ?]
 			batch += encoding::ADDI(result, map_reg(operand.get_register()), operation_displacement);
 
 			if (index_exists == 1)
@@ -143,7 +143,7 @@ RiscVRegister codegen::Instruction::translate_memory(CodeBatch& batch, size_t in
 				batch += encoding::ADD(result, result, temp_b);
 			}
 		} else if (index_exists == 1) {
-			// [base + index*1 + ???]
+			// [base + index*1 + ?]
 			batch += encoding::ADD(result, map_reg(operand.get_register()), map_reg(get_index_register()));
 
 			if (disp_exists) {

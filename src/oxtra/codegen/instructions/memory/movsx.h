@@ -7,7 +7,7 @@ namespace codegen {
 	class Movsx : public BinaryOperation {
 	public:
 		explicit Movsx(const fadec::Instruction& inst)
-				: BinaryOperation{inst, Flags::none, Flags::none} {}
+				: BinaryOperation{inst, Flags::none, Flags::none, false} {}
 
 		void execute_operation(CodeBatch& batch, encoding::RiscVRegister dst, encoding::RiscVRegister src) const override;
 	};

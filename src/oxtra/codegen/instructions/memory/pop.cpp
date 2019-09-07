@@ -15,11 +15,11 @@ void codegen::Pop::generate(CodeBatch& batch) const {
 				break;
 			case 4:
 				batch += encoding::LWU(encoding::RiscVRegister::t0, rsp_reg, 0);
-				move_to_register(batch, dest_reg, encoding::RiscVRegister::t0, helper::RegisterAccess::DWORD, encoding::RiscVRegister::t1, true);
+				helper::move_to_register(batch, dest_reg, encoding::RiscVRegister::t0, helper::RegisterAccess::DWORD, encoding::RiscVRegister::t1, true);
 				break;
 			case 2:
 				batch += encoding::LHU(encoding::RiscVRegister::t0, rsp_reg, 0);
-				move_to_register(batch, dest_reg, encoding::RiscVRegister::t0, helper::RegisterAccess::WORD, encoding::RiscVRegister::t1, true);
+				helper::move_to_register(batch, dest_reg, encoding::RiscVRegister::t0, helper::RegisterAccess::WORD, encoding::RiscVRegister::t1, true);
 				break;
 		}
 	} else if (get_operand(0).get_type() == fadec::OperandType::mem) {
