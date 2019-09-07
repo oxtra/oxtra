@@ -5,69 +5,31 @@
 
 using namespace encoding;
 
-codegen::helper::RegisterAccess codegen::helper::operand_to_register_access(const fadec::Operand& operand)  {
-	const auto op_size = operand.get_size();
-	if (op_size == 8) return RegisterAccess::QWORD;
-	if (op_size == 4) return RegisterAccess::DWORD;
-	if (op_size == 2) return RegisterAccess::WORD;
-
-	return operand.get_register_type() == fadec::RegisterType::gph ? RegisterAccess::HBYTE : RegisterAccess::LBYTE;
-}
-
-RiscVRegister codegen::helper::load_register(codegen::CodeBatch& batch, RiscVRegister src, RiscVRegister dest,
-											 RegisterAccess access, bool sign_extend) {
-	uint8_t operand_size = 1;
-	if (access == RegisterAccess::QWORD) {
-		operand_size = 8;
-	} else if (access == RegisterAccess::DWORD) {
-		operand_size = 4;
-	} else if (access == RegisterAccess::WORD) {
-		operand_size = 2;
-	}
-
-	uint8_t shamt = 64 - operand_size * 8;
-	if (access == RegisterAccess::HBYTE) shamt -= 8;
-
-	if (shamt == 0) {
-		return src;
-	} else {
-		if (operand_size == 4 && sign_extend) {
-			batch += encoding::ADDW(dest, src, RiscVRegister::zero);
-		} else {
-			batch += encoding::SLLI(dest, src, shamt);
-
-			if (access == RegisterAccess::HBYTE) shamt += 8;
-
-			batch += (sign_extend ? encoding::SRAI : encoding::SRLI)(dest, dest, shamt);
-		}
-	}
-
-	return dest;
-}
-
-void codegen::helper::move_to_register(CodeBatch& batch, RiscVRegister dest, RiscVRegister src, RegisterAccess access,
+void codegen::helper::move_to_register(CodeBatch& batch, RiscVRegister dest, RiscVRegister src, uint8_t access,
 									   RiscVRegister temp, bool cleared) {
 	switch (access) {
-		case RegisterAccess::QWORD:
+		case 8:
 			batch += encoding::MV(dest, src);
 			return;
-		case RegisterAccess::DWORD:
-			load_register(batch, src, dest, access, false);
+		case 4:
+			batch += encoding::SLLI(dest, src, 32);
+			batch += encoding::SRLI(dest, dest, 32);
 			return;
-		case RegisterAccess::WORD:
-			// check if the upper source-register has to be cleared
-			if (!cleared) {
-				batch += encoding::XOR(temp, src, dest);
-				load_register(batch, temp, temp, access, false);
-				batch += encoding::XOR(dest, temp, dest);
-			} else {
+		case 2:
+			if (cleared) {
 				// clear the lower bits of the destination-register by shifting
 				batch += encoding::SRLI(dest, dest, 16);
 				batch += encoding::SLLI(dest, dest, 16);
 				batch += encoding::OR(dest, dest, src);
+			} else {
+				// check if the upper source-register has to be cleared
+				batch += encoding::XOR(temp, src, dest);
+				batch += encoding::SLLI(temp, temp, 48);
+				batch += encoding::SRLI(temp, temp, 48);
+				batch += encoding::XOR(dest, temp, dest);
 			}
 			return;
-		case RegisterAccess::LBYTE:
+		case 1:
 			// clear the destination
 			batch += encoding::ANDI(dest, dest, -0x100);
 
@@ -76,7 +38,8 @@ void codegen::helper::move_to_register(CodeBatch& batch, RiscVRegister dest, Ris
 				batch += encoding::ANDI(temp, src, 0xff);
 			batch += encoding::OR(dest, dest, cleared ? src : temp);
 			return;
-		case RegisterAccess::HBYTE:
+		case 0:
+		default:
 			// move the 8 bits of the destination-register down and xor them with the source
 			batch += encoding::SRLI(temp, dest, 8);
 			batch += encoding::XOR(temp, temp, src);
@@ -89,6 +52,42 @@ void codegen::helper::move_to_register(CodeBatch& batch, RiscVRegister dest, Ris
 			batch += encoding::XOR(dest, temp, dest);
 			return;
 	}
+}
+
+RiscVRegister codegen::helper::load_from_register(CodeBatch& batch, encoding::RiscVRegister src, uint8_t access,
+												  encoding::RiscVRegister temp, bool modifiable, bool full_load,
+												  bool sign_extend) {
+	// check if a full-load is required
+	if (full_load) {
+		// check if the register has to be shifted
+		if (access < 8) {
+			// load the register and clear/set the upper bits
+			batch += encoding::SLLI(temp, src, access == 0 ? 48 : 64 - access * 8);
+			batch += (sign_extend ? encoding::SRAI : encoding::SRLI)(temp, temp, 64 - (access == 0 ? 1 : access) * 8);
+			return temp;
+		}
+
+		// check if the register must be modifiable
+		if (modifiable) {
+			batch += encoding::MV(temp, src);
+			return temp;
+		}
+		return src;
+	}
+
+	// check if the register must be modifiable
+	if (modifiable || access == 0) {
+		// copy the value to the temporary register and return it
+		if (access == 0)
+			batch += encoding::SRLI(temp, src, 8);
+		else
+			batch += encoding::MV(temp, src);
+		return temp;
+	}
+
+	// return the register itself as its not modifiable nor has to be
+	// loaded fully and the access is from the bottom.
+	return src;
 }
 
 void codegen::helper::load_immediate(CodeBatch& batch, uintptr_t imm, encoding::RiscVRegister dest) {
