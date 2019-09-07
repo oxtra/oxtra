@@ -7,7 +7,7 @@ namespace codegen {
 	class Mul : public codegen::Instruction {
 	public:
 		explicit Mul(const fadec::Instruction& inst)
-				: codegen::Instruction{inst, Flags::all, Flags::none} {}
+				: codegen::Instruction{inst, flags::all, flags::none} {}
 
 		void generate(CodeBatch& batch) const override;
 	};

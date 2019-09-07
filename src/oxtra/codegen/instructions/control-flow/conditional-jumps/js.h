@@ -7,7 +7,7 @@ namespace codegen {
 	class Js : public codegen::Instruction {
 	public:
 		explicit Js(const fadec::Instruction& inst)
-				: codegen::Instruction{inst, Flags::none, Flags::sign, true} {}
+				: codegen::Instruction{inst, flags::none, flags::sign, true} {}
 
 		void generate(CodeBatch& batch) const override;
 	};

@@ -5,6 +5,14 @@
 #include <array>
 #include <spdlog/fmt/bundled/ostream.h>
 
+#include "oxtra/codegen/flags.h"
+
+
+// forward declare CodeGenerator because we only need a pointer and to prevent a circular dependency
+namespace codegen {
+	class CodeGenerator;
+}
+
 namespace dispatcher {
 	struct ExecutionContext {
 		union Context {
@@ -90,7 +98,7 @@ namespace dispatcher {
 		codegen::CodeGenerator* codegen;
 
 		// 0x1F8
-		codegen::Instruction::FlagInfo flag_info;
+		codegen::flags::Info flag_info;
 	};
 }
 

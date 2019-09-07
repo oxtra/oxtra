@@ -7,7 +7,7 @@ namespace codegen {
 	class Neg : public UnaryOperation {
 	public:
 		explicit Neg(const fadec::Instruction& inst)
-				: UnaryOperation{inst, Flags::all, Flags::none} {}
+				: UnaryOperation{inst, flags::all, flags::none} {}
 
 		void execute_operation(CodeBatch& batch, encoding::RiscVRegister dst) const override;
 	};
