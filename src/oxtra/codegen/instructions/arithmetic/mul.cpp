@@ -58,9 +58,7 @@ void codegen::Mul::generate(codegen::CodeBatch& batch) const {
 		if (op_size == 1) {
 			// if there is no upper destination, we have (I)MUL and store the result in AX
 			// otherwise, we have to store it in the first operand.
-			move_to_register(batch, lower_destination, mul_result,
-							 has_upper_destination ? RegisterAccess::WORD : get_operand(0).get_size(),
-							 RiscVRegister::t4, false);
+			move_to_register(batch, lower_destination, mul_result, RegisterAccess::WORD, RiscVRegister::t4, false);
 		} else {
 			move_to_register(batch, lower_destination, mul_result, op_size, RiscVRegister::t4, false);
 
