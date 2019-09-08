@@ -52,6 +52,10 @@ void Arguments::parse_arguments(int argc, char** argv) {
 
 	// parse the arguments
 	argp_parse(&parser, argc, argv, 0, nullptr, &_stored_arguments);
+
+	// reset the logging-level, if a debugger is attached
+	if(_stored_arguments.debugging)
+		_stored_arguments.spdlog_log_level = spdlog::level::off;
 }
 
 /**
