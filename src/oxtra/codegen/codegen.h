@@ -12,7 +12,7 @@ namespace codegen {
 	private:
 		const elf::Elf& _elf;
 		codestore::CodeStore _codestore;
-		std::unique_ptr<codegen::CodeStash> _batch;
+		std::unique_ptr<codegen::CodeBatchImpl> _batch;
 
 	public:
 		CodeGenerator(const arguments::Arguments& args, const elf::Elf& elf);

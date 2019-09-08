@@ -1,6 +1,7 @@
 #include "oxtra/dispatcher/dispatcher.h"
 #include "oxtra/dispatcher/syscall_map.h"
 #include "execution_context.h"
+#include "debugger/debugger.h"
 #include <spdlog/spdlog.h>
 
 using namespace dispatcher;
@@ -32,6 +33,13 @@ long Dispatcher::run() {
 	_context.guest.map.jump_table = reinterpret_cast<uintptr_t>(jump_table::table_address);
 	_context.guest.map.context = reinterpret_cast<uintptr_t>(&_context);
 	_context.codegen = &_codegen;
+
+	// initialize the debugger if necessary
+	std::unique_ptr<debugger::Debugger> debugger = nullptr;
+	if (_args.get_debugging()) {
+		debugger = std::make_unique<debugger::Debugger>();
+		_context.debugger = debugger.get();
+	}
 
 	// set the flags indirectly
 	_context.flag_info.overflow_operation = static_cast<uint16_t>(jump_table::Entry::overflow_clear);

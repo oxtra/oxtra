@@ -6,7 +6,7 @@ SET(CMAKE_ASM_FLAGS "${CFLAGS} ${ASM_OPTIONS}")
 # In here, all .cpp files are listed that will be added to the executable
 add_library(oxtra_libs
 		STATIC
-		oxtra/dispatcher/dispatcher.s
+		oxtra/codegen/jump-table/jump_table.s
 		oxtra/arguments/arguments.cpp
 		oxtra/elf/elf.cpp
 		oxtra/codegen/codegen.cpp
@@ -19,11 +19,8 @@ add_library(oxtra_libs
 		oxtra/codegen/instruction.cpp
 		oxtra/codegen/transform_instruction.cpp
 		oxtra/codegen/jump-table/jump_table.cpp
-		oxtra/codegen/jump-table/jump_table.s
 		oxtra/codegen/instructions/binary_operation.cpp
 		oxtra/codegen/instructions/unary_operation.cpp
-		oxtra/codegen/instructions/arithmetic/flags_carry.s
-		oxtra/codegen/instructions/arithmetic/flags_overflow.s
 		oxtra/codegen/instructions/arithmetic/add.cpp
 		oxtra/codegen/instructions/arithmetic/adc.cpp
 		oxtra/codegen/instructions/arithmetic/neg.cpp
@@ -72,6 +69,7 @@ add_library(oxtra_libs
 		oxtra/codegen/instructions/comparable/comparable.cpp
 		oxtra/codegen/instructions/comparable/cmp.cpp
 		oxtra/codegen/instructions/comparable/test.cpp
+		oxtra/dispatcher/debugger/debugger.cpp
 )
 
 target_link_libraries(oxtra_libs
