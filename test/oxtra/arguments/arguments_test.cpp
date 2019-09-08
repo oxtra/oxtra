@@ -35,7 +35,7 @@ TEST_CASE("Arguments support parsing valid arguments", "[arguments]") {
 		REQUIRE(arguments.get_entry_list_size() == 42);
 		REQUIRE(arguments.get_offset_list_size() == 50);
 		REQUIRE(strcmp(arguments.get_guest_path(), "app") == 0);
-		REQUIRE(((int)arguments.get_log_level()) == SPDLOG_LEVEL_OFF); // off, as the debugger is attached
+		REQUIRE(((int)arguments.get_log_level()) == SPDLOG_LEVEL_CRITICAL);
 		REQUIRE(arguments.get_debugging());
 	}
 	SECTION("nested quotes in string") {

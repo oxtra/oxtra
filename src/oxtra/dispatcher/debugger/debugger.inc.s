@@ -14,16 +14,64 @@ debug_entry:
 	ret
 	debugger_attached:
 
+	# store the current t1 & t2-register
+	sd t1, guest_t1_offset(s11)
+	sd t2, guest_t2_offset(s11)
 
-	# check if breakpoint reached
+	# check if the execution is supposed to be halted
+	lbu t2, debug_halt(t0)
+	beqz t2, debugger_no_halt
 
+	# set the t1-register to 0x400, which indicates to the entry, that the halt has been reached
+	addi t1, zero, 0x400
+	j debugger_enter
+
+	# check if any break-points exist
+	debugger_no_halt:
+	lbu t1, debug_bp_count(t0)
+	beqz t1, debugger_exit
+
+	# iterate through the break-points and check if one has been hit
+    addi t2, t0, debug_bp_array
+    debugger_bp_iteration:
+    beqz t1, debugger_exit
+
+    # load the current entry and compare it to the ra-address
+    ld t0, 0(t2)
+    bne t0, ra, debugger_bp_iteration_no_enter
+
+    # reload the debugger-pointer and compute the index
+    ld t0, debugger_offset(s11)
+    sub t1, t2, t0
+    addi t1, t1, -debug_bp_array
+    srli t1, t1, 3
+    j debugger_enter
+
+    # decrease the counter and increase the pointer
+    debugger_bp_iteration_no_enter:
+    addi t1, t1, -1
+    addi t2, t2, 8
+    j debugger_bp_iteration
+
+    # restore the two temp-registers
+	debugger_exit:
+	ld t0, guest_t0_offset(s11)
+	ld t1, guest_t1_offset(s11)
+	ld t2, guest_t2_offset(s11)
+	ret
 
 	# capture the context
-	capture_context_full s11
+	debugger_enter:
+    capture_context_debug s11
+
+    # set the three arguments
+    mv a0, t0	# Debugger
+    mv a1, s11	# ExecutionContext
+    mv a2, t1	# BreakPointEntry
 
 	# call the debugging-entry-function
-	jal ra, _ZN8debugger8Debugger5entryEPN10dispatcher16ExecutionContextE
+	jal ra, _ZN8debugger8Debugger5entryEPN10dispatcher16ExecutionContextEm
 
 	# restore the context and return to the execution
-	restore_context_full s11
+	restore_context_debug s11
 	ret

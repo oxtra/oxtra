@@ -12,7 +12,7 @@
 # prototype: static uintptr_t c_wrapper(ExecutionContext* context)
 c_wrapper:
 	# capture the context
-	capture_context_temp s11
+	capture_context_high_level s11
 
 	# invoke the function
     mv a0, s11
@@ -22,7 +22,7 @@ c_wrapper:
     mv t4, a0
 
 	# restore the guest context and return to caller
-	restore_context_temp s11
+	restore_context_high_level s11
     ret
 
 

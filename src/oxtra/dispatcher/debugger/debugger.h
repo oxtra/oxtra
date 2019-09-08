@@ -18,8 +18,17 @@ namespace debugger {
 
 	class Debugger {
 	private:
-		static void entry(dispatcher::ExecutionContext* context);
+		static constexpr uintptr_t halt_break = 0x0400;
+	private:
+		uint8_t halt;
+		uint8_t bp_count;
+		uintptr_t bp_array[256];
 
+	public:
+		Debugger();
+
+	private:
+		void entry(dispatcher::ExecutionContext* context, uintptr_t break_point);
 	};
 }
 
