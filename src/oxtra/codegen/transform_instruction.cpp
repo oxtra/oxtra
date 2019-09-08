@@ -47,6 +47,8 @@
 #include "oxtra/codegen/instructions/control-flow/conditional-jumps/jcxz.h"
 #include "oxtra/codegen/instructions/comparable/cmp.h"
 #include "oxtra/codegen/instructions/comparable/test.h"
+#include "oxtra/codegen/instructions/flags/clc.h"
+#include "oxtra/codegen/instructions/flags/stc.h"
 
 using namespace codegen;
 using namespace fadec;
@@ -98,6 +100,12 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 		case InstructionType::TEST:
 		case InstructionType::TEST_IMM:
 			return std::make_unique<Test>(inst);
+
+		case InstructionType::CLC:
+			return std::make_unique<Clc>(inst);
+
+		case InstructionType::STC:
+			return std::make_unique<Stc>(inst);
 
 		case InstructionType::ADC:
 		case InstructionType::ADC_IMM:

@@ -69,6 +69,8 @@ add_library(oxtra_libs
 		oxtra/codegen/instructions/comparable/comparable.cpp
 		oxtra/codegen/instructions/comparable/cmp.cpp
 		oxtra/codegen/instructions/comparable/test.cpp
+		oxtra/codegen/instructions/flags/clc.cpp
+		oxtra/codegen/instructions/flags/stc.cpp
 		oxtra/dispatcher/debugger/debugger.cpp
 )
 
