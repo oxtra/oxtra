@@ -1,7 +1,7 @@
 #ifndef OXTRA_UNARY_OPERATION_H
 #define OXTRA_UNARY_OPERATION_H
 
-#include "instruction.h"
+#include "oxtra/codegen/instruction.h"
 
 namespace codegen {
 	class UnaryOperation : public codegen::Instruction {

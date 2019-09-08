@@ -502,7 +502,7 @@ int fadec::decode(const uint8_t* buffer, size_t len_sz, DecodeMode mode, uintptr
 	if (desc->has_implicit()) {
 		auto& operand = instr.operands[desc->implicit_idx()];
 		operand.type = OperandType::reg;
-		operand.reg = Register::none;
+		operand.reg = Register::rax;
 	}
 
 	if (desc->has_modrm()) {

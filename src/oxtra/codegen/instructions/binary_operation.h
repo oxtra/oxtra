@@ -1,7 +1,7 @@
 #ifndef OXTRA_BINARY_OPERATION_H
 #define OXTRA_BINARY_OPERATION_H
 
-#include "instruction.h"
+#include "oxtra/codegen/instruction.h"
 
 namespace codegen {
 	class BinaryOperation : public codegen::Instruction {

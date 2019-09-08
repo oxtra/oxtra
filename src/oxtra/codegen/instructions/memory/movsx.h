@@ -1,7 +1,7 @@
 #ifndef OXTRA_MOVSX_H
 #define OXTRA_MOVSX_H
 
-#include "oxtra/codegen/binary_operation.h"
+#include "oxtra/codegen/instructions/binary_operation.h"
 
 namespace codegen {
 	class Movsx : public BinaryOperation {

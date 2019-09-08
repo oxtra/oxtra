@@ -1,7 +1,7 @@
 #ifndef OXTRA_NEG_H
 #define OXTRA_NEG_H
 
-#include "oxtra/codegen/unary_operation.h"
+#include "oxtra/codegen/instructions/unary_operation.h"
 
 namespace codegen {
 	class Neg : public UnaryOperation {
