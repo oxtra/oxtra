@@ -6,33 +6,31 @@
 
 using namespace encoding;
 
-
-void codegen::helper::move_to_register(CodeBatch& batch, RiscVRegister dest, RiscVRegister src, RegisterAccess access,
+void codegen::helper::move_to_register(CodeBatch& batch, RiscVRegister dest, RiscVRegister src, uint8_t access,
 									   RiscVRegister temp, bool cleared) {
 	switch (access) {
-		case RegisterAccess::QWORD:
-			batch += encoding::ADD(dest, src, RiscVRegister::zero);
+		case 8:
+			batch += encoding::MV(dest, src);
 			return;
-		case RegisterAccess::DWORD:
-			// copy the source-register and clear the upper bits by shifting
+		case 4:
 			batch += encoding::SLLI(dest, src, 32);
 			batch += encoding::SRLI(dest, dest, 32);
 			return;
-		case RegisterAccess::WORD:
-			// check if the upper source-register has to be cleared
-			if (!cleared) {
-				batch += encoding::XOR(temp, src, dest);
-				batch += encoding::SLLI(temp, temp, 48);
-				batch += encoding::SRLI(temp, temp, 48);
-				batch += encoding::XOR(dest, temp, dest);
-			} else {
+		case 2:
+			if (cleared) {
 				// clear the lower bits of the destination-register by shifting
 				batch += encoding::SRLI(dest, dest, 16);
 				batch += encoding::SLLI(dest, dest, 16);
 				batch += encoding::OR(dest, dest, src);
+			} else {
+				// check if the upper source-register has to be cleared
+				batch += encoding::XOR(temp, src, dest);
+				batch += encoding::SLLI(temp, temp, 48);
+				batch += encoding::SRLI(temp, temp, 48);
+				batch += encoding::XOR(dest, temp, dest);
 			}
 			return;
-		case RegisterAccess::LBYTE:
+		case 1:
 			// clear the destination
 			batch += encoding::ANDI(dest, dest, -0x100);
 
@@ -41,7 +39,8 @@ void codegen::helper::move_to_register(CodeBatch& batch, RiscVRegister dest, Ris
 				batch += encoding::ANDI(temp, src, 0xff);
 			batch += encoding::OR(dest, dest, cleared ? src : temp);
 			return;
-		case RegisterAccess::HBYTE:
+		case 0:
+		default:
 			// move the 8 bits of the destination-register down and xor them with the source
 			batch += encoding::SRLI(temp, dest, 8);
 			batch += encoding::XOR(temp, temp, src);
@@ -56,11 +55,47 @@ void codegen::helper::move_to_register(CodeBatch& batch, RiscVRegister dest, Ris
 	}
 }
 
+RiscVRegister codegen::helper::load_from_register(CodeBatch& batch, encoding::RiscVRegister src, uint8_t access,
+												  encoding::RiscVRegister temp, bool modifiable, bool full_load,
+												  bool sign_extend) {
+	// check if a full-load is required
+	if (full_load) {
+		// check if the register has to be shifted
+		if (access < 8) {
+			// load the register and clear/set the upper bits
+			batch += encoding::SLLI(temp, src, access == 0 ? 48 : 64 - access * 8);
+			batch += (sign_extend ? encoding::SRAI : encoding::SRLI)(temp, temp, 64 - (access == 0 ? 1 : access) * 8);
+			return temp;
+		}
+
+		// check if the register must be modifiable
+		if (modifiable) {
+			batch += encoding::MV(temp, src);
+			return temp;
+		}
+		return src;
+	}
+
+	// check if the register must be modifiable
+	if (modifiable || access == 0) {
+		// copy the value to the temporary register and return it
+		if (access == 0)
+			batch += encoding::SRLI(temp, src, 8);
+		else
+			batch += encoding::MV(temp, src);
+		return temp;
+	}
+
+	// return the register itself as its not modifiable nor has to be
+	// loaded fully and the access is from the bottom.
+	return src;
+}
+
 void codegen::helper::load_immediate(CodeBatch& batch, uintptr_t imm, encoding::RiscVRegister dest) {
 
 	/* Number-structure: 00 00 01 11 22 23 33 44 */
 
-	// create the member-stack
+	// initialize the variables used for the generation
 	uint32_t packages[5] = {0};
 	bool increase[5] = {true, true, true, true, true};
 	uint8_t shifts[4] = {0};
@@ -119,12 +154,23 @@ void codegen::helper::load_immediate(CodeBatch& batch, uintptr_t imm, encoding::
 		 * of the number is set, or the two others before, we have to move the entire
 		 * digit up one, to have two zero's at its beginning. Otherwise the sign-extension
 		 * might lead to all of the zeros in front of the number to become one's. */
-		if (upper_value == 0 && equal_digits > 0 && current_bit >= 1) {
-			if (((imm >> static_cast<uint8_t>(current_bit + 1)) & 0x01u) &&
-				(((imm >> static_cast<uint8_t>(current_bit)) & 0x01u) ||
-				 ((imm >> static_cast<uint8_t>(current_bit - 1)) & 0x01u))) {
-				equal_digits--;
-				current_bit++;
+		if (upper_value == 0 && equal_digits > 0 && current_bit >= 11) {
+			// check if the lowest bit is set
+			if ((imm >> static_cast<uint8_t>(current_bit + 1)) & 0x01u) {
+				bool move_bit = true;
+				if (((imm >> static_cast<uint8_t>(current_bit)) & 0x01u) == 0) {
+					// look for another zero, which could catch a bit-flip in the upcoming 11 bits
+					for (uint8_t i = 1; i < 12; i++) {
+						if (i > current_bit)
+							break;
+						else if (((imm >> static_cast<uint8_t>(current_bit - i)) & 0x01u) == 0)
+							move_bit = false;
+					}
+				}
+				if (move_bit) {
+					equal_digits--;
+					current_bit++;
+				}
 			}
 		}
 
@@ -219,7 +265,11 @@ void codegen::helper::append_eob(CodeBatch& batch, encoding::RiscVRegister reg) 
 }
 
 void codegen::helper::sign_extend_register(codegen::CodeBatch& batch, RiscVRegister dest, RiscVRegister src, size_t byte) {
-	//TODO: ADDIW for better performance
+	if (byte == 4) {
+		batch += encoding::ADDW(dest, src, RiscVRegister::zero);
+		return;
+	}
+
 	const auto shamt = (sizeof(size_t) - byte) * 8;
 	if (shamt > 0) {
 		batch += encoding::SLLI(dest, src, shamt);

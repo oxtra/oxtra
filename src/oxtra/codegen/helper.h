@@ -23,45 +23,38 @@ namespace codegen::helper {
 	 * s1, s8, s9: unmapped
 	 */
 
-	enum class RegisterAccess : uint8_t {
-		QWORD,
-		DWORD,
-		WORD,
-		HBYTE,
-		LBYTE
+	struct RegisterAccess {
+		static constexpr uint8_t QWORD = 8;
+		static constexpr uint8_t DWORD = 4;
+		static constexpr uint8_t WORD = 2;
+		static constexpr uint8_t LBYTE = 1;
+		static constexpr uint8_t HBYTE = 0;
 	};
 
 	/**
-	 * Get the register access for a given operand size.
-	 * @param op_size The size of the operand in bytes. May only be 1,2,4 or 8.
-	 * @return The correct RegisterAccess. The lower byte will be returned for an operand size of 1.
-	 */
-	static constexpr RegisterAccess operand_to_register_access(size_t op_size) {
-		if (op_size == 1) return RegisterAccess::LBYTE;
-		if (op_size == 2) return RegisterAccess::WORD;
-		if (op_size == 4) return RegisterAccess::DWORD;
-		return RegisterAccess::QWORD;
-	}
-
-	/**
-	 * Writes a register with x86-style sub-manipulation to an existing register without
-	 * invalidating the rest of the value.
-	 *
-	 * for example:
-	 * 		- read x86:ah from riscv:a1
-	 * 		- manipulate riscv:a1
-	 * 		- store riscv:a1 to x86:eax
-	 *
+	 * Writes a register with x86-style sub-manipulation to an existing register WITHOUT
+	 * invalidating the rest of the value. Undefined behavior if src == dest.
 	 * The source-register will be preserved.
-	 * @param batch Store the current riscv-batch.
 	 * @param dest Register to be changed.
 	 * @param src Register to write.
-	 * @param access The operand-size of the register to write to.
-	 * @param temp A temporary that might be changed.
+	 * @param access The Operand-size (8=QWORD, 4=DWORD, 2=WORD, 1=LBYTE, 0=HBYTE)
 	 * @param cleared If true the upper bits of the source register are expected to be 0.
 	 */
-	void move_to_register(CodeBatch& batch, encoding::RiscVRegister dest, encoding::RiscVRegister src, RegisterAccess access,
-						  encoding::RiscVRegister temp, bool cleared = false);
+	void move_to_register(CodeBatch& batch, encoding::RiscVRegister dest, encoding::RiscVRegister src, uint8_t access,
+						  encoding::RiscVRegister temp, bool cleared);
+
+	/**
+	 * Reads a register with x86-style sub-manipulation into a temporary register.
+	 * Undefined behavior if src == temp.
+	 * @param src The source to copy.
+	 * @param access The Operand-size (8=QWORD, 4=DWORD, 2=WORD, 1=LBYTE, 0=HBYTE)
+	 * @param modifiable The resulting register must be modifiable (Enforces returning the temp register).
+	 * @param full_load In case of an access < 8, the resulting register will have the upper bits cleared.
+	 * @param sign_extend In case of a full_load, the resulting register will be sign-extended or not.
+	 * @return The register which contains the value (either the source itself or the temp register).
+	 */
+	encoding::RiscVRegister load_from_register(CodeBatch& batch, encoding::RiscVRegister src, uint8_t access,
+											   encoding::RiscVRegister temp, bool modifiable, bool full_load, bool sign_extend);
 
 	/**
 	 * Load an immediate of up to 64 bit into the register.

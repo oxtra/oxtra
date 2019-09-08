@@ -7,7 +7,7 @@ namespace codegen {
 	class Inc : public UnaryOperation {
 	public:
 		explicit Inc(const fadec::Instruction& inst)
-				: UnaryOperation{inst, Flags::all ^ Flags::carry, Flags::none} {}
+				: UnaryOperation{inst, flags::all ^ flags::carry, flags::none} {}
 
 		void execute_operation(CodeBatch& batch, encoding::RiscVRegister dst) const override;
 	};

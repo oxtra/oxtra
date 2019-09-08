@@ -6,7 +6,7 @@ SET(CMAKE_ASM_FLAGS "${CFLAGS} ${ASM_OPTIONS}")
 # In here, all .cpp files are listed that will be added to the executable
 add_library(oxtra_libs
 		STATIC
-		oxtra/dispatcher/dispatcher.s
+		oxtra/codegen/jump-table/jump_table.s
 		oxtra/arguments/arguments.cpp
 		oxtra/elf/elf.cpp
 		oxtra/codegen/codegen.cpp
@@ -19,20 +19,15 @@ add_library(oxtra_libs
 		oxtra/codegen/instruction.cpp
 		oxtra/codegen/transform_instruction.cpp
 		oxtra/codegen/jump-table/jump_table.cpp
-		oxtra/codegen/jump-table/jump_table.s
 		oxtra/codegen/binary_operation.cpp
 		oxtra/codegen/unary_operation.cpp
-		oxtra/codegen/instructions/arithmetic/flags_carry.s
-		oxtra/codegen/instructions/arithmetic/flags_overflow.s
-		oxtra/codegen/instructions/logic/flags_carry.s
-		oxtra/codegen/instructions/logic/flags_overflow.s
 		oxtra/codegen/instructions/arithmetic/add.cpp
 		oxtra/codegen/instructions/arithmetic/neg.cpp
 		oxtra/codegen/instructions/arithmetic/sub.cpp
+		oxtra/codegen/instructions/arithmetic/idiv.cpp
 		oxtra/codegen/instructions/arithmetic/inc.cpp
 		oxtra/codegen/instructions/arithmetic/dec.cpp
-		oxtra/codegen/instructions/arithmetic/idiv.cpp
-		oxtra/codegen/instructions/arithmetic/imul.cpp
+		oxtra/codegen/instructions/arithmetic/mul.cpp
 		oxtra/codegen/instructions/logic/and.cpp
 		oxtra/codegen/instructions/logic/or.cpp
 		oxtra/codegen/instructions/logic/not.cpp
@@ -71,7 +66,8 @@ add_library(oxtra_libs
 		oxtra/codegen/instructions/control-flow/conditional-jumps/jl.cpp
 		oxtra/codegen/instructions/control-flow/conditional-jumps/jle.cpp
 		oxtra/codegen/instructions/control-flow/conditional-jumps/jcxz.cpp
-		)
+		oxtra/dispatcher/debugger/debugger.cpp
+)
 
 target_link_libraries(oxtra_libs
 		fadec

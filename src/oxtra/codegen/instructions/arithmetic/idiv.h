@@ -7,7 +7,7 @@ namespace codegen {
 	class Idiv : public codegen::Instruction {
 	public:
 		explicit Idiv(const fadec::Instruction& inst)
-				: codegen::Instruction{inst, Flags::all, Flags::none} {}
+				: codegen::Instruction{inst, flags::all, flags::none} {}
 
 		void generate(CodeBatch& batch) const override;
 	};

@@ -10,11 +10,8 @@ void codegen::Push::generate(CodeBatch& batch) const {
 	batch += encoding::ADDI(rsp_reg, rsp_reg, -operand.get_size());
 
 	// extract the value
-	auto value_register = encoding::RiscVRegister::t0;
-	if (operand.get_type() == fadec::OperandType::reg)
-		value_register = helper::map_reg(operand.get_register());
-	else
-		translate_operand(batch, 0, value_register, encoding::RiscVRegister::t1, encoding::RiscVRegister::t2);
+	auto value_register = translate_operand(batch, 0, 0, encoding::RiscVRegister::t0, encoding::RiscVRegister::t1,
+											false, false, false);
 
 	// write the value to memory
 	switch (operand.get_size()) {

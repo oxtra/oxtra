@@ -7,10 +7,9 @@ const char* argp_program_version = "oxtra 0.5 [alpha]";
 const char* argp_program_bug_address = "https://gitlab.lrz.de/lrr-tum/students/eragp-x86emu-2019";
 
 Arguments::Arguments(int argc, char** argv) :
-		_argp_parser{_options, parse_opt, _argument_description, _documentation, nullptr, nullptr, nullptr},
 		_executable_path{argv[0]},
-		_stored_arguments{nullptr, std::vector<std::string>(), spdlog::level::level_enum::warn, 128, 128, 128,
-						  StepMode::none} {
+		_stored_arguments{nullptr, std::vector<std::string>(), spdlog::level::level_enum::warn, false,
+						  0x200000, 0x1000, 0x200, 0x40} {
 
 	parse_arguments(argc, argv);
 }
@@ -27,6 +26,10 @@ enum spdlog::level::level_enum Arguments::get_log_level() const {
 	return _stored_arguments.spdlog_log_level;
 }
 
+size_t Arguments::get_stack_size() const {
+	return _stored_arguments.stack_size;
+}
+
 size_t Arguments::get_instruction_list_size() const {
 	return _stored_arguments.instruction_list_size;
 }
@@ -39,12 +42,16 @@ size_t Arguments::get_entry_list_size() const {
 	return _stored_arguments.entry_list_size;
 }
 
-StepMode Arguments::get_step_mode() const {
-	return _stored_arguments.step_mode;
+bool Arguments::get_debugging() const {
+	return _stored_arguments.debugging;
 }
 
 void Arguments::parse_arguments(int argc, char** argv) {
-	argp_parse(&_argp_parser, argc, argv, 0, nullptr, &_stored_arguments);
+	// initialize the argument-parser
+	argp parser = {_options, parse_opt, _argument_description, _documentation, nullptr, nullptr, nullptr};
+
+	// parse the arguments
+	argp_parse(&parser, argc, argv, 0, nullptr, &_stored_arguments);
 }
 
 /**
@@ -52,9 +59,9 @@ void Arguments::parse_arguments(int argc, char** argv) {
  * If there was an error while parsing, the failure_string will be printed.
  * @return The parsed value. If there was an error, the application will be exited.
  */
-static int parse_string(struct argp_state* state, char* str, int min_value, const char* failure_string) {
+static long parse_string(struct argp_state* state, char* str, int min_value, const char* failure_string) {
 	char* end_parse;
-	int parsed_value = strtol(str, &end_parse, 10);
+	long parsed_value = strtol(str, &end_parse, 10);
 	if (*end_parse != '\0' || parsed_value < min_value) {
 		argp_failure(state, 1, 0, "%s: %s", failure_string, str);
 	}
@@ -110,30 +117,30 @@ error_t Arguments::parse_opt(int key, char* arg, struct argp_state* state) {
 		case 'a':
 			arguments->guest_arguments = string_split(arg, ' ');
 			break;
-		case _instruction_list_size_id:
-			arguments->instruction_list_size = parse_string(state, arg, 1, "Illegal size, must be a positive integer");
-			break;
-		case _offset_list_size_id:
-			arguments->offset_list_size = parse_string(state, arg, 1, "Illegal size, must be a positive integer");
-			break;
-		case _entry_list_size_id:
-			arguments->entry_list_size = parse_string(state, arg, 1, "Illegal size, must be a positive integer.");
-			break;
 		case 'l': {
 			int parsed = parse_string(state, arg, 0, 6, "Illegal log level");
 			arguments->spdlog_log_level = static_cast<enum spdlog::level::level_enum>(parsed);
 			break;
 		}
 		case 'd':
-			if (strcasecmp("none", arg) == 0)
-				arguments->step_mode = StepMode::none;
-			else if (strcasecmp("x86", arg) == 0)
-				arguments->step_mode = StepMode::x86;
-			else if (strcasecmp("riscv", arg) == 0)
-				arguments->step_mode = StepMode::riscv;
+			if (strcasecmp("false", arg) == 0 || strcasecmp("0", arg) == 0)
+				arguments->debugging = false;
+			else if (strcasecmp("true", arg) == 0 || strcasecmp("1", arg) == 0)
+				arguments->debugging = true;
 			else
-				argp_failure(state, 1, 0, "%s: %s. %s.", "Illegal debug step mode", arg, "Allowed are: none, x86, riscv");
-
+				argp_failure(state, 1, 0, "%s: %s. %s.", "Illegal debugging-behavior", arg, "Allowed are: true, 1, false, 0");
+			break;
+		case 's':
+			arguments->stack_size = parse_string(state, arg, 1, "Illegal size, must be a positive integer.");
+			break;
+		case 'i':
+			arguments->instruction_list_size = parse_string(state, arg, 1, "Illegal size, must be a positive integer.");
+			break;
+		case 'o':
+			arguments->offset_list_size = parse_string(state, arg, 1, "Illegal size, must be a positive integer.");
+			break;
+		case 'e':
+			arguments->entry_list_size = parse_string(state, arg, 1, "Illegal size, must be a positive integer.");
 			break;
 		case ARGP_KEY_NO_ARGS:
 			argp_usage(state);

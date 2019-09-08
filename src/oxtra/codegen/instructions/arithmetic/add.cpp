@@ -10,3 +10,10 @@ void codegen::Add::execute_operation(CodeBatch& batch, encoding::RiscVRegister d
 	update_carry(batch, carry, src, dst, encoding::RiscVRegister::t4);
 	update_overflow(batch, overflow, src, dst, encoding::RiscVRegister::t4);
 }
+
+void codegen::Add::execute_operation(CodeBatch& batch, encoding::RiscVRegister dst, intptr_t imm) const {
+	batch += encoding::ADDI(dst, dst, imm);
+
+	update_carry_unsupported(batch, "ADD - Imm", encoding::RiscVRegister::t4);
+	update_overflow_unsupported(batch, "ADD - Imm", encoding::RiscVRegister::t4);
+}

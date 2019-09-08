@@ -66,8 +66,8 @@ TEST_CASE("codestore test instruction-adding", "[codestore]") {
 	// create the elf-object and the arguments-object
 	auto temp_elf = elf::Elf(base_path.c_str());
 
-	const char* test_path[] = {"./oxtra", base_path.c_str()};
-	auto temp_args = arguments::Arguments(2, const_cast<char**>(test_path));
+	const char* test_path[] = {"./oxtra", base_path.c_str(), "--linst-size=128", "--lentry-size=128", "--loffset-size=128"};
+	auto temp_args = arguments::Arguments(5, const_cast<char**>(test_path));
 
 	// create the code-store object
 	CodeStore store = CodeStore(temp_args, temp_elf);

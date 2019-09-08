@@ -16,7 +16,7 @@ void codegen::Idiv::generate(codegen::CodeBatch& batch) const {
 	constexpr auto remainder = encoding::RiscVRegister::t2;
 	constexpr auto dividend = encoding::RiscVRegister::t1;
 	constexpr auto divisor = encoding::RiscVRegister::t0;
-	translate_operand(batch, 0, divisor, encoding::RiscVRegister::t1, encoding::RiscVRegister::t2);
+	translate_operand(batch, 0, 0, divisor, tmp, true, true, idiv);
 
 	// if (divisor == 0) raise #DE (divide by zero)
 	batch += BNQZ(divisor, 10*4);
@@ -40,15 +40,15 @@ void codegen::Idiv::generate(codegen::CodeBatch& batch) const {
 	if (op_size == 1) {
 		// dividend = ax
 		batch += encoding::MV(dividend, encoding::RiscVRegister::zero);
-		move_to_register( batch, dividend, rax, helper::RegisterAccess::WORD, tmp);
+		helper::move_to_register( batch, dividend, rax, helper::RegisterAccess::WORD, tmp, false);
 	} else if (op_size == 2 || op_size == 4) {
 		// dividend = dx:ax bzw. edx:eax
 		const auto reg_access = (op_size < 3) ? helper::RegisterAccess::WORD : helper::RegisterAccess::DWORD;
 		const auto shamt = (op_size < 3) ? 16 : 32;
 		batch += encoding::MV(dividend, encoding::RiscVRegister::zero);
-		move_to_register(batch, dividend, rdx, reg_access, tmp);
+		helper::move_to_register(batch, dividend, rdx, reg_access, tmp, false);
 		batch += encoding::SLLI(dividend, dividend, shamt);
-		move_to_register(batch, encoding::RiscVRegister::t2, rax, reg_access, tmp);
+		helper::move_to_register(batch, encoding::RiscVRegister::t2, rax, reg_access, tmp, false);
 		batch += encoding::ADD(dividend, dividend, encoding::RiscVRegister::t2);
 	} else {
 		// dividend = rax, assumes values larger than INT_MAX are never used
@@ -96,12 +96,12 @@ void codegen::Idiv::generate(codegen::CodeBatch& batch) const {
 
 	// 3. store the result
 	if (op_size == 1) {
-		move_to_register(batch, rax, quotient, helper::RegisterAccess::LBYTE, tmp);
-		move_to_register(batch, rax, remainder, helper::RegisterAccess::HBYTE, tmp);
+		helper::move_to_register(batch, rax, quotient, helper::RegisterAccess::LBYTE, tmp, false);
+		helper::move_to_register(batch, rax, remainder, helper::RegisterAccess::HBYTE, tmp, false);
 	} else if (op_size == 2 || op_size == 4) {
-		helper::RegisterAccess reg_access = (op_size < 3) ? helper::RegisterAccess::WORD : helper::RegisterAccess::DWORD;
-		move_to_register(batch, rax, quotient, reg_access, tmp);
-		move_to_register(batch, rdx, remainder, reg_access, tmp);
+		auto reg_access = (op_size < 3) ? helper::RegisterAccess::WORD : helper::RegisterAccess::DWORD;
+		helper::move_to_register(batch, rax, quotient, reg_access, tmp, false);
+		helper::move_to_register(batch, rdx, remainder, reg_access, tmp, false);
 	} else {
 		batch += MV(rax, quotient);
 		batch += MV(rdx, remainder);

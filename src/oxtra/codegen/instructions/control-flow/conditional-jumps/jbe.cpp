@@ -11,8 +11,12 @@ void codegen::Jbe::generate(codegen::CodeBatch& batch) const {
 
 	// generate the code to jump to the result
 	size_t finish = batch.size();
-	translate_operand(batch, 0, helper::address_destination, encoding::RiscVRegister::t1, encoding::RiscVRegister::t2);
-	helper::append_eob(batch, helper::address_destination);
+	if (get_operand(0).get_type() == fadec::OperandType::imm) {
+		helper::append_eob(batch, get_immediate());
+	} else {
+		translate_operand(batch, 0, 0, helper::address_destination, encoding::RiscVRegister::t0, true, false, false);
+		helper::append_eob(batch, helper::address_destination);
+	}
 
 	// compute the offset and generate the jump
 	size_t offset = batch.size() - index;

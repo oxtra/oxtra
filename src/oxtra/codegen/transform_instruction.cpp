@@ -3,8 +3,8 @@
 #include "oxtra/codegen/instructions/arithmetic/add.h"
 #include "oxtra/codegen/instructions/arithmetic/dec.h"
 #include "oxtra/codegen/instructions/arithmetic/idiv.h"
-#include "oxtra/codegen/instructions/arithmetic/imul.h"
 #include "oxtra/codegen/instructions/arithmetic/inc.h"
+#include "oxtra/codegen/instructions/arithmetic/mul.h"
 #include "oxtra/codegen/instructions/arithmetic/neg.h"
 #include "oxtra/codegen/instructions/arithmetic/sub.h"
 #include "oxtra/codegen/instructions/control-flow/call.h"
@@ -102,8 +102,11 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 		case InstructionType::NEG:
 			return std::make_unique<Neg>(inst);
 
+		case InstructionType::MUL:
+		case InstructionType::IMUL:
 		case InstructionType::IMUL2:
-			return std::make_unique<Imul>(inst);
+		case InstructionType::IMUL3:
+			return std::make_unique<Mul>(inst);
 
 		case InstructionType::DIV:
 		case InstructionType::IDIV:

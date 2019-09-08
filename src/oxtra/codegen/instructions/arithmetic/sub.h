@@ -7,9 +7,11 @@ namespace codegen {
 	class Sub : public BinaryOperation {
 	public:
 		explicit Sub(const fadec::Instruction& inst)
-				: BinaryOperation{inst, Flags::all, Flags::none} {}
+				: BinaryOperation{inst, flags::all, flags::none, true} {}
 
 		void execute_operation(CodeBatch& batch, encoding::RiscVRegister dst, encoding::RiscVRegister src) const override;
+
+		void execute_operation(CodeBatch& batch, encoding::RiscVRegister dst, intptr_t imm) const override;
 	};
 }
 
