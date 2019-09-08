@@ -8,8 +8,9 @@
 #include "oxtra/dispatcher/dispatcher.h"
 
 int main(int argc, char** argv) {
-	// parse the arguments
+	// parse the arguments and set the spdlog-pattern
 	const auto arguments = arguments::Arguments(argc, argv);
+	spdlog::set_pattern("[%H:%M:%S.%e %L] %v");
 	spdlog::set_level(arguments.get_log_level());
 	spdlog::debug("finished parsing the arguments.");
 
@@ -23,7 +24,7 @@ int main(int argc, char** argv) {
 
 	// startup the translation and execution of the source-code
 	const auto return_value = dispatcher.run();
-	spdlog::info("guest returned: 0x{0:x} ({1:d})", static_cast<unsigned long>(return_value), return_value);
+	spdlog::info("guest returned: {0:#x} ({1:d})", static_cast<unsigned long>(return_value), return_value);
 
 	return return_value;
 }

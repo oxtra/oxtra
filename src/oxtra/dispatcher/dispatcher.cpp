@@ -81,7 +81,7 @@ long Dispatcher::virtualize_syscall(const ExecutionContext* context) {
 		const auto syscall_index = syscall_map[guest_index];
 
 		// print the systemcall with its attributes
-		spdlog::info("syscall {} mapped to: {} ({}, {}, {}, {}, {}, {})", guest_index, syscall_index,
+		spdlog::info("syscall: [{:03}]->[{:03}]({:#x}, {:#x}, {:#x}, {:#x}, {:#x}, {:#x})", guest_index, syscall_index,
 					 context->guest.map.rdi, context->guest.map.rsi, context->guest.map.rdx,
 					 context->guest.map.r10, context->guest.map.r8, context->guest.map.r9);
 		if (syscall_index >= 0)

@@ -1,7 +1,6 @@
 #include "code_batch.h"
-#include "jump-table/jump_table.h"
-#include "oxtra/dispatcher/dispatcher.h"
 #include <spdlog/spdlog.h>
+#include "oxtra/dispatcher/dispatcher.h"
 
 size_t codegen::CodeBatch::size() const {
 	return count;
@@ -12,7 +11,7 @@ void codegen::CodeBatch::operator+=(utils::riscv_instruction_t inst) {
 }
 
 size_t codegen::CodeMemory::add(utils::riscv_instruction_t inst) {
-	if(count >= max_size)
+	if (count >= max_size)
 		dispatcher::Dispatcher::fault_exit("CodeMemory::add - buffer-overflow");
 	address[count] = inst;
 	return count++;
@@ -27,6 +26,8 @@ utils::riscv_instruction_t& codegen::CodeMemory::operator[](size_t index) {
 }
 
 size_t codegen::CodeBatchImpl::add(utils::riscv_instruction_t inst) {
+	if (count >= codestore::max_riscv_instructions)
+		dispatcher::Dispatcher::fault_exit("CodeBatchImpl::add - buffer-overflow");
 	riscv[count] = inst;
 	return count++;
 }
@@ -39,20 +40,22 @@ utils::riscv_instruction_t& codegen::CodeBatchImpl::operator[](size_t index) {
 	return riscv[index];
 }
 
-void codegen::CodeBatchImpl::end() {
+void codegen::CodeBatchImpl::begin(const fadec::Instruction* inst, bool eob, uint8_t update, uint8_t require) {
+	unused_parameter(inst);
+	unused_parameter(eob);
+	unused_parameter(update);
+	unused_parameter(require);
+	count = 0;
+}
 
+void codegen::CodeBatchImpl::end() {
 }
 
 void codegen::CodeBatchImpl::print() const {
-	for (size_t i = 0; i < count; ++i) {
-		spdlog::trace(" - instruction[{}] = {}", i, decoding::parse_riscv(riscv[i]));
-	}
+	for (size_t i = 0; i < count; ++i)
+		spdlog::trace("    [{:02}] = {}", i, decoding::parse_riscv(riscv[i]));
 }
 
 utils::riscv_instruction_t* codegen::CodeBatchImpl::get() {
 	return riscv;
-}
-
-void codegen::CodeBatchImpl::reset() {
-	count = 0;
 }

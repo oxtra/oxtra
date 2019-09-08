@@ -57,13 +57,13 @@ namespace codegen {
 
 		virtual utils::riscv_instruction_t& operator[](size_t index) override;
 
+		virtual void begin(const fadec::Instruction* inst, bool eob, uint8_t update, uint8_t require);
+
 		virtual void end();
 
 		virtual void print() const;
 
 		utils::riscv_instruction_t* get();
-
-		virtual void reset();
 	};
 }
 

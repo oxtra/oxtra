@@ -9,11 +9,11 @@ namespace debugger {
 
 		virtual size_t add(utils::riscv_instruction_t inst) override;
 
+		virtual void begin(const fadec::Instruction* inst, bool eob, uint8_t update, uint8_t require) override;
+
 		virtual void end() override;
 
-		//virtual void print() const override;
-
-		virtual void reset() override;
+		virtual void print() const override;
 	};
 
 	class Debugger {
