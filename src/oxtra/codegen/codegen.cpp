@@ -93,7 +93,6 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 				*_batch += encoding::JALR(RiscVRegister::zero, helper::address_destination, 0);
 			}
 		}
-
 		_batch->end();
 
 		// print some debug-information

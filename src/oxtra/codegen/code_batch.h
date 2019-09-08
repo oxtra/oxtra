@@ -63,7 +63,7 @@ namespace codegen {
 
 		utils::riscv_instruction_t* get();
 
-		void reset();
+		virtual void reset();
 	};
 }
 

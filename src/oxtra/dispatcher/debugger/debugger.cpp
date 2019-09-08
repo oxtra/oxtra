@@ -11,3 +11,7 @@ void debugger::DebuggerBatch::end() {
 void debugger::DebuggerBatch::print() const {
 
 }
+
+void debugger::DebuggerBatch::reset() {
+
+}
