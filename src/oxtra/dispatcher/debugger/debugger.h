@@ -11,14 +11,14 @@ namespace debugger {
 
 		virtual void end() override;
 
-		virtual void print() const override;
+		//virtual void print() const override;
 
 		virtual void reset() override;
 	};
 
 	class Debugger {
 	private:
-		static void debug_entry(dispatcher::ExecutionContext* context);
+		static void entry(dispatcher::ExecutionContext* context);
 
 	};
 }

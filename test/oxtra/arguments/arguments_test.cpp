@@ -22,7 +22,7 @@ TEST_CASE("Arguments support parsing valid arguments", "[arguments]") {
 	}
 	SECTION("use modified arguments") {
 		constexpr const char* args_string[] = {"./oxtra", "-l", "5", "--stack-size=1338", "--linst-size=1337", "--lentry-size=42",
-											   "--loffset-size=50", "app", "-a", "this is  a test", "--debug=1"};
+											   "--loffset-size=50", "app", "-a", "this is  a test", "--debug"};
 		const auto arguments = Arguments(11, const_cast<char**>(args_string));
 
 		REQUIRE(arguments.get_guest_arguments().size() == 4);

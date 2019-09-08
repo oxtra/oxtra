@@ -122,13 +122,8 @@ error_t Arguments::parse_opt(int key, char* arg, struct argp_state* state) {
 			arguments->spdlog_log_level = static_cast<enum spdlog::level::level_enum>(parsed);
 			break;
 		}
-		case 'd':
-			if (strcasecmp("false", arg) == 0 || strcasecmp("0", arg) == 0)
-				arguments->debugging = false;
-			else if (strcasecmp("true", arg) == 0 || strcasecmp("1", arg) == 0)
-				arguments->debugging = true;
-			else
-				argp_failure(state, 1, 0, "%s: %s. %s.", "Illegal debugging-behavior", arg, "Allowed are: true, 1, false, 0");
+		case dbk_key:
+			arguments->debugging = true;
 			break;
 		case 's':
 			arguments->stack_size = parse_string(state, arg, 1, "Illegal size, must be a positive integer.");

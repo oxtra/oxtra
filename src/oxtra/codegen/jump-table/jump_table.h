@@ -63,9 +63,9 @@ namespace codegen::jump_table {
 	void jump_reroute_dynamic(CodeBatch& batch);
 
 	/**
-	 * Generates a jump to the debug break routine.
+	 * Generates a jump to the debuggers routine.
 	 */
-	void jump_debug_break(CodeBatch& batch);
+	void jump_debugger(CodeBatch& batch);
 
 	/**
 	 * Generates a jump into the jump table to the offset in the register.

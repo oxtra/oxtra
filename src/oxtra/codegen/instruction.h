@@ -5,6 +5,15 @@
 #include "oxtra/codegen/jump-table/jump_table.h"
 #include "oxtra/dispatcher/execution_context.h"
 
+/*
+ * IMPORTANT: At any point throughout the execution, the code must never rely on a certain
+ * value in the register ra, as its contents might change due to a debugger or other high-level-code.
+ *
+ * The c_callback_t-type describes a callback, which you can use in your code to call a given function in
+ * high-level-code. Within the callback, ra and t4's contents will have changed. But the callback's returned
+ * uintptr_t will be placed into t4, which is very convenient for high-level-flag-evaluation.
+ */
+
 namespace codegen {
 	class Instruction : protected fadec::Instruction {
 	private:

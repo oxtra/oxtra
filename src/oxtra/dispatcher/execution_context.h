@@ -36,7 +36,11 @@ namespace dispatcher {
 			private:
 				uintptr_t _gp, _tp, _t0, _t1, _t2;
 			public:
-				uintptr_t rbp, rflags, rax, rbx, rcx, rdx, rsi, rdi, r8, r9, r10, r11, r12, r13, r14, r15;
+				uintptr_t rbp;
+			private:
+				uintptr_t _s1;
+			public:
+				uintptr_t rax, rbx, rcx, rdx, rsi, rdi, r8, r9, r10, r11, r12, r13, r14, r15;
 			private:
 				uintptr_t _s8, _s9;
 			public:

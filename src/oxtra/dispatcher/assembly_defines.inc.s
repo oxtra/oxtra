@@ -1,5 +1,6 @@
 # global important offsets
 .equ guest_offset, 0
+.equ guest_t0_offset, 0x20
 .equ guest_a0_offset, 0x48
 .equ guest_rdi_offset, 0x70
 .equ guest_rsi_offset, 0x68

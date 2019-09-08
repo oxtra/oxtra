@@ -182,7 +182,7 @@ _ZN7codegen10jump_table13table_addressEv:
 	jal zero, _ZN10dispatcher10Dispatcher15syscall_handlerEv
 	jal zero, _ZN10dispatcher10Dispatcher14reroute_staticEv
 	jal zero, _ZN10dispatcher10Dispatcher15reroute_dynamicEv
-	jal zero, c_wrapper # debug-callback
+	jal zero, debug_entry
 	jal zero, c_wrapper
 	jal zero, unsupported_carry
 	jal zero, unsupported_overflow
