@@ -4,6 +4,8 @@
 
 # define the debug-entry, which invokes the debugging_entry-function
 debug_entry:
+	ret
+
 	# ensure that a debugger exists
 
 

@@ -1,10 +1,10 @@
 .global _ZN7codegen10jump_table13table_addressEv # jump_table
 
-.include "oxtra/dispatcher/assembly_defines.s"
-.include "oxtra/dispatcher/dispatcher.s"
-.include "oxtra/dispatcher/debugger/debugger.s"
-.include "oxtra/codegen/instructions/arithmetic/flags_carry.s"
-.include "oxtra/codegen/instructions/arithmetic/flags_overflow.s"
+.include "oxtra/dispatcher/assembly_defines.inc.s"
+.include "oxtra/dispatcher/dispatcher.inc.s"
+.include "oxtra/dispatcher/debugger/debugger.inc.s"
+.include "oxtra/codegen/instructions/arithmetic/flags_carry.inc.s"
+.include "oxtra/codegen/instructions/arithmetic/flags_overflow.inc.s"
 
 .section .text
 
