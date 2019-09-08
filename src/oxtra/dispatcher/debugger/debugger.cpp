@@ -1,5 +1,9 @@
 #include "debugger.h"
 #include <spdlog/spdlog.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
+#include <sstream>
+#include <string>
 
 
 #include <iostream>
@@ -17,6 +21,8 @@ debugger::Debugger::Debugger() {
 	// initialize the attributes
 	halt = true;
 	bp_count = 0;
+	state = DebugState::none;
+	debug_counter = 0;
 
 	// mark this as the active debugger
 	active_debugger = this;
@@ -28,34 +34,74 @@ debugger::Debugger::~Debugger() {
 		active_debugger = nullptr;
 }
 
-void debugger::Debugger::begin_block(codegen::CodeBatch& batch){
+void debugger::Debugger::begin_block(codegen::CodeBatch& batch) {
 	unused_parameter(batch);
 }
 
-void debugger::Debugger::insert(codegen::CodeBatch& batch, codegen::Instruction* inst){
+void debugger::Debugger::insert(codegen::CodeBatch& batch, codegen::Instruction* inst) {
 	// check if a debugger exists
-	if(!active_debugger)
+	if (!active_debugger)
 		return;
 
 	// add the instruction to jump to the debugger
 	codegen::jump_table::jump_debugger(batch);
 }
 
-void debugger::Debugger::end_block(codegen::CodeBatch& batch, codegen::codestore::BlockEntry* block){
+void debugger::Debugger::end_block(codegen::CodeBatch& batch, codegen::codestore::BlockEntry* block) {
 
 }
 
 void debugger::Debugger::entry(dispatcher::ExecutionContext* context, uintptr_t break_point) {
 	if (break_point == halt_break) {
+		if(debug_counter > 0) {
+			debug_counter--;
+			return;
+		}
 		halt = false;
-
-		// create some temporary breakpoints
-		bp_count = 4;
-		bp_array[0] = 0x4010a02064;
-		bp_array[1] = 0x45400a02064;
-		bp_array[2] = 0x4000a020c8;
-		bp_array[3] = 0x4000a02068;
 	}
 
-	cout << "Hello World! - from the debugger: 0x" << hex << break_point << endl;
+	// enter the loop
+	bool debug_done;
+	do {
+		std::stringstream out;
+		out << std::string(80, '-') << '\n';
+
+		// print the initial message
+		if (break_point != halt_break) {
+			out << "break-point hit: " << print_number(bp_x86_array[break_point], true) << '\n';
+		} else if ((state & DebugState::init) == 0) {
+			out << "initial halt.\n";
+			state |= DebugState::init;
+		}
+		else
+			out << "run-counter ellapsed.\n";
+
+		// print the registers
+		if (state & DebugState::reg_print)
+			out << print_reg(context);
+
+		// print the screen
+		cout << out.str() << endl;
+
+		// await input
+		cout << '>';
+		std::string input;
+		getline(cin, input);
+
+		// parse the input
+		debug_done = parse_input(input);
+	} while (!debug_done);
+}
+
+bool debugger::Debugger::parse_input(std::string& input) {
+	cout << "your input: " << input << endl;
+	return true;
+}
+
+std::string debugger::Debugger::print_reg(dispatcher::ExecutionContext* context) {
+	return "";
+}
+
+std::string debugger::Debugger::print_number(uint64_t nbr, bool hex) {
+	return "";
 }
