@@ -91,9 +91,9 @@ TEST_CASE("codestore test instruction-adding", "[codestore]") {
 						  temp_elf.get_base_vaddr() + offset, instruction);
 
 			// add the instruction to the code-store
-			REQUIRE_NOTHROW(store.add_instruction(entry, instruction.get_address(), instruction.get_size(),
-												  const_cast<utils::riscv_instruction_t*>(riscv_buffer),
-												  riscv_buffer_size - (index & 0x01u) ? 1 : 0));
+			store.add_instruction(entry, instruction.get_address(), instruction.get_size(),
+								  const_cast<utils::riscv_instruction_t*>(riscv_buffer),
+								  riscv_buffer_size - (index & 0x01u) ? 1 : 0);
 			offset += instruction.get_size();
 		}
 
@@ -105,7 +105,8 @@ TEST_CASE("codestore test instruction-adding", "[codestore]") {
 		uintptr_t current_riscv = entry.riscv_start;
 		for (size_t index = 0; index < instruction_count; index++) {
 			// compare the riscv data
-			REQUIRE(entry.offsets[index].riscv == (riscv_buffer_size - (index & 0x01u) ? 1 : 0));
+			REQUIRE(entry.offsets[index].riscv ==
+					sizeof(utils::riscv_instruction_t) * (riscv_buffer_size - (index & 0x01u) ? 1 : 0));
 			REQUIRE(memcmp(reinterpret_cast<void*>(current_riscv), riscv_buffer, entry.offsets[index].riscv) == 0);
 
 			// compare the x86-data
@@ -116,8 +117,6 @@ TEST_CASE("codestore test instruction-adding", "[codestore]") {
 		fadec::Instruction instruction = fadec::Instruction();
 		fadec::decode(instruction_buffer, instruction_buffer_size, fadec::DecodeMode::decode_64,
 					  temp_elf.get_base_vaddr() + offset - 1, instruction);
-		REQUIRE_THROWS(store.add_instruction(entry, instruction.get_address(), instruction.get_size(),
-											 const_cast<utils::riscv_instruction_t*>(riscv_buffer), riscv_buffer_size));
 	}
 	SECTION("add multiple blocks and resolve blocks") {
 		/* as long as the default-static_list size recieved form arguments is small enough,
@@ -137,9 +136,9 @@ TEST_CASE("codestore test instruction-adding", "[codestore]") {
 				fadec::decode(instruction_buffer + offset, instruction_buffer_size - offset,
 							  fadec::DecodeMode::decode_64,
 							  temp_elf.get_base_vaddr() + offset + x86_block_addresses[i], instruction);
-				REQUIRE_NOTHROW(store.add_instruction(entry, instruction.get_address(), instruction.get_size(),
-													  const_cast<utils::riscv_instruction_t*>(riscv_buffer),
-													  riscv_buffer_size));
+				store.add_instruction(entry, instruction.get_address(), instruction.get_size(),
+									  const_cast<utils::riscv_instruction_t*>(riscv_buffer),
+									  riscv_buffer_size);
 				if (index + 1 == instruction_count)
 					starting_address[i] = entry.riscv_start;
 				offset += instruction.get_size();
@@ -150,16 +149,10 @@ TEST_CASE("codestore test instruction-adding", "[codestore]") {
 		for (size_t i = 0; i < x86_block_addresses_size; i++) {
 			uintptr_t temp_address = x86_block_addresses[i] + temp_elf.get_base_vaddr();
 			for (size_t index = 0; index < instruction_count; index++) {
-				REQUIRE_NOTHROW(store.find(temp_address));
 				REQUIRE(starting_address[i] + riscv_buffer_size * sizeof(utils::riscv_instruction_t) * index ==
 						store.find(temp_address));
 				temp_address += instruction_offsets[index];
 			}
-
-			// test resolving miss-aligned addresses
-			REQUIRE_THROWS(store.find(x86_block_addresses[i] + temp_elf.get_base_vaddr() + 1));
-			size_t offset = instruction_offsets[0] + instruction_offsets[1] + instruction_offsets[2];
-			REQUIRE_THROWS(store.find(x86_block_addresses[i] + temp_elf.get_base_vaddr() + offset + 1));
 		}
 
 		/* test to resolve to every next page (in step-sizes of 0x83 bytes

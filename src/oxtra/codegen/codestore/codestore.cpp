@@ -2,6 +2,7 @@
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
+#include <oxtra/dispatcher/dispatcher.h>
 
 using namespace utils;
 using namespace codegen::codestore;
@@ -28,7 +29,7 @@ host_addr_t CodeStore::find(guest_addr_t x86_code) const {
 
 				auto&& instruction_entry = entry->offsets[i];
 				guest_address += instruction_entry.x86;
-				host_address += instruction_entry.riscv * sizeof(riscv_instruction_t);
+				host_address += instruction_entry.riscv;
 			}
 
 			/*
@@ -36,7 +37,7 @@ host_addr_t CodeStore::find(guest_addr_t x86_code) const {
 			 * That means that the x86_code points inside of an instruction. We could just start translating the block from that point onwards,
 			 * but usually only obfuscated programs require this.
 			 */
-			throw std::runtime_error("Jump inside instruction.");
+			dispatcher::Dispatcher::fault_exit("Jump inside instruction.");
 		}
 	}
 	return 0;
@@ -70,8 +71,7 @@ void CodeStore::add_instruction(BlockEntry& block, utils::guest_addr_t address, 
 			_code_buffer.add(reinterpret_cast<riscv_instruction_t*>(block.riscv_start), riscv_instructions,
 							 num_instructions));
 
-	block.offsets = _instruction_offset_buffer.add(block.offsets, {size,
-																   static_cast<uint8_t>(num_instructions)});
+	block.offsets = _instruction_offset_buffer.add(block.offsets, {size, static_cast<uint16_t>(num_instructions * 4)});
 	block.instruction_count++;
 	block.x86_end = address + size;
 
@@ -107,10 +107,8 @@ void CodeStore::insert_block(codegen::codestore::BlockEntry& block, utils::guest
 
 		page_array.push_back(&block);
 
-	} else if (block.x86_end != x86_address) {
-		// maybe do this for the debug build only?
-		throw std::runtime_error("Tried to add a non-consecutive instruction to a block.");
-	}
+	} else if (block.x86_end != x86_address)
+		dispatcher::Dispatcher::fault_exit("Tried to add a non-consecutive instruction to a block.");
 
 }
 

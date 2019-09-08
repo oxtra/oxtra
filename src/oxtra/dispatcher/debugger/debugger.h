@@ -13,24 +13,40 @@ namespace debugger {
 	class Debugger {
 	private:
 		struct DebugState {
-			static constexpr uint32_t none 		= 0;
-			static constexpr uint32_t reg_print = 0;
-			static constexpr uint32_t reg_riscv = 0;
-			static constexpr uint32_t reg_dec 	= 0;
-			static constexpr uint32_t init		= 0;
+			static constexpr uint16_t none 			= 0x0000u;
+			static constexpr uint16_t init 			= 0x0001u;
+			static constexpr uint16_t await_sblock 	= 0x0002u;
+			static constexpr uint16_t await_eblock 	= 0x0004u;
+			static constexpr uint16_t await_counter = 0x0008u;
+			static constexpr uint16_t await_step	= 0x0010u;
+			static constexpr uint16_t await 		= 0x001eu;
+			static constexpr uint16_t print_reg 	= 0x0100u;
+			static constexpr uint16_t reg_riscv 	= 0x0200u;
+			static constexpr uint16_t reg_dec 		= 0x0400u;
+			static constexpr uint16_t print_x86 	= 0x0800u;
+			static constexpr uint16_t print_riscv 	= 0x1000u;
+			static constexpr uint16_t print_flags	= 0x2000u;
+		};
+
+		struct BlockEntry {
+			codegen::codestore::BlockEntry* entry;
+			utils::host_addr_t riscv_end;
+
+			BlockEntry(codegen::codestore::BlockEntry* ent, utils::host_addr_t end) : entry(ent), riscv_end(end) {}
 		};
 
 	private:
 		static constexpr uintptr_t halt_break = 0x0400;
 		static Debugger* active_debugger;
 	private:
-		uint8_t halt;
-		uint8_t bp_count;
-		uintptr_t bp_array[256]{};
-		uintptr_t bp_x86_array[256]{};
-		uint32_t state;
-		uint64_t debug_counter;
-		std::vector<codegen::codestore::BlockEntry*> blocks;
+		uint8_t _halt;
+		uint8_t _bp_count;
+		uintptr_t _bp_array[256]{};
+		uintptr_t _bp_x86_array[256]{};
+		uint32_t _state;
+		uint64_t _bp_counter;
+		BlockEntry* _current;
+		std::vector<BlockEntry> _blocks;
 
 	public:
 		Debugger();
@@ -46,11 +62,21 @@ namespace debugger {
 	private:
 		void entry(dispatcher::ExecutionContext* context, uintptr_t break_point);
 
-		bool parse_input(std::string& input);
+		utils::guest_addr_t resolve_block(utils::host_addr_t address);
+
+		utils::guest_addr_t enter_break(uintptr_t break_point, utils::host_addr_t address);
+
+		void update_break_points(BlockEntry& block);
+
+		std::string parse_input();
+
+		std::string print_number(uint64_t nbr, bool hex);
 
 		std::string print_reg(dispatcher::ExecutionContext* context);
 
-		std::string print_number(uint64_t nbr, bool hex);
+		std::string print_assembly(utils::guest_addr_t guest, utils::host_addr_t host);
+
+		std::string print_flags(dispatcher::ExecutionContext* context);
 	};
 }
 
