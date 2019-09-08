@@ -40,11 +40,7 @@ utils::riscv_instruction_t& codegen::CodeBatchImpl::operator[](size_t index) {
 	return riscv[index];
 }
 
-void codegen::CodeBatchImpl::begin(const fadec::Instruction* inst, bool eob, uint8_t update, uint8_t require) {
-	unused_parameter(inst);
-	unused_parameter(eob);
-	unused_parameter(update);
-	unused_parameter(require);
+void codegen::CodeBatchImpl::reset() {
 	count = 0;
 }
 

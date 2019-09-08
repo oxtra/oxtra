@@ -10,7 +10,7 @@
 int main(int argc, char** argv) {
 	// parse the arguments and set the spdlog-pattern
 	const auto arguments = arguments::Arguments(argc, argv);
-	spdlog::set_pattern("[%H:%M:%S.%e %L] %v");
+	spdlog::set_pattern("[%H:%M:%S.%e %^%l%$] %v");
 	spdlog::set_level(arguments.get_log_level());
 	spdlog::debug("finished parsing the arguments.");
 
