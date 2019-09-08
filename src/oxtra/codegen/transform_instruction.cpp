@@ -1,6 +1,9 @@
 #include "transform_instruction.h"
 
 #include "oxtra/codegen/instructions/arithmetic/add.h"
+#include "oxtra/codegen/instructions/arithmetic/adc.h"
+#include "oxtra/codegen/instructions/arithmetic/inc.h"
+#include "oxtra/codegen/instructions/arithmetic/sub.h"
 #include "oxtra/codegen/instructions/arithmetic/dec.h"
 #include "oxtra/codegen/instructions/arithmetic/idiv.h"
 #include "oxtra/codegen/instructions/arithmetic/inc.h"
@@ -46,6 +49,8 @@
 #include "oxtra/codegen/instructions/control-flow/conditional-jumps/jl.h"
 #include "oxtra/codegen/instructions/control-flow/conditional-jumps/jle.h"
 #include "oxtra/codegen/instructions/control-flow/conditional-jumps/jcxz.h"
+#include "oxtra/codegen/instructions/comparable/cmp.h"
+#include "oxtra/codegen/instructions/comparable/test.h"
 
 using namespace codegen;
 using namespace fadec;
@@ -90,7 +95,19 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 		case InstructionType::JCXZ:
 			return std::make_unique<Jcxz>(inst);
 
-			case InstructionType::SUB:
+		case InstructionType::CMP:
+		case InstructionType::CMP_IMM:
+			return std::make_unique<Cmp>(inst);
+
+		case InstructionType::TEST:
+		case InstructionType::TEST_IMM:
+			return std::make_unique<Test>(inst);
+
+		case InstructionType::ADC:
+		case InstructionType::ADC_IMM:
+			return std::make_unique<Adc>(inst);
+
+		case InstructionType::SUB:
 		case InstructionType::SUB_IMM:
 			return std::make_unique<Sub>(inst);
 

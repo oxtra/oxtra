@@ -19,9 +19,10 @@ add_library(oxtra_libs
 		oxtra/codegen/instruction.cpp
 		oxtra/codegen/transform_instruction.cpp
 		oxtra/codegen/jump-table/jump_table.cpp
-		oxtra/codegen/binary_operation.cpp
-		oxtra/codegen/unary_operation.cpp
+		oxtra/codegen/instructions/binary_operation.cpp
+		oxtra/codegen/instructions/unary_operation.cpp
 		oxtra/codegen/instructions/arithmetic/add.cpp
+		oxtra/codegen/instructions/arithmetic/adc.cpp
 		oxtra/codegen/instructions/arithmetic/neg.cpp
 		oxtra/codegen/instructions/arithmetic/sub.cpp
 		oxtra/codegen/instructions/arithmetic/idiv.cpp
@@ -66,6 +67,9 @@ add_library(oxtra_libs
 		oxtra/codegen/instructions/control-flow/conditional-jumps/jl.cpp
 		oxtra/codegen/instructions/control-flow/conditional-jumps/jle.cpp
 		oxtra/codegen/instructions/control-flow/conditional-jumps/jcxz.cpp
+		oxtra/codegen/instructions/comparable/comparable.cpp
+		oxtra/codegen/instructions/comparable/cmp.cpp
+		oxtra/codegen/instructions/comparable/test.cpp
 		oxtra/dispatcher/debugger/debugger.cpp
 )
 

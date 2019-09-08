@@ -1,7 +1,7 @@
 #ifndef OXTRA_INC_H
 #define OXTRA_INC_H
 
-#include "oxtra/codegen/unary_operation.h"
+#include "oxtra/codegen/instructions/unary_operation.h"
 
 namespace codegen {
 	class Inc : public UnaryOperation {
