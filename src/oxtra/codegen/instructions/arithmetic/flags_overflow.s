@@ -31,10 +31,12 @@
 .global overflow_inc_32
 .global overflow_inc_64
 
-.global overflow_dec_8
-.global overflow_dec_16
-.global overflow_dec_32
-.global overflow_dec_64
+.global overflow_dec_neg_8
+.global overflow_dec_neg_16
+.global overflow_dec_neg_32
+.global overflow_dec_neg_64
+
+.global overflow
 
 .section .text
 
@@ -241,23 +243,23 @@ overflow_inc_64:
 	slt t4, t5, t4 # of = (dst + 1 < dst)
 	ret
 
-# handle dec
-overflow_dec_8:
+# handle dec and neg (the of has the exact same value function for each input)
+overflow_dec_neg_8:
 	lbu t4, value0(s11)
 	addi t5, t4, -1
 	slt t4, t4, t5 # of = (dst < dst - 1)
 	ret
-overflow_dec_16:
+overflow_dec_neg_16:
 	lhu t4, value0(s11)
 	addi t5, t4, -1
 	slt t4, t4, t5 # of = (dst < dst - 1)
 	ret
-overflow_dec_32:
+overflow_dec_neg_32:
 	lwu t4, value0(s11)
 	addi t5, t4, -1
 	slt t4, t4, t5 # of = (dst < dst - 1)
 	ret
-overflow_dec_64:
+overflow_dec_neg_64:
 	ld t4, value0(s11)
 	addi t5, t4, -1
 	slt t4, t4, t5 # of = (dst < dst - 1)

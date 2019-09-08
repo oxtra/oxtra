@@ -210,6 +210,11 @@ _ZN7codegen10jump_table13table_addressEv:
 	jal zero, carry_adc_32
 	jal zero, carry_adc_64
 
+	jal zero, carry_neg_8
+	jal zero, carry_neg_16
+	jal zero, carry_neg_32
+	jal zero, carry_neg_64
+
 	jal zero, overflow_add_8
 	jal zero, overflow_add_16
 	jal zero, overflow_add_32
@@ -240,7 +245,7 @@ _ZN7codegen10jump_table13table_addressEv:
 	jal zero, overflow_inc_32
 	jal zero, overflow_inc_64
 
-	jal zero, overflow_dec_8
-	jal zero, overflow_dec_16
-	jal zero, overflow_dec_32
-	jal zero, overflow_dec_64
+	jal zero, overflow_dec_neg_8
+	jal zero, overflow_dec_neg_16
+	jal zero, overflow_dec_neg_32
+	jal zero, overflow_dec_neg_64

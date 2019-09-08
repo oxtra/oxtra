@@ -25,9 +25,9 @@ void codegen::Add::execute_operation(CodeBatch& batch, encoding::RiscVRegister d
 
 	const auto [carry, overflow] = get_entries(imm, get_operand(0).get_size());
 
-	update_carry_single(batch, dst);
-	update_overflow_single(batch, dst);
-	batch += encoding::ADDI(dst, dst, imm);
 	update_carry_single(batch, carry, dst, encoding::RiscVRegister::t4);
 	update_overflow_single(batch, overflow, dst, encoding::RiscVRegister::t4);
+	batch += encoding::ADDI(dst, dst, imm);
+	update_carry_single(batch, dst);
+	update_overflow_single(batch, dst);
 }

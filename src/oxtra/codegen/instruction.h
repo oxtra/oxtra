@@ -146,15 +146,15 @@ namespace codegen {
 							 encoding::RiscVRegister temp) const;
 
 		/**
-		 * Updates the first overflow value with the value in register va.
+		 * Updates the first overflow value with the value in register va and sets the operation.
 		 */
-		void update_overflow_single(CodeBatch& batch, encoding::RiscVRegister va) const;
+		void update_overflow_single(CodeBatch& batch, jump_table::Entry entry, encoding::RiscVRegister va,
+				encoding::RiscVRegister temp) const;
 
 		/**
-		 * Updates the second overflow value with the value in register vb and sets the operation.
+		 * Updates the second overflow value with the value in register vb.
 		 */
-		void update_overflow_single(CodeBatch& batch, jump_table::Entry entry, encoding::RiscVRegister vb,
-									encoding::RiscVRegister temp) const;
+		void update_overflow_single(CodeBatch& batch, encoding::RiscVRegister vb) const;
 
 		void update_overflow(CodeBatch& batch, encoding::RiscVRegister entry,
 							 encoding::RiscVRegister va, encoding::RiscVRegister vb) const;
@@ -165,15 +165,15 @@ namespace codegen {
 						  encoding::RiscVRegister temp) const;
 
 		/**
-		 * Updates the first carry value with the value in register va.
+		 * Updates the first carry value with the value in register va nd sets the operation.
 		 */
-		void update_carry_single(CodeBatch& batch, encoding::RiscVRegister va) const;
+		void update_carry_single(CodeBatch& batch, jump_table::Entry entry, encoding::RiscVRegister va,
+				encoding::RiscVRegister temp) const;
 
 		/**
-		 * Updates the second carry value with the value in register vb and sets the operation.
+		 * Updates the second carry value with the value in register vb.
 		 */
-		void update_carry_single(CodeBatch& batch, jump_table::Entry entry, encoding::RiscVRegister vb,
-								 encoding::RiscVRegister temp) const;
+		void update_carry_single(CodeBatch& batch, encoding::RiscVRegister vb) const;
 
 		void update_carry(CodeBatch& batch, encoding::RiscVRegister entry,
 						  encoding::RiscVRegister va, encoding::RiscVRegister vb) const;

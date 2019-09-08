@@ -35,6 +35,11 @@ namespace codegen::jump_table {
 		carry_adc_16,
 		carry_adc_32,
 		carry_adc_64,
+		carry_neg,
+		carry_neg_8 = carry_neg,
+		carry_neg_16,
+		carry_neg_32,
+		carry_neg_64,
 
 		overflow_add,
 		overflow_add_8 = overflow_add,
@@ -67,10 +72,11 @@ namespace codegen::jump_table {
 		overflow_inc_32,
 		overflow_inc_64,
 		overflow_dec,
-		overflow_dec_8 = overflow_dec,
-		overflow_dec_16,
-		overflow_dec_32,
-		overflow_dec_64,
+		overflow_neg = overflow_dec,
+		overflow_dec_neg_8 = overflow_dec,
+		overflow_dec_neg_16,
+		overflow_dec_neg_32,
+		overflow_dec_neg_64,
 	};
 	/**
 	 * Generates a jump to the syscall handler.

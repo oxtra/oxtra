@@ -11,6 +11,11 @@
 .global carry_adc_32
 .global carry_adc_64
 
+.global carry_neg_8
+.global carry_neg_16
+.global carry_neg_32
+.global carry_neg_64
+
 .section .text
 
 # execution context defintions
@@ -78,4 +83,22 @@ carry_adc_64:
 	ld t5, value1(s11) # dst
 	sltu t4, t4, t5 # (dst <= src) == !(dst > src) == !(src < dst)
 	xori t4, t4, 1 # carry = !t4
+	ret
+
+# handle neg
+carry_neg_8:
+	lbu t4, value0(s11)
+	snez t4, t4
+	ret
+carry_neg_16:
+	lhu t4, value0(s11)
+	snez t4, t4
+	ret
+carry_neg_32:
+	lwu t4, value0(s11)
+	snez t4, t4
+	ret
+carry_neg_64:
+	ld t4, value0(s11) # src
+	snez t4, t4
 	ret
