@@ -189,26 +189,56 @@ _ZN7codegen10jump_table13table_addressEv:
 	jal zero, high_level_carry
 	jal zero, high_level_overflow
 	jal zero, carry_clear
-    jal zero, carry_set
+	jal zero, carry_set
 	jal zero, overflow_clear
-    jal zero, overflow_set
+	jal zero, overflow_set
 
-    jal zero, carry_add_8
-    jal zero, carry_add_16
-    jal zero, carry_add_32
-    jal zero, carry_add_64
+	jal zero, carry_add_8
+	jal zero, carry_add_16
+	jal zero, carry_add_32
+	jal zero, carry_add_64
 
-    jal zero, carry_adc_8
-    jal zero, carry_adc_16
-    jal zero, carry_adc_32
-    jal zero, carry_adc_64
+	jal zero, carry_adc_8
+	jal zero, carry_adc_16
+	jal zero, carry_adc_32
+	jal zero, carry_adc_64
 
-    jal zero, overflow_add_8
-    jal zero, overflow_add_16
-    jal zero, overflow_add_32
-    jal zero, overflow_add_64
+	jal zero, carry_neg_8
+	jal zero, carry_neg_16
+	jal zero, carry_neg_32
+	jal zero, carry_neg_64
 
-    jal zero, overflow_adc_8
-    jal zero, overflow_adc_16
-    jal zero, overflow_adc_32
-    jal zero, overflow_adc_64
+	jal zero, overflow_add_8
+	jal zero, overflow_add_16
+	jal zero, overflow_add_32
+	jal zero, overflow_add_64
+
+	jal zero, overflow_adc_8
+	jal zero, overflow_adc_16
+	jal zero, overflow_adc_32
+	jal zero, overflow_adc_64
+
+	jal zero, overflow_add_pos_8
+	jal zero, overflow_add_pos_16
+	jal zero, overflow_add_pos_32
+	jal zero, overflow_add_pos_64
+
+	jal zero, overflow_add_neg_8
+	jal zero, overflow_add_neg_16
+	jal zero, overflow_add_neg_32
+	jal zero, overflow_add_neg_64
+
+	jal zero, overflow_sub_8
+	jal zero, overflow_sub_16
+	jal zero, overflow_sub_32
+	jal zero, overflow_sub_64
+
+	jal zero, overflow_inc_8
+	jal zero, overflow_inc_16
+	jal zero, overflow_inc_32
+	jal zero, overflow_inc_64
+
+	jal zero, overflow_dec_neg_8
+	jal zero, overflow_dec_neg_16
+	jal zero, overflow_dec_neg_32
+	jal zero, overflow_dec_neg_64

@@ -1,7 +1,7 @@
 #ifndef OXTRA_SAR_H
 #define OXTRA_SAR_H
 
-#include "oxtra/codegen/binary_operation.h"
+#include "oxtra/codegen/instructions/binary_operation.h"
 
 namespace codegen {
 	class Sar : public BinaryOperation {

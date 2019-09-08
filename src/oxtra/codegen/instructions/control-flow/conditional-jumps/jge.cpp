@@ -3,8 +3,8 @@
 
 //(SF == OF)
 void codegen::Jge::generate(codegen::CodeBatch& batch) const {
-	// load the carry flag
-	evaluate_carry(batch);
+	// load the sign flag
+	evaluate_sign(batch, encoding::RiscVRegister::t3);
 	batch += encoding::MV(encoding::RiscVRegister::t0, encoding::RiscVRegister::t4);
 
 	// load the overflow-flag

@@ -1,7 +1,7 @@
 #ifndef OXTRA_OR_H
 #define OXTRA_OR_H
 
-#include "oxtra/codegen/binary_operation.h"
+#include "oxtra/codegen/instructions/binary_operation.h"
 
 namespace codegen {
 	class Or : public BinaryOperation {

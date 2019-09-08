@@ -1,7 +1,7 @@
 #ifndef OXTRA_NOT_H
 #define OXTRA_NOT_H
 
-#include "oxtra/codegen/unary_operation.h"
+#include "oxtra/codegen/instructions/unary_operation.h"
 
 namespace codegen {
 	class Not : public UnaryOperation {
