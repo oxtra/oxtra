@@ -217,18 +217,24 @@ overflow_sub_64: # add rax, -x = sub rax, x
 # handle inc
 overflow_inc_8:
 	lbu t4, flag_info_overflow_value0(s11)
-	addi t5, t4, 1
-	slt t4, t5, t4 # of = (dst + 1 < dst)
+	addi t4, t4, 1
+	slli t4, t4, 56
+	addi t5, t4, -1
+	slt t4, t4, t5 # of = (dst < dst - 1)
 	ret
 overflow_inc_16:
 	lhu t4, flag_info_overflow_value0(s11)
-	addi t5, t4, 1
-	slt t4, t5, t4 # of = (dst + 1 < dst)
+	addi t4, t4, 1
+	slli t4, t4, 48
+	addi t5, t4, -1
+	slt t4, t4, t5 # of = (dst < dst - 1)
 	ret
 overflow_inc_32:
 	lwu t4, flag_info_overflow_value0(s11)
-	addi t5, t4, 1
-	slt t4, t5, t4 # of = (dst + 1 < dst)
+	addi t4, t4, 1
+	slli t4, t4, 32
+	addi t5, t4, -1
+	slt t4, t4, t5 # of = (dst < dst - 1)
 	ret
 overflow_inc_64:
 	ld t4, flag_info_overflow_value0(s11)
@@ -239,16 +245,19 @@ overflow_inc_64:
 # handle dec and neg (the of has the exact same value function for each input)
 overflow_dec_neg_8:
 	lbu t4, flag_info_overflow_value0(s11)
+	slli t4, t4, 56
 	addi t5, t4, -1
 	slt t4, t4, t5 # of = (dst < dst - 1)
 	ret
 overflow_dec_neg_16:
 	lhu t4, flag_info_overflow_value0(s11)
+	slli t4, t4, 48
 	addi t5, t4, -1
 	slt t4, t4, t5 # of = (dst < dst - 1)
 	ret
 overflow_dec_neg_32:
 	lwu t4, flag_info_overflow_value0(s11)
+	slli t4, t4, 32
 	addi t5, t4, -1
 	slt t4, t4, t5 # of = (dst < dst - 1)
 	ret

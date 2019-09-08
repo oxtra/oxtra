@@ -7,5 +7,6 @@ void codegen::Neg::execute_operation(CodeBatch& batch, encoding::RiscVRegister d
 
 	update_carry_single(batch, carry, dst, encoding::RiscVRegister::t4);
 	update_overflow_single(batch, overflow, dst, encoding::RiscVRegister::t4);
+
 	batch += encoding::NEG(dst, dst);
 }

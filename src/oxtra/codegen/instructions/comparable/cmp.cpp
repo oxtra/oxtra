@@ -10,7 +10,7 @@ encoding::RiscVRegister codegen::Cmp::execute_operation(codegen::CodeBatch& batc
 	update_overflow(batch, overflow, src, dst, encoding::RiscVRegister::t4);
 
 	batch += encoding::SUB(encoding::RiscVRegister::t5, dst, src);
-	update_carry_single(batch, carry, dst, encoding::RiscVRegister::t4);
+	update_carry_single(batch, carry, encoding::RiscVRegister::t5, encoding::RiscVRegister::t4);
 
 	return encoding::RiscVRegister::t5;
 }
@@ -40,8 +40,8 @@ encoding::RiscVRegister codegen::Cmp::execute_operation(codegen::CodeBatch& batc
 	} else
 		batch += encoding::ADDI(encoding::RiscVRegister::t5, dst, -imm);
 
-	update_carry_single(batch, carry, dst, encoding::RiscVRegister::t4);
-	update_overflow_single(batch, dst);
+	update_carry_single(batch, carry, encoding::RiscVRegister::t5, encoding::RiscVRegister::t4);
+	update_overflow_single(batch, encoding::RiscVRegister::t5);
 
 	return encoding::RiscVRegister::t5;
 }
