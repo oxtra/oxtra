@@ -1,7 +1,7 @@
 #ifndef OXTRA_IDIV_H
 #define OXTRA_IDIV_H
 
-#include "oxtra/codegen/binary_operation.h"
+#include "oxtra/codegen/instruction.h"
 
 namespace codegen {
 	class Idiv : public codegen::Instruction {
