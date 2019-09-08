@@ -7,10 +7,12 @@
 
 #include "oxtra/codegen/flags.h"
 
-
 // forward declare CodeGenerator because we only need a pointer and to prevent a circular dependency
 namespace codegen {
 	class CodeGenerator;
+}
+namespace debugger{
+	class Debugger;
 }
 
 namespace dispatcher {
@@ -84,8 +86,8 @@ namespace dispatcher {
 		};
 
 		/*
-		 * The order and size of these attributes must not be changed!
-		 * (dispatcher.s has these offsets hardcoded)
+		 * If the order and the size of these attributes is changed,
+		 * the assembly_globals file has to be updated as well.
 		 */
 
 		// 0x000
@@ -98,6 +100,9 @@ namespace dispatcher {
 		codegen::CodeGenerator* codegen;
 
 		// 0x1F8
+		debugger::Debugger* debugger;
+
+		// 0x200
 		codegen::flags::Info flag_info;
 	};
 }

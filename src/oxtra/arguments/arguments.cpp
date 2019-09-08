@@ -7,10 +7,9 @@ const char* argp_program_version = "oxtra 0.5 [alpha]";
 const char* argp_program_bug_address = "https://gitlab.lrz.de/lrr-tum/students/eragp-x86emu-2019";
 
 Arguments::Arguments(int argc, char** argv) :
-		_argp_parser{_options, parse_opt, _argument_description, _documentation, nullptr, nullptr, nullptr},
 		_executable_path{argv[0]},
-		_stored_arguments{nullptr, std::vector<std::string>(), spdlog::level::level_enum::warn, StepMode::none,
-						  0x200000, 128, 128, 128} {
+		_stored_arguments{nullptr, std::vector<std::string>(), spdlog::level::level_enum::warn, false,
+						  0x200000, 0x1000, 0x200, 0x40} {
 
 	parse_arguments(argc, argv);
 }
@@ -43,12 +42,16 @@ size_t Arguments::get_entry_list_size() const {
 	return _stored_arguments.entry_list_size;
 }
 
-StepMode Arguments::get_step_mode() const {
-	return _stored_arguments.step_mode;
+bool Arguments::get_debugging() const {
+	return _stored_arguments.debugging;
 }
 
 void Arguments::parse_arguments(int argc, char** argv) {
-	argp_parse(&_argp_parser, argc, argv, 0, nullptr, &_stored_arguments);
+	// initialize the argument-parser
+	argp parser = {_options, parse_opt, _argument_description, _documentation, nullptr, nullptr, nullptr};
+
+	// parse the arguments
+	argp_parse(&parser, argc, argv, 0, nullptr, &_stored_arguments);
 }
 
 /**
@@ -120,25 +123,23 @@ error_t Arguments::parse_opt(int key, char* arg, struct argp_state* state) {
 			break;
 		}
 		case 'd':
-			if (strcasecmp("none", arg) == 0)
-				arguments->step_mode = StepMode::none;
-			else if (strcasecmp("x86", arg) == 0)
-				arguments->step_mode = StepMode::x86;
-			else if (strcasecmp("riscv", arg) == 0)
-				arguments->step_mode = StepMode::riscv;
+			if (strcasecmp("false", arg) == 0 || strcasecmp("0", arg) == 0)
+				arguments->debugging = false;
+			else if (strcasecmp("true", arg) == 0 || strcasecmp("1", arg) == 0)
+				arguments->debugging = true;
 			else
-				argp_failure(state, 1, 0, "%s: %s. %s.", "Illegal debug step mode", arg, "Allowed are: none, x86, riscv");
+				argp_failure(state, 1, 0, "%s: %s. %s.", "Illegal debugging-behavior", arg, "Allowed are: true, 1, false, 0");
 			break;
 		case 's':
 			arguments->stack_size = parse_string(state, arg, 1, "Illegal size, must be a positive integer.");
 			break;
-		case _instruction_list_size_id:
+		case 'i':
 			arguments->instruction_list_size = parse_string(state, arg, 1, "Illegal size, must be a positive integer.");
 			break;
-		case _offset_list_size_id:
+		case 'o':
 			arguments->offset_list_size = parse_string(state, arg, 1, "Illegal size, must be a positive integer.");
 			break;
-		case _entry_list_size_id:
+		case 'e':
 			arguments->entry_list_size = parse_string(state, arg, 1, "Illegal size, must be a positive integer.");
 			break;
 		case ARGP_KEY_NO_ARGS:

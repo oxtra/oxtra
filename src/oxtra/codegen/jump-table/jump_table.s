@@ -1,23 +1,17 @@
 .global _ZN7codegen10jump_table13table_addressEv # jump_table
 
-.include "oxtra/dispatcher/dispatcher.s"
-
-.section .rodata
-unsupported_overflow_string: .string "the overflow flag of an instruction which doesn't update it it yet, has been used: "
-unsupported_carry_string: .string "the carry flag of an instruction which doesn't update it it yet, has been used: "
+.include "oxtra/dispatcher/assembly_defines.inc.s"
+.include "oxtra/dispatcher/dispatcher.inc.s"
+.include "oxtra/dispatcher/debugger/debugger.inc.s"
+.include "oxtra/codegen/instructions/arithmetic/flags_carry.inc.s"
+.include "oxtra/codegen/instructions/arithmetic/flags_overflow.inc.s"
 
 .section .text
 
-# variables
-.equ overflow_ptr, 0x0230
-.equ carry_ptr, 0x0238
-
-
 # implement wrapper to call c function in register t4 -> t4
-# prototype: static uintptr_t c_wrapper(Context* context)
+# prototype: static uintptr_t c_wrapper(ExecutionContext* context)
 c_wrapper:
 	# capture the context
-	capture_context s11
 	capture_context_temp s11
 
 	# invoke the function
@@ -29,7 +23,6 @@ c_wrapper:
 
 	# restore the guest context and return to caller
 	restore_context_temp s11
-    restore_context s11
     ret
 
 
@@ -45,7 +38,7 @@ unsupported_overflow:
 	# load the error-string into a0, and count the length of it and find the end
 	# a0 = pointer into the string
 	# t1 = length of the string
-	ld a0, overflow_ptr(s11)
+	ld a0, flag_info_overflow_pointer(s11)
 	addi t1, zero, 0
 overflow_label_1:
 	lb t0, 0(a0)
@@ -113,7 +106,7 @@ unsupported_carry:
 	# load the error-string into a0, and count the length of it and find the end
 	# a0 = pointer into the string
 	# t1 = length of the string
-	ld a0, carry_ptr(s11)
+	ld a0, flag_info_carry_pointer(s11)
 	addi t1, zero, 0
 carry_label_1:
 	lb t0, 0(a0)
@@ -172,14 +165,14 @@ carry_label_6:
 # call a high-level function which computes the overflow-flag
 high_level_overflow:
 	# load the address into t4 and call the c-wrapper
-	ld t4, overflow_ptr(s11)
+	ld t4, flag_info_overflow_pointer(s11)
 	j c_wrapper
 
 
 # call a high-level function which computes the carry-flag
 high_level_carry:
 	# load the address into t4 and call the c-wrapper
-	ld t4, carry_ptr(s11)
+	ld t4, flag_info_carry_pointer(s11)
 	j c_wrapper
 
 

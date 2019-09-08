@@ -32,9 +32,10 @@ namespace codegen {
 	class CodeMemory : public CodeBatch {
 	protected:
 		utils::riscv_instruction_t* address;
+		size_t max_size;
 	public:
-		explicit CodeMemory(utils::riscv_instruction_t* address)
-				: address{address} {}
+		explicit CodeMemory(utils::riscv_instruction_t* address, size_t buffer_size)
+				: address{address}, max_size{buffer_size} {}
 
 		virtual size_t add(utils::riscv_instruction_t inst) override;
 
@@ -46,7 +47,7 @@ namespace codegen {
 	/**
 	 * Manages an internal storage of riscv code.
 	 */
-	class CodeStash : public CodeBatch {
+	class CodeBatchImpl : public CodeBatch {
 	protected:
 		utils::riscv_instruction_t riscv[codestore::max_riscv_instructions];
 	public:
@@ -54,7 +55,7 @@ namespace codegen {
 
 		virtual void insert(size_t index, utils::riscv_instruction_t inst) override;
 
-		virtual utils::riscv_instruction_t& operator[](size_t index)  override;
+		virtual utils::riscv_instruction_t& operator[](size_t index) override;
 
 		virtual void end();
 
@@ -62,27 +63,7 @@ namespace codegen {
 
 		utils::riscv_instruction_t* get();
 
-		void reset();
-	};
-
-	/**
-	 * Generates a call into the debugger after every x86 instruction.
-	 */
-	class X86Step : public CodeStash {
-	public:
-		void end() final;
-
-		void print() const final;
-	};
-
-	/**
-	 * Generates a call into the debugger after every riscv instruction.
-	 */
-	class RiscVStep : public CodeStash {
-	public:
-		size_t add(utils::riscv_instruction_t inst) final;
-
-		void print() const final;
+		virtual void reset();
 	};
 }
 
