@@ -1,8 +1,8 @@
 #include "idiv.h"
 #include "oxtra/codegen/helper.h"
+#include "oxtra/dispatcher/dispatcher.h"
 
 void codegen::Idiv::generate(codegen::CodeBatch& batch) const {
-	// currently using two of the tmps are marked as reserved for helper-functions, maybe change
 	// currently using the "risky" version of 128 bit division
 
 	const auto idiv = (get_type() == fadec::InstructionType::IDIV) ? true : false;
@@ -17,7 +17,11 @@ void codegen::Idiv::generate(codegen::CodeBatch& batch) const {
 	constexpr auto dividend = encoding::RiscVRegister::t1;
 	constexpr auto divisor = encoding::RiscVRegister::t0;
 	translate_operand(batch, 0, divisor, encoding::RiscVRegister::t1, encoding::RiscVRegister::t2);
+
 	// if (divisor == 0) raise #DE (divide by zero)
+	batch += BNQZ(divisor, 10*4);
+	helper::load_address(batch, reinterpret_cast<uintptr_t>(&dispatcher::Dispatcher::fault_exit), encoding::RiscVRegister::t4);
+	jump_table_entry(batch, jump_table::Entry::debug_callback);
 
 #if 0
 	if (op_size == 8) {
@@ -28,6 +32,7 @@ void codegen::Idiv::generate(codegen::CodeBatch& batch) const {
 		batch += ADDI(encoding::RiscVRegister::t2, encoding::RiscVRegister::zero, 4);
 		helper::load_address(batch, reinterpret_cast<uintptr_t>(&helper::idiv_128_bits), encoding::RiscVRegister::t4);
 		jump_table_entry(batch, jump_table::Entry::debug_callback);
+		return;
 	}
 #endif
 
@@ -46,16 +51,39 @@ void codegen::Idiv::generate(codegen::CodeBatch& batch) const {
 		move_to_register(batch, encoding::RiscVRegister::t2, rax, reg_access, tmp);
 		batch += encoding::ADD(dividend, dividend, encoding::RiscVRegister::t2);
 	} else {
-		// assumes values larger than INT_MAX are never used
+		// dividend = rax, assumes values larger than INT_MAX are never used
 		batch += encoding::MV(dividend, rax);
 	}
 
-	// 1b. check for overflow
+	// 1b. sign-extension
+	if (idiv && op_size < 4) {
+		const auto shamt = (op_size < 2) ? 48 : 32;
+		batch += encoding::SLLI(dividend, dividend, shamt);
+		batch += encoding::SRAI(dividend, dividend, shamt);
+	}
+
+	// 1c. check for overflow
 	/*
 	if (idiv)
 		if (dividend == -2^(xlen-1) && divisor == -1)
 			// raise #DE (overflow)
 	*/
+	helper::load_immediate(batch, -1, tmp);
+	batch += BNE(tmp, divisor, 19*4);
+	if (idiv) { // using load_address to guarantee 8 instructions
+		if (op_size == 1) {
+			helper::load_address(batch, -(2<<6), tmp);
+		} else if (op_size == 2) {
+			helper::load_address(batch, -(2<<14), tmp);
+		} else if (op_size == 4) {
+			helper::load_address(batch, -(2<<30), tmp);
+		} else {
+			helper::load_address(batch, -(static_cast<uintptr_t>(2)<<62), tmp);
+		}
+	}
+	batch += BNE(tmp, dividend, 10*4);
+	helper::load_address(batch, reinterpret_cast<uintptr_t>(&dispatcher::Dispatcher::fault_exit), encoding::RiscVRegister::t4);
+	jump_table_entry(batch, jump_table::Entry::debug_callback);
 
 	// 2. do the division
 	if (idiv) {
