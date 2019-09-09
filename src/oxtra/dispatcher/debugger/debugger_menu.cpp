@@ -94,12 +94,11 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 				return print_assembly(address, _current, arg_number[0]);
 			}
 			return print_assembly(address, _current, _inst_count);
-		case DebugInputKey::x86:
-			_state &= ~DebugState::reg_riscv;
-			return "set register-output to x86!";
-		case DebugInputKey::riscv:
-			_state |= DebugState::reg_riscv;
-			return "set register-output to riscv!";
+		case DebugInputKey::crawl:
+			if(!_riscv_enabled)
+				return "riscv-stepping is disabled!";
+			_step_riscv = true;
+			return "";
 		case DebugInputKey::all:
 			_state |= (DebugState::print_asm | DebugState::print_flags | DebugState::print_reg);
 			return "all core-features enabled!";
@@ -134,6 +133,12 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 					return "assembly-count out of range [1;96]!";
 				_inst_count = arg_number[1];
 				return "successfully configured!";
+			} else if (arg_key[0] == DebugInputKey::x86) {
+				_state &= ~DebugState::reg_riscv;
+				return "successfully configured!";
+			} else if (arg_key[0] == DebugInputKey::riscv) {
+				_state |= DebugState::reg_riscv;
+				return "successfully configured!";
 			} else
 				return "invalid config-attribute!";
 		case DebugInputKey::continue_run:
@@ -166,9 +171,22 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 			input += "break      bp                      Print the break-points.\n";
 			input += "break      bp   (+-)addr           Add break-point with relative or absolute address.\n";
 			input += "config     cfg  asm     count      Set the default length for instruction-printing.\n";
-			input += "continue   c                       Continue execution until break-point.\n";
-			input += "continue   c    count              Continue execution for count-instructions or until break-point.\n";
+			input += "config     cfg  riscv rv           Configure registers to show the riscv-registers.\n";
+			input += "config     cfg  x86 x              Configure registers to show the x86-registers.\n";
+			input += "config     cfg  x86 x              Configure registers to show the x86-registers.\n";
+			input += "config     cfg  x86 x              Configure registers to show the x86-registers.\n";
+			input += "continue   cne                     Continue execution until break-point.\n";
+			input += "continue   cne  count              Continue execution for count-instructions or until break-point.\n";
+			input += "crawl      c                       Step by one riscv-instruction.\n";
 			input += "dec        dc                      Set the register print-type to decimal.\n";
+			input += "disable    dis  assembly, asm      Disable auto-print for assembly.\n";
+			input += "disable    dis  break, bp          Disable auto-print for break-points.\n";
+			input += "disable    dis  flags, fg          Disable auto-print for flags.\n";
+			input += "disable    dis  registers, reg     Disable auto-print for registers.\n";
+			input += "enable     en   assembly, asm      Enable auto-print for assembly.\n";
+			input += "enable     en   break, bp          Enable auto-print for break-points.\n";
+			input += "enable     en   flags, fg          Enable auto-print for flags.\n";
+			input += "enable     en   registers, reg     Enable auto-print for registers.\n";
 			input += "exit                               Exit the program via dispatcher::guest_exit.\n";
 			input += "eblock     eob                     Continue execution until end-of-block or break-point.\n";
 			input += "fault                              Exit the program via dispatcher::fault_exit.\n";
@@ -179,16 +197,10 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 			input += "remove     rbp  index              Remove one break-point with the given index.\n";
 			input += "registers  reg                     List all of the registers with the current configuration.\n";
 			input += "registers  reg  dec/hex riscv/x86  List all of the registers with a set configuration.\n";
-			input += "riscv      rv                      Set the printed registers to riscv.\n";
 			input += "run        r                       Continue execution until break-point.\n";
 			input += "run        r    count              Continue execution for count-instructions or until break-point.\n";
 			input += "sblock     sob                     Continue execution until start-of-block or break-point.\n";
-			input += "step       s                       Step one x86-instruction.\n";
-			input += "toggle     tg   assembly, asm      Toggle auto-print for assembly.\n";
-			input += "toggle     tg   break, bp          Toggle auto-print for break-points.\n";
-			input += "toggle     tg   flags, fg          Toggle auto-print for flags.\n";
-			input += "toggle     tg   registers, reg     Toggle auto-print for registers.\n";
-			input += "x86        x                       Set the printed registers to x86.";
+			input += "step       s                       Step one x86-instruction.";
 			return input;
 		case DebugInputKey::hexadecimal:
 			_state &= ~DebugState::reg_dec;
@@ -271,23 +283,40 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 		case DebugInputKey::startofblock:
 			_state |= DebugState::await_sblock;
 			return "";
-		case DebugInputKey::toggle:
+		case DebugInputKey::enable:
 			if (arg_state[0] != arg_state_key)
-				return "invalid argument for toggle!";
+				return "invalid argument for enable!";
 			else if (arg_key[0] == DebugInputKey::breakpoint) {
-				_state ^= DebugState::print_bp;
-				return "toggled break-points auto-print!";
+				_state |= DebugState::print_bp;
+				return "enabled break-points auto-print!";
 			} else if (arg_key[0] == DebugInputKey::registers) {
-				_state ^= DebugState::print_reg;
-				return "toggled register auto-print!";
+				_state |= DebugState::print_reg;
+				return "enabled register auto-print!";
 			} else if (arg_key[0] == DebugInputKey::assembly) {
-				_state ^= DebugState::print_asm;
-				return "toggled assembly auto-print!";
+				_state |= DebugState::print_asm;
+				return "enabled assembly auto-print!";
 			} else if (arg_key[0] == DebugInputKey::flags) {
-				_state ^= DebugState::print_flags;
-				return "toggled flags auto-print!";
+				_state |= DebugState::print_flags;
+				return "enabled flags auto-print!";
 			}
-			return "invalid argument for toggle!";
+			return "invalid argument for enable!";
+		case DebugInputKey::disable:
+			if (arg_state[0] != arg_state_key)
+				return "invalid argument for disable!";
+			else if (arg_key[0] == DebugInputKey::breakpoint) {
+				_state &= ~DebugState::print_bp;
+				return "disabled break-points auto-print!";
+			} else if (arg_key[0] == DebugInputKey::registers) {
+				_state &= ~DebugState::print_reg;
+				return "disabled register auto-print!";
+			} else if (arg_key[0] == DebugInputKey::assembly) {
+				_state &= ~DebugState::print_asm;
+				return "disabled assembly auto-print!";
+			} else if (arg_key[0] == DebugInputKey::flags) {
+				_state &= ~DebugState::print_flags;
+				return "disabled flags auto-print!";
+			}
+			return "invalid argument for disable!";
 		default:
 			break;
 	}
@@ -345,20 +374,26 @@ debugger::Debugger::DebugInputKey debugger::Debugger::parse_key(std::string& key
 				return DebugInputKey::breakpoint;
 			break;
 		case 'c':
-			if (key == "continue" || key == "c")
+			if (key == "continue" || key == "cne")
 				return DebugInputKey::continue_run;
 			else if (key == "config" || key == "cfg")
 				return DebugInputKey::config;
+			else if (key == "crawl" || key == "c")
+				return DebugInputKey::crawl;
 			break;
 		case 'd':
 			if (key == "dec" || key == "dc")
 				return DebugInputKey::decimal;
+			else if (key == "disable" || key == "dis")
+				return DebugInputKey::disable;
 			break;
 		case 'e':
 			if (key == "exit")
 				return DebugInputKey::exit;
 			else if (key == "eblock" || key == "eob")
 				return DebugInputKey::endofblock;
+			else if (key == "enable" || key == "en")
+				return DebugInputKey::enable;
 			break;
 		case 'f':
 			if (key == "fault")
@@ -391,10 +426,6 @@ debugger::Debugger::DebugInputKey debugger::Debugger::parse_key(std::string& key
 				return DebugInputKey::step;
 			else if (key == "sblock" || key == "sob")
 				return DebugInputKey::startofblock;
-			break;
-		case 't':
-			if (key == "toggle" || key == "tg")
-				return DebugInputKey::toggle;
 			break;
 		case 'x':
 			if (key == "x86" || key == "x")

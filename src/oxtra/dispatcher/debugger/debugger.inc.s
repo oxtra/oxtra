@@ -1,6 +1,7 @@
 .global _ZN8debugger8Debugger17evaluate_overflowEPN10dispatcher16ExecutionContextEPNS2_7ContextE # evaluate_overflow
 .global _ZN8debugger8Debugger14evaluate_carryEPN10dispatcher16ExecutionContextEPNS2_7ContextE # evaluate_carry
 .global debug_entry
+.global debug_entry_riscv
 
 .section .text
 
@@ -70,6 +71,47 @@ debug_entry:
     mv a0, t0	# Debugger
     mv a1, s11	# ExecutionContext
     mv a2, t1	# BreakPointEntry
+
+	# call the debugging-entry-function
+	jal ra, _ZN8debugger8Debugger5entryEPN10dispatcher16ExecutionContextEm
+
+	# restore the context and return to the execution
+	restore_context_debug s11
+	ret
+
+
+# define the debug-entry for riscv, which invokes the debugging_entry-function
+debug_entry_riscv:
+	# store the current t0-register
+	sd t0, guest_t0_offset(s11)
+
+	# ensure that a debugger exists
+	ld t0, debugger_offset(s11)
+	bnez t0, debugger_riscv_attached
+	ld t0, guest_t0_offset(s11)
+	ret
+	debugger_riscv_attached:
+
+	# store the current t1-register
+	sd t1, guest_t1_offset(s11)
+
+	# check if the execution is supposed to be halted
+	lbu t1, debug_step_riscv(t0)
+	bnez t1, debugger_riscv_enter
+
+	# restore the two temp-registers
+	ld t0, guest_t0_offset(s11)
+	ld t1, guest_t1_offset(s11)
+	ret
+
+	# capture the context
+	debugger_riscv_enter:
+    capture_context_debug s11
+
+    # set the three arguments
+    mv a0, t0	# Debugger
+    mv a1, s11	# ExecutionContext
+    addi a2, zero, 0x600
 
 	# call the debugging-entry-function
 	jal ra, _ZN8debugger8Debugger5entryEPN10dispatcher16ExecutionContextEm

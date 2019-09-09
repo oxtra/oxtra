@@ -17,6 +17,10 @@ void codegen::jump_table::jump_debugger(CodeBatch& batch) {
 	jump_table_entry(batch, Entry::debug_callback);
 }
 
+void codegen::jump_table::jump_debugger_riscv(CodeBatch& batch) {
+	jump_table_entry(batch, Entry::debug_callback_riscv);
+}
+
 void codegen::jump_table::jump_table_offset(CodeBatch& batch, encoding::RiscVRegister offset) {
 	batch += encoding::ADD(offset, helper::jump_table_address, offset);
 	batch += encoding::JALR(encoding::RiscVRegister::ra, offset, 0);

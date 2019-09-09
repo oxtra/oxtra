@@ -8,25 +8,34 @@
 
 namespace debugger {
 	class DebuggerBatch : public codegen::CodeBatchImpl {
+	private:
+		bool _adding_jump;
+
+	public:
+		DebuggerBatch();
+
+	public:
+		virtual size_t add(utils::riscv_instruction_t inst) override;
+
 		virtual void print() const override;
 	};
 
 	class Debugger {
 	private:
 		struct DebugState {
-			static constexpr uint16_t none 			= 0x0000u;
-			static constexpr uint16_t init 			= 0x0001u;
-			static constexpr uint16_t await_sblock 	= 0x0002u;
-			static constexpr uint16_t await_eblock 	= 0x0004u;
+			static constexpr uint16_t none = 0x0000u;
+			static constexpr uint16_t init = 0x0001u;
+			static constexpr uint16_t await_sblock = 0x0002u;
+			static constexpr uint16_t await_eblock = 0x0004u;
 			static constexpr uint16_t await_counter = 0x0008u;
-			static constexpr uint16_t await_step	= 0x0010u;
-			static constexpr uint16_t await 		= 0x001eu;
-			static constexpr uint16_t reg_riscv 	= 0x0100u;
-			static constexpr uint16_t reg_dec 		= 0x0200u;
-			static constexpr uint16_t print_reg 	= 0x0400u;
-			static constexpr uint16_t print_asm 	= 0x0800u;
-			static constexpr uint16_t print_flags	= 0x1000u;
-			static constexpr uint16_t print_bp		= 0x2000u;
+			static constexpr uint16_t await_step = 0x0010u;
+			static constexpr uint16_t await = 0x001eu;
+			static constexpr uint16_t reg_riscv = 0x0100u;
+			static constexpr uint16_t reg_dec = 0x0200u;
+			static constexpr uint16_t print_reg = 0x0400u;
+			static constexpr uint16_t print_asm = 0x0800u;
+			static constexpr uint16_t print_flags = 0x1000u;
+			static constexpr uint16_t print_bp = 0x2000u;
 		};
 		enum class DebugInputKey : uint8_t {
 			none,
@@ -49,8 +58,10 @@ namespace debugger {
 			riscv,
 			step,
 			startofblock,
-			toggle,
-			x86
+			enable,
+			disable,
+			x86,
+			crawl
 		};
 
 		struct BlockEntry {
@@ -62,11 +73,20 @@ namespace debugger {
 
 	private:
 		static constexpr uintptr_t halt_break = 0x0400;
+		static constexpr uintptr_t halt_riscv = 0x0600;
 		static Debugger* active_debugger;
+
+		/*
+		 * If the order and the size of these attributes is changed,
+		 * the assembly_globals file has to be updated as well.
+		 */
 	private:
 		uint16_t _bp_count;
 		uint8_t _halt;
+		uint8_t _step_riscv;
 		uintptr_t _bp_array[256]{};
+
+		// The instructions beneath may be moved around without updating the assembly_globals-file.
 		uintptr_t _bp_x86_array[256]{};
 		uint32_t _state;
 		uint64_t _bp_counter;
@@ -74,11 +94,14 @@ namespace debugger {
 		std::vector<BlockEntry> _blocks;
 		const elf::Elf& _elf;
 		uint16_t _inst_count;
+		bool _riscv_enabled;
 
 	public:
 		explicit Debugger(const elf::Elf& elf);
 
 		~Debugger();
+
+		static bool step_riscv();
 
 		static void begin_block(codegen::CodeBatch& batch);
 
