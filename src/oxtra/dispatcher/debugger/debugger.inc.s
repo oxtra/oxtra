@@ -1,3 +1,5 @@
+.global _ZN8debugger8Debugger17evaluate_overflowEPN10dispatcher16ExecutionContextEPNS2_7ContextE # evaluate_overflow
+.global _ZN8debugger8Debugger14evaluate_carryEPN10dispatcher16ExecutionContextEPNS2_7ContextE # evaluate_carry
 .global debug_entry
 
 .section .text
@@ -28,7 +30,7 @@ debug_entry:
 
 	# check if any break-points exist
 	debugger_no_halt:
-	lbu t1, debug_bp_count(t0)
+	lhu t1, debug_bp_count(t0)
 	beqz t1, debugger_exit
 
 	# iterate through the break-points and check if one has been hit
@@ -74,4 +76,54 @@ debug_entry:
 
 	# restore the context and return to the execution
 	restore_context_debug s11
+	ret
+
+
+# implement the function to compute the overflow
+_ZN8debugger8Debugger17evaluate_overflowEPN10dispatcher16ExecutionContextEPNS2_7ContextE:
+	# load the context-pointer into t0 and the context to t1
+    mv t0, a1
+    mv t1, a0
+
+    # capture the context
+    capture_context t0
+
+    # restore the guest-context
+    restore_context t1
+
+    # call the jump-table-entry
+    lhu t3, flag_info_overflow_operation(s11)
+    add t3, t3, s10
+    jalr ra, t3, 0
+
+    # restore the context
+    restore_context t0
+
+    # move the result into a0
+    mv a0, t4
+    ret
+
+
+# implement the function to compute the carry
+_ZN8debugger8Debugger14evaluate_carryEPN10dispatcher16ExecutionContextEPNS2_7ContextE:
+	# load the context-pointer into t0 and the context to t1
+	mv t0, a1
+	mv t1, a0
+
+	# capture the context
+	capture_context t0
+
+	# restore the guest-context
+	restore_context t1
+
+	# call the jump-table-entry
+	lhu t3, flag_info_carry_operation(s11)
+	add t3, t3, s10
+	jalr ra, t3, 0
+
+	# restore the context
+	restore_context t0
+
+	# move the result into a0
+	mv a0, t4
 	ret
