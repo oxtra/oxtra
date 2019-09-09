@@ -25,16 +25,16 @@ void codegen::Mul::generate(codegen::CodeBatch& batch) const {
 	if (get_type() == InstructionType::IMUL2) {
 		lower_destination = map_reg(get_operand(0).get_register()); // as of manual >= 16bit
 
-		src1 = translate_operand(batch, 0, nullptr, src1, RiscVRegister::t4, false, true, true);
-		src2 = translate_operand(batch, 1, nullptr, src2, RiscVRegister::t4, false, true, true);
+		src1 = translate_operand(batch, 0, nullptr, src1, RiscVRegister::t4, false, true, true, false);
+		src2 = translate_operand(batch, 1, nullptr, src2, RiscVRegister::t4, false, true, true, false);
 	} else if (get_type() == InstructionType::IMUL3) {
 		lower_destination = map_reg(get_operand(0).get_register()); // as of manual >= 16bit
 
-		src1 = translate_operand(batch, 1, nullptr, src1, RiscVRegister::t4, false, true, true);
-		src2 = translate_operand(batch, 2, nullptr, src2, RiscVRegister::t4, false, true, true);
+		src1 = translate_operand(batch, 1, nullptr, src1, RiscVRegister::t4, false, true, true, false);
+		src2 = translate_operand(batch, 2, nullptr, src2, RiscVRegister::t4, false, true, true, false);
 	} else { // MUL, or IMUL
 		src1 = helper::load_from_register(batch, RiscVRegister::rax, op_size, RiscVRegister::t4, false, true, is_signed);
-		src2 = translate_operand(batch, 0, nullptr, src2, RiscVRegister::t4, false, true, is_signed);
+		src2 = translate_operand(batch, 0, nullptr, src2, RiscVRegister::t4, false, true, is_signed, false);
 	}
 
 	if (op_size == 8) {

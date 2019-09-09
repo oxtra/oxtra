@@ -42,8 +42,8 @@ std::string codegen::Instruction::string() const {
 }
 
 RiscVRegister codegen::Instruction::translate_operand(CodeBatch& batch, size_t index, RiscVRegister* address,
-													  RiscVRegister temp_a, RiscVRegister temp_b,
-													  bool modifiable, bool full_load, bool sign_extend) const {
+													  RiscVRegister temp_a, RiscVRegister temp_b, bool modifiable,
+													  bool full_load, bool sign_extend, bool destination) const {
 	// extract the operand
 	auto& operand = get_operand(index);
 
@@ -67,6 +67,10 @@ RiscVRegister codegen::Instruction::translate_operand(CodeBatch& batch, size_t i
 		const auto mapped_reg = (high_reg ? map_reg_high : map_reg)(operand.get_register());
 
 		// extract the register
+		if (destination && operand.get_size() >= 4) {
+			if (!full_load || operand.get_size() == 8)
+				return mapped_reg;
+		}
 		return helper::load_from_register(batch, mapped_reg, high_reg ? 0 : operand.get_size(),
 										  temp_a, modifiable, full_load, sign_extend);
 	}
@@ -490,7 +494,7 @@ void codegen::Instruction::update_overflow(CodeBatch& batch, jump_table::Entry e
 }
 
 void codegen::Instruction::update_overflow_single(codegen::CodeBatch& batch, codegen::jump_table::Entry entry,
-													  encoding::RiscVRegister va, encoding::RiscVRegister temp) const {
+												  encoding::RiscVRegister va, encoding::RiscVRegister temp) const {
 	// check if the instruction has to update the overflow-flag
 	if ((update_flags & flags::overflow) == 0)
 		return;
@@ -547,7 +551,7 @@ void codegen::Instruction::update_carry(CodeBatch& batch, jump_table::Entry entr
 }
 
 void codegen::Instruction::update_carry_single(codegen::CodeBatch& batch, codegen::jump_table::Entry entry,
-												   encoding::RiscVRegister va, encoding::RiscVRegister temp) const {
+											   encoding::RiscVRegister va, encoding::RiscVRegister temp) const {
 	// check if the instruction has to update the carry-flag
 	if ((update_flags & flags::carry) == 0)
 		return;

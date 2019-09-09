@@ -53,15 +53,17 @@ namespace codegen {
 		 * 		  Either: zero, temp_b or one of the mapped registers. (can be Null)
 		 * @param temp_a A temporary that might be changed.
 		 * @param temp_b A temporary that might be changed.
-		 * @param modifiable If true, the function will ensure to load the value into a temporary register.
+		 * @param modifiable If true, the function will ensure to load the value into a temporary register (unless destination is true).
 		 * @param full_load If true, the register will only contain the value loaded. Otherwise the upper bits might still contain other contents.
 		 * @param sign_extend If full_load is true, this attribute allows to indicate whether or not the value should be stored as sign-extended or not.
+		 * @param destination indicates that this operand will later be used as destination (will optimize in conjunction with modifiable).
+		 * 	      If set to true, either call translate_destination, or clear the upper 32bits on 32-bit registers. (if returned)
 		 * @return The register which contains the value.
 		 * 		   Either: temp_a or one of the mapped registers (or zero, if the operand-type is unknown).
 		 */
 		encoding::RiscVRegister translate_operand(CodeBatch& batch, size_t index, encoding::RiscVRegister* address,
 												  encoding::RiscVRegister temp_a, encoding::RiscVRegister temp_b,
-												  bool modifiable, bool full_load, bool sign_extend) const;
+												  bool modifiable, bool full_load, bool sign_extend, bool destination) const;
 
 		/**
 		 * Writes the value in the register to the destination-operand of the instruction.
