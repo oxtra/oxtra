@@ -33,6 +33,7 @@ namespace debugger {
 			assembly,
 			all,
 			breakpoint,
+			config,
 			continue_run,
 			decimal,
 			endofblock,
@@ -72,6 +73,7 @@ namespace debugger {
 		BlockEntry* _current;
 		std::vector<BlockEntry> _blocks;
 		const elf::Elf& _elf;
+		uint16_t _inst_count;
 
 	public:
 		explicit Debugger(const elf::Elf& elf);
@@ -109,7 +111,7 @@ namespace debugger {
 
 		std::string print_reg(dispatcher::ExecutionContext* context, bool hex, bool riscv);
 
-		std::string print_assembly(utils::guest_addr_t guest, BlockEntry* entry, uint8_t limit = 12);
+		std::string print_assembly(utils::guest_addr_t guest, BlockEntry* entry, uint8_t limit);
 
 		std::string print_flags(dispatcher::ExecutionContext* context);
 

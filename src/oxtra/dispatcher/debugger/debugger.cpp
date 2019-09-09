@@ -24,6 +24,7 @@ debugger::Debugger::Debugger(const elf::Elf& elf) : _elf{elf} {
 	_state = DebugState::none;
 	_bp_counter = 0;
 	_current = nullptr;
+	_inst_count = 12;
 
 	// mark this as the active debugger
 	active_debugger = this;
@@ -113,7 +114,7 @@ void debugger::Debugger::entry(dispatcher::ExecutionContext* context, uintptr_t 
 
 		// print the assembly
 		if (_state & DebugState::print_asm)
-			out << print_assembly(address, _current) << '\n';
+			out << print_assembly(address, _current, _inst_count) << '\n';
 
 		// check if the menu has to be printed
 		if (menu_string.empty()) {

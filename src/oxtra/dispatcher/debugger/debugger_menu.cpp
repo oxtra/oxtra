@@ -93,9 +93,7 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 					return "assembly-count out of range [1;96]!";
 				return print_assembly(address, _current, arg_number[0]);
 			}
-			return print_assembly(address, _current);
-
-
+			return print_assembly(address, _current, _inst_count);
 		case DebugInputKey::x86:
 			_state &= ~DebugState::reg_riscv;
 			return "set register-output to x86!";
@@ -126,6 +124,18 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 				_bp_count++;
 				return "break-point set!";
 			}
+		case DebugInputKey::config:
+			if (arg_state[0] != arg_state_key)
+				return "invalid config-attribute!";
+			else if (arg_key[0] == DebugInputKey::assembly) {
+				if (arg_state[1] != arg_state_number)
+					return "invalid assembly-count!";
+				if (arg_number[1] == 0 || arg_number[1] > 96)
+					return "assembly-count out of range [1;96]!";
+				_inst_count = arg_number[1];
+				return "successfully configured!";
+			} else
+				return "invalid config-attribute!";
 		case DebugInputKey::continue_run:
 		case DebugInputKey::run:
 			if (arg_state[0] == arg_state_unused)
@@ -155,6 +165,7 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 			input += "assembly   asm  count              Print the assembly with a maximum output of count-instructions.\n";
 			input += "break      bp                      Print the break-points.\n";
 			input += "break      bp   (+-)addr           Add break-point with relative or absolute address.\n";
+			input += "config     cfg  asm     count      Set the default length for instruction-printing.\n";
 			input += "continue   c                       Continue execution until break-point.\n";
 			input += "continue   c    count              Continue execution for count-instructions or until break-point.\n";
 			input += "dec        dc                      Set the register print-type to decimal.\n";
@@ -266,16 +277,13 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 			else if (arg_key[0] == DebugInputKey::breakpoint) {
 				_state ^= DebugState::print_bp;
 				return "toggled break-points auto-print!";
-			}
-			else if (arg_key[0] == DebugInputKey::registers) {
+			} else if (arg_key[0] == DebugInputKey::registers) {
 				_state ^= DebugState::print_reg;
 				return "toggled register auto-print!";
-			}
-			else if (arg_key[0] == DebugInputKey::assembly) {
+			} else if (arg_key[0] == DebugInputKey::assembly) {
 				_state ^= DebugState::print_asm;
 				return "toggled assembly auto-print!";
-			}
-			else if (arg_key[0] == DebugInputKey::flags) {
+			} else if (arg_key[0] == DebugInputKey::flags) {
 				_state ^= DebugState::print_flags;
 				return "toggled flags auto-print!";
 			}
@@ -339,6 +347,8 @@ debugger::Debugger::DebugInputKey debugger::Debugger::parse_key(std::string& key
 		case 'c':
 			if (key == "continue" || key == "c")
 				return DebugInputKey::continue_run;
+			else if (key == "config" || key == "cfg")
+				return DebugInputKey::config;
 			break;
 		case 'd':
 			if (key == "dec" || key == "dc")
@@ -557,7 +567,7 @@ std::string debugger::Debugger::print_assembly(utils::guest_addr_t guest, BlockE
 
 		// try to decode the instruction
 		fadec::Instruction inst{};
-		if(!decode_failed) {
+		if (!decode_failed) {
 			if (fadec::decode(reinterpret_cast<const uint8_t*>(x86_address), _elf.get_size(x86_address),
 							  fadec::DecodeMode::decode_64, x86_address, inst) <= 0) {
 				if (index < entry->entry->instruction_count)
@@ -583,17 +593,17 @@ std::string debugger::Debugger::print_assembly(utils::guest_addr_t guest, BlockE
 			line_buffer[3] = '>';
 
 		// pad the string
-		if(line_buffer.size() < 50)
+		if (line_buffer.size() < 50)
 			line_buffer.insert(line_buffer.size(), 50 - line_buffer.size(), ' ');
 
 		// update the x86-data
-		if(!decode_failed) {
+		if (!decode_failed) {
 			x86_address += inst.get_size();
 			index++;
 		}
 
 		// check any riscv-code exists
-		if(i < riscv_count && i + 1 == limit)
+		if (i < riscv_count && i + 1 == limit)
 			line_buffer.append("    ...");
 		else if (i < riscv_count) {
 			// set the pointer to the current riscv-instruction
