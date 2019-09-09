@@ -13,7 +13,7 @@ void debugger::DebuggerBatch::print() const {
 
 debugger::Debugger* debugger::Debugger::active_debugger = nullptr;
 
-debugger::Debugger::Debugger() {
+debugger::Debugger::Debugger(const elf::Elf& elf) : _elf{elf} {
 	// initialize the attributes
 	_halt = true;
 	_bp_count = 0;
@@ -109,7 +109,7 @@ void debugger::Debugger::entry(dispatcher::ExecutionContext* context, uintptr_t 
 
 		// print the assembly
 		if (_state & DebugState::print_asm)
-			out << print_assembly(address, context->guest.ra, _state & DebugState::asm_riscv) << '\n';
+			out << print_assembly(address, _current, _state & DebugState::asm_riscv) << '\n';
 
 		// check if the menu has to be printed
 		if (menu_string.empty()) {
@@ -335,9 +335,12 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 			if (input == "assembly" || input == "asm") {
 				if (!argument.empty()) {
 					if (argument == "riscv" || argument == "rv")
-						print_assembly(address, context->guest.ra, true);
+						return print_assembly(address, _current, true);
 				}
-				return print_assembly(address, context->guest.ra, _state & DebugState::asm_riscv);
+				return print_assembly(address, _current, _state & DebugState::asm_riscv);
+			} else if (input == "all") {
+				_state |= (DebugState::print_asm | DebugState::print_flags | DebugState::print_reg | DebugState::asm_riscv);
+				return "all core-features enabled!";
 			}
 			break;
 		case 'b':
@@ -413,7 +416,39 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 			break;
 		case 'h':
 			if (input == "help") {
-				return "break, bp, exit, fault, help, step, s, remove, rbp, registers, reg, toggle, tg, hex, hx, dec, dc, flags, flg, fg, assembly, asm, continue, c, run, r, logging, log, eblock, eob, sblock, sob";
+				std::string temp_str;
+				temp_str += "all                                Enable registers,assembly with riscv and flags auto-print.\n";
+				temp_str += "assembly   asm                     Print the assembly.\n";
+				temp_str += "assembly   asm     riscv, rv       Print the assembly including the riscv-code.\n";
+				temp_str += "break      bp                      Print the break-points.\n";
+				temp_str += "break      bp      (+-)addr        Add break-point with relative or absolute address.\n";
+				temp_str += "continue   c                       Continue execution until break-point.\n";
+				temp_str += "continue   c       count           Continue execution for count-instructions or until break-point.\n";
+				temp_str += "dec        dc                      Set the register print-type to decimal.\n";
+				temp_str += "exit                               Exit the program via dispatcher::guest_exit.\n";
+				temp_str += "eblock     eob                     Continue execution until end-of-block or break-point.\n";
+				temp_str += "fault                              Exit the program via dispatcher::fault_exit.\n";
+				temp_str += "flags      fg                      Print the flags.\n";
+				temp_str += "help                               Print this menu.\n";
+				temp_str += "hex        hx                      Set the register print-type to hexadecimal.\n";
+				temp_str += "logging    log                     Set the current logging-level (same as argument).\n";
+				temp_str += "remove     rbp     index           Remove one break-point with the given index.\n";
+				temp_str += "registers  reg                     List all of the registers with the current configuration.\n";
+				temp_str += "registers  reg     dec, dc         List all of the registers in decimal.\n";
+				temp_str += "registers  reg     hex, hx         List all of the registers in hexadecimal.\n";
+				temp_str += "registers  reg     riscv, rv       List all of the riscv-registers.\n";
+				temp_str += "registers  reg     x86, x          List all of the x86-registers.\n";
+				temp_str += "run        r                       Continue execution until break-point.\n";
+				temp_str += "run        r       count           Continue execution for count-instructions or until break-point.\n";
+				temp_str += "sblock     sob                     Continue execution until start-of-block or break-point.\n";
+				temp_str += "step       s                       Step one x86-instruction.\n";
+				temp_str += "toggle     tg      assembly, asm   Toggle auto-print for assembly.\n";
+				temp_str += "toggle     tg      atype, at       Toggle the assembly-type (x86-only/both).\n";
+				temp_str += "toggle     tg      break, bp       Toggle auto-print for break-points.\n";
+				temp_str += "toggle     tg      flags, fg       Toggle auto-print for flags.\n";
+				temp_str += "toggle     tg      registers, reg  Toggle auto-print for registers.\n";
+				temp_str += "toggle     tg      rtype, rt       Toggle the register-type (riscv/x86).";
+				return temp_str;
 			} else if (input == "hex" || input == "hx") {
 				_state &= ~DebugState::reg_dec;
 				return "set register-printing to hex!";
@@ -711,11 +746,106 @@ std::string debugger::Debugger::print_reg(dispatcher::ExecutionContext* context,
 			out_string.push_back('\n');
 		out_string.append(temp_string);
 	}
+	out_string.push_back('\n');
 	return out_string;
 }
 
-std::string debugger::Debugger::print_assembly(utils::guest_addr_t guest, utils::host_addr_t host, bool riscv) {
-	return "";
+std::string debugger::Debugger::print_assembly(utils::guest_addr_t guest, BlockEntry* entry, bool riscv) {
+	// find the current index and compute the counters
+	utils::guest_addr_t x86_counter = entry->entry->x86_start;
+	utils::host_addr_t riscv_counter = entry->entry->riscv_start + 4;
+	size_t index = 0;
+	for (; index < entry->entry->instruction_count; index++) {
+		if (x86_counter == guest)
+			break;
+		x86_counter += entry->entry->offsets[index].x86;
+		riscv_counter += entry->entry->offsets[index].riscv;
+	}
+	size_t riscv_count = (entry->entry->offsets[index].riscv >> 2u) - 1;
+
+	// build the string
+	std::string out_str("Assembly [x86]:");
+	if (riscv) {
+		out_str.insert(out_str.size(), 50 - out_str.size(), ' ');
+		out_str.append("Next x86-instruction [riscv]:");
+	}
+	out_str.push_back('\n');
+
+	// iterate through the instructions and write them to the string
+	const auto loop_limit = ((riscv_count < 12 || !riscv) ? 12 : riscv_count);
+	for (size_t i = 0; i < loop_limit; i++) {
+		// try to decode the instruction
+		std::string x86_buffer;
+		fadec::Instruction inst{};
+		bool decode_failed = false;
+		if (fadec::decode(reinterpret_cast<const uint8_t*>(x86_counter), _elf.get_size(x86_counter),
+						  fadec::DecodeMode::decode_64, x86_counter, inst) <= 0) {
+			if (index < entry->entry->instruction_count)
+				x86_buffer = "failed to decode instruction";
+			else if (!riscv || i >= riscv_count)
+				break;
+			else
+				x86_buffer.insert(0, 50, ' ');
+			decode_failed = true;
+		} else {
+			char buffer[256];
+			fadec::format(inst, buffer, 256);
+			x86_buffer.append(buffer);
+		}
+
+		// check if this row contains a break-point
+		std::string temp_str;
+		if (!decode_failed) {
+			for (size_t j = 0; j < _bp_count; j++) {
+				if (_bp_x86_array[j] >= x86_counter && _bp_x86_array[j] < x86_counter + inst.get_size()) {
+					temp_str.append(" * ");
+					break;
+				}
+			}
+		}
+		if (temp_str.empty())
+			temp_str.append("   ");
+		if(x86_counter < entry->entry->x86_end)
+			temp_str.push_back('>');
+		else
+			temp_str.push_back(' ');
+
+		// add the current address
+		temp_str.push_back('[');
+		temp_str.append(print_number(x86_counter, true));
+		temp_str.append("] ");
+
+		// add the x86-instruction
+		if (temp_str.size() + x86_buffer.size() > 50)
+			temp_str.append(x86_buffer.c_str(), 50 - temp_str.size());
+		else {
+			temp_str.append(x86_buffer);
+			temp_str.insert(temp_str.size(), 50 - temp_str.size(), ' ');
+		}
+
+		// update the x86-data
+		x86_counter += inst.get_size();
+		index++;
+
+		// check any riscv-code exists
+		if (riscv && i < riscv_count) {
+			if (temp_str.size() < 50)
+				temp_str.insert(temp_str.size(), 50 - temp_str.size(), ' ');
+
+			// pad the string
+			temp_str.append((i == 0) ? " -> " : "    ");
+
+			// decode the riscv-instruction
+			std::string riscv_str = decoding::parse_riscv(reinterpret_cast<utils::riscv_instruction_t*>(riscv_counter)[i]);
+			if (riscv_str.size() <= 50)
+				temp_str.append(riscv_str);
+			else
+				temp_str.append(riscv_str.c_str(), 50);
+		}
+		out_str.append(temp_str);
+		out_str.push_back('\n');
+	}
+	return out_str;
 }
 
 std::string debugger::Debugger::print_flags(dispatcher::ExecutionContext* context) {
@@ -724,7 +854,7 @@ std::string debugger::Debugger::print_flags(dispatcher::ExecutionContext* contex
 
 	// append the zero-flag
 	std::string temp_str((context->flag_info.zero_value == 0) ? " ZF: 1" : " ZF: 0");
-	temp_str.insert(temp_str.size(), 20 - temp_str.size(), ' ');
+	temp_str.insert(temp_str.size(), 15 - temp_str.size(), ' ');
 	out_str.append(temp_str);
 
 	// append the sign-flag
@@ -733,7 +863,7 @@ std::string debugger::Debugger::print_flags(dispatcher::ExecutionContext* contex
 		temp_str.push_back('1');
 	else
 		temp_str.push_back('0');
-	temp_str.insert(temp_str.size(), 20 - temp_str.size(), ' ');
+	temp_str.insert(temp_str.size(), 15 - temp_str.size(), ' ');
 	out_str.append(temp_str);
 
 	// append the parity-flag
@@ -742,29 +872,33 @@ std::string debugger::Debugger::print_flags(dispatcher::ExecutionContext* contex
 	temp = (temp & 0x03u) ^ (temp >> 2u);
 	temp = (temp & 0x01u) ^ (temp >> 1u);
 	temp_str.append((temp == 0) ? "1" : "0");
-	temp_str.insert(temp_str.size(), 20 - temp_str.size(), ' ');
+	temp_str.insert(temp_str.size(), 15 - temp_str.size(), ' ');
 	out_str.append(temp_str);
 
 	// append the carry-flag
 	temp_str = " CF: ";
-	if (context->flag_info.carry_operation == static_cast<uint16_t>(codegen::jump_table::Entry::unsupported_carry) * 4)
+	if (context->flag_info.carry_operation == static_cast<uint16_t>(codegen::jump_table::Entry::unsupported_carry) * 4) {
+		temp_str.append("inv:");
 		temp_str.append(reinterpret_cast<const char*>(context->flag_info.carry_pointer));
+	}
 	else {
 		dispatcher::ExecutionContext::Context temp_context;
 		temp_str.push_back('0' + evaluate_carry(context, &temp_context));
 	}
-	temp_str.insert(temp_str.size(), 20 - temp_str.size(), ' ');
+	temp_str.insert(temp_str.size(), 15 - temp_str.size(), ' ');
 	out_str.append(temp_str);
 
 	// append the overflow-flag
 	temp_str = " OF: ";
-	if (context->flag_info.overflow_operation == static_cast<uint16_t>(codegen::jump_table::Entry::unsupported_overflow) * 4)
+	if (context->flag_info.overflow_operation == static_cast<uint16_t>(codegen::jump_table::Entry::unsupported_overflow) * 4) {
+		temp_str.append("inv:");
 		temp_str.append(reinterpret_cast<const char*>(context->flag_info.overflow_pointer));
+	}
 	else {
 		dispatcher::ExecutionContext::Context temp_context;
 		temp_str.push_back('0' + evaluate_overflow(context, &temp_context));
 	}
-	temp_str.insert(temp_str.size(), 20 - temp_str.size(), ' ');
+	temp_str.insert(temp_str.size(), 15 - temp_str.size(), ' ');
 	out_str.append(temp_str);
 	out_str.push_back('\n');
 	return out_str;

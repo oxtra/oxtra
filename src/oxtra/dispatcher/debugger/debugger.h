@@ -4,6 +4,7 @@
 #include "oxtra/codegen/instruction.h"
 #include "oxtra/dispatcher/execution_context.h"
 #include "oxtra/codegen/codestore/codestore.h"
+#include "oxtra/elf/elf.h"
 
 namespace debugger {
 	class DebuggerBatch : public codegen::CodeBatchImpl {
@@ -48,9 +49,10 @@ namespace debugger {
 		uint64_t _bp_counter;
 		BlockEntry* _current;
 		std::vector<BlockEntry> _blocks;
+		const elf::Elf& _elf;
 
 	public:
-		Debugger();
+		explicit Debugger(const elf::Elf& elf);
 
 		~Debugger();
 
@@ -83,7 +85,7 @@ namespace debugger {
 
 		std::string print_reg(dispatcher::ExecutionContext* context, bool hex, bool riscv);
 
-		std::string print_assembly(utils::guest_addr_t guest, utils::host_addr_t host, bool riscv);
+		std::string print_assembly(utils::guest_addr_t guest, BlockEntry* entry, bool riscv);
 
 		std::string print_flags(dispatcher::ExecutionContext* context);
 
