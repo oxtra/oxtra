@@ -23,11 +23,33 @@ namespace debugger {
 			static constexpr uint16_t await 		= 0x001eu;
 			static constexpr uint16_t reg_riscv 	= 0x0100u;
 			static constexpr uint16_t reg_dec 		= 0x0200u;
-			static constexpr uint16_t asm_riscv		= 0x0400u;
-			static constexpr uint16_t print_reg 	= 0x0800u;
-			static constexpr uint16_t print_asm 	= 0x1000u;
-			static constexpr uint16_t print_flags	= 0x2000u;
-			static constexpr uint16_t print_bp		= 0x4000u;
+			static constexpr uint16_t print_reg 	= 0x0400u;
+			static constexpr uint16_t print_asm 	= 0x0800u;
+			static constexpr uint16_t print_flags	= 0x1000u;
+			static constexpr uint16_t print_bp		= 0x2000u;
+		};
+		enum class DebugInputKey : uint8_t {
+			none,
+			assembly,
+			all,
+			breakpoint,
+			continue_run,
+			decimal,
+			endofblock,
+			exit,
+			fault,
+			flags,
+			help,
+			hexadecimal,
+			logging,
+			remove,
+			registers,
+			run,
+			riscv,
+			step,
+			startofblock,
+			toggle,
+			x86
 		};
 
 		struct BlockEntry {
@@ -83,9 +105,11 @@ namespace debugger {
 
 		std::string print_number(uint64_t nbr, bool hex);
 
+		DebugInputKey parse_key(std::string& key);
+
 		std::string print_reg(dispatcher::ExecutionContext* context, bool hex, bool riscv);
 
-		std::string print_assembly(utils::guest_addr_t guest, BlockEntry* entry, bool riscv);
+		std::string print_assembly(utils::guest_addr_t guest, BlockEntry* entry, uint8_t limit = 12);
 
 		std::string print_flags(dispatcher::ExecutionContext* context);
 

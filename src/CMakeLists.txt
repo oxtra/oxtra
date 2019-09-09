@@ -70,6 +70,7 @@ add_library(oxtra_libs
 		oxtra/codegen/instructions/comparable/cmp.cpp
 		oxtra/codegen/instructions/comparable/test.cpp
 		oxtra/dispatcher/debugger/debugger.cpp
+		oxtra/dispatcher/debugger/debugger_menu.cpp
 )
 
 target_link_libraries(oxtra_libs
