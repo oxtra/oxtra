@@ -5,7 +5,7 @@
 void codegen::Idiv::generate(codegen::CodeBatch& batch) const {
 	// currently using the "risky" version of 128 bit division
 
-	const auto idiv = (get_type() == fadec::InstructionType::IDIV) ? true : false;
+	const auto idiv = get_type() == fadec::InstructionType::IDIV;
 	const auto op_size = get_operand(0).get_size();
 	constexpr auto rax = helper::map_reg(fadec::Register::rax);
 	constexpr auto rdx = helper::map_reg(fadec::Register::rdx);
@@ -19,33 +19,25 @@ void codegen::Idiv::generate(codegen::CodeBatch& batch) const {
 	translate_operand(batch, 0, 0, divisor, tmp, true, true, idiv);
 
 	// if (divisor == 0) raise #DE (divide by zero)
-	batch += BNQZ(divisor, 4*4);
+	auto branch = batch.add(encoding::NOP());
 	call_high_level(batch, &codegen::Idiv::division_exception);
+	batch.insert(branch, encoding::BNQZ(divisor, (batch.size() - branch)*4));
 
 	// 1. build dividend
 	if (op_size == 1) {
 		// dividend = ax
-		batch += encoding::MV(dividend, encoding::RiscVRegister::zero);
-		helper::move_to_register( batch, dividend, rax, helper::RegisterAccess::WORD, tmp, false);
+		helper::load_from_register(batch, rax, helper::RegisterAccess::WORD, dividend, true, true, idiv);
 	} else if (op_size == 2 || op_size == 4) {
 		// dividend = dx:ax bzw. edx:eax
 		const auto reg_access = (op_size < 3) ? helper::RegisterAccess::WORD : helper::RegisterAccess::DWORD;
 		const auto shamt = (op_size < 3) ? 16 : 32;
-		batch += encoding::MV(dividend, encoding::RiscVRegister::zero);
-		helper::move_to_register(batch, dividend, rdx, reg_access, tmp, false);
+		helper::load_from_register(batch, rdx, reg_access, dividend, true, true, idiv);
 		batch += encoding::SLLI(dividend, dividend, shamt);
-		helper::move_to_register(batch, encoding::RiscVRegister::t2, rax, reg_access, tmp, false);
-		batch += encoding::ADD(dividend, dividend, encoding::RiscVRegister::t2);
+		helper::load_from_register(batch, rax, reg_access, tmp, true, false, false);
+		batch += encoding::ADD(dividend, dividend, tmp);
 	} else {
 		// dividend = rax, assumes values larger than INT_MAX are never used
 		batch += encoding::MV(dividend, rax);
-	}
-
-	// 1b. sign-extension
-	if (idiv && op_size < 4) {
-		const auto shamt = (op_size < 2) ? 48 : 32;
-		batch += encoding::SLLI(dividend, dividend, shamt);
-		batch += encoding::SRAI(dividend, dividend, shamt);
 	}
 
 	// 1c. check for overflow
@@ -56,18 +48,20 @@ void codegen::Idiv::generate(codegen::CodeBatch& batch) const {
 	*/
 	if (idiv) { // using load_address to guarantee 8 instructions
 		helper::load_immediate(batch, -1, tmp);
-		batch += BNE(tmp, divisor, 13*4);
+		auto branch_a = batch.add(encoding::NOP());
 		if (op_size == 1) {
-			helper::load_address(batch, -32768 , tmp);
+			helper::load_immediate(batch, -32768 , tmp);
 		} else if (op_size == 2) {
-			helper::load_address(batch, -2147483648, tmp);
+			helper::load_immediate(batch, -2147483648, tmp);
 		} else if (op_size == 4) {
-			helper::load_address(batch, -9223372036854775808, tmp);
+			helper::load_immediate(batch, -9223372036854775808, tmp);
 		} else {
-			helper::load_address(batch, -9223372036854775808, tmp);
+			helper::load_immediate(batch, -9223372036854775808, tmp);
 		}
-		batch += BNE(tmp, dividend, 4*4);
+		auto branch_b = batch.add(encoding::NOP());
 		call_high_level(batch, &codegen::Idiv::division_exception);
+		batch.insert(branch_a, encoding::BNE(tmp, divisor, (batch.size() - branch_a)*4));
+		batch.insert(branch_b, encoding::BNE(tmp, dividend, (batch.size() - branch_b)*4));
 	}
 
 	// 2. do the division

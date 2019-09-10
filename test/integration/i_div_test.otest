@@ -46,7 +46,16 @@ $ ./oxtra test/resources/no_libc/div/div_zero.elf -l 2
 > /.*info.*/
 >2 /.*Divide exception.*/
 >= !0
-$ ./oxtra test/resources/no_libc/div/div_overflow.elf -l 2
+$ ./oxtra test/resources/no_libc/div/div_overflow_08b.elf -l 2
 > /.*info.*/
 >2 /.*Divide exception.*/
 >= !0
+$ ./oxtra test/resources/no_libc/div/div_overflow_16b.elf -l 2
+> /.*info.*/
+>2 /.*Divide exception.*/
+>= !0
+$ ./oxtra test/resources/no_libc/div/div_overflow_32b.elf -l 2
+> /.*info.*/
+>2 /.*Divide exception.*/
+>= !0
+# 64 bit overflow not being detected is a known bug
