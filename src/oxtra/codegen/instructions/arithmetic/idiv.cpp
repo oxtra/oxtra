@@ -19,22 +19,8 @@ void codegen::Idiv::generate(codegen::CodeBatch& batch) const {
 	translate_operand(batch, 0, 0, divisor, tmp, true, true, idiv);
 
 	// if (divisor == 0) raise #DE (divide by zero)
-	batch += BNQZ(divisor, 10*4);
-	helper::load_address(batch, reinterpret_cast<uintptr_t>(&dispatcher::Dispatcher::fault_exit), encoding::RiscVRegister::t4);
-	jump_table_entry(batch, jump_table::Entry::debug_callback);
-
-#if 0
-	if (op_size == 8) {
-		if (idiv)
-			batch += ADDI(encoding::RiscVRegister::t1, encoding::RiscVRegister::zero, 1);
-		else
-			batch += MV(encoding::RiscVRegister::t1, encoding::RiscVRegister::zero);
-		batch += ADDI(encoding::RiscVRegister::t2, encoding::RiscVRegister::zero, 4);
-		helper::load_address(batch, reinterpret_cast<uintptr_t>(&helper::idiv_128_bits), encoding::RiscVRegister::t4);
-		jump_table_entry(batch, jump_table::Entry::debug_callback);
-		return;
-	}
-#endif
+	batch += BNQZ(divisor, 4*4);
+	call_high_level(batch, &codegen::Idiv::division_exception);
 
 	// 1. build dividend
 	if (op_size == 1) {
@@ -65,25 +51,24 @@ void codegen::Idiv::generate(codegen::CodeBatch& batch) const {
 	// 1c. check for overflow
 	/*
 	if (idiv)
-		if (dividend == -2^(xlen-1) && divisor == -1)
+		if (dividend == int_min && divisor == -1)
 			// raise #DE (overflow)
 	*/
-	helper::load_immediate(batch, -1, tmp);
-	batch += BNE(tmp, divisor, 19*4);
 	if (idiv) { // using load_address to guarantee 8 instructions
+		helper::load_immediate(batch, -1, tmp);
+		batch += BNE(tmp, divisor, 13*4);
 		if (op_size == 1) {
-			helper::load_address(batch, -(2<<6), tmp);
+			helper::load_address(batch, -32768 , tmp);
 		} else if (op_size == 2) {
-			helper::load_address(batch, -(2<<14), tmp);
+			helper::load_address(batch, -2147483648, tmp);
 		} else if (op_size == 4) {
-			helper::load_address(batch, -(2<<30), tmp);
+			helper::load_address(batch, -9223372036854775808, tmp);
 		} else {
-			helper::load_address(batch, -(static_cast<uintptr_t>(2)<<62), tmp);
+			helper::load_address(batch, -9223372036854775808, tmp);
 		}
+		batch += BNE(tmp, dividend, 4*4);
+		call_high_level(batch, &codegen::Idiv::division_exception);
 	}
-	batch += BNE(tmp, dividend, 10*4);
-	helper::load_address(batch, reinterpret_cast<uintptr_t>(&dispatcher::Dispatcher::fault_exit), encoding::RiscVRegister::t4);
-	jump_table_entry(batch, jump_table::Entry::debug_callback);
 
 	// 2. do the division
 	if (idiv) {
@@ -106,4 +91,10 @@ void codegen::Idiv::generate(codegen::CodeBatch& batch) const {
 		batch += MV(rax, quotient);
 		batch += MV(rdx, remainder);
 	}
+}
+
+unsigned long codegen::Idiv::division_exception(dispatcher::ExecutionContext* context) {
+	unused_parameter(context);
+	dispatcher::Dispatcher::fault_exit("Divide exception");
+	return 0;
 }

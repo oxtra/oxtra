@@ -10,6 +10,7 @@ namespace codegen {
 				: codegen::Instruction{inst, flags::all, flags::none} {}
 
 		void generate(CodeBatch& batch) const override;
+		static unsigned long division_exception(dispatcher::ExecutionContext* context);
 	};
 }
 
