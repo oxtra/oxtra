@@ -177,7 +177,7 @@ string parse_load(RiscVOpcode opcode, riscv_instruction_t instruction) {
 	sstr << " [";
 
 	const auto base = split_off(instruction, 15);
-	auto offset = split_off(instruction, 20, 12);
+	auto offset = static_cast<uint16_t>(split_off(instruction, 20, 12));
 	if (!handle_context_addressing(sstr, base, offset)) {
 		// prase the base-register
 		sstr << register_string[base];
@@ -212,7 +212,7 @@ string parse_store(RiscVOpcode opcode, riscv_instruction_t instruction) {
 	sstr << " -> [";
 
 	const auto base = split_off(instruction, 15);
-	auto offset = split_off(instruction, 7) | (split_off(instruction, 25, 7) << 5u);
+	auto offset = static_cast<uint16_t>(split_off(instruction, 7) | (split_off(instruction, 25, 7) << 5u));
 
 	if (!handle_context_addressing(sstr, base, offset)) {
 		sstr << register_string[base];
