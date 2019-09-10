@@ -53,13 +53,13 @@ void codegen::RepeatableFlag::generate_loop(codegen::CodeBatch& batch, bool z) c
 	batch += (encoding::BNQZ(rcx, (loop_begin - batch.size()) * sizeof(utils::riscv_instruction_t)));
 
 	// replace the dummy with the actual branch instruction
-	batch[diff_test] = encoding::BEQZ(diff_reg, (batch.size() - diff_test) * sizeof(utils::riscv_instruction_t));
+	batch[diff_test] = (z ? encoding::BNQZ : encoding::BEQZ)(diff_reg, (batch.size() - diff_test) * sizeof(utils::riscv_instruction_t));
 
 	// update the flags
 	update_flags(batch);
 
 	// if we didn't execute the instruction a single time because of the loop counter then also skip the flags
-	batch[zero_test] = (z ? encoding::BNQZ : encoding::BEQZ)(rcx, (batch.size() - zero_test) * sizeof(utils::riscv_instruction_t));
+	batch[zero_test] = encoding::BEQZ(rcx, (batch.size() - zero_test) * sizeof(utils::riscv_instruction_t));
 }
 
 void codegen::RepeatableFlag::update_flags(codegen::CodeBatch& batch) const {
