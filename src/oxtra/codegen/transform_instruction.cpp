@@ -47,6 +47,11 @@
 #include "oxtra/codegen/instructions/control-flow/conditional-jumps/jcxz.h"
 #include "oxtra/codegen/instructions/comparable/cmp.h"
 #include "oxtra/codegen/instructions/comparable/test.h"
+#include "oxtra/codegen/instructions/string/cmps.h"
+#include "oxtra/codegen/instructions/string/lods.h"
+#include "oxtra/codegen/instructions/string/movs.h"
+#include "oxtra/codegen/instructions/string/scas.h"
+#include "oxtra/codegen/instructions/string/stos.h"
 
 using namespace codegen;
 using namespace fadec;
@@ -195,6 +200,17 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 
 		case InstructionType::LEA:
 			return std::make_unique<Lea>(inst);
+
+		case InstructionType::CMPS:
+			return std::make_unique<Cmps>(inst);
+		case InstructionType::LODS:
+			return std::make_unique<Lods>(inst);
+		case InstructionType::MOVS:
+			return std::make_unique<Movs>(inst);
+		case InstructionType::SCAS:
+			return std::make_unique<Scas>(inst);
+		case InstructionType::STOS:
+			return std::make_unique<Stos>(inst);
 
 		default:
 			return nullptr;
