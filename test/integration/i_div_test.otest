@@ -1,0 +1,61 @@
+# shelltestrunner apparently does not accept program return values larger than 8 bit
+
+$ ./oxtra test/resources/no_libc/div/div_08b_1.elf
+>= 5
+$ ./oxtra test/resources/no_libc/div/div_08b_2.elf
+>= 251 # -5
+$ ./oxtra test/resources/no_libc/div/div_08b_3.elf
+>= 251 # -5
+$ ./oxtra test/resources/no_libc/div/div_08b_4.elf
+>= 5
+
+$ ./oxtra test/resources/no_libc/div/div_16b_1.elf
+>= 5
+$ ./oxtra test/resources/no_libc/div/div_16b_2.elf -l 2
+> /.*guest returned: 0xfffb \(65531\).*/
+>= !0
+$ ./oxtra test/resources/no_libc/div/div_16b_3.elf -l 2
+> /.*guest returned: 0xfffb \(65531\).*/
+>= !0
+$ ./oxtra test/resources/no_libc/div/div_16b_4.elf
+>= 5
+
+$ ./oxtra test/resources/no_libc/div/div_32b_1.elf
+>= 5
+$ ./oxtra test/resources/no_libc/div/div_32b_2.elf -l 2
+> /.*guest returned: 0xfffffffb \(4294967291\).*/
+>= !0
+$ ./oxtra test/resources/no_libc/div/div_32b_3.elf -l 2
+> /.*guest returned: 0xfffffffb \(4294967291\).*/
+>= !0
+$ ./oxtra test/resources/no_libc/div/div_32b_4.elf
+>= 5
+
+$ ./oxtra test/resources/no_libc/div/div_64b_1.elf
+>= 5
+$ ./oxtra test/resources/no_libc/div/div_64b_2.elf -l 2
+> /.*guest returned: 0xfffffffffffffffb \(-5\).*/
+>= !0
+$ ./oxtra test/resources/no_libc/div/div_64b_3.elf -l 2
+> /.*guest returned: 0xfffffffffffffffb \(-5\).*/
+>= !0
+$ ./oxtra test/resources/no_libc/div/div_64b_4.elf
+>= 5
+
+$ ./oxtra test/resources/no_libc/div/div_zero.elf -l 2
+> /.*info.*/
+>2 /.*Divide exception.*/
+>= !0
+$ ./oxtra test/resources/no_libc/div/div_overflow_08b.elf -l 2
+> /.*info.*/
+>2 /.*Divide exception.*/
+>= !0
+$ ./oxtra test/resources/no_libc/div/div_overflow_16b.elf -l 2
+> /.*info.*/
+>2 /.*Divide exception.*/
+>= !0
+$ ./oxtra test/resources/no_libc/div/div_overflow_32b.elf -l 2
+> /.*info.*/
+>2 /.*Divide exception.*/
+>= !0
+# 64 bit overflow not being detected is a known bug

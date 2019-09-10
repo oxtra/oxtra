@@ -26,6 +26,7 @@ add_library(oxtra_libs
 		oxtra/codegen/instructions/arithmetic/adc.cpp
 		oxtra/codegen/instructions/arithmetic/neg.cpp
 		oxtra/codegen/instructions/arithmetic/sub.cpp
+		oxtra/codegen/instructions/arithmetic/idiv.cpp
 		oxtra/codegen/instructions/arithmetic/inc.cpp
 		oxtra/codegen/instructions/arithmetic/dec.cpp
 		oxtra/codegen/instructions/arithmetic/mul.cpp
