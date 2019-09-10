@@ -6,10 +6,8 @@
 #include "oxtra/codegen/instructions/arithmetic/sub.h"
 #include "oxtra/codegen/instructions/arithmetic/dec.h"
 #include "oxtra/codegen/instructions/arithmetic/idiv.h"
-#include "oxtra/codegen/instructions/arithmetic/inc.h"
 #include "oxtra/codegen/instructions/arithmetic/mul.h"
 #include "oxtra/codegen/instructions/arithmetic/neg.h"
-#include "oxtra/codegen/instructions/arithmetic/sub.h"
 #include "oxtra/codegen/instructions/control-flow/call.h"
 #include "oxtra/codegen/instructions/control-flow/jmp.h"
 #include "oxtra/codegen/instructions/control-flow/ret.h"
@@ -31,7 +29,6 @@
 #include "oxtra/codegen/instructions/memory/movzx.h"
 #include "oxtra/codegen/instructions/memory/pop.h"
 #include "oxtra/codegen/instructions/memory/push.h"
-
 #include "oxtra/codegen/instructions/control-flow/conditional-jumps/jc.h"
 #include "oxtra/codegen/instructions/control-flow/conditional-jumps/jo.h"
 #include "oxtra/codegen/instructions/control-flow/conditional-jumps/jz.h"
