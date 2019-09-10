@@ -3,6 +3,7 @@
 
 #include "code_batch.h"
 #include "jump-table/jump_table.h"
+#include "oxtra/dispatcher/execution_context.h"
 
 namespace codegen::helper {
 	// If these registers are changed, the documentation has to be updated
@@ -136,6 +137,15 @@ namespace codegen::helper {
 	constexpr encoding::RiscVRegister map_reg_high(const fadec::Register reg) {
 		return map_reg(static_cast<fadec::Register>(static_cast<uint8_t>(reg) - 4));
 	}
+
+#if 0
+	/**
+	 * Software implementation of 128 by 64 bit division.
+	 * Expects the result of translate_operand in t0.
+	 * Expects a 1 in t1 if the division is signed, 0 if unsigned.
+	 */
+	uintptr_t idiv_128_bits(dispatcher::ExecutionContext::Context *context);
+#endif
 }
 
 #endif //OXTRA_HELPER_H

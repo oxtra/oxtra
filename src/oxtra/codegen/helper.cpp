@@ -2,6 +2,7 @@
 #include "oxtra/codegen/encoding/encoding.h"
 #include <spdlog/spdlog.h>
 #include <oxtra/dispatcher/dispatcher.h>
+#include <oxtra/dispatcher/execution_context.h>
 
 using namespace encoding;
 
@@ -296,3 +297,28 @@ codegen::helper::calculate_entries(jump_table::Entry carry, jump_table::Entry ov
 			return {};
 	}
 }
+
+#if 0
+uintptr_t codegen::helper::idiv_128_bits(dispatcher::ExecutionContext::Context *context) {
+	auto upper = context->map.rdx;
+	auto lower = context->map.rax;
+	if (context->t1) {
+		__int128 dividend = (static_cast<__int128>(upper) << 64) + lower;
+		int64_t divisor= context->t0;
+		if (dividend == -(static_cast<__int128>(2)<<126) && divisor == -1)
+			dispatcher::Dispatcher::fault_exit("Division overflow");
+		int64_t quotient = dividend / divisor;
+		int64_t remainder = dividend % divisor;
+		context->map.rax = quotient;
+		context->map.rdx = remainder;
+	} else {
+		unsigned __int128 dividend = (static_cast<__int128>(upper) << 64) + lower;
+		uint64_t divisor = context->t0;
+		uint64_t quotient = dividend / divisor;
+		uint64_t remainder = dividend % divisor;
+		context->map.rax = quotient;
+		context->map.rdx = remainder;
+	}
+	return context->t4;
+}
+#endif
