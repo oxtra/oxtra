@@ -1,4 +1,5 @@
 #include "oxtra/codegen/decoding/decoding.h"
+#include "oxtra/codegen/flags.h"
 
 using namespace std;
 using namespace utils;
@@ -40,6 +41,53 @@ constexpr const char* opcode_string[128] = {
 		"bne", "blt", "bge", "bltu", "bgeu", "ecall"
 };
 constexpr const char* error_string = "unknown instruction";
+
+// get a string for an offset of the execution context
+bool handle_context_addressing(stringstream& sstr, uint32_t reg, uint32_t offset) {
+	if (reg != static_cast<uint32_t>(encoding::RiscVRegister::s11))
+		return false;
+
+	switch (static_cast<uintptr_t>(offset)) {
+		case codegen::flags::Info::zero_value_offset:
+			sstr << "zero_value";
+			return true;
+		case codegen::flags::Info::sign_value_offset:
+			sstr << "sign_value";
+			return true;
+		case codegen::flags::Info::overflow_values_offset:
+			sstr << "overflow_value1";
+			return true;
+		case codegen::flags::Info::overflow_values_offset + 8:
+			sstr << "overflow_value2";
+			return true;
+		case codegen::flags::Info::carry_values_offset:
+			sstr << "carry_value1";
+			return true;
+		case codegen::flags::Info::carry_values_offset + 8:
+			sstr << "carry_value2";
+			return true;
+		case codegen::flags::Info::overflow_ptr_offset:
+			sstr << "overflow_ptr";
+			return true;
+		case codegen::flags::Info::carry_ptr_offset:
+			sstr << "carry_ptr";
+			return true;
+		case codegen::flags::Info::overflow_operation_offset:
+			sstr << "overflow_op";
+			return true;
+		case codegen::flags::Info::carry_operation_offset:
+			sstr << "carry_op";
+			return true;
+		case codegen::flags::Info::sign_size_offset:
+			sstr << "sign_shift";
+			return true;
+		case codegen::flags::Info::parity_value_offset:
+			sstr << "parity_value";
+			return true;
+		default:
+			return false;
+	}
+}
 
 // split off a number of bits at a given offset (default size to 5 for the registers)
 uint32_t split_off(riscv_instruction_t instruction, uint8_t offset, uint8_t size = 5) {
@@ -126,21 +174,26 @@ string parse_utype(RiscVOpcode opcode, riscv_instruction_t instruction) {
 string parse_load(RiscVOpcode opcode, riscv_instruction_t instruction) {
 	stringstream sstr = initialize_string(opcode);
 
-	// prase the base-register
-	sstr << " [" << register_string[split_off(instruction, 15)];
+	sstr << " [";
 
-	// extract the offset
-	uint16_t offset = split_off(instruction, 20, 12);
-	if (offset > 0) {
-		sstr << " +";
-		// sign-extend the offset
-		if (offset & 0x0800u) {
-			offset |= 0xf000u;
-			offset = (~offset) + 1;
-			parse_number(sstr, offset, true);
-		} else
-			parse_number(sstr, offset, false);
+	const auto base = split_off(instruction, 15);
+	auto offset = static_cast<uint16_t>(split_off(instruction, 20, 12));
+	if (!handle_context_addressing(sstr, base, offset)) {
+		// prase the base-register
+		sstr << register_string[base];
+
+		if (offset > 0) {
+			sstr << " +";
+			// sign-extend the offset
+			if (offset & 0x0800u) {
+				offset |= 0xf000u;
+				offset = (~offset) + 1;
+				parse_number(sstr, offset, true);
+			} else
+				parse_number(sstr, offset, false);
+		}
 	}
+
 	sstr << "] -> ";
 
 	// parse the destination-register
@@ -156,20 +209,25 @@ string parse_store(RiscVOpcode opcode, riscv_instruction_t instruction) {
 	sstr << " " << register_string[split_off(instruction, 20)];
 
 	// prase the base-register
-	sstr << " -> [" << register_string[split_off(instruction, 15)];
+	sstr << " -> [";
 
-	// extract the offset
-	uint16_t offset = split_off(instruction, 7) | (split_off(instruction, 25, 7) << 5u);
-	if (offset > 0) {
-		sstr << " +";
-		// sign-extend the offset
-		if (offset & 0x0800u) {
-			offset |= 0xf000u;
-			offset = (~offset) + 1;
-			parse_number(sstr, offset, true);
-		} else
-			parse_number(sstr, offset, false);
+	const auto base = split_off(instruction, 15);
+	auto offset = static_cast<uint16_t>(split_off(instruction, 7) | (split_off(instruction, 25, 7) << 5u));
+
+	if (!handle_context_addressing(sstr, base, offset)) {
+		sstr << register_string[base];
+		if (offset > 0) {
+			sstr << " +";
+			// sign-extend the offset
+			if (offset & 0x0800u) {
+				offset |= 0xf000u;
+				offset = (~offset) + 1;
+				parse_number(sstr, offset, true);
+			} else
+				parse_number(sstr, offset, false);
+		}
 	}
+
 	sstr << "]";
 	return sstr.str();
 }
