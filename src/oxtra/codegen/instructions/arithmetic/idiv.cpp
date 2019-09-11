@@ -50,13 +50,13 @@ void codegen::Idiv::generate(codegen::CodeBatch& batch) const {
 		helper::load_immediate(batch, -1, tmp);
 		auto branch_a = batch.add(encoding::NOP());
 		if (op_size == 1) {
-			helper::load_immediate(batch, -32768 , tmp);
+			helper::load_immediate(batch, -32768, tmp);
 		} else if (op_size == 2) {
 			helper::load_immediate(batch, -2147483648, tmp);
 		} else if (op_size == 4) {
-			helper::load_immediate(batch, -9223372036854775808, tmp);
+			helper::load_immediate(batch, 0x8000000000000000, tmp);
 		} else {
-			helper::load_immediate(batch, -9223372036854775808, tmp);
+			helper::load_immediate(batch, 0x8000000000000000, tmp);
 		}
 		auto branch_b = batch.add(encoding::NOP());
 		call_high_level(batch, &codegen::Idiv::division_exception);
