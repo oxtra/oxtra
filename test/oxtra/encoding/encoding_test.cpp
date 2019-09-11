@@ -25,9 +25,6 @@ void refactor(const char *assembly, utils::riscv_instruction_t encoded) {
 	fread(com, 1, 4, objdump);
 	fclose(objdump);
 
-	printf("encoded:  %x%x%x%x\n", enc[3], enc[2], enc[1], enc[1]);
-	printf("compiled: %x%x%x%x\n", com[3], com[2], com[1], com[1]);
-
 	REQUIRE(com[0] == enc[0]);
 	REQUIRE(com[1] == enc[1]);
 	REQUIRE(com[2] == enc[2]);
@@ -53,9 +50,6 @@ void refactor_branch(const char *assembly, utils::riscv_instruction_t encoded) {
 	FILE* objdump = fopen("dump", "r");
 	fread(com, 1, 4, objdump);
 	fclose(objdump);
-
-	printf("encoded:  %x%x%x%x\n", enc[3], enc[2], enc[1], enc[1]);
-	printf("compiled: %x%x%x%x\n", com[3], com[2], com[1], com[1]);
 
 	REQUIRE(com[0] == enc[0]);
 	REQUIRE(com[1] == enc[1]);
@@ -150,24 +144,25 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 		refactor("lwu t4, 0x748(t5)", encoded);
 	}
 
+	// gcc syntax has the registers for store instructions reversed
 	SECTION("SB") {
 		utils::riscv_instruction_t encoded = SB(RiscVRegister::t4, RiscVRegister::t5, 0x748);
-		refactor("sb t4, 0x748(t5)", encoded);
+		refactor("sb t5, 0x748(t4)", encoded); 
 	}
 
 	SECTION("SH") {
 		utils::riscv_instruction_t encoded = SH(RiscVRegister::t4, RiscVRegister::t5, 0x748);
-		refactor("sh t4, 0x748(t5)", encoded);
+		refactor("sh t5, 0x748(t4)", encoded);
 	}
 
 	SECTION("SW") {
 		utils::riscv_instruction_t encoded = SW(RiscVRegister::t4, RiscVRegister::t5, 0x748);
-		refactor("sw t4, 0x748(t5)", encoded);
+		refactor("sw t5, 0x748(t4)", encoded);
 	}
 
 	SECTION("SD") {
 		utils::riscv_instruction_t encoded = SD(RiscVRegister::t4, RiscVRegister::t5, 0x748);
-		refactor("sd t4, 0x748(t5)", encoded);
+		refactor("sd t5, 0x748(t4)", encoded);
 	}
 
 	SECTION("ADDI") {
