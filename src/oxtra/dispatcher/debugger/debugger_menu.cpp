@@ -5,15 +5,38 @@
 
 #include "oxtra/dispatcher/dispatcher.h"
 
-std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatcher::ExecutionContext* context) {
-	// define the constants
-	static constexpr uint8_t arg_state_unused = 0xa0;
-	static constexpr uint8_t arg_state_string = 0xb0;
-	static constexpr uint8_t arg_state_number = 0xc0;
-	static constexpr uint8_t arg_state_pos_rel = '+';
-	static constexpr uint8_t arg_state_neg_rel = '-';
-	static constexpr uint8_t arg_state_key = 0xd0;
+// define the constants
+static constexpr uint8_t arg_state_unused = 0xa0;
+static constexpr uint8_t arg_state_string = 0xb0;
+static constexpr uint8_t arg_state_number = 0xc0;
+static constexpr uint8_t arg_state_pos_rel = '+';
+static constexpr uint8_t arg_state_neg_rel = '-';
+static constexpr uint8_t arg_state_key = 0xd0;
 
+bool debugger::Debugger::parse_argument(std::string& str, uint8_t& state, uintptr_t& number, DebugInputKey& key) {
+	// check if the argument exists
+	if (str.empty()) {
+		state = arg_state_unused;
+		return false;
+	}
+
+	// check if it might be a number
+	if (parse_number(str, &state, number)) {
+		if (state == 0)
+			state = arg_state_number;
+		return true;
+	}
+
+	// check if the argument might be a key
+	key = parse_key(str);
+	if (key != DebugInputKey::none)
+		state = arg_state_key;
+	else
+		state = arg_state_string;
+	return true;
+}
+
+std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatcher::ExecutionContext* context) {
 	// await input
 	std::cout << '>';
 	std::string input;
@@ -47,43 +70,9 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 	if (key == DebugInputKey::none)
 		return "invalid input! Type \"help\" for help.";
 
-	// check if the arguments can be parsed as numbers
-	if (!arg_string[0].empty()) {
-		// check if it might be a number
-		if (parse_number(arg_string[0], &arg_state[0], arg_number[0])) {
-			if (arg_state[0] == 0)
-				arg_state[0] = arg_state_number;
-		} else
-			arg_state[0] = arg_state_string;
-
-		// if its a string, check if it might be a key
-		if (arg_state[0] == arg_state_string) {
-			arg_key[0] = parse_key(arg_string[0]);
-			if (arg_key[0] != DebugInputKey::none)
-				arg_state[0] = arg_state_key;
-		}
-
-		// check if a second argument exists
-		if (!arg_string[1].empty()) {
-			// check if it might be a number
-			if (parse_number(arg_string[1], &arg_state[1], arg_number[1])) {
-				if (arg_state[1] == 0)
-					arg_state[1] = arg_state_number;
-			} else
-				arg_state[1] = arg_state_string;
-
-			// if its a string, check if it might be a key
-			if (arg_state[1] == arg_state_string) {
-				arg_key[1] = parse_key(arg_string[1]);
-				if (arg_key[1] != DebugInputKey::none)
-					arg_state[1] = arg_state_key;
-			}
-		}
-	}
-
-	// extract the argument;
-	std::string argument;
-	sstr >> argument;
+	// parse the first argument
+	if(parse_argument(arg_string[0], arg_state[0], arg_number[0], arg_key[0]))
+		parse_argument(arg_string[1], arg_state[1], arg_number[1], arg_key[1]);
 
 	// handle the input-key
 	switch (key) {
@@ -93,22 +82,26 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 					return "assembly-count out of range [1;96]!";
 				return print_assembly(address, _current, arg_number[0]);
 			}
-			return print_assembly(address, _current, _inst_count);
+			return print_assembly(address, _current, _inst_limit);
 		case DebugInputKey::crawl:
-			if(!_riscv_enabled)
+			if (!_riscv_enabled)
 				return "riscv-stepping is disabled!";
 			_step_riscv = true;
 			return "";
 		case DebugInputKey::all:
 			_state |= (DebugState::print_asm | DebugState::print_flags | DebugState::print_reg);
 			return "all core-features enabled!";
+		case DebugInputKey::blocks:
+
+		case DebugInputKey::stack:
+
 		case DebugInputKey::breakpoint:
 			if (arg_state[0] == arg_state_unused)
 				return print_break_points();
 			else if (arg_state[0] != arg_state_number && arg_state[0] != arg_state_neg_rel && arg_state[0] != arg_state_pos_rel)
 				return "invalid break-point address!";
-			else if (_bp_count == 256)
-				return "limit of break-points reached (256)!";
+			else if (_bp_count == 255)
+				return "limit of break-points reached (255)!";
 			else {
 				if (arg_state[0] == arg_state_pos_rel)
 					arg_number[0] += address;
@@ -131,7 +124,7 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 					return "invalid assembly-count!";
 				if (arg_number[1] == 0 || arg_number[1] > 96)
 					return "assembly-count out of range [1;96]!";
-				_inst_count = arg_number[1];
+				_inst_limit = arg_number[1];
 				return "successfully configured!";
 			} else if (arg_key[0] == DebugInputKey::x86) {
 				_state &= ~DebugState::reg_riscv;
@@ -142,14 +135,30 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 			} else
 				return "invalid config-attribute!";
 		case DebugInputKey::continue_run:
-		case DebugInputKey::run:
 			if (arg_state[0] == arg_state_unused)
 				return "";
 			else if (arg_state[0] != arg_state_number)
-				return "invalid execute-counter!";
+				return "invalid continue-counter!";
 			_state |= DebugState::await_counter;
-			_bp_counter = arg_number[0];
+			_run_break = arg_number[0];
 			return "";
+		case DebugInputKey::run:
+			if (arg_state[0] == arg_state_unused)
+				return "";
+			else if (arg_state[0] == arg_state_neg_rel || arg_state[0] == arg_state_pos_rel ||
+					 arg_state[0] == arg_state_number) {
+				if (arg_state[0] == arg_state_neg_rel)
+					_bp_x86_array[_bp_count] = address - arg_number[0];
+				else if (arg_state[0] == arg_state_pos_rel)
+					_bp_x86_array[_bp_count] = address + arg_number[0];
+				else
+					_bp_x86_array[_bp_count] = arg_number[0];
+				_run_break = _bp_count++;
+				translate_break_point(_run_break);
+				_state |= DebugState::temp_break;
+				return "";
+			}
+			return "invalid run-argument!";
 		case DebugInputKey::decimal:
 			_state |= DebugState::reg_dec;
 			return "set register-printing to dec!";
@@ -157,50 +166,60 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 			dispatcher::Dispatcher::guest_exit(0);
 			break;
 		case DebugInputKey::endofblock:
-			_state |= DebugState::await_eblock;
+			_state |= DebugState::await_eob;
 			return "";
 		case DebugInputKey::fault:
 			dispatcher::Dispatcher::fault_exit("the debugger exited via a fault.");
 			break;
+		case DebugInputKey::quit:
+			active_debugger = nullptr;
+			return "";
 		case DebugInputKey::flags:
 			return print_flags(context);
 		case DebugInputKey::help:
-			input = "all                                Enable registers,assembly with riscv and flags auto-print.\n";
-			input += "assembly   asm                     Print the assembly with a maximum output of 12-instructions.\n";
-			input += "assembly   asm  count              Print the assembly with a maximum output of count-instructions.\n";
+
+			//input += "assembly   asm  count              Print the assembly with a maximum output of count-instructions.\n";
+			//input += "break      bp   (+-)addr           Add break-point with relative or absolute address.\n";
+			//input += "config     cfg  asm     count      Set the default length for instruction-printing.\n";
+			//input += "config     cfg  riscv rv           Configure registers to show the riscv-registers.\n";
+			//input += "config     cfg  x86 x              Configure registers to show the x86-registers.\n";
+			//input += "continue   cne  count              Continue execution for count-instructions or until break-point.\n";
+			//input += "disable    dis  assembly, asm      Disable auto-print for assembly.\n";
+			//input += "disable    dis  break, bp          Disable auto-print for break-points.\n";
+			//input += "disable    dis  flags, fg          Disable auto-print for flags.\n";
+			//input += "disable    dis  registers, reg     Disable auto-print for registers.\n";
+			//input += "enable     en   assembly, asm      Enable auto-print for assembly.\n";
+			//input += "enable     en   break, bp          Enable auto-print for break-points.\n";
+			//input += "enable     en   flags, fg          Enable auto-print for flags.\n";
+			//input += "enable     en   registers, reg     Enable auto-print for registers.\n";
+			//input += "registers  reg  dec/hex riscv/x86  List all of the registers with a set configuration.\n";
+			//input += "run        r    count              Continue execution for count-instructions or until break-point.\n";
+
+			input = "Type help and the command for more details.\n";
+			input += "all                                Enable auto-print for flags, registers, assembly and stack.\n";
+			input += "assembly   asm                     Print the assembly.\n";
+			input += "blocks     blk                     Print the basic blocks.\n";
 			input += "break      bp                      Print the break-points.\n";
-			input += "break      bp   (+-)addr           Add break-point with relative or absolute address.\n";
-			input += "config     cfg  asm     count      Set the default length for instruction-printing.\n";
-			input += "config     cfg  riscv rv           Configure registers to show the riscv-registers.\n";
-			input += "config     cfg  x86 x              Configure registers to show the x86-registers.\n";
-			input += "config     cfg  x86 x              Configure registers to show the x86-registers.\n";
-			input += "config     cfg  x86 x              Configure registers to show the x86-registers.\n";
-			input += "continue   cne                     Continue execution until break-point.\n";
-			input += "continue   cne  count              Continue execution for count-instructions or until break-point.\n";
+			input += "config     cfg                     Configure features for the printing.\n";
+			input += "continue   cne                     Continue execution for a number of instructions.\n";
 			input += "crawl      c                       Step by one riscv-instruction.\n";
 			input += "dec        dc                      Set the register print-type to decimal.\n";
-			input += "disable    dis  assembly, asm      Disable auto-print for assembly.\n";
-			input += "disable    dis  break, bp          Disable auto-print for break-points.\n";
-			input += "disable    dis  flags, fg          Disable auto-print for flags.\n";
-			input += "disable    dis  registers, reg     Disable auto-print for registers.\n";
-			input += "enable     en   assembly, asm      Enable auto-print for assembly.\n";
-			input += "enable     en   break, bp          Enable auto-print for break-points.\n";
-			input += "enable     en   flags, fg          Enable auto-print for flags.\n";
-			input += "enable     en   registers, reg     Enable auto-print for registers.\n";
+			input += "disable    dis                     Disable auto-print.\n";
+			input += "enable     en                      Enable auto-print.\n";
 			input += "exit                               Exit the program via dispatcher::guest_exit.\n";
-			input += "eblock     eob                     Continue execution until end-of-block or break-point.\n";
+			input += "end        eob                     Continue execution until end-of-block or break-point.\n";
 			input += "fault                              Exit the program via dispatcher::fault_exit.\n";
 			input += "flags      fg                      Print the flags.\n";
 			input += "help                               Print this menu.\n";
 			input += "hex        hx                      Set the register print-type to hexadecimal.\n";
 			input += "logging    log                     Set the current logging-level (same as argument).\n";
-			input += "remove     rbp  index              Remove one break-point with the given index.\n";
+			input += "quit       q                       Disable the debugger and continue normal execution.\n";
+			input += "remove     rbp                     Remove one break-point.\n";
 			input += "registers  reg                     List all of the registers with the current configuration.\n";
-			input += "registers  reg  dec/hex riscv/x86  List all of the registers with a set configuration.\n";
-			input += "run        r                       Continue execution until break-point.\n";
-			input += "run        r    count              Continue execution for count-instructions or until break-point.\n";
-			input += "sblock     sob                     Continue execution until start-of-block or break-point.\n";
-			input += "step       s                       Step one x86-instruction.";
+			input += "run        r                       Continue execution until given instruction has been reached.\n";
+			input += "stack      stk                     Print the stack.\n";
+			input += "start      sob                     Continue execution until start-of-block or break-point.\n";
+			input += "step       s                       Step by one x86-instruction.";
 			return input;
 		case DebugInputKey::hexadecimal:
 			_state &= ~DebugState::reg_dec;
@@ -281,7 +300,7 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 			_state |= DebugState::await_step;
 			return "";
 		case DebugInputKey::startofblock:
-			_state |= DebugState::await_sblock;
+			_state |= DebugState::await_sob;
 			return "";
 		case DebugInputKey::enable:
 			if (arg_state[0] != arg_state_key)
@@ -372,6 +391,8 @@ debugger::Debugger::DebugInputKey debugger::Debugger::parse_key(std::string& key
 		case 'b':
 			if (key == "break" || key == "bp")
 				return DebugInputKey::breakpoint;
+			else if (key == "block" || key == "blk")
+				return DebugInputKey::blocks;
 			break;
 		case 'c':
 			if (key == "continue" || key == "cne")
@@ -390,7 +411,7 @@ debugger::Debugger::DebugInputKey debugger::Debugger::parse_key(std::string& key
 		case 'e':
 			if (key == "exit")
 				return DebugInputKey::exit;
-			else if (key == "eblock" || key == "eob")
+			else if (key == "end" || key == "eob")
 				return DebugInputKey::endofblock;
 			else if (key == "enable" || key == "en")
 				return DebugInputKey::enable;
@@ -421,11 +442,17 @@ debugger::Debugger::DebugInputKey debugger::Debugger::parse_key(std::string& key
 			else if (key == "riscv" || key == "rv")
 				return DebugInputKey::riscv;
 			break;
+		case 'q':
+			if (key == "quit" || key == "q")
+				return DebugInputKey::quit;
+			break;
 		case 's':
 			if (key == "step" || key == "s")
 				return DebugInputKey::step;
-			else if (key == "sblock" || key == "sob")
+			else if (key == "start" || key == "sob")
 				return DebugInputKey::startofblock;
+			else if (key == "stack" || key == "stk")
+				return DebugInputKey::stack;
 			break;
 		case 'x':
 			if (key == "x86" || key == "x")
@@ -433,299 +460,4 @@ debugger::Debugger::DebugInputKey debugger::Debugger::parse_key(std::string& key
 			break;
 	}
 	return DebugInputKey::none;
-}
-
-std::string debugger::Debugger::print_number(uint64_t nbr, bool hex) {
-	// build the string
-	std::string str;
-	if (hex) {
-		// shift the mask and append the bytes
-		str.append("0x");
-		for (uint16_t i = 0; i < 16u; i++) {
-			uint8_t digit = (nbr >> (60u - i * 4u)) & 0x000000000000000full;
-			digit += digit < 10 ? '0' : ('a' - 10);
-			str.push_back(digit);
-		}
-		return str;
-	}
-
-	// check if the number is zero
-	if (nbr == 0)
-		return "0";
-
-	// check if the number is signed
-	if (nbr & 0x8000000000000000ull) {
-		nbr = (~nbr) + 1;
-
-		// iterate through the string and insert the digits
-		while (nbr > 0) {
-			uint8_t digit = (nbr % 10) + '0';
-			nbr /= 10;
-			str.insert(0, 1, digit);
-		}
-		str.insert(0, 1, '-');
-		return str;
-	}
-
-	// convert the number to a string
-	while (nbr > 0) {
-		uint8_t digit = (nbr % 10) + '0';
-		nbr /= 10;
-		str.insert(0, 1, digit);
-	}
-	return str;
-}
-
-std::string debugger::Debugger::print_reg(dispatcher::ExecutionContext* context, bool hex, bool riscv) {
-	static constexpr const char* riscv_map[] = {
-			" ra", " sp", " gp", " tp", " t0", " t1", " t2", " s0", " s1",
-			" a0", " a1", " a2", " a3", " a4", " a5", " a6", " a7", " s2",
-			" s3", " s4", " s5", " s6", " s7", " s8", " s9", "s10", "s11",
-			" t3", " t4", " t5", " t6"
-	};
-
-	// check if riscv or x86 is supposed to be printed
-	std::string out_string = "registers:\n";
-	if (riscv) {
-		for (size_t i = 0; i < 31; i++) {
-			// build the string
-			std::string temp_string = riscv_map[i];
-			temp_string.push_back('=');
-			temp_string.append(print_number(context->guest.reg[i], hex));
-
-			// adjust the string and append the string to the output
-			if (temp_string.size() < 25)
-				temp_string.insert(temp_string.size(), 25 - temp_string.size(), ' ');
-			if ((i % 4) == 0 && i > 0)
-				out_string.push_back('\n');
-			out_string.append(temp_string);
-		}
-		out_string.push_back('\n');
-		return out_string;
-	}
-
-	// print the x86-registers
-	for (size_t i = 0; i < 16; i++) {
-		std::string temp_string;
-		switch (i) {
-			case 0:
-				temp_string = "rax=" + print_number(context->guest.map.rax, hex);
-				break;
-			case 1:
-				temp_string = "rcx=" + print_number(context->guest.map.rcx, hex);
-				break;
-			case 2:
-				temp_string = "rdx=" + print_number(context->guest.map.rdx, hex);
-				break;
-			case 3:
-				temp_string = "rbx=" + print_number(context->guest.map.rbx, hex);
-				break;
-			case 4:
-				temp_string = "rsp=" + print_number(context->guest.map.rsp, hex);
-				break;
-			case 5:
-				temp_string = "rbp=" + print_number(context->guest.map.rbp, hex);
-				break;
-			case 6:
-				temp_string = "rsi=" + print_number(context->guest.map.rsi, hex);
-				break;
-			case 7:
-				temp_string = "rdi=" + print_number(context->guest.map.rdi, hex);
-				break;
-			case 8:
-				temp_string = "r08=" + print_number(context->guest.map.r8, hex);
-				break;
-			case 9:
-				temp_string = "r09=" + print_number(context->guest.map.r9, hex);
-				break;
-			case 10:
-				temp_string = "r10=" + print_number(context->guest.map.r10, hex);
-				break;
-			case 11:
-				temp_string = "r11=" + print_number(context->guest.map.r11, hex);
-				break;
-			case 12:
-				temp_string = "r12=" + print_number(context->guest.map.r12, hex);
-				break;
-			case 13:
-				temp_string = "r13=" + print_number(context->guest.map.r13, hex);
-				break;
-			case 14:
-				temp_string = "r14=" + print_number(context->guest.map.r14, hex);
-				break;
-			case 15:
-			default:
-				temp_string = "r15=" + print_number(context->guest.map.r15, hex);
-				break;
-		}
-
-		// adjust the string and append the string to the output
-		if (temp_string.size() < 25)
-			temp_string.insert(temp_string.size(), 25 - temp_string.size(), ' ');
-		if ((i % 4) == 0 && i > 0)
-			out_string.push_back('\n');
-		out_string.append(temp_string);
-	}
-	out_string.push_back('\n');
-	return out_string;
-}
-
-std::string debugger::Debugger::print_assembly(utils::guest_addr_t guest, BlockEntry* entry, uint8_t limit) {
-	// find the current index and compute the counters
-	utils::guest_addr_t x86_address = entry->entry->x86_start;
-	utils::host_addr_t riscv_address = entry->entry->riscv_start + 4;
-	size_t index = 0;
-	for (; index < entry->entry->instruction_count; index++) {
-		if (x86_address == guest)
-			break;
-		x86_address += entry->entry->offsets[index].x86;
-		riscv_address += entry->entry->offsets[index].riscv;
-	}
-	size_t riscv_count = (entry->entry->offsets[index].riscv >> 2u) - 1;
-
-	// build the string
-	std::string out_str("Assembly [x86]:");
-	out_str.insert(out_str.size(), 50 - out_str.size(), ' ');
-	out_str.append("Next instruction [riscv]:\n");
-
-	// iterate through the instructions and write them to the string
-	bool decode_failed = false;
-	for (size_t i = 0; i < limit; i++) {
-		// add the current address
-		std::string line_buffer = "    [";
-		line_buffer.append(print_number(x86_address, true));
-		line_buffer.append("] ");
-
-		// try to decode the instruction
-		fadec::Instruction inst{};
-		if (!decode_failed) {
-			if (fadec::decode(reinterpret_cast<const uint8_t*>(x86_address), _elf.get_size(x86_address),
-							  fadec::DecodeMode::decode_64, x86_address, inst) <= 0) {
-				if (index < entry->entry->instruction_count)
-					line_buffer = "failed to decode instruction";
-				decode_failed = true;
-			} else {
-				char buffer[256];
-				fadec::format(inst, buffer, 256);
-				line_buffer.append(buffer);
-			}
-		}
-
-		// check if this row contains a break-point
-		if (!decode_failed) {
-			for (size_t j = 0; j < _bp_count; j++) {
-				if (_bp_x86_array[j] >= x86_address && _bp_x86_array[j] < x86_address + inst.get_size()) {
-					line_buffer[1] = '*';
-					break;
-				}
-			}
-		}
-		if (x86_address < entry->entry->x86_end)
-			line_buffer[3] = '>';
-
-		// pad the string
-		if (line_buffer.size() < 50)
-			line_buffer.insert(line_buffer.size(), 50 - line_buffer.size(), ' ');
-
-		// update the x86-data
-		if (!decode_failed) {
-			x86_address += inst.get_size();
-			index++;
-		}
-
-		// check any riscv-code exists
-		if (i < riscv_count && i + 1 == limit)
-			line_buffer.append("    ...");
-		else if (i < riscv_count) {
-			// set the pointer to the current riscv-instruction
-			line_buffer.append((i == 0) ? " -> " : "    ");
-
-			// decode the riscv-instruction
-			std::string riscv_str = decoding::parse_riscv(reinterpret_cast<utils::riscv_instruction_t*>(riscv_address)[i]);
-			if (riscv_str.size() <= 50)
-				line_buffer.append(riscv_str);
-			else
-				line_buffer.append(riscv_str.c_str(), 50);
-		}
-		out_str.append(line_buffer);
-		out_str.push_back('\n');
-	}
-	return out_str;
-}
-
-std::string debugger::Debugger::print_flags(dispatcher::ExecutionContext* context) {
-	// build the string
-	std::string out_str = "flags:\n";
-
-	// append the zero-flag
-	std::string temp_str((context->flag_info.zero_value == 0) ? " ZF: 1" : " ZF: 0");
-	temp_str.insert(temp_str.size(), 15 - temp_str.size(), ' ');
-	out_str.append(temp_str);
-
-	// append the sign-flag
-	temp_str = " SF: ";
-	if ((context->flag_info.sign_value >> context->flag_info.sign_size) == 1)
-		temp_str.push_back('1');
-	else
-		temp_str.push_back('0');
-	temp_str.insert(temp_str.size(), 15 - temp_str.size(), ' ');
-	out_str.append(temp_str);
-
-	// append the parity-flag
-	temp_str = " PF: ";
-	uint8_t temp = (context->flag_info.parity_value & 0x0fu) ^(context->flag_info.parity_value >> 4u);
-	temp = (temp & 0x03u) ^ (temp >> 2u);
-	temp = (temp & 0x01u) ^ (temp >> 1u);
-	temp_str.append((temp == 0) ? "1" : "0");
-	temp_str.insert(temp_str.size(), 15 - temp_str.size(), ' ');
-	out_str.append(temp_str);
-
-	// append the carry-flag
-	temp_str = " CF: ";
-	if (context->flag_info.carry_operation == static_cast<uint16_t>(codegen::jump_table::Entry::unsupported_carry) * 4) {
-		temp_str.append("inv:");
-		temp_str.append(reinterpret_cast<const char*>(context->flag_info.carry_pointer));
-	} else {
-		dispatcher::ExecutionContext::Context temp_context;
-		temp_str.push_back('0' + evaluate_carry(context, &temp_context));
-	}
-	temp_str.insert(temp_str.size(), 15 - temp_str.size(), ' ');
-	out_str.append(temp_str);
-
-	// append the overflow-flag
-	temp_str = " OF: ";
-	if (context->flag_info.overflow_operation == static_cast<uint16_t>(codegen::jump_table::Entry::unsupported_overflow) * 4) {
-		temp_str.append("inv:");
-		temp_str.append(reinterpret_cast<const char*>(context->flag_info.overflow_pointer));
-	} else {
-		dispatcher::ExecutionContext::Context temp_context;
-		temp_str.push_back('0' + evaluate_overflow(context, &temp_context));
-	}
-	temp_str.insert(temp_str.size(), 15 - temp_str.size(), ' ');
-	out_str.append(temp_str);
-	out_str.push_back('\n');
-	return out_str;
-}
-
-std::string debugger::Debugger::print_break_points() {
-	// iterate through the break-points and print them
-	std::string out_string = "break-points:\n";
-	for (size_t i = 0; i < _bp_count; i++) {
-		// build the string
-		std::string temp_string = print_number(i, false);
-		while (temp_string.size() < 3)
-			temp_string.insert(0, 1, ' ');
-		temp_string.push_back('=');
-		temp_string.append(print_number(_bp_x86_array[i], true));
-
-		// adjust the string and append the string to the output
-		if (temp_string.size() < 25)
-			temp_string.insert(temp_string.size(), 25 - temp_string.size(), ' ');
-		if ((i % 4) == 0 && i > 0)
-			out_string.push_back('\n');
-		out_string.append(temp_string);
-	}
-	if ((_bp_count & 0x03) != 0)
-		out_string.push_back('\n');
-	return out_string;
 }

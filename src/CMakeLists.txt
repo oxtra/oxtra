@@ -14,6 +14,7 @@ add_library(oxtra_libs
 		oxtra/dispatcher/dispatcher.cpp
 		oxtra/dispatcher/debugger/debugger.cpp
 		oxtra/dispatcher/debugger/debugger_menu.cpp
+		oxtra/dispatcher/debugger/debugger_print.cpp
 		oxtra/codegen/encoding/encoding.cpp
 		oxtra/codegen/decoding/decoding.cpp
 		oxtra/codegen/helper.cpp

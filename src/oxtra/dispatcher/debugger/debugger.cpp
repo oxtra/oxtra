@@ -7,8 +7,19 @@
 #include "oxtra/dispatcher/dispatcher.h"
 
 
-//TODO: add stack-print
+//TODO: add riscv-step argument
 
+//TODO: add argument: asm blocks 2
+
+//TODO: add argument read/rd (with warning for no security against segfaults [add state to DebugState])
+
+//TODO: bp eof & bp sof
+
+//TODO bp eof index & bp sof index
+
+//TODO: update print-asm to print the index of the bp it is part of
+
+//TODO: add ability to print asm of any block / print riscv of any instruction
 
 debugger::DebuggerBatch::DebuggerBatch() {
 	_adding_jump = false;
@@ -38,16 +49,19 @@ void debugger::DebuggerBatch::print() const {
 
 debugger::Debugger* debugger::Debugger::active_debugger = nullptr;
 
-debugger::Debugger::Debugger(const elf::Elf& elf) : _elf{elf} {
+debugger::Debugger::Debugger(const elf::Elf& elf, bool riscv_enabled, uintptr_t stack_low, uintptr_t stack_size) : _elf{elf} {
 	// initialize the attributes
 	_halt = true;
 	_bp_count = 0;
 	_state = DebugState::none;
-	_bp_counter = 0;
+	_run_break = 0;
 	_current = nullptr;
-	_inst_count = 12;
+	_inst_limit = 12;
+	_stack_limit = 12;
 	_step_riscv = false;
-	_riscv_enabled = true;
+	_riscv_enabled = riscv_enabled;
+	_stack_low = stack_low;
+	_stack_high = stack_low + stack_size;
 
 	// mark this as the active debugger
 	active_debugger = this;
@@ -105,15 +119,26 @@ void debugger::Debugger::end_block(codegen::CodeBatch& batch, codegen::codestore
 		}
 	}
 
-	// add the block to the list
-	active_debugger->_blocks.emplace_back(block, riscv_end);
+	// insert the block into the sorted list
+	size_t insert_index = active_debugger->_blocks.size() + 1;
+	for (size_t i = 0; i < active_debugger->_blocks.size(); i++) {
+		if (active_debugger->_blocks[i].entry->x86_start > block->x86_start) {
+			active_debugger->_blocks.emplace(active_debugger->_blocks.begin() + i, block, riscv_end);
+			insert_index = i;
+			break;
+		}
+	}
+	if (insert_index > active_debugger->_blocks.size())
+		active_debugger->_blocks.emplace_back(block, riscv_end);
+	else if (insert_index >= current_index)
+		current_index++;
 
 	// update the current block
 	if (current_index != active_debugger->_blocks.size())
 		active_debugger->_current = &active_debugger->_blocks[current_index];
 
 	// update the break-points
-	active_debugger->update_break_points(active_debugger->_blocks.back());
+	active_debugger->update_break_points(active_debugger->_blocks[insert_index]);
 }
 
 void debugger::Debugger::entry(dispatcher::ExecutionContext* context, uintptr_t break_point) {
@@ -135,6 +160,14 @@ void debugger::Debugger::entry(dispatcher::ExecutionContext* context, uintptr_t 
 		if (_state & DebugState::print_bp)
 			out << print_break_points() << '\n';
 
+		// print the blocks
+		if (_state & DebugState::print_blocks)
+			out << print_blocks() << '\n';
+
+		// print the stack
+		if (_state & DebugState::print_stack)
+			out << print_stack(context->guest.map.rsp, context, _stack_limit) << '\n';
+
 		// print the flags
 		if (_state & DebugState::print_flags)
 			out << print_flags(context) << '\n';
@@ -145,30 +178,38 @@ void debugger::Debugger::entry(dispatcher::ExecutionContext* context, uintptr_t 
 
 		// print the assembly
 		if (_state & DebugState::print_asm)
-			out << print_assembly(address, _current, _inst_count) << '\n';
+			out << print_assembly(address, _current, _inst_limit) << '\n';
 
 		// check if the menu has to be printed
 		if (menu_string.empty()) {
 			// print the reason for the break
-			if (break_point != halt_break && break_point != halt_riscv)
-				out << "break-point hit! (index: " << std::dec << break_point << ")\n";
+			if (break_point != halt_break && break_point != halt_riscv) {
+				if (break_point == _run_break && (_state & DebugState::temp_break))
+					out << "run-break hit!\n";
+				else
+					out << "break-point hit! (index: " << std::dec << break_point << ")\n";
+			}
 			if (break_point == halt_riscv)
 				out << "stepped by one riscv-instruction!\n";
 			if ((_state & DebugState::init) == 0) {
 				out << "initial halt! Type \"help\" for a help-menu.\n";
 				_state |= DebugState::init;
 			}
-			if (_bp_counter == 0 && (_state & DebugState::await_counter))
+			if (_run_break == 0 && (_state & DebugState::await_counter))
 				out << "run-counter ellapsed.\n";
 			if (_state & DebugState::await_step)
 				out << "stepped by one instruction!\n";
-			if (address == _current->entry->x86_start && (_state & DebugState::await_sblock))
+			if (address == _current->entry->x86_start && (_state & DebugState::await_sob))
 				out << "beginning of basic-block reached!\n";
 			else if (address == _current->entry->x86_end - _current->entry->offsets[_current->entry->instruction_count - 1].x86
-					 && (_state & DebugState::await_eblock))
+					 && (_state & DebugState::await_eob))
 				out << "ending of basic-block reached!\n";
 
 			// clear the await-details and the break-point
+			if (_state & DebugState::temp_break) {
+				_state ^= DebugState::temp_break;
+				_bp_count--;
+			}
 			_state &= ~DebugState::await;
 			break_point = halt_break;
 			_step_riscv = false;
@@ -189,6 +230,40 @@ void debugger::Debugger::entry(dispatcher::ExecutionContext* context, uintptr_t 
 	_halt = (_state & DebugState::await) > 0;
 }
 
+utils::guest_addr_t debugger::Debugger::enter_break(uintptr_t break_point, utils::host_addr_t address) {
+	// update the counter
+	if (_state & DebugState::await_counter) {
+		if (_run_break > 0)
+			_run_break--;
+		if (_run_break == 0)
+			return resolve_block(address);
+	}
+
+	// check for a stepper
+	if (_state & DebugState::await_step)
+		return resolve_block(address);
+
+	// check if a break-point has been hit or if this is the init-break or if riscv has been stepped (implicitly tested)
+	if (break_point != halt_break || (_state & DebugState::init) == 0)
+		return resolve_block(address);
+
+	// check if a basic block has been reached
+	if ((_state & DebugState::await_eob) || (_state & DebugState::await_sob)) {
+		// resolve the address, which should also update the current block
+		utils::guest_addr_t guest_addr = resolve_block(address);
+		if (guest_addr == 0)
+			return 0;
+
+		// check if a beginning or an end has been reached
+		if ((guest_addr == _current->entry->x86_start) && (_state & DebugState::await_sob))
+			return guest_addr;
+		if ((guest_addr == _current->entry->x86_end - _current->entry->offsets[_current->entry->instruction_count - 1].x86) &&
+			(_state & DebugState::await_eob))
+			return guest_addr;
+	}
+	return 0;
+}
+
 utils::guest_addr_t debugger::Debugger::resolve_block(utils::host_addr_t address) {
 	// check if a current basic block exists
 	if (_current != nullptr) {
@@ -199,9 +274,11 @@ utils::guest_addr_t debugger::Debugger::resolve_block(utils::host_addr_t address
 	// resolve the new block, if necessary
 	if (_current == nullptr) {
 		// look for the basic-block
-		for (auto& block : _blocks) {
-			if (address >= block.entry->riscv_start && address < block.riscv_end) {
-				_current = &block;
+		for (size_t i = 0; i < _blocks.size(); i++) {
+			if(address < _blocks[i].entry->riscv_start)
+				break;
+			if (address >= _blocks[i].entry->riscv_start && address < _blocks[i].riscv_end) {
+				_current = &_blocks[i];
 				break;
 			}
 		}
@@ -223,40 +300,6 @@ utils::guest_addr_t debugger::Debugger::resolve_block(utils::host_addr_t address
 
 	// return the last instruction, as this point can only be reached, if address points within one instruction
 	return x86_counter - _current->entry->offsets[_current->entry->instruction_count - 1].x86;
-}
-
-utils::guest_addr_t debugger::Debugger::enter_break(uintptr_t break_point, utils::host_addr_t address) {
-	// update the counter
-	if (_state & DebugState::await_counter) {
-		if (_bp_counter > 0)
-			_bp_counter--;
-		if (_bp_counter == 0)
-			return resolve_block(address);
-	}
-
-	// check for a stepper
-	if (_state & DebugState::await_step)
-		return resolve_block(address);
-
-	// check if a break-point has been hit or if this is the init-break or if riscv has been stepped
-	if (break_point != halt_break || (_state & DebugState::init) == 0 || break_point == halt_riscv)
-		return resolve_block(address);
-
-	// check if a basic block has been reached
-	if ((_state & DebugState::await_eblock) || (_state & DebugState::await_sblock)) {
-		// resolve the address, which should also update the current block
-		utils::guest_addr_t guest_addr = resolve_block(address);
-		if (guest_addr == 0)
-			return 0;
-
-		// check if a beginning or an end has been reached
-		if ((guest_addr == _current->entry->x86_start) && (_state & DebugState::await_sblock))
-			return guest_addr;
-		if ((guest_addr == _current->entry->x86_end - _current->entry->offsets[_current->entry->instruction_count - 1].x86) &&
-			(_state & DebugState::await_eblock))
-			return guest_addr;
-	}
-	return 0;
 }
 
 void debugger::Debugger::update_break_points(const BlockEntry& block) {
@@ -316,30 +359,35 @@ void debugger::Debugger::update_break_points(const BlockEntry& block) {
 void debugger::Debugger::translate_break_point(uint16_t index) {
 	// iterate through the blocks and check if one of them suits the break-point
 	utils::guest_addr_t address = _bp_x86_array[index];
-	for (auto& block : _blocks) {
+	for (size_t i = 0; i < _blocks.size(); i++) {
+		// check if the current block is above the address
+		if (address < _blocks[i].entry->x86_start)
+			break;
+
 		// check if the address lies within the block
-		if (address >= block.entry->x86_start && address < block.entry->x86_end) {
+		if (address >= _blocks[i].entry->x86_start && address < _blocks[i].entry->x86_end) {
 			// initialize the counters (riscv + 4, as the first instruction is the jump to the debug-handler)
-			uintptr_t x86_counter = block.entry->x86_start;
-			uintptr_t riscv_counter = block.entry->riscv_start + 4;
+			uintptr_t x86_counter = _blocks[i].entry->x86_start;
+			uintptr_t riscv_counter = _blocks[i].entry->riscv_start + 4;
 
 			// iterate through the instructions and look for the one of the break-point
-			for (size_t j = 0; j < block.entry->instruction_count; j++) {
+			for (size_t j = 0; j < _blocks[i].entry->instruction_count; j++) {
 				if (x86_counter == address) {
 					_bp_array[index] = riscv_counter;
 					return;
 				} else if (x86_counter > address) {
-					_bp_x86_array[index] = x86_counter - block.entry->offsets[j - 1].x86;
-					_bp_array[index] = riscv_counter - block.entry->offsets[j - 1].riscv;
+					_bp_x86_array[index] = x86_counter - _blocks[i].entry->offsets[j - 1].x86;
+					_bp_array[index] = riscv_counter - _blocks[i].entry->offsets[j - 1].riscv;
 					return;
+				} else if (j + 1 < _blocks[i].entry->instruction_count) {
+					riscv_counter += _blocks[i].entry->offsets[j].riscv;
+					x86_counter += _blocks[i].entry->offsets[j].x86;
 				}
-				riscv_counter += block.entry->offsets[j].riscv;
-				x86_counter += block.entry->offsets[j].x86;
 			}
 
 			// if the break-point has not been set yet, it must lie within the last instruction
-			_bp_x86_array[index] = block.entry->x86_end - block.entry->offsets[block.entry->instruction_count - 1].x86;
-			_bp_array[index] = block.riscv_end - block.entry->offsets[block.entry->instruction_count - 1].riscv;
+			_bp_x86_array[index] = x86_counter;
+			_bp_array[index] = riscv_counter;
 			return;
 		}
 	}
