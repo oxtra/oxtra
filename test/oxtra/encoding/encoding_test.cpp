@@ -15,8 +15,8 @@ void refactor(const char *assembly, utils::riscv_instruction_t encoded) {
 	fprintf(assemblyf, "%s", assembly_);
 	fclose(assemblyf);
 
-	system("/opt/riscv/bin/riscv64-unknown-linux-gnu-gcc comp.s -o comp.elf -nostdlib");
-	system("objcopy -I elf64-little -j .text -O binary comp.elf dump");
+	system("/opt/riscv/bin/riscv64-unknown-linux-gnu-gcc comp.s -o comp.elf -static -nostdlib");
+	system("/opt/riscv/bin/riscv64-unknown-linux-gnu-objcopy -I elf64-little -j .text -O binary comp.elf dump");
 
 	char* enc = reinterpret_cast<char*>(&encoded);
 
@@ -24,6 +24,9 @@ void refactor(const char *assembly, utils::riscv_instruction_t encoded) {
 	FILE* objdump = fopen("dump", "r");
 	fread(com, 1, 4, objdump);
 	fclose(objdump);
+
+	printf("encoded:  %x%x%x%x\n", enc[3], enc[2], enc[1], enc[1]);
+	printf("compiled: %x%x%x%x\n", com[3], com[2], com[1], com[1]);
 
 	REQUIRE(com[0] == enc[0]);
 	REQUIRE(com[1] == enc[1]);
@@ -43,8 +46,24 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 	}
 
 	SECTION("JAL") {
-		utils::riscv_instruction_t encoded = JAL(RiscVRegister::t4, 0x748);
-		refactor("jal t4, 0x748", encoded);
+		char assembly[100] = {0};
+		strcat(assembly, ".section .text\n.global _start\n\n_start:\n\t");
+		strcat(assembly, "nop\n");
+		FILE *assemblyf = fopen("comp.s", "w");
+		fprintf(assemblyf, "%s", assembly);
+		fclose(assemblyf);
+		system("/opt/riscv/bin/riscv64-unknown-linux-gnu-gcc comp.s -o comp.elf -static -nostdlib");
+		system("riscv64-linux-gnu-objdump -d comp.elf | grep nop | cut -d: -f1 > start.txt");
+		char buf[10] = {0};
+		FILE* startf = fopen("start.txt", "r");
+		fread(buf, 1, 8, startf);
+		fclose(startf);
+		char* ptr;
+		uint32_t _start = strtoul(buf, &ptr, 16);
+		system("rm start.txt");
+
+		utils::riscv_instruction_t encoded = JAL(RiscVRegister::ra, (0x100d8-_start)/2);
+		refactor("jal ra, 0x100d8", encoded);
 	}
 
 	SECTION("JALR") {
@@ -53,33 +72,33 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 	}
 
 	SECTION("BEQ") {
-		utils::riscv_instruction_t encoded = BEQ(RiscVRegister::t4, RiscVRegister::t5, 0x748);
-		refactor("beq t4, t5, 0x748", encoded);
+		utils::riscv_instruction_t encoded = BEQ(RiscVRegister::t4, RiscVRegister::t5, 0x100d8);
+		refactor("beq t4, t5, 0x100d8", encoded);
 	}
 
 	SECTION("BNE") {
-		utils::riscv_instruction_t encoded = BNE(RiscVRegister::t4, RiscVRegister::t5, 0x748);
-		refactor("bne t4, t5, 0x748", encoded);
+		utils::riscv_instruction_t encoded = BNE(RiscVRegister::t4, RiscVRegister::t5, 0x100d8);
+		refactor("bne t4, t5, 0x100d8", encoded);
 	}
 
 	SECTION("BLT") {
-		utils::riscv_instruction_t encoded = BLT(RiscVRegister::t4, RiscVRegister::t5, 0x748);
-		refactor("blt t4, t5, 0x748", encoded);
+		utils::riscv_instruction_t encoded = BLT(RiscVRegister::t4, RiscVRegister::t5, 0x100d8);
+		refactor("blt t4, t5, 0x100d8", encoded);
 	}
 
 	SECTION("BGE") {
-		utils::riscv_instruction_t encoded = BGE(RiscVRegister::t4, RiscVRegister::t5, 0x748);
-		refactor("bge t4, t5, 0x748", encoded);
+		utils::riscv_instruction_t encoded = BGE(RiscVRegister::t4, RiscVRegister::t5, 0x100d8);
+		refactor("bge t4, t5, 0x100d8", encoded);
 	}
 
 	SECTION("BLTU") {
-		utils::riscv_instruction_t encoded = BLTU(RiscVRegister::t4, RiscVRegister::t5, 0x748);
-		refactor("bltu t4, t5, 0x748", encoded);
+		utils::riscv_instruction_t encoded = BLTU(RiscVRegister::t4, RiscVRegister::t5, 0x100d8);
+		refactor("bltu t4, t5, 0x100d8", encoded);
 	}
 
 	SECTION("BGEU") {
-		utils::riscv_instruction_t encoded = BGEU(RiscVRegister::t4, RiscVRegister::t5, 0x748);
-		refactor("bgeu t4, t5, 0x748", encoded);
+		utils::riscv_instruction_t encoded = BGEU(RiscVRegister::t4, RiscVRegister::t5, 0x100d8);
+		refactor("bgeu t4, t5, 0x100d8", encoded);
 	}
 
 	SECTION("LB") {
