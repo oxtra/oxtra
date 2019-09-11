@@ -28,14 +28,14 @@ std::string debugger::Debugger::print_number(uint64_t nbr, bool hex, uint8_t dec
 			if (dec_digits > 0)
 				dec_digits--;
 		}
-		if(dec_digits > 0)
+		if (dec_digits > 0)
 			str.insert(0, dec_digits, dec_pad);
 		str.insert(0, 1, '-');
 		return str;
 	}
 
 	// convert the number to a string
-	if(nbr == 0) {
+	if (nbr == 0) {
 		str.push_back('0');
 		dec_digits--;
 	}
@@ -46,7 +46,7 @@ std::string debugger::Debugger::print_number(uint64_t nbr, bool hex, uint8_t dec
 		if (dec_digits > 0)
 			dec_digits--;
 	}
-	if(dec_digits > 0)
+	if (dec_digits > 0)
 		str.insert(0, dec_digits, dec_pad);
 	return str;
 }
@@ -145,82 +145,147 @@ std::string debugger::Debugger::print_reg(dispatcher::ExecutionContext* context,
 	return out_string;
 }
 
-std::string debugger::Debugger::print_assembly(utils::guest_addr_t guest, BlockEntry* entry, uint16_t limit) {
-	// find the current index and compute the counters
-	utils::guest_addr_t x86_address = entry->entry->x86_start;
-	utils::host_addr_t riscv_address = entry->entry->riscv_start + 4;
-	size_t index = 0;
-	for (; index < entry->entry->instruction_count; index++) {
-		if (x86_address == guest)
+std::string debugger::Debugger::print_assembly(utils::guest_addr_t guest, utils::host_addr_t host,
+											   BlockEntry* entry, uint16_t limit) {
+	utils::guest_addr_t guest_src = entry->entry->x86_start;
+	utils::host_addr_t host_src = entry->entry->riscv_start + (_riscv_enabled ? 0 : 4);
+
+	// compute the guest-index and the limit
+	size_t guest_limit = entry->entry->instruction_count;
+	size_t guest_index = 0;
+	for (size_t i = 0; i < entry->entry->instruction_count; i++) {
+		if (guest >= guest_src && guest < guest_src + entry->entry->offsets[i].x86) {
+			guest_index = i;
 			break;
-		x86_address += entry->entry->offsets[index].x86;
-		riscv_address += entry->entry->offsets[index].riscv;
+		}
+		guest_src += entry->entry->offsets[i].x86;
+		host_src += entry->entry->offsets[i].riscv;
 	}
-	size_t riscv_count = (entry->entry->offsets[index].riscv >> 2u) - 1;
+
+	// compute the host-limit
+	size_t host_limit = entry->entry->offsets[guest_index].riscv / 4;
+	if (_riscv_enabled)
+		host_limit /= 2;
+	else
+		host_limit--;
+
+	// compute the host-index
+	size_t host_index = 0;
+	for (size_t i = 0; i < host_limit; i++) {
+		if (host >= host_src && host < host_src + (_riscv_enabled ? 8 : 4)) {
+			host_index = i;
+			break;
+		}
+		host_src += _riscv_enabled ? 8 : 4;
+	}
+
+	// compute the start-indices
+	size_t guest_start = 0;
+	if (limit < guest_limit) {
+		if (guest_index > (limit / 2))
+			guest_start = guest_index - (limit / 2);
+		if (guest_start + limit > guest_limit)
+			guest_start = guest_limit - limit;
+	}
+	size_t host_start = 0;
+	if (limit < host_limit) {
+		if (host_index > (limit / 2))
+			host_start = host_index - (limit / 2);
+		if (host_start + limit > host_limit)
+			host_start = host_limit - limit;
+	}
+
+	// compute the addresses
+	guest_src = entry->entry->x86_start;
+	host_src = entry->entry->riscv_start + 4;
+	for (size_t i = 0; i < guest_start; i++)
+		guest_src += entry->entry->offsets[i].x86;
+	for (size_t i = 0; i < guest_index; i++)
+		host_src += entry->entry->offsets[i].riscv;
+	host_src += host_start * (_riscv_enabled ? 8 : 4);
 
 	// build the string
-	std::string out_str("Assembly [x86]:");
+	std::string out_str("Assembly [x86]: (");
+	out_str.append(print_number(guest_index, false));
+	out_str.push_back('/');
+	out_str.append(print_number(guest_limit, false));
+	out_str.push_back(')');
 	out_str.insert(out_str.size(), 50 - out_str.size(), ' ');
-	out_str.append("Next instruction [riscv]:\n");
+	out_str.append("Next instruction [riscv]: (");
+	out_str.append(print_number(host_index, false));
+	out_str.push_back('/');
+	out_str.append(print_number(host_limit, false));
+	out_str.append(")\n");
 
 	// iterate through the instructions and write them to the string
-	bool decode_failed = false;
 	for (size_t i = 0; i < limit; i++) {
-		// add the current address
-		std::string line_buffer = "    [";
-		line_buffer.append(print_number(x86_address, true));
-		line_buffer.append("] ");
+		// add the x86-instruction
+		std::string line_buffer;
+		if ((i == 0 && guest_start > 0) || (i + 1 == limit && guest_start + i + 1 < guest_limit)) {
+			line_buffer = "    ...";
+			guest_src += entry->entry->offsets[guest_start + i].x86;
+		} else if (guest_start + i < guest_limit) {
+			if (guest_start + i == guest_index)
+				line_buffer = "-> ";
+			else
+				line_buffer = "   ";
 
-		// try to decode the instruction
-		fadec::Instruction inst{};
-		if (!decode_failed) {
-			if (fadec::decode(reinterpret_cast<const uint8_t*>(x86_address), _elf.get_size(x86_address),
-							  fadec::DecodeMode::decode_64, x86_address, inst) <= 0) {
-				if (index < entry->entry->instruction_count)
-					line_buffer = "failed to decode instruction";
-				decode_failed = true;
-			} else {
-				char buffer[256];
-				fadec::format(inst, buffer, 256);
-				line_buffer.append(buffer);
-			}
-		}
-
-		// check if this row contains a break-point
-		if (!decode_failed) {
+			// add break-points
 			for (size_t j = 0; j < _bp_count; j++) {
-				if (_bp_x86_array[j] >= x86_address && _bp_x86_array[j] < x86_address + inst.get_size()) {
-					line_buffer[1] = '*';
+				if (_bp_x86_array[j] >= guest_src &&
+					_bp_x86_array[j] < guest_src + entry->entry->offsets[guest_index + i].x86) {
+					line_buffer.push_back('*');
 					break;
 				}
 			}
+			if (line_buffer.size() < 4)
+				line_buffer.insert(line_buffer.size(), 4 - line_buffer.size(), ' ');
+
+			// add the current address
+			line_buffer.push_back('[');
+			line_buffer.append(print_number(guest_src, true));
+			line_buffer.append("] ");
+
+			// try to decode the instruction
+			fadec::Instruction inst{};
+			if (fadec::decode(reinterpret_cast<const uint8_t*>(guest_src), _elf.get_size(guest_src),
+							  fadec::DecodeMode::decode_64, guest_src, inst) <= 0) {
+				line_buffer = "    failed to decode instruction";
+			} else {
+				char buffer[256];
+				fadec::format(inst, buffer, 256);
+				size_t len = strlen(buffer);
+				if (len > 50 - line_buffer.size())
+					line_buffer.append(buffer, 50 - line_buffer.size());
+				else
+					line_buffer.append(buffer);
+			}
+
+			// update the address
+			guest_src += entry->entry->offsets[guest_start + i].x86;
 		}
-		if (x86_address < entry->entry->x86_end)
-			line_buffer[3] = '>';
 
 		// pad the string
 		if (line_buffer.size() < 50)
 			line_buffer.insert(line_buffer.size(), 50 - line_buffer.size(), ' ');
 
-		// update the x86-data
-		if (!decode_failed) {
-			x86_address += inst.get_size();
-			index++;
-		}
-
-		// check any riscv-code exists
-		if (i < riscv_count && i + 1 == limit)
+		// add the riscv-instruction
+		if ((i == 0 && host_start > 0) || (i + 1 == limit && host_start + i + 1 < host_limit)) {
 			line_buffer.append("    ...");
-		else if (i < riscv_count) {
+			host_src += _riscv_enabled ? 8 : 4;
+		} else if (host_start + i < host_limit) {
 			// set the pointer to the current riscv-instruction
-			line_buffer.append((i == 0) ? " -> " : "    ");
+			line_buffer.append((host_start + i == host_index) ? " ->  " : "     ");
 
 			// decode the riscv-instruction
-			std::string riscv_str = decoding::parse_riscv(reinterpret_cast<utils::riscv_instruction_t*>(riscv_address)[i]);
-			if (riscv_str.size() <= 50)
+			std::string riscv_str = decoding::parse_riscv(reinterpret_cast<utils::riscv_instruction_t*>(host_src)[0]);
+			if (riscv_str.size() <= 100 - line_buffer.size())
 				line_buffer.append(riscv_str);
 			else
-				line_buffer.append(riscv_str.c_str(), 50);
+				line_buffer.append(riscv_str.c_str(), 100 - line_buffer.size());
+
+			// update the address
+			host_src += _riscv_enabled ? 8 : 4;
 		}
 		out_str.append(line_buffer);
 		out_str.push_back('\n');
@@ -310,22 +375,22 @@ std::string debugger::Debugger::print_stack(uintptr_t address, dispatcher::Execu
 
 	// clip the address
 	address = address ^ (address & 0x07);
-	if(address > _stack_high)
+	if (address > _stack_high)
 		address = _stack_high;
-	else if(address - (limit - 1) * 8 <= _stack_low)
+	else if (address - (limit - 1) * 8 <= _stack_low)
 		address = _stack_low + (limit - 1) * 8;
 
 	// iterate through the stack and print it
-	for (size_t i = 0; i < limit; i++){
+	for (size_t i = 0; i < limit; i++) {
 		// add the address
 		out_str.append("  [");
 		out_str.append(print_number(address, true));
 		out_str.append("] = ");
 
 		// add the value
-		if(address == _stack_high)
+		if (address == _stack_high)
 			out_str.append("  above the stack  ");
-		else if(address == _stack_low + (limit - 1) * 8)
+		else if (address == _stack_low + (limit - 1) * 8)
 			out_str.append(" beneath the stack ");
 		else
 			out_str.append(print_number(reinterpret_cast<uint64_t*>(address)[0], true));
@@ -333,28 +398,26 @@ std::string debugger::Debugger::print_stack(uintptr_t address, dispatcher::Execu
 
 		// add the offset to rsp
 		std::string temp_str = "[";
-		if(address == context->guest.map.rsp)
+		if (address == context->guest.map.rsp)
 			temp_str.append("rsp");
-		else if(address > context->guest.map.rsp){
+		else if (address > context->guest.map.rsp) {
 			temp_str.append("rsp-");
 			temp_str.append(print_number(address - context->guest.map.rsp, false));
-		}
-		else{
+		} else {
 			temp_str.append("rsp+");
 			temp_str.append(print_number(context->guest.map.rsp - address, false));
 		}
 		temp_str.push_back(']');
-		if(temp_str.size() < 12)
+		if (temp_str.size() < 12)
 			temp_str.insert(temp_str.size(), 12 - temp_str.size(), ' ');
 
 		// add the offset to tbp
-		if(address == context->guest.map.rbp)
+		if (address == context->guest.map.rbp)
 			temp_str.append("[rbp");
-		else if(address > context->guest.map.rbp){
+		else if (address > context->guest.map.rbp) {
 			temp_str.append("[rbp-");
 			temp_str.append(print_number(address - context->guest.map.rbp, false));
-		}
-		else{
+		} else {
 			temp_str.append("[rbp+");
 			temp_str.append(print_number(context->guest.map.rbp - address, false));
 		}

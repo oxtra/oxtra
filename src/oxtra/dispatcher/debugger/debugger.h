@@ -97,6 +97,7 @@ namespace debugger {
 		uint32_t _state;
 		uint64_t _run_break;
 		BlockEntry* _current;
+		size_t _current_index;
 		std::vector<BlockEntry> _blocks;
 		const elf::Elf& _elf;
 		bool _riscv_enabled;
@@ -145,7 +146,7 @@ namespace debugger {
 
 		std::string print_reg(dispatcher::ExecutionContext* context, bool hex, bool riscv);
 
-		std::string print_assembly(utils::guest_addr_t guest, BlockEntry* entry, uint16_t limit);
+		std::string print_assembly(utils::guest_addr_t guest, utils::host_addr_t host, BlockEntry* entry, uint16_t limit);
 
 		std::string print_flags(dispatcher::ExecutionContext* context);
 

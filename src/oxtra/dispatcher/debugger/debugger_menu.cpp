@@ -71,7 +71,7 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 		return "invalid input! Type \"help\" for help.";
 
 	// parse the first argument
-	if(parse_argument(arg_string[0], arg_state[0], arg_number[0], arg_key[0]))
+	if (parse_argument(arg_string[0], arg_state[0], arg_number[0], arg_key[0]))
 		parse_argument(arg_string[1], arg_state[1], arg_number[1], arg_key[1]);
 
 	// handle the input-key
@@ -80,13 +80,14 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 			if (arg_state[0] == arg_state_number) {
 				if (arg_number[0] == 0 || arg_number[0] > 96)
 					return "assembly-count out of range [1;96]!";
-				return print_assembly(address, _current, arg_number[0]);
+				return print_assembly(address, context->guest.ra, _current, arg_number[0]);
 			}
-			return print_assembly(address, _current, _inst_limit);
+			return print_assembly(address, context->guest.ra, _current, _inst_limit);
 		case DebugInputKey::crawl:
 			if (!_riscv_enabled)
 				return "riscv-stepping is disabled!";
 			_step_riscv = true;
+			_state |= DebugState::await_step;
 			return "";
 		case DebugInputKey::all:
 			_state |= (DebugState::print_asm | DebugState::print_flags | DebugState::print_reg);
@@ -172,7 +173,7 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 			dispatcher::Dispatcher::fault_exit("the debugger exited via a fault.");
 			break;
 		case DebugInputKey::quit:
-			active_debugger = nullptr;
+			context->debugger = nullptr;
 			return "";
 		case DebugInputKey::flags:
 			return print_flags(context);
