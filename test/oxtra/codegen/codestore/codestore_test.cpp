@@ -46,7 +46,7 @@ constexpr size_t riscv_buffer_size = sizeof(riscv_buffer) / sizeof(utils::riscv_
 /* These block-addresses are used as offsets into the elf-image, where basic-blocks will be created. These must not be
  * sorted, in order to test, what happens if the CodeStore is fed with random data. */
 constexpr uintptr_t x86_block_addresses[] = {0x00000000, 0x000004043, 0x00000889, 0x00008075, 0x00009ff0, 0x00000c06,
-											 0x00000ac01, 0x00004806 };
+											 0x00000ac01, 0x00004806};
 constexpr size_t x86_block_addresses_size = sizeof(x86_block_addresses) / sizeof(uintptr_t);
 
 TEST_CASE("codestore test instruction-adding", "[codestore]") {
@@ -66,8 +66,8 @@ TEST_CASE("codestore test instruction-adding", "[codestore]") {
 	// create the elf-object and the arguments-object
 	auto temp_elf = elf::Elf(base_path.c_str());
 
-	const char* test_path[] = {"./oxtra", base_path.c_str()};
-	auto temp_args = arguments::Arguments(2, const_cast<char**>(test_path));
+	const char* test_path[] = {"./oxtra", base_path.c_str(), "--linst-size=128", "--lentry-size=128", "--loffset-size=128"};
+	auto temp_args = arguments::Arguments(5, const_cast<char**>(test_path));
 
 	// create the code-store object
 	CodeStore store = CodeStore(temp_args, temp_elf);
@@ -91,7 +91,7 @@ TEST_CASE("codestore test instruction-adding", "[codestore]") {
 						  temp_elf.get_base_vaddr() + offset, instruction);
 
 			// add the instruction to the code-store
-			REQUIRE_NOTHROW(store.add_instruction(entry, instruction,
+			REQUIRE_NOTHROW(store.add_instruction(entry, instruction.get_address(), instruction.get_size(),
 												  const_cast<utils::riscv_instruction_t*>(riscv_buffer),
 												  riscv_buffer_size - (index & 0x01u) ? 1 : 0));
 			offset += instruction.get_size();
@@ -116,8 +116,8 @@ TEST_CASE("codestore test instruction-adding", "[codestore]") {
 		fadec::Instruction instruction = fadec::Instruction();
 		fadec::decode(instruction_buffer, instruction_buffer_size, fadec::DecodeMode::decode_64,
 					  temp_elf.get_base_vaddr() + offset - 1, instruction);
-		REQUIRE_THROWS(store.add_instruction(entry, instruction, const_cast<utils::riscv_instruction_t*>(riscv_buffer),
-											 riscv_buffer_size));
+		REQUIRE_THROWS(store.add_instruction(entry, instruction.get_address(), instruction.get_size(),
+											 const_cast<utils::riscv_instruction_t*>(riscv_buffer), riscv_buffer_size));
 	}
 	SECTION("add multiple blocks and resolve blocks") {
 		/* as long as the default-static_list size recieved form arguments is small enough,
@@ -137,7 +137,7 @@ TEST_CASE("codestore test instruction-adding", "[codestore]") {
 				fadec::decode(instruction_buffer + offset, instruction_buffer_size - offset,
 							  fadec::DecodeMode::decode_64,
 							  temp_elf.get_base_vaddr() + offset + x86_block_addresses[i], instruction);
-				REQUIRE_NOTHROW(store.add_instruction(entry, instruction,
+				REQUIRE_NOTHROW(store.add_instruction(entry, instruction.get_address(), instruction.get_size(),
 													  const_cast<utils::riscv_instruction_t*>(riscv_buffer),
 													  riscv_buffer_size));
 				if (index + 1 == instruction_count)
@@ -165,21 +165,21 @@ TEST_CASE("codestore test instruction-adding", "[codestore]") {
 		/* test to resolve to every next page (in step-sizes of 0x83 bytes
 		 * [odd number in order to not be aligned with the block_addresses] ) */
 		size_t next_block_index = 0;
-		for(uintptr_t addr = 0;; addr += 0x83) {
-			if(addr >= x86_block_addresses[next_block_index] + instruction_buffer_size) {
+		for (uintptr_t addr = 0;; addr += 0x83) {
+			if (addr >= x86_block_addresses[next_block_index] + instruction_buffer_size) {
 				// find the next block and set the index to the size, if no block has been found
 				next_block_index = x86_block_addresses_size;
-				for(size_t i = 0; i < x86_block_addresses_size; i++) {
-					if(x86_block_addresses[i] >= addr) {
-						if(next_block_index == x86_block_addresses_size)
+				for (size_t i = 0; i < x86_block_addresses_size; i++) {
+					if (x86_block_addresses[i] >= addr) {
+						if (next_block_index == x86_block_addresses_size)
 							next_block_index = i;
-						else if(x86_block_addresses[i] < x86_block_addresses[next_block_index])
+						else if (x86_block_addresses[i] < x86_block_addresses[next_block_index])
 							next_block_index = i;
 					}
 				}
 			}
 			BlockEntry* entry = store.get_next_block(addr + temp_elf.get_base_vaddr());
-			if(next_block_index >= x86_block_addresses_size) {
+			if (next_block_index >= x86_block_addresses_size) {
 				REQUIRE(entry == nullptr);
 				break;
 			}

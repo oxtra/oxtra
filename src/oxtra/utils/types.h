@@ -22,4 +22,6 @@ namespace utils {
 	using riscv_instruction_t = uint32_t;
 }
 
+#define unused_parameter(x) ((void)x)
+
 #endif //OXTRA_TYPES_H

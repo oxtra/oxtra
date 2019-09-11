@@ -23,28 +23,28 @@ namespace arguments {
 		 */
 		struct StoredArguments {
 			char* guest_path;
-			enum spdlog::level::level_enum spdlog_log_level;
+			std::vector<std::string> guest_arguments;
+			spdlog::level::level_enum spdlog_log_level;
+			bool debugging;
+			size_t stack_size;
 			size_t instruction_list_size, offset_list_size, entry_list_size;
 		};
-
-		static constexpr char _instruction_list_size_id = 1;
-		static constexpr char _offset_list_size_id = 2;
-		static constexpr char _entry_list_size_id = 3;
 
 		/**
 		 * This struct contains all options and their identifiers (+ definition strings).
 		 * Unprintable ASCII strings will not be able to be accessed (only long variant available).
 		 */
-		const struct argp_option _options[5] = {
-				{"linstruction-size", _instruction_list_size_id, "SIZE",  0, "The size of the list containing instructions. Limit for consecutive instructions.\nThe default is 128.",   0},
-				{"loffset-size",      _offset_list_size_id,      "SIZE",  0, "The size of the list containing offset. Limit for consecutive offsets.\nThe default is 128.",              0},
-				{"lentry-size",       _entry_list_size_id,       "SIZE",  0, "The size of the list containing block entires. Limit for consecutive block entries.\nThe default is 128.", 0},
-				{"log-level",         'l',                       "LEVEL", 0, "Specify the log level. 0=trace, 1=debug, 2=info, 3=warn, 4=error, 5=critical, 6=off.\nThe default is 3.",  0},
+		const struct argp_option _options[8] = {
+				{"args",         'a', "\"ARGUMENTS...\"", 0, "Specify the arguments that will be passed to the x86 executable. The default is no arguments",                          0},
+				{"debug",        'd', "BOOL",             0, "Specify the debugging-behavior. The default ist false.",                                                                0},
+				{"lentry-size",  'e', "SIZE",             0, "The size of the list containing block entires. Limit for consecutive block entries. The default is 64.",                0},
+				{"linst-size",   'i', "SIZE",             0, "The size of the list containing instructions. Limit for generated RISCV instructions in a block. The default is 4096.", 0},
+				{"log-level",    'l', "LEVEL",            0, "Specify the log level. 0=trace, 1=debug, 2=info, 3=warn, 4=error, 5=critical, 6=off. The default is 3.",                0},
+				{"loffset-size", 'o', "SIZE",             0, "The size of the list containing offset. Limit for consecutive offsets. The default is 512.",                            0},
+				{"stack-size",   's', "SIZE",             0, "The size of the stack in decimal. The default size is 2MiB (0x200000).",                                                0},
 				// This specifies the required x86 executable argument
-				{nullptr,             0,                         nullptr, 0, nullptr,                                                                                                    0}
+				{nullptr,        0,   nullptr,            0, nullptr,                                                                                                                 0}
 		};
-
-		const struct argp _argp_parser;
 
 	private:
 		const char* _executable_path;
@@ -61,13 +61,19 @@ namespace arguments {
 	public:
 		const char* get_guest_path() const;
 
+		std::vector<std::string> get_guest_arguments() const;
+
 		enum spdlog::level::level_enum get_log_level() const;
+
+		size_t get_stack_size() const;
 
 		size_t get_instruction_list_size() const;
 
 		size_t get_offset_list_size() const;
 
 		size_t get_entry_list_size() const;
+
+		bool get_debugging() const;
 
 	private:
 		/**

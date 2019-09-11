@@ -103,12 +103,15 @@ int fadec::decode_prefixes(const uint8_t *buffer, size_t len, DecodeMode mode, i
 				break;
 			case 0x67:
 				prefixes |= prefix_addrsz;
+				off++;
 				break;
 			case 0xf0:
 				prefixes |= prefix_lock;
+				off++;
 				break;
 			case 0x66:
 				prefixes |= prefix_opsz;
+				off++;
 				break;
 				// From REP/REPE and REPNZ, the last one wins; and for mandatory
 				// prefixes they have a higher priority than 66h (handled below).
@@ -238,7 +241,7 @@ int fadec::decode_modrm(const uint8_t *buffer, size_t len, DecodeMode mode, Inst
 		auto reg_idx = rm;
 
 #if defined(ARCH_X86_64)
-		reg_idx += (prefixes & prefix_rexr) ? 8 : 0;
+		reg_idx += (prefixes & prefix_rexb) ? 8 : 0;
 #endif
 
 		o1->type = OperandType::reg;
@@ -499,7 +502,7 @@ int fadec::decode(const uint8_t *buffer, size_t len_sz, DecodeMode mode, uintptr
 	if (desc->has_implicit()) {
 		auto &operand = instr.operands[desc->implicit_idx()];
 		operand.type = OperandType::reg;
-		operand.reg = Register::none;
+		operand.reg = Register::rax;
 	}
 
 	if (desc->has_modrm()) {
@@ -637,9 +640,14 @@ int fadec::decode(const uint8_t *buffer, size_t len_sz, DecodeMode mode, uintptr
 		return -1;
 
 	for (auto i = 0; i < 4; i++) {
-		auto &op = instr.operands[i];
+		auto& op = instr.operands[i];
 
-		if (op.type != OperandType::reg)
+		if (op.type == OperandType::mem && op.reg == Register::ip) {
+			op.reg = Register::none;
+			instr.disp += instr.address + off;
+		}
+
+		else if (op.type != OperandType::reg)
 			continue;
 
 		auto reg_type = static_cast<RegisterType>((desc->reg_types >> 4 * i) & 0xf);
@@ -703,7 +711,7 @@ void fadec::format(const Instruction &instr, char *buffer, size_t len) {
 			break;
 
 		auto op_type_name = "reg\0imm\0mem" + static_cast<uintptr_t>(op_type) * 4 - 4;
-		fmt_concat(" %s%u:", op_type_name, operand.get_size());
+		fmt_concat(" %s%u:", op_type_name, operand.get_size())
 
 		switch (op_type) {
 			case OperandType::reg: {
@@ -740,7 +748,7 @@ void fadec::format(const Instruction &instr, char *buffer, size_t len) {
 				}
 
 				if (idx != Register::none) {
-					fmt_concat("%u*r%u", instr.get_index_scale(), static_cast<unsigned int>(instr.get_index_register()))
+					fmt_concat("%u*r%u", 1 << instr.get_index_scale(), static_cast<unsigned int>(instr.get_index_register()))
 
 					if (disp != 0) fmt_concat("+")
 				}

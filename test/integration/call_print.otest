@@ -1,0 +1,6 @@
+# Testing if the hello world (call print) executes and returns correctly.
+./oxtra test/resources/no_libc/call_print
+>>>
+Hello, World!
+How are you doing? :)
+>>>= 1

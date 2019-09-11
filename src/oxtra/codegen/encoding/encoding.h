@@ -24,7 +24,11 @@ namespace encoding {
 		a2, a3, a4, a5, a6, a7, // function arguments
 		s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, // saved registers
 		t3, t4, t5, t6, // temporaries
-		pc			// program counter
+		pc,			// program counter
+		rax = a0, rbx = a1, rcx = a2, rdx = a3,
+		rsi = a4, rdi = a5,
+		r8 = a6, r9 = a7, r10 = s2, r11 = s3, r12 = s4, r13 = s5, r14 = s6, r15 = s7,
+		rsp = sp, rbp = s0
 	};
 
 	union RType {
@@ -87,12 +91,12 @@ namespace encoding {
 
 	union JType {
 		struct {
-		uint32_t opcode : 7;
-		uint32_t rd : 5;
-		uint32_t imm_19_12 : 8;
-		uint32_t imm_11 : 1;
-		uint32_t imm_10_1 : 10;
-		uint32_t imm_20 : 1;
+			uint32_t opcode : 7;
+			uint32_t rd : 5;
+			uint32_t imm_19_12 : 8;
+			uint32_t imm_11 : 1;
+			uint32_t imm_10_1 : 10;
+			uint32_t imm_20 : 1;
 		};
 		uint32_t raw;
 	};
@@ -302,10 +306,19 @@ namespace encoding {
 	*/
 	utils::riscv_instruction_t AND(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2);
 
-	// probably not needed: FENCE, FENCE.I, ECALL, EBREAK, CSRRW, CSRRS, CSRRC, CSRRWI, CSRRSI, CSRRCI
+	/**
+	 * system call
+	 */
+	utils::riscv_instruction_t ECALL();
 
-	/* --- RV64I Base Integer Instructions --- */
+	// probably not needed: FENCE, FENCE.I, EBREAK, CSRRW, CSRRS, CSRRC, CSRRWI, CSRRSI, CSRRCI
+
+	/* --- RV64I Base Integer instructions --- */
 	//*W instructions maybe necessary
+	/**
+	* rd = (rs1 + rs2) [31:0] sign extended to 64bit
+	*/
+	utils::riscv_instruction_t ADDW(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2);
 
 	/* --- M Standard Extension --- */
 
@@ -360,11 +373,6 @@ namespace encoding {
 	/**
 	*/
 	utils::riscv_instruction_t NOP();
-
-	/**
-	* rd = imm
-	*/
-	void LI(RiscVRegister rd, uint32_t imm);
 
 	/**
 	* rd = rs

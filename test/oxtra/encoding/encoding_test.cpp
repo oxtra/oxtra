@@ -70,7 +70,7 @@ TEST_CASE("instruction encoding is correct", "[encoding]") {
 	}
 
 	SECTION("JAL") {
-		utils::riscv_instruction_t encoded = JAL(RiscVRegister::ra, 0x4 / 2);
+		utils::riscv_instruction_t encoded = JAL(RiscVRegister::ra, 0x4);
 		refactor_branch("jal ra, label", encoded);
 	}
 

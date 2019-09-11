@@ -1,4 +1,8 @@
 #include "oxtra/codegen/codegen.h"
+#include "transform_instruction.h"
+#include "oxtra/dispatcher/dispatcher.h"
+#include "helper.h"
+#include "oxtra/dispatcher/debugger/debugger.h"
 #include <spdlog/spdlog.h>
 
 using namespace codegen;
@@ -6,166 +10,143 @@ using namespace utils;
 using namespace codestore;
 using namespace fadec;
 using namespace encoding;
-
+using namespace dispatcher;
 
 CodeGenerator::CodeGenerator(const arguments::Arguments& args, const elf::Elf& elf)
-		: _args{args}, _elf{elf}, _codestore{args, elf} {}
+		: _elf{elf}, _codestore{args, elf} {
+	// instantiate the code-batch
+	if(args.get_debugging())
+		_batch = std::make_unique<debugger::DebuggerBatch>();
+	else
+		_batch = std::make_unique<CodeBatchImpl>();
+}
 
 host_addr_t CodeGenerator::translate(guest_addr_t addr) {
-	//const auto cached_code = _codestore.find(addr);
-	//if (cached_code)
-	//	return cached_code;
+	/* Validate the page-protection for the new basic block.
+	 * Code-block-size will continue the check for the upcoming instructions.
+	 * This check will also validate, that the address won't corrupt the page-array. */
+	if ((_elf.get_page_flags(addr) & (elf::PAGE_EXECUTE | elf::PAGE_READ)) != (elf::PAGE_EXECUTE | elf::PAGE_READ))
+		Dispatcher::fault_exit("virtual segmentation fault");
 
-	//const auto next_codeblock = _codestore.get_next_block(addr);
-	//if (next_codeblock == nullptr) {
-	//	next_codeblock =
-	//}
+	if (const auto riscv_code = _codestore.find(addr))
+		return riscv_code;
 
-	/*
-	 * max block size = min(next_codeblock.start, instruction offset limit)
-	 *
-	 * loop over instructions and decode
-	 * - big switch for each instruction type
-	 * - translate instruction
-	 * - add risc-v instructions into code store
-	 *
-	 * add jump to dispatcher::host_enter
-	 * return address to translated code
-	 */
+	// extract the next block
+	auto next_block = _codestore.get_next_block(addr);
 
-	/*
-	 * the program that's being decoded looks like this
-	 * 0000000000401000 <_start>:
-	 *  401000:	55                   	push   %rbp
-	 *  401001:	48 89 e5             	mov    %rsp,%rbp
-	 *  401004:	b8 2a 00 00 00       	mov    $0x2a,%eax
-	 *  401009:	5d                   	pop    %rbp
-	 *  40100a:	c3                   	retq
-	 */
-
-	auto& codeblock = _codestore.create_block();
-	auto current_address = reinterpret_cast<const uint8_t*>(_elf.resolve_vaddr(addr));
-	bool end_of_block;
-
-	do {
-		auto x86_instruction = Instruction{};
-		if (decode(current_address, _elf.get_size(addr), DecodeMode::decode_64, addr, x86_instruction) <= 0)
-			throw std::runtime_error("Failed to decode the instruction");
-
-		current_address += x86_instruction.get_size();
-		addr += x86_instruction.get_size();
-
-		if constexpr (SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE) {
-			char formatted_string[512];
-			fadec::format(x86_instruction, formatted_string, sizeof(formatted_string));
-
-			SPDLOG_TRACE("Fadec decoded instruction {}", formatted_string);
+	// iterate through the instructions and query all information about the flags
+	std::vector<std::unique_ptr<Instruction>> instructions;
+	while (true) {
+		// check if the address is equal to the next block
+		if (next_block) {
+			if (next_block->x86_start == addr) {
+				if (instructions.empty()) {
+					instructions.~vector();
+					Dispatcher::fault_exit("codestore::find(...) must have failed");
+				}
+				instructions[instructions.size() - 1]->set_eob();
+				break;
+			}
 		}
 
-		size_t num_instructions = 0;
-		riscv_instruction_t riscv_instructions[max_riscv_instructions];
+		// decode the fadec-instruction
+		auto&& inst = decode_instruction(addr, instructions);
 
-		end_of_block = translate_instruction(x86_instruction, riscv_instructions, num_instructions);
+		// check if the instruction would end the block
+		if (inst.get_eob()) {
+			next_block = nullptr;
+			break;
+		}
+	}
 
-		_codestore.add_instruction(codeblock, x86_instruction, riscv_instructions, num_instructions);
-	} while (!end_of_block);
+	// iterate through the instructions backwards and check where the instructions have to be up-to-date
+	size_t required_updates = 0;
+	for (auto it = instructions.rbegin(); it != instructions.rend(); ++it) {
+		// get the instruction
+		auto&& inst = *it;
+
+		// extract the flags the instruction has to update
+		size_t need_update = inst->get_update() & required_updates;
+		required_updates ^= need_update;
+
+		// add the requirements of this instruction to the search-requirements,
+		// to indicate to previous instructions, that the flags are needed, and update its update-flags
+		required_updates |= inst->get_require();
+		inst->set_update(need_update);
+	}
+
+	// iterate through the instructions and translate them to riscv-code
+	// TODO: instatiate code batch here based on the debug settings
+	auto&& codeblock = _codestore.create_block();
+	for (size_t i = 0; i < instructions.size(); i++) {
+		auto&& inst = instructions[i];
+		_batch->reset();
+
+		// translate the instruction
+		inst->generate(*_batch);
+
+		// check if the instruction is the last instruction and the upcoming block is known
+		if (next_block) {
+			if (i == instructions.size() - 1) {
+				// append the forcing connection to the next block
+				helper::load_immediate(*_batch, next_block->riscv_start, helper::address_destination);
+				*_batch += encoding::JALR(RiscVRegister::zero, helper::address_destination, 0);
+			}
+		}
+		_batch->end();
+
+		// print some debug-information
+		spdlog::debug("decoded {}", inst->string());
+		_batch->print();
+
+		// add the instruction to the store
+		_codestore.add_instruction(codeblock, inst->get_address(), inst->get_size(), _batch->get(), _batch->size());
+	}
+
+	// add dynamic tracing-information for the basic-block
+	spdlog::info("basicblock translated: x86: [0x{0:x} - 0x{1:x}] riscv: 0x{2:x}", codeblock.x86_start, codeblock.x86_end,
+				 codeblock.riscv_start);
 
 	return codeblock.riscv_start;
 }
 
-bool CodeGenerator::translate_instruction(const fadec::Instruction& x86_instruction,
-										  utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions) {
-	switch (x86_instruction.get_type()) {
-		// at the moment we just insert a return for every instruction that modifies control flow.
-		case InstructionType::JMP:
-		case InstructionType::CALL:
-		case InstructionType::RET:
-		case InstructionType::RET_IMM:
-			num_instructions += translate_ret(x86_instruction, riscv_instructions);
-			return true;
+void CodeGenerator::update_basic_block(utils::host_addr_t addr, utils::host_addr_t absolute_address) {
+	// compute new base-address where the new absolute address will be written to t0
+	// 9 = 8 [load_64bit_immediate] + 1 [JALR]
+	CodeMemory code{reinterpret_cast<riscv_instruction_t*>(addr - 9 * sizeof(riscv_instruction_t)), 9};
 
-		case InstructionType::PUSH:
-		case InstructionType::POP:
-			break;
-
-		case InstructionType::LEA:
-			//[0x123 + 0x321*8 + 0x12345678]
-			riscv_instructions[num_instructions++] = encoding::MV(RiscVRegister::a1, RiscVRegister::zero);
-			riscv_instructions[num_instructions++] = encoding::ADDI(RiscVRegister::a1, RiscVRegister::zero, 0x123);
-			riscv_instructions[num_instructions++] = encoding::MV(RiscVRegister::a2, RiscVRegister::zero);
-			riscv_instructions[num_instructions++] = encoding::ADDI(RiscVRegister::a2, RiscVRegister::zero, 0x321);
-
-			translate_memory_operand(x86_instruction, riscv_instructions, num_instructions, 1, RiscVRegister::a0);
-			break;
-
-		case InstructionType::NOP:
-		case InstructionType::MOV:
-			break;
-
-		case InstructionType::MOV_IMM:
-		case InstructionType::MOVABS_IMM:
-			num_instructions += translate_mov(x86_instruction, riscv_instructions);
-			break;
-
-		default:
-			throw std::runtime_error("Unsupported instruction used.");
-	}
-
-	return false;
+	// write the new instructions
+	helper::load_immediate(code, absolute_address, helper::address_destination);
+	code += encoding::JALR(RiscVRegister::zero, helper::address_destination, 0);
 }
 
-
-void CodeGenerator::translate_memory_operand(const fadec::Instruction& x86_instruction,
-											 utils::riscv_instruction_t* riscv_instructions, size_t& num_instructions,
-											 size_t index, RiscVRegister reg) {
-	if (x86_instruction.get_address_size() != 8)
-		throw std::runtime_error("invalid addressing-size");
-
-	const auto& operand = x86_instruction.get_operand(index);
-
-	// add the scale & index
-	if (x86_instruction.get_index_register() != fadec::Register::none) {
-		riscv_instructions[num_instructions++] = encoding::MV(reg, register_mapping[static_cast<uint16_t>(
-				x86_instruction.get_index_register())]);
-		riscv_instructions[num_instructions++] = encoding::SLLI(reg, reg, x86_instruction.get_index_scale());
-	} else {
-		riscv_instructions[num_instructions++] = encoding::MV(reg, RiscVRegister::zero);
+codegen::Instruction& CodeGenerator::decode_instruction(utils::guest_addr_t& addr, inst_vec_t& inst_vec) const {
+	// decode the fadec-instruction
+	fadec::Instruction entry{};
+	if (fadec::decode(reinterpret_cast<uint8_t*>(addr), _elf.get_size(addr), DecodeMode::decode_64, addr,
+					  entry) <= 0) {
+		inst_vec.~vector();
+		Dispatcher::fault_exit("Failed to decode the instruction");
 	}
 
+	// transform the instruction into our representation
+	auto inst_object = transform_instruction(entry);
+	if (!inst_object) {
+		// build the exception message
+		const auto message = "Unsupported instruction used. ";
+		const auto message_size = strlen(message);
 
-	// add the base-register
-	if (operand.get_register() != fadec::Register::none) {
-		riscv_instructions[num_instructions++] = encoding::ADD(reg, reg, register_mapping[static_cast<uint16_t>(
-				operand.get_register())]);
+		char exception_buffer[512];
+		memcpy(exception_buffer, message, message_size);
+		fadec::format(entry, exception_buffer + message_size, sizeof(exception_buffer) - message_size);
+
+		inst_vec.~vector();
+		Dispatcher::fault_exit(exception_buffer);
 	}
 
-	// add the displacement
-	if (x86_instruction.get_displacement() > 0) {
-		// less or equal than 12 bits
-		if (x86_instruction.get_displacement() < 0x1000) {
-			riscv_instructions[num_instructions++] = encoding::ADDI(reg, reg, static_cast<uint16_t>(
-					x86_instruction.get_displacement()));
-		} else {
-			riscv_instructions[num_instructions++] = encoding::LUI(RiscVRegister::t6,
-																   static_cast<uint32_t>(x86_instruction.get_displacement())
-																		   >> 12u);
-			riscv_instructions[num_instructions++] = encoding::ADDI(RiscVRegister::t6, RiscVRegister::t6,
-																	static_cast<uint16_t>(x86_instruction.get_displacement()) &
-																	0x0FFFu);
-			riscv_instructions[num_instructions++] = encoding::ADD(reg, reg, RiscVRegister::t6);
-		}
-	}
-}
+	// adjust the address and add the instruction to the vector
+	addr += inst_object->get_size();
+	inst_vec.emplace_back(std::move(inst_object));
 
-size_t
-CodeGenerator::translate_mov(const fadec::Instruction& x86_instruction, utils::riscv_instruction_t* riscv_instruction) {
-
-	riscv_instruction[0] = LUI(RiscVRegister::a0, static_cast<uint16_t>(x86_instruction.get_immediate()));
-	return 1;
-}
-
-size_t
-CodeGenerator::translate_ret(const fadec::Instruction& x86_instruction, utils::riscv_instruction_t* riscv_instruction) {
-	riscv_instruction[0] = JALR(RiscVRegister::zero, RiscVRegister::ra, 0);
-	return 1;
+	return *inst_vec.back();
 }

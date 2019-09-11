@@ -1,0 +1,3 @@
+# Testing if the fibonacci number is correctly calculated (or at least the lowest 8bit).
+./oxtra test/resources/no_libc/fibonacci_nojc
+>>>= 219
