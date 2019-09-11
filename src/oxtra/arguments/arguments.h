@@ -25,7 +25,7 @@ namespace arguments {
 			char* guest_path;
 			std::vector<std::string> guest_arguments;
 			spdlog::level::level_enum spdlog_log_level;
-			bool debugging;
+			uint8_t debugging;
 			size_t stack_size;
 			size_t instruction_list_size, offset_list_size, entry_list_size;
 		};
@@ -37,7 +37,7 @@ namespace arguments {
 		static const unsigned char dbk_key = 0x80;
 		const struct argp_option _options[8] = {
 				{"args",         'a',     "\"ARGUMENTS...\"", 0, "Specify the arguments that will be passed to the x86 executable. The default is no arguments",                             0},
-				{"debug",        dbk_key, nullptr,            0, "Specify to attach and enable the debugger.", 0},
+				{"debug",        dbk_key, "MODE",            0, "Specify to attach and enable the debugger. 0=disabled, 1=lightweight, 2=riscv-enabled. The default is 0.", 0},
 				{"lentry-size",  'e',     "SIZE",             0, "The size of the list containing block entires. Limit for consecutive block entries. The default is 64.",                   0},
 				{"linst-size",   'i',     "SIZE",             0, "The size of the list containing instructions. Limit for generated RISCV instructions in a block. The default is 4096.",    0},
 				{"log-level",    'l',     "LEVEL",            0, "Specify the log level. 0=trace, 1=debug, 2=info, 3=warn, 4=error, 5=critical, 6=off. The default is 3.",                   0},
@@ -74,7 +74,7 @@ namespace arguments {
 
 		size_t get_entry_list_size() const;
 
-		bool get_debugging() const;
+		uint8_t get_debugging() const;
 
 	private:
 		/**
