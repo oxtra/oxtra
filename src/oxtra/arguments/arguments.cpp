@@ -8,8 +8,8 @@ const char* argp_program_bug_address = "https://gitlab.lrz.de/lrr-tum/students/e
 
 Arguments::Arguments(int argc, char** argv) :
 		_executable_path{argv[0]},
-		_stored_arguments{nullptr, std::vector<std::string>(), spdlog::level::level_enum::warn, false,
-						  0x200000, 0x1000, 0x200, 0x40} {
+		_stored_arguments{nullptr, std::vector<std::string>(), spdlog::level::level_enum::warn,
+						  0, 0x200000, 0x1000, 0x200, 0x40} {
 
 	parse_arguments(argc, argv);
 }
@@ -42,7 +42,7 @@ size_t Arguments::get_entry_list_size() const {
 	return _stored_arguments.entry_list_size;
 }
 
-bool Arguments::get_debugging() const {
+uint8_t Arguments::get_debugging() const {
 	return _stored_arguments.debugging;
 }
 
@@ -118,17 +118,12 @@ error_t Arguments::parse_opt(int key, char* arg, struct argp_state* state) {
 			arguments->guest_arguments = string_split(arg, ' ');
 			break;
 		case 'l': {
-			int parsed = parse_string(state, arg, 0, 6, "Illegal log level");
+			int parsed = parse_string(state, arg, 0, 6, "Illegal log level.");
 			arguments->spdlog_log_level = static_cast<enum spdlog::level::level_enum>(parsed);
 			break;
 		}
-		case 'd':
-			if (strcasecmp("false", arg) == 0 || strcasecmp("0", arg) == 0)
-				arguments->debugging = false;
-			else if (strcasecmp("true", arg) == 0 || strcasecmp("1", arg) == 0)
-				arguments->debugging = true;
-			else
-				argp_failure(state, 1, 0, "%s: %s. %s.", "Illegal debugging-behavior", arg, "Allowed are: true, 1, false, 0");
+		case dbk_key:
+			arguments->debugging = parse_string(state, arg, 0, 2, "unknown debugging-mode.");
 			break;
 		case 's':
 			arguments->stack_size = parse_string(state, arg, 1, "Illegal size, must be a positive integer.");
