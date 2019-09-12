@@ -13,8 +13,12 @@ void codegen::jump_table::jump_reroute_dynamic(CodeBatch& batch) {
 	jump_table_entry(batch, Entry::reroute_dynamic);
 }
 
-void codegen::jump_table::jump_debug_break(CodeBatch& batch) {
+void codegen::jump_table::jump_debugger(CodeBatch& batch) {
 	jump_table_entry(batch, Entry::debug_callback);
+}
+
+void codegen::jump_table::jump_debugger_riscv(CodeBatch& batch) {
+	jump_table_entry(batch, Entry::debug_callback_riscv);
 }
 
 void codegen::jump_table::jump_table_offset(CodeBatch& batch, encoding::RiscVRegister offset) {

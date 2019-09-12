@@ -24,14 +24,16 @@ long Dispatcher::run() {
 
 	// initialize the debugger if necessary
 	std::unique_ptr<debugger::Debugger> debugger = nullptr;
-	if (_args.get_debugging()) {
-		debugger = std::make_unique<debugger::Debugger>();
+	if (_args.get_debugging() > 0) {
+		debugger = std::make_unique<debugger::Debugger>(_elf, _args.get_debugging() == 2,
+														_context.guest.map.rsp - _args.get_stack_size(),
+														_args.get_stack_size());
 		_context.debugger = debugger.get();
 	}
 
 	// set the flags indirectly
-	_context.flag_info.overflow_operation = static_cast<uint16_t>(jump_table::Entry::overflow_clear);
-	_context.flag_info.carry_operation = static_cast<uint16_t>(jump_table::Entry::carry_clear);
+	_context.flag_info.overflow_operation = static_cast<uint16_t>(jump_table::Entry::overflow_clear) * 4;
+	_context.flag_info.carry_operation = static_cast<uint16_t>(jump_table::Entry::carry_clear) * 4;
 	_context.flag_info.zero_value = 1;
 	_context.flag_info.sign_size = 0;
 	_context.flag_info.parity_value = 1;
@@ -150,7 +152,7 @@ long Dispatcher::virtualize_syscall(const ExecutionContext* context) {
 		const auto syscall_index = syscall_map[guest_index];
 
 		// print the systemcall with its attributes
-		spdlog::info("syscall {} mapped to: {} ({}, {}, {}, {}, {}, {})", guest_index, syscall_index,
+		spdlog::info("syscall: [{:03}]->[{:03}]({:#x}, {:#x}, {:#x}, {:#x}, {:#x}, {:#x})", guest_index, syscall_index,
 					 context->guest.map.rdi, context->guest.map.rsi, context->guest.map.rdx,
 					 context->guest.map.r10, context->guest.map.r8, context->guest.map.r9);
 		if (syscall_index >= 0)

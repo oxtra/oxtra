@@ -12,6 +12,7 @@ namespace codegen {
 
 		/**
 		 * The implementation of the execution_operation can use registers: t2, t3, t4, t5, t6 as needed.
+		 * dest -> execute_operation -> dest
 		 */
 		virtual void execute_operation(CodeBatch& batch, encoding::RiscVRegister dst) const = 0;
 	};

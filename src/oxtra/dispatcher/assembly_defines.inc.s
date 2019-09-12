@@ -1,5 +1,8 @@
 # global important offsets
 .equ guest_offset, 0
+.equ guest_t0_offset, 0x20
+.equ guest_t1_offset, 0x28
+.equ guest_t2_offset, 0x30
 .equ guest_a0_offset, 0x48
 .equ guest_rdi_offset, 0x70
 .equ guest_rsi_offset, 0x68
@@ -23,11 +26,15 @@
 .equ flag_info_carry_operation, 0x242
 .equ flag_info_sign_size, 0x244
 .equ flag_info_parity_value, 0x245
+.equ debug_bp_count, 0x00
+.equ debug_halt, 0x02
+.equ debug_step_riscv, 0x03
+.equ debug_bp_array, 0x08
 
 # global important strings
 .section .rodata
-reroute_static_fmt: .string "reroute_static: 0x{0:x}"
-reroute_dynamic_fmt: .string "reroute_dynamic: 0x{0:x}"
+reroute_static_fmt: .string "reroute_static: {0:#x}"
+reroute_dynamic_fmt: .string "reroute_dynamic: {0:#x}"
 unsupported_overflow_string: .string "the overflow flag of an instruction which doesn't update it it yet, has been used: "
 unsupported_carry_string: .string "the carry flag of an instruction which doesn't update it it yet, has been used: "
 
@@ -58,7 +65,7 @@ unsupported_carry_string: .string "the carry flag of an instruction which doesn'
 	sd s10, 0xC8(\reg)
 	sd s11, 0xD0(\reg)
 .endm
-.macro capture_context_temp reg
+.macro capture_context_high_level reg
 	capture_context \reg
 	sd t0, 0x20(\reg)
 	sd t1, 0x28(\reg)
@@ -67,9 +74,12 @@ unsupported_carry_string: .string "the carry flag of an instruction which doesn'
 	sd t5, 0xE8(\reg)
 	sd t6, 0xF0(\reg)
 .endm
-.macro capture_context_full reg
-	capture_context_temp \reg
+.macro capture_context_debug reg
+	capture_context \reg
+	sd t3, 0xD8(\reg)
 	sd t4, 0xE0(\reg)
+	sd t5, 0xE8(\reg)
+	sd t6, 0xF0(\reg)
 .endm
 
 # global macro's to restore parts of the context or even the whole context
@@ -99,7 +109,7 @@ unsupported_carry_string: .string "the carry flag of an instruction which doesn'
 	ld s10, 0xC8(\reg)
 	ld s11, 0xD0(\reg)
 .endm
-.macro restore_context_temp reg
+.macro restore_context_high_level reg
 	ld t0, 0x20(\reg)
 	ld t1, 0x28(\reg)
 	ld t2, 0x30(\reg)
@@ -108,7 +118,13 @@ unsupported_carry_string: .string "the carry flag of an instruction which doesn'
 	ld t6, 0xF0(\reg)
 	restore_context \reg
 .endm
-.macro restore_context_full reg
+.macro restore_context_debug reg
+	ld t0, 0x20(\reg)
+	ld t1, 0x28(\reg)
+	ld t2, 0x30(\reg)
+	ld t3, 0xD8(\reg)
 	ld t4, 0xE0(\reg)
-	restore_context_temp \reg
+    ld t5, 0xE8(\reg)
+	ld t6, 0xF0(\reg)
+	restore_context \reg
 .endm

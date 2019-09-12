@@ -16,7 +16,7 @@ void codegen::Idiv::generate(codegen::CodeBatch& batch) const {
 	constexpr auto remainder = encoding::RiscVRegister::t2;
 	constexpr auto dividend = encoding::RiscVRegister::t1;
 	constexpr auto divisor = encoding::RiscVRegister::t0;
-	translate_operand(batch, 0, 0, divisor, tmp, true, true, idiv);
+	translate_operand(batch, 0, 0, divisor, tmp, true, true, idiv, false);
 
 	// if (divisor == 0) raise #DE (divide by zero)
 	auto branch = batch.add(encoding::NOP());

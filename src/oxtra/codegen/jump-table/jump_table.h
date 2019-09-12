@@ -14,6 +14,7 @@ namespace codegen::jump_table {
 		reroute_static,
 		reroute_dynamic,
 		debug_callback,
+		debug_callback_riscv,
 		c_wrapper,
 		unsupported_carry,
 		unsupported_overflow,
@@ -94,9 +95,14 @@ namespace codegen::jump_table {
 	void jump_reroute_dynamic(CodeBatch& batch);
 
 	/**
-	 * Generates a jump to the debug break routine.
+	 * Generates a jump to the debugger routine.
 	 */
-	void jump_debug_break(CodeBatch& batch);
+	void jump_debugger(CodeBatch& batch);
+
+	/**
+	 * Generates a jump to the riscv-debugger routine.
+	 */
+	void jump_debugger_riscv(CodeBatch& batch);
 
 	/**
 	 * Generates a jump into the jump table to the offset in the register.
