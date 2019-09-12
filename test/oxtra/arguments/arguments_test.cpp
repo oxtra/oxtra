@@ -22,7 +22,7 @@ TEST_CASE("Arguments support parsing valid arguments", "[arguments]") {
 	}
 	SECTION("use modified arguments") {
 		constexpr const char* args_string[] = {"./oxtra", "-l", "5", "--stack-size=1338", "--linst-size=1337", "--lentry-size=42",
-											   "--loffset-size=50", "app", "-a", "this is  a test", "--debug"};
+											   "--loffset-size=50", "app", "-a", "this is  a test", "--debug=2"};
 		const auto arguments = Arguments(11, const_cast<char**>(args_string));
 
 		REQUIRE(arguments.get_guest_arguments().size() == 4);
@@ -36,7 +36,7 @@ TEST_CASE("Arguments support parsing valid arguments", "[arguments]") {
 		REQUIRE(arguments.get_offset_list_size() == 50);
 		REQUIRE(strcmp(arguments.get_guest_path(), "app") == 0);
 		REQUIRE(((int)arguments.get_log_level()) == SPDLOG_LEVEL_CRITICAL);
-		REQUIRE(arguments.get_debugging());
+		REQUIRE(arguments.get_debugging() == 2);
 	}
 	SECTION("nested quotes in string") {
 		constexpr const char* args_string[] = {"./oxtra", "-a", "\"this is a \\\"  nested string\" -l  0", "app"};

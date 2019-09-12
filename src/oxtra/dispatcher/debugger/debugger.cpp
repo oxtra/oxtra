@@ -103,9 +103,10 @@ void debugger::Debugger::end_block(codegen::CodeBatch& batch, codegen::codestore
 			break;
 		}
 	}
-	if (insert_index > active_debugger->_blocks.size())
+	if (insert_index > active_debugger->_blocks.size()) {
 		active_debugger->_blocks.emplace_back(block, riscv_end);
-	else if (insert_index >= active_debugger->_current_index)
+		insert_index--;
+	} else if (insert_index >= active_debugger->_current_index)
 		active_debugger->_current_index++;
 
 	// update the current block
@@ -313,52 +314,94 @@ void debugger::Debugger::update_break_points(const BlockEntry& block) {
 		// check if a break-point already exists for this address
 		if (_bp_array[i] == 0)
 			continue;
-		bool move = false;
-		for (size_t j = 0; j < _bp_count; j++) {
-			if (move) {
-				_bp_x86_array[j - 1] = _bp_x86_array[j];
-				_bp_array[j - 1] = _bp_array[j];
-				continue;
-			}
-			if (i == j || _bp_x86_array[i] != _bp_x86_array[j])
-				continue;
-			move = true;
+		bool remove = false;
+		if (i > 0) {
+			if (_bp_x86_array[i] == _bp_x86_array[i - 1])
+				remove = true;
 		}
-
-		// check if an entry has been removed
-		if (move)
+		if (i + 1 < _bp_count) {
+			if (_bp_x86_array[i] == _bp_x86_array[i + 1])
+				remove = true;
+		}
+		if (remove) {
+			for (size_t j = i; j < _bp_count; j++) {
+				_bp_x86_array[j] = _bp_x86_array[j + 1];
+				_bp_array[j] = _bp_array[j + 1];
+			}
 			_bp_count--;
+			i--;
+		}
 	}
 }
 
-void debugger::Debugger::translate_break_point(uint16_t index) {
+bool debugger::Debugger::insert_break_point(uintptr_t addr, bool static_insert) {
+	// sort the break-point into the array
+	size_t index = _bp_count;
+	if (static_insert) {
+		index = 0;
+		for (size_t i = _bp_count; i > 0; i--) {
+			if (_bp_x86_array[i - 1] < addr) {
+				index = i;
+				break;
+			}
+			_bp_x86_array[i] = _bp_x86_array[i - 1];
+			_bp_array[i] = _bp_array[i - 1];
+		}
+	}
+
+	// clear the bp-address and writhe the x86-address
+	_bp_array[index] = 0;
+	_bp_x86_array[index] = addr;
+
 	// iterate through the blocks and check if one of them suits the break-point
-	utils::guest_addr_t address = _bp_x86_array[index];
 	for (size_t i = 0; i < _blocks.size(); i++) {
 		// check if the current block is above the address
-		if (address < _blocks[i].entry->x86_start)
+		if (addr < _blocks[i].entry->x86_start)
 			break;
 
 		// check if the address lies within the block
-		if (address >= _blocks[i].entry->x86_start && address < _blocks[i].entry->x86_end) {
+		if (addr >= _blocks[i].entry->x86_start && addr < _blocks[i].entry->x86_end) {
 			// initialize the counters (riscv + 4, as the first instruction is the jump to the debug-handler)
 			uintptr_t x86_counter = _blocks[i].entry->x86_start;
 			uintptr_t riscv_counter = _blocks[i].entry->riscv_start + 4;
 
 			// iterate through the instructions and look for the one of the break-point
 			for (size_t j = 0; j < _blocks[i].entry->instruction_count; j++) {
-				if ((address >= x86_counter && address < x86_counter + _blocks[i].entry->offsets[j].x86) ||
+				if ((addr >= x86_counter && addr < x86_counter + _blocks[i].entry->offsets[j].x86) ||
 					(j + 1 == _blocks[i].entry->instruction_count)) {
 					_bp_array[index] = riscv_counter;
 					_bp_x86_array[index] = x86_counter;
-					return;
+					break;
 				}
 				x86_counter += _blocks[i].entry->offsets[j].x86;
 				riscv_counter += _blocks[i].entry->offsets[j].riscv;
 			}
+
+			// check if the breakpoint has been inserted
+			if (_bp_array[index] != 0)
+				break;
 		}
 	}
 
-	// clear the break-point, as the block has not yet been translated
-	_bp_array[index] = 0;
+	// check if the break-point has already existed
+	if (static_insert) {
+		bool remove = false;
+		if (index < _bp_count) {
+			if (_bp_x86_array[index] == _bp_x86_array[index + 1])
+				remove = true;
+		}
+		if (index > 0) {
+			if (_bp_x86_array[index] == _bp_x86_array[index - 1])
+				remove = true;
+		}
+		if (remove) {
+			for (size_t i = index; i < _bp_count; i++) {
+				_bp_x86_array[i] = _bp_x86_array[i + 1];
+				_bp_array[i] = _bp_array[i + 1];
+			}
+			return false;
+		}
+	}
+	_bp_count++;
+	return true;
 }

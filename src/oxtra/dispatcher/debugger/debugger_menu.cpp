@@ -189,12 +189,12 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 			}
 			return print_blocks();
 		case DebugInputKey::breakpoint:
-			if (arg_state[0] == arg_state_number || arg_state[1] == arg_state_neg_rel || arg_state[2] == arg_state_pos_rel
+			if (arg_state[0] == arg_state_number || arg_state[0] == arg_state_neg_rel || arg_state[0] == arg_state_pos_rel
 				|| (arg_state[0] == arg_state_key &&
 					(arg_key[0] == DebugInputKey::startofblock || arg_key[0] == DebugInputKey::endofblock))) {
 				if (_bp_count == 255)
 					return "limit of break-points reached (255)!";
-				if (arg_state[0] == arg_state_number) {
+				if (arg_state[0] != arg_state_key) {
 					if (arg_state[0] == arg_state_pos_rel)
 						address += arg_number[0];
 					else if (arg_state[0] == arg_state_neg_rel)
@@ -204,7 +204,7 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 				} else {
 					BlockEntry* block = _current;
 					if (arg_state[1] == arg_state_number) {
-						if (arg_state[1] >= _blocks.size())
+						if (arg_number[1] >= _blocks.size())
 							return "block-index out of range!";
 						block = &_blocks[arg_number[1]];
 					}
@@ -213,13 +213,8 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 					else
 						address = block->entry->x86_end - block->entry->offsets[block->entry->instruction_count - 1].x86;
 				}
-				_bp_x86_array[_bp_count] = address;
-				translate_break_point(_bp_count);
-				for (size_t i = 0; i < _bp_count; i++) {
-					if (_bp_x86_array[i] == _bp_x86_array[_bp_count])
-						return "break-point already set!";
-				}
-				_bp_count++;
+				if(!insert_break_point(address, true))
+					return "break-point already set!";
 				return "break-point set!";
 			}
 			return print_break_points();
@@ -415,13 +410,11 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 			if (arg_state[0] == arg_state_neg_rel || arg_state[0] == arg_state_pos_rel ||
 				arg_state[0] == arg_state_number) {
 				if (arg_state[0] == arg_state_neg_rel)
-					_bp_x86_array[_bp_count] = address - arg_number[0];
+					arg_number[0] = address - arg_number[0];
 				else if (arg_state[0] == arg_state_pos_rel)
-					_bp_x86_array[_bp_count] = address + arg_number[0];
-				else
-					_bp_x86_array[_bp_count] = arg_number[0];
-				_run_break = _bp_count++;
-				translate_break_point(_run_break);
+					arg_number[0] = address + arg_number[0];
+				_run_break = _bp_count;
+				insert_break_point(arg_number[0], false);
 				_state |= DebugState::temp_break;
 			}
 			return "";
@@ -484,13 +477,22 @@ bool debugger::Debugger::parse_number(std::string string, uint8_t* relative, uin
 			number = number * (hex ? 16 : 10) + (string[i] - '0');
 		else if (string[i] >= 'a' && string[i] <= 'f' && hex)
 			number = number * 16 + (string[i] - 'a' + 10);
+		else if (string[i] >= 'A' && string[i] <= 'F' && hex)
+			number = number * 16 + (string[i] - 'A' + 10);
 		else
 			return false;
 	}
 	return true;
 }
 
-debugger::Debugger::DebugInputKey debugger::Debugger::parse_key(std::string& key) {
+debugger::Debugger::DebugInputKey debugger::Debugger::parse_key(std::string key) {
+	// convert the string to lowercase
+	for (auto& c : key) {
+		if (c >= 'A' && c <= 'Z')
+			c = c - 'A' + 'a';
+	}
+
+	// figure out what keyword is meant
 	switch (key[0]) {
 		case 'a':
 			if (key == "assembly" || key == "asm")

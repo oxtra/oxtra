@@ -134,7 +134,7 @@ namespace debugger {
 
 		void update_break_points(const BlockEntry& block);
 
-		void translate_break_point(uint16_t index);
+		bool insert_break_point(uintptr_t addr, bool static_insert);
 
 		std::string parse_input(utils::guest_addr_t address, dispatcher::ExecutionContext* context);
 
@@ -142,9 +142,9 @@ namespace debugger {
 
 		bool parse_number(std::string string, uint8_t* relative, uintptr_t& number);
 
-		std::string print_number(uint64_t nbr, bool hex, uint8_t dec_digits = 1, uint8_t dec_pad = ' ');
+		DebugInputKey parse_key(std::string key);
 
-		DebugInputKey parse_key(std::string& key);
+		std::string print_number(uint64_t nbr, bool hex, uint8_t dec_digits = 1, uint8_t dec_pad = ' ');
 
 		std::string print_reg(dispatcher::ExecutionContext* context, bool hex, bool riscv);
 
