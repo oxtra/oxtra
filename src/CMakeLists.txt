@@ -12,6 +12,7 @@ add_library(oxtra_libs
 		oxtra/codegen/codegen.cpp
 		oxtra/codegen/codestore/codestore.cpp
 		oxtra/dispatcher/dispatcher.cpp
+		oxtra/dispatcher/debugger/debugger.cpp
 		oxtra/codegen/encoding/encoding.cpp
 		oxtra/codegen/decoding/decoding.cpp
 		oxtra/codegen/helper.cpp
@@ -25,6 +26,7 @@ add_library(oxtra_libs
 		oxtra/codegen/instructions/arithmetic/adc.cpp
 		oxtra/codegen/instructions/arithmetic/neg.cpp
 		oxtra/codegen/instructions/arithmetic/sub.cpp
+		oxtra/codegen/instructions/arithmetic/idiv.cpp
 		oxtra/codegen/instructions/arithmetic/inc.cpp
 		oxtra/codegen/instructions/arithmetic/dec.cpp
 		oxtra/codegen/instructions/arithmetic/mul.cpp
@@ -69,7 +71,12 @@ add_library(oxtra_libs
 		oxtra/codegen/instructions/comparable/comparable.cpp
 		oxtra/codegen/instructions/comparable/cmp.cpp
 		oxtra/codegen/instructions/comparable/test.cpp
-		oxtra/dispatcher/debugger/debugger.cpp
+		oxtra/codegen/instructions/string/stos.cpp
+		oxtra/codegen/instructions/string/repeatable.cpp
+		oxtra/codegen/instructions/string/scas.cpp
+		oxtra/codegen/instructions/string/cmps.cpp
+		oxtra/codegen/instructions/string/lods.cpp
+		oxtra/codegen/instructions/string/movs.cpp
 )
 
 target_link_libraries(oxtra_libs

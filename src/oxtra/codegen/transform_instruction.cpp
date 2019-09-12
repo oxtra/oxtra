@@ -5,29 +5,33 @@
 #include "oxtra/codegen/instructions/arithmetic/inc.h"
 #include "oxtra/codegen/instructions/arithmetic/sub.h"
 #include "oxtra/codegen/instructions/arithmetic/dec.h"
-#include "oxtra/codegen/instructions/arithmetic/neg.h"
+#include "oxtra/codegen/instructions/arithmetic/idiv.h"
+#include "oxtra/codegen/instructions/arithmetic/inc.h"
 #include "oxtra/codegen/instructions/arithmetic/mul.h"
-#include "oxtra/codegen/instructions/memory/mov.h"
-#include "oxtra/codegen/instructions/memory/lea.h"
-#include "oxtra/codegen/instructions/memory/pop.h"
-#include "oxtra/codegen/instructions/memory/push.h"
-#include "oxtra/codegen/instructions/memory/movsx.h"
-#include "oxtra/codegen/instructions/memory/movzx.h"
-#include "oxtra/codegen/instructions/memory/cex.h"
-#include "oxtra/codegen/instructions/memory/leave.h"
-#include "oxtra/codegen/instructions/memory/csep.h"
+#include "oxtra/codegen/instructions/arithmetic/neg.h"
+#include "oxtra/codegen/instructions/arithmetic/sub.h"
+#include "oxtra/codegen/instructions/control-flow/call.h"
+#include "oxtra/codegen/instructions/control-flow/jmp.h"
+#include "oxtra/codegen/instructions/control-flow/ret.h"
+#include "oxtra/codegen/instructions/control-flow/syscall.h"
 #include "oxtra/codegen/instructions/logic/and.h"
-#include "oxtra/codegen/instructions/logic/or.h"
+#include "oxtra/codegen/instructions/logic/nop.h"
 #include "oxtra/codegen/instructions/logic/not.h"
-#include "oxtra/codegen/instructions/logic/xor.h"
+#include "oxtra/codegen/instructions/logic/or.h"
+#include "oxtra/codegen/instructions/logic/sar.h"
 #include "oxtra/codegen/instructions/logic/shl.h"
 #include "oxtra/codegen/instructions/logic/shr.h"
-#include "oxtra/codegen/instructions/logic/sar.h"
-#include "oxtra/codegen/instructions/logic/nop.h"
-#include "oxtra/codegen/instructions/control-flow/syscall.h"
-#include "oxtra/codegen/instructions/control-flow/jmp.h"
-#include "oxtra/codegen/instructions/control-flow/call.h"
-#include "oxtra/codegen/instructions/control-flow/ret.h"
+#include "oxtra/codegen/instructions/logic/xor.h"
+#include "oxtra/codegen/instructions/memory/cex.h"
+#include "oxtra/codegen/instructions/memory/csep.h"
+#include "oxtra/codegen/instructions/memory/lea.h"
+#include "oxtra/codegen/instructions/memory/leave.h"
+#include "oxtra/codegen/instructions/memory/mov.h"
+#include "oxtra/codegen/instructions/memory/movsx.h"
+#include "oxtra/codegen/instructions/memory/movzx.h"
+#include "oxtra/codegen/instructions/memory/pop.h"
+#include "oxtra/codegen/instructions/memory/push.h"
+
 #include "oxtra/codegen/instructions/control-flow/conditional-jumps/jc.h"
 #include "oxtra/codegen/instructions/control-flow/conditional-jumps/jo.h"
 #include "oxtra/codegen/instructions/control-flow/conditional-jumps/jz.h"
@@ -47,6 +51,11 @@
 #include "oxtra/codegen/instructions/control-flow/conditional-jumps/jcxz.h"
 #include "oxtra/codegen/instructions/comparable/cmp.h"
 #include "oxtra/codegen/instructions/comparable/test.h"
+#include "oxtra/codegen/instructions/string/cmps.h"
+#include "oxtra/codegen/instructions/string/lods.h"
+#include "oxtra/codegen/instructions/string/movs.h"
+#include "oxtra/codegen/instructions/string/scas.h"
+#include "oxtra/codegen/instructions/string/stos.h"
 
 using namespace codegen;
 using namespace fadec;
@@ -120,6 +129,10 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 		case InstructionType::IMUL2:
 		case InstructionType::IMUL3:
 			return std::make_unique<Mul>(inst);
+
+		case InstructionType::DIV:
+		case InstructionType::IDIV:
+			return std::make_unique<Idiv>(inst);
 
 		case InstructionType::MOV_IMM:
 		case InstructionType::MOVABS_IMM:
@@ -195,6 +208,17 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 
 		case InstructionType::LEA:
 			return std::make_unique<Lea>(inst);
+
+		case InstructionType::CMPS:
+			return std::make_unique<Cmps>(inst);
+		case InstructionType::LODS:
+			return std::make_unique<Lods>(inst);
+		case InstructionType::MOVS:
+			return std::make_unique<Movs>(inst);
+		case InstructionType::SCAS:
+			return std::make_unique<Scas>(inst);
+		case InstructionType::STOS:
+			return std::make_unique<Stos>(inst);
 
 		default:
 			return nullptr;
