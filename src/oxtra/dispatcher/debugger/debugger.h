@@ -23,22 +23,23 @@ namespace debugger {
 	class Debugger {
 	private:
 		struct DebugState {
-			static constexpr uint16_t none 			= 0x0000u;
-			static constexpr uint16_t init 			= 0x0001u;
-			static constexpr uint16_t await_sob 	= 0x0002u;
-			static constexpr uint16_t await_eob 	= 0x0004u;
-			static constexpr uint16_t await_counter = 0x0008u;
-			static constexpr uint16_t await_step 	= 0x0010u;
-			static constexpr uint16_t await 		= 0x001eu;
-			static constexpr uint16_t temp_break	= 0x0020u;
-			static constexpr uint16_t reg_riscv 	= 0x0100u;
-			static constexpr uint16_t reg_dec 		= 0x0200u;
-			static constexpr uint16_t print_reg 	= 0x0400u;
-			static constexpr uint16_t print_asm 	= 0x0800u;
-			static constexpr uint16_t print_flags 	= 0x1000u;
-			static constexpr uint16_t print_bp 		= 0x2000u;
-			static constexpr uint16_t print_stack 	= 0x4000u;
-			static constexpr uint16_t print_blocks 	= 0x8000u;
+			static constexpr uint16_t none = 0x0000u;
+			static constexpr uint16_t init = 0x0001u;
+			static constexpr uint16_t read_warning = 0x0002u;
+			static constexpr uint16_t await_sob = 0x0004u;
+			static constexpr uint16_t await_eob = 0x0008u;
+			static constexpr uint16_t await_counter = 0x0010u;
+			static constexpr uint16_t await_step = 0x0020u;
+			static constexpr uint16_t await = 0x002cu;
+			static constexpr uint16_t temp_break = 0x0040u;
+			static constexpr uint16_t reg_riscv = 0x0100u;
+			static constexpr uint16_t reg_dec = 0x0200u;
+			static constexpr uint16_t print_reg = 0x0400u;
+			static constexpr uint16_t print_asm = 0x0800u;
+			static constexpr uint16_t print_flags = 0x1000u;
+			static constexpr uint16_t print_bp = 0x2000u;
+			static constexpr uint16_t print_stack = 0x4000u;
+			static constexpr uint16_t print_blocks = 0x8000u;
 		};
 		enum class DebugInputKey : uint8_t {
 			none,
@@ -67,7 +68,8 @@ namespace debugger {
 			crawl,
 			stack,
 			blocks,
-			quit
+			quit,
+			read
 		};
 
 		struct BlockEntry {
@@ -155,6 +157,8 @@ namespace debugger {
 		std::string print_stack(uintptr_t address, dispatcher::ExecutionContext* context, uint16_t limit);
 
 		std::string print_blocks();
+
+		std::string print_memory(uintptr_t address, uint8_t count);
 	};
 }
 

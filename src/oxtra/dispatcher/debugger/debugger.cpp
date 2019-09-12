@@ -1,25 +1,9 @@
 #include "debugger.h"
 #include <spdlog/spdlog.h>
-#include <sstream>
 #include <string>
 #include <iostream>
 
 #include "oxtra/dispatcher/dispatcher.h"
-
-
-//TODO: add riscv-step argument
-
-//TODO: add argument: asm blocks 2
-
-//TODO: add argument read/rd (with warning for no security against segfaults [add state to DebugState])
-
-//TODO: bp eof & bp sof
-
-//TODO bp eof index & bp sof index
-
-//TODO: update print-asm to print the index of the bp it is part of
-
-//TODO: add ability to print asm of any block / print riscv of any instruction
 
 debugger::DebuggerBatch::DebuggerBatch() {
 	_adding_jump = false;
@@ -58,8 +42,8 @@ debugger::Debugger::Debugger(const elf::Elf& elf, bool riscv_enabled, uintptr_t 
 	_run_break = 0;
 	_current = nullptr;
 	_current_index = 1;
-	_inst_limit = 12;
-	_stack_limit = 12;
+	_inst_limit = 8;
+	_stack_limit = 8;
 	_step_riscv = false;
 	_riscv_enabled = riscv_enabled;
 	_stack_low = stack_low;

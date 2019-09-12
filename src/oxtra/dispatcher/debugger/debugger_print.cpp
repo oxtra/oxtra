@@ -375,9 +375,10 @@ std::string debugger::Debugger::print_stack(uintptr_t address, dispatcher::Execu
 
 	// clip the address
 	address = address ^ (address & 0x07);
+	address += (limit / 2) * 8;
 	if (address > _stack_high)
 		address = _stack_high;
-	else if (address - (limit - 1) * 8 <= _stack_low)
+	else if (address < _stack_low + (limit - 1) * 8)
 		address = _stack_low + (limit - 1) * 8;
 
 	// iterate through the stack and print it
@@ -389,9 +390,9 @@ std::string debugger::Debugger::print_stack(uintptr_t address, dispatcher::Execu
 
 		// add the value
 		if (address == _stack_high)
-			out_str.append("  above the stack  ");
-		else if (address == _stack_low + (limit - 1) * 8)
-			out_str.append(" beneath the stack ");
+			out_str.append(" above the stack  ");
+		else if (address == _stack_low)
+			out_str.append("beneath the stack ");
 		else
 			out_str.append(print_number(reinterpret_cast<uint64_t*>(address)[0], true));
 		out_str.append(" <- ");
@@ -401,10 +402,10 @@ std::string debugger::Debugger::print_stack(uintptr_t address, dispatcher::Execu
 		if (address == context->guest.map.rsp)
 			temp_str.append("rsp");
 		else if (address > context->guest.map.rsp) {
-			temp_str.append("rsp-");
+			temp_str.append("rsp+");
 			temp_str.append(print_number(address - context->guest.map.rsp, false));
 		} else {
-			temp_str.append("rsp+");
+			temp_str.append("rsp-");
 			temp_str.append(print_number(context->guest.map.rsp - address, false));
 		}
 		temp_str.push_back(']');
@@ -415,10 +416,10 @@ std::string debugger::Debugger::print_stack(uintptr_t address, dispatcher::Execu
 		if (address == context->guest.map.rbp)
 			temp_str.append("[rbp");
 		else if (address > context->guest.map.rbp) {
-			temp_str.append("[rbp-");
+			temp_str.append("[rbp+");
 			temp_str.append(print_number(address - context->guest.map.rbp, false));
 		} else {
-			temp_str.append("[rbp+");
+			temp_str.append("[rbp-");
 			temp_str.append(print_number(context->guest.map.rbp - address, false));
 		}
 		temp_str.push_back(']');
@@ -463,6 +464,26 @@ std::string debugger::Debugger::print_blocks() {
 		temp_str.append(print_number(_blocks[i].entry->instruction_count, false));
 		out_str.append(temp_str);
 		out_str.append("]\n");
+	}
+	return out_str;
+}
+
+std::string debugger::Debugger::print_memory(uintptr_t address, uint8_t count) {
+	std::string out_str = "memory:\n";
+
+	// iterate through the memory and print it
+	for (size_t i = 0; i < count; i++) {
+		// add the address
+		out_str.append("  [");
+		out_str.append(print_number(address, true));
+		out_str.append("] = ");
+
+		// add the value
+		out_str.append(print_number(reinterpret_cast<uint64_t*>(address)[0], true));
+		out_str.push_back('\n');
+
+		// update the address
+		address += 8;
 	}
 	return out_str;
 }
