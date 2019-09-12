@@ -302,7 +302,6 @@ riscv_instruction_t encoding::SEQZ(RiscVRegister rd, RiscVRegister rs) {
 }
 
 riscv_instruction_t encoding::SNEZ(RiscVRegister rd, RiscVRegister rs) {
-
 	return SLTU(rd, RiscVRegister::zero, rs);
 }
 
