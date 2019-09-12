@@ -19,10 +19,11 @@ namespace dispatcher {
 		ExecutionContext _context;
 		const elf::Elf& _elf;
 		const arguments::Arguments& _args;
+		char** _envp;
 		codegen::CodeGenerator _codegen;
 
 	public:
-		Dispatcher(const elf::Elf& elf, const arguments::Arguments& args);
+		Dispatcher(const elf::Elf& elf, const arguments::Arguments& args, char** envp);
 
 		Dispatcher(const Dispatcher&) = delete;
 
@@ -49,6 +50,11 @@ namespace dispatcher {
 		static void fault_exit(const char* fault_string, long exit_code = -1);
 
 	private:
+		/**
+		 * Initialize the guest context with an (x64) ABI conform stack and registers.
+		 */
+		void init_guest_context();
+
 		/**
 		 * Called instead of a syscall instruction.
 		 * Either handles the syscall or forwards it to the kernel.
