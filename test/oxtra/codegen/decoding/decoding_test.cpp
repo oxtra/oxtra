@@ -49,25 +49,25 @@ constexpr const char* expected_store[] = {
 		"sw rcx -> [rbx + -0x800(-2048)]"
 };
 constexpr const char* expected_jtype[] = {
-		"jal $[pc + 0x7fffe(524286)] @ rbx",
-		"jal $[pc + 0x2(2)] @ rbx",
-		"jal $[pc] @ rbx",
-		"jal $[pc + -0x2(-2)] @ rbx",
-		"jal $[pc + -0x80000(-524288)] @ rbx"
+		"jal [pc + 0x7fffe(524286)] -> rbx",
+		"jal [pc + 0x2(2)] -> rbx",
+		"jal [pc] -> rbx",
+		"jal [pc + -0x2(-2)] -> rbx",
+		"jal [pc + -0x80000(-524288)] -> rbx"
 };
 constexpr const char* expected_relative[] = {
-		"jalr $[rcx + 0x7ff(2047)] @ rbx",
-		"jalr $[rcx + 0x2(2)] @ rbx",
-		"jalr $[rcx] @ rbx",
-		"jalr $[rcx + -0x2(-2)] @ rbx",
-		"jalr $[rcx + -0x800(-2048)] @ rbx"
+		"jalr [rcx + 0x7ff(2047)] -> rbx",
+		"jalr [rcx + 0x2(2)] -> rbx",
+		"jalr [rcx] -> rbx",
+		"jalr [rcx + -0x2(-2)] -> rbx",
+		"jalr [rcx + -0x800(-2048)] -> rbx"
 };
 constexpr const char* expected_btype[] = {
-		"beq rbx, rcx ? $[pc + 0x7fe(2046)]",
-		"bne rbx, rcx ? $[pc + 0x2(2)]",
-		"blt rbx, rcx ? $[pc]",
-		"bge rbx, rcx ? $[pc + -0x2(-2)]",
-		"bltu rbx, rcx ? $[pc + -0x800(-2048)]"
+		"beq (rbx, rcx) ? [pc + 0x7fe(2046)]",
+		"bne (rbx, rcx) ? [pc + 0x2(2)]",
+		"blt (rbx, rcx) ? [pc]",
+		"bge (rbx, rcx) ? [pc + -0x2(-2)]",
+		"bltu (rbx, rcx) ? [pc + -0x800(-2048)]"
 };
 constexpr const char* expected_ecall = "ecall";
 

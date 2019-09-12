@@ -12,7 +12,7 @@ void codegen::Mov::generate(CodeBatch& batch) const {
 		 * and clear the upper 32 bits (saves 1 instruction)
 		 */
 		if (dst.get_size() >= 4) {
-			translate_operand(batch, 1, nullptr, dst_register, encoding::RiscVRegister::t1, true, false, false);
+			translate_operand(batch, 1, nullptr, dst_register, encoding::RiscVRegister::t1, true, false, false, false);
 			if (dst.get_size() == 4) {
 				batch += encoding::SLLI(dst_register, dst_register, 32);
 				batch += encoding::SRLI(dst_register, dst_register, 32);
@@ -23,7 +23,7 @@ void codegen::Mov::generate(CodeBatch& batch) const {
 
 	// extract the source-operand
 	auto source_operand = translate_operand(batch, 1, nullptr, encoding::RiscVRegister::t0, encoding::RiscVRegister::t2,
-											false, false, false);
+											false, false, false, false);
 
 	// write the value to the destination-register
 	translate_destination(batch, source_operand, encoding::RiscVRegister::zero,
