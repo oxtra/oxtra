@@ -10,10 +10,10 @@ _start:
 	mov rbx, 0x0001000100010001
 	xor rdx, rdx
 quad_jump:
-	mov [rsp + rcx - 8], rdx
+	mov [rsp + rcx*8 - 8], rdx
 	add rdx, rbx
-	inc rcx
-	cmp rcx, 0x400
+	dec rcx
+	cmp rcx, -0x400
 	jne quad_jump
 	sub rsp, 0x2000
 	
@@ -23,10 +23,10 @@ quad_jump:
 	mov ebx, 0x00010001
 	xor edx, edx
 double_jump:
-	mov [rsp + rcx - 4], edx
+	mov [rsp + rcx*4 - 4], edx
 	add edx, ebx
-	inc rcx
-	cmp rcx, 0x400
+	dec rcx
+	cmp rcx, -0x400
 	jne double_jump
 	sub rsp, 0x1000
 	
@@ -36,10 +36,10 @@ double_jump:
 	mov bx, 0x0001
 	xor dx, dx
 words_jump:
-	mov [rsp + rcx - 4], dx
+	mov [rsp + rcx*2 - 2], dx
 	add dx, bx
-	inc rcx
-	cmp rcx, 0x400
+	dec rcx
+	cmp rcx, -0x400
 	jne words_jump
 	sub rsp, 0x800
 	
@@ -49,10 +49,10 @@ words_jump:
 	mov bl, 0x01
 	xor dl, dl
 byte_jump:
-	mov [rsp + rcx - 4], dl
+	mov [rsp + rcx - 1], dl
 	add dl, bl
-	inc rcx
-	cmp rcx, 0x400
+	dec rcx
+	cmp rcx, -0x400
 	jne byte_jump
 
 
@@ -62,12 +62,12 @@ byte_jump:
 	xor rdx, rdx
 	xor rcx, rcx
 quad_verify:
-	mov rsi, [rbp + rcx - 8]
+	mov rsi, [rbp + rcx*8 - 8]
 	cmp rsi, rdx
 	jne exit
 	add rdx, rbx
-	inc rcx
-	cmp rcx, 0x400
+	dec rcx
+	cmp rcx, -0x400
 	jne quad_verify
 	sub rbp, 0x2000
 	
@@ -78,12 +78,12 @@ quad_verify:
 	xor edx, edx
 	xor rcx, rcx
 double_verify:
-	mov esi, [rbp + rcx - 8]
+	mov esi, [rbp + rcx*4 - 4]
 	cmp esi, edx
 	jne exit
 	add edx, ebx
-	inc rcx
-	cmp rcx, 0x400
+	dec rcx
+	cmp rcx, -0x400
 	jne double_verify
 	sub rbp, 0x1000
 
@@ -94,12 +94,12 @@ double_verify:
 	xor dx, dx
 	xor rcx, rcx
 words_verify:
-	mov si, [rbp + rcx - 8]
+	mov si, [rbp + rcx*2 - 2]
 	cmp si, dx
 	jne exit
 	add dx, bx
-	inc rcx
-	cmp rcx, 0x400
+	dec rcx
+	cmp rcx, -0x400
 	jne words_verify
 	sub rbp, 0x800
 
@@ -110,12 +110,12 @@ words_verify:
 	xor dl, dl
 	xor rcx, rcx
 byte_verify:
-	mov sil, [rbp + rcx - 8]
+	mov sil, [rbp + rcx - 1]
 	cmp sil, dl
 	jne exit
 	add dl, bl
-	inc rcx
-	cmp rcx, 0x400
+	dec rcx
+	cmp rcx, -0x400
 	jne byte_verify
 	
 
