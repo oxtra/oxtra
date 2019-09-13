@@ -30,7 +30,7 @@ namespace debugger {
 			static constexpr uint16_t await_eob = 0x0008u;
 			static constexpr uint16_t await_counter = 0x0010u;
 			static constexpr uint16_t await_step = 0x0020u;
-			static constexpr uint16_t await = 0x002cu;
+			static constexpr uint16_t await = 0x003cu;
 			static constexpr uint16_t temp_break = 0x0040u;
 			static constexpr uint16_t reg_riscv = 0x0100u;
 			static constexpr uint16_t reg_dec = 0x0200u;
