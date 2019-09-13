@@ -29,11 +29,6 @@ void codegen::Instruction::set_update(uint8_t flags) {
 	update_flags = flags;
 }
 
-void codegen::Instruction::set_eob() {
-	end_of_block = true;
-	update_flags = flags::all;
-}
-
 std::string codegen::Instruction::string() const {
 	char buffer[256];
 	fadec::format(*this, buffer, sizeof(buffer));

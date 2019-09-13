@@ -44,7 +44,6 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 					instructions.~vector();
 					Dispatcher::fault_exit("codestore::find(...) must have failed");
 				}
-				instructions.back()->set_eob();
 				break;
 			}
 		}
