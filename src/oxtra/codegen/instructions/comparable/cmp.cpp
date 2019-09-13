@@ -17,8 +17,9 @@ encoding::RiscVRegister codegen::Cmp::execute_operation(codegen::CodeBatch& batc
 
 encoding::RiscVRegister codegen::Cmp::execute_operation(codegen::CodeBatch& batch,
 														encoding::RiscVRegister dst, intptr_t imm) const {
-	// pretty much the inverse of add with immediate
+	// TODO: optimize this for an immediate of 0 (do not addi and return the dst register)
 
+	// pretty much the inverse of add with immediate
 	const auto get_entries = [](intptr_t imm, uint8_t size) -> std::pair<jump_table::Entry, jump_table::Entry> {
 		if (imm >= 0) {
 			return helper::calculate_entries(
