@@ -1,7 +1,7 @@
 #include "oxtra/codegen/codegen.h"
 #include "transform_instruction.h"
 #include "oxtra/dispatcher/dispatcher.h"
-#include "oxtra/dispatcher/debugger/debugger.h"
+#include "oxtra/debugger/debugger.h"
 #include "helper.h"
 #include <spdlog/spdlog.h>
 
