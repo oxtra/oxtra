@@ -183,14 +183,16 @@ string parse_load(RiscVOpcode opcode, riscv_instruction_t instruction) {
 		sstr << register_string[base];
 
 		if (offset > 0) {
-			sstr << " +";
 			// sign-extend the offset
 			if (offset & 0x0800u) {
+				sstr << " -";
 				offset |= 0xf000u;
 				offset = (~offset) + 1;
-				parse_number(sstr, offset, true);
-			} else
 				parse_number(sstr, offset, false);
+			} else {
+				sstr << " +";
+				parse_number(sstr, offset, false);
+			}
 		}
 	}
 
@@ -217,14 +219,16 @@ string parse_store(RiscVOpcode opcode, riscv_instruction_t instruction) {
 	if (!handle_context_addressing(sstr, base, offset)) {
 		sstr << register_string[base];
 		if (offset > 0) {
-			sstr << " +";
 			// sign-extend the offset
 			if (offset & 0x0800u) {
+				sstr << " -";
 				offset |= 0xf000u;
 				offset = (~offset) + 1;
-				parse_number(sstr, offset, true);
-			} else
 				parse_number(sstr, offset, false);
+			} else{
+				sstr << " +";
+				parse_number(sstr, offset, false);
+			}
 		}
 	}
 
@@ -243,14 +247,16 @@ string parse_jtype(RiscVOpcode opcode, riscv_instruction_t instruction) {
 	// parse the offset
 	sstr << " [pc";
 	if (offset > 0) {
-		sstr << " +";
 		// sign-extend the offset
 		if (offset & 0x100000u) {
+			sstr << " -";
 			offset |= 0xffe00000u;
 			offset = (~offset) + 1;
-			parse_number(sstr, offset, true);
-		} else
 			parse_number(sstr, offset, false);
+		} else {
+			sstr << " +";
+			parse_number(sstr, offset, false);
+		}
 	}
 	sstr << "] -> ";
 
@@ -271,14 +277,16 @@ string parse_relative(RiscVOpcode opcode, riscv_instruction_t instruction) {
 
 	// parse the offset
 	if (offset > 0) {
-		sstr << " +";
 		// sign-extend the offset
 		if (offset & 0x0800u) {
+			sstr << " -";
 			offset |= 0xf000u;
 			offset = (~offset) + 1;
-			parse_number(sstr, offset, true);
-		} else
 			parse_number(sstr, offset, false);
+		} else {
+			sstr << " +";
+			parse_number(sstr, offset, false);
+		}
 	}
 	sstr << "] -> ";
 
@@ -302,14 +310,16 @@ string parse_btype(RiscVOpcode opcode, riscv_instruction_t instruction) {
 	// parse the offset
 	sstr << "[pc";
 	if (offset > 0) {
-		sstr << " +";
 		// sign-extend the offset
 		if (offset & 0x1000u) {
+			sstr << " -";
 			offset |= 0xe000u;
 			offset = (~offset) + 1;
-			parse_number(sstr, offset, true);
-		} else
 			parse_number(sstr, offset, false);
+		} else {
+			sstr << " +";
+			parse_number(sstr, offset, false);
+		}
 	}
 	sstr << "]";
 

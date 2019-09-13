@@ -800,7 +800,9 @@ void fadec::format(const Instruction& instr, char* buffer, size_t len) {
 
 				if (base != Register::none) {
 					format_register(buf, end, base, RegisterType::gpl, instr.get_address_size());
-					if (idx != Register::none || disp != 0) fmt_concat(" + ")
+					if (idx != Register::none) fmt_concat(" + ")
+					else if(disp > 0) fmt_concat(" + ")
+					else if(disp < 0) fmt_concat(" - ")
 				}
 
 				if (idx != Register::none) {
@@ -809,12 +811,16 @@ void fadec::format(const Instruction& instr, char* buffer, size_t len) {
 
 					//fmt_concat("%u*r%u", 1 << instr.get_index_scale(), static_cast<unsigned int>(instr.get_index_register()))
 
-					if (disp != 0) fmt_concat(" + ")
+					if(disp > 0) fmt_concat(" + ")
+					else if(disp < 0) fmt_concat(" - ")
 				}
 
-				if (disp < 0) fmt_concat("-0x%lx", -disp)
+				if (disp < 0) {
+					if(base == Register::none && idx == Register::none) fmt_concat("-0x%lx", -disp)
+					else fmt_concat("0x%lx", -disp)
+				}
 
-				else if (disp != 0 || (base == Register::none && idx == Register::none)) fmt_concat("0x%lx", disp)
+				else if (disp > 0 || (base == Register::none && idx == Register::none)) fmt_concat("0x%lx", disp)
 				fmt_concat("]")
 			}
 

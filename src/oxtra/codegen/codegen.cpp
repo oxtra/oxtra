@@ -44,7 +44,6 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 					instructions.~vector();
 					Dispatcher::fault_exit("codestore::find(...) must have failed");
 				}
-				instructions[instructions.size() - 1]->set_eob();
 				break;
 			}
 		}
@@ -60,7 +59,7 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 	}
 
 	// iterate through the instructions backwards and check where the instructions have to be up-to-date
-	size_t required_updates = 0;
+	size_t required_updates = flags::all;
 	for (auto it = instructions.rbegin(); it != instructions.rend(); ++it) {
 		// get the instruction
 		auto&& inst = *it;

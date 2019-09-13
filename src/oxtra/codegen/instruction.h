@@ -37,8 +37,6 @@ namespace codegen {
 
 		void set_update(uint8_t flags);
 
-		void set_eob();
-
 		std::string string() const;
 
 		using fadec::Instruction::get_size;

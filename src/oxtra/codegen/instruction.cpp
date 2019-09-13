@@ -9,7 +9,7 @@ using namespace codegen::helper;
 codegen::Instruction::Instruction(const fadec::Instruction& inst, uint8_t update, uint8_t require, bool eob)
 		: fadec::Instruction{inst} {
 	update_flags = update;
-	require_flags = eob ? static_cast<uint8_t>(flags::all) : require;
+	require_flags = require;
 	end_of_block = eob;
 }
 
@@ -27,11 +27,6 @@ bool codegen::Instruction::get_eob() const {
 
 void codegen::Instruction::set_update(uint8_t flags) {
 	update_flags = flags;
-}
-
-void codegen::Instruction::set_eob() {
-	end_of_block = true;
-	require_flags = flags::all;
 }
 
 std::string codegen::Instruction::string() const {
