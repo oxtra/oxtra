@@ -1,6 +1,7 @@
 #include "debugger.h"
 #include <string>
-#include <oxtra/dispatcher/execution_context.h>
+#include "oxtra/dispatcher/execution_context.h"
+#include "oxtra/codegen/instruction.h"
 
 std::string debugger::Debugger::print_number(uint64_t nbr, bool hex, uint8_t dec_digits, uint8_t dec_pad) {
 	// build the string
@@ -325,7 +326,10 @@ std::string debugger::Debugger::print_flags(dispatcher::ExecutionContext* contex
 	if (context->flag_info.carry_operation == static_cast<uint16_t>(codegen::jump_table::Entry::unsupported_carry) * 4) {
 		temp_str.append("inv:");
 		temp_str.append(reinterpret_cast<const char*>(context->flag_info.carry_pointer));
-	} else {
+	} else if (context->flag_info.carry_operation == static_cast<uint16_t>(codegen::jump_table::Entry::high_level_carry) * 4)
+		temp_str.push_back(
+				'0' + reinterpret_cast<codegen::Instruction::c_callback_t>(context->flag_info.carry_pointer)(context));
+	else {
 		dispatcher::ExecutionContext::Context temp_context;
 		temp_str.push_back('0' + evaluate_carry(context, &temp_context));
 	}
@@ -337,7 +341,10 @@ std::string debugger::Debugger::print_flags(dispatcher::ExecutionContext* contex
 	if (context->flag_info.overflow_operation == static_cast<uint16_t>(codegen::jump_table::Entry::unsupported_overflow) * 4) {
 		temp_str.append("inv:");
 		temp_str.append(reinterpret_cast<const char*>(context->flag_info.overflow_pointer));
-	} else {
+	} else if (context->flag_info.carry_operation == static_cast<uint16_t>(codegen::jump_table::Entry::high_level_overflow) * 4)
+		temp_str.push_back(
+				'0' + reinterpret_cast<codegen::Instruction::c_callback_t>(context->flag_info.overflow_pointer)(context));
+	else {
 		dispatcher::ExecutionContext::Context temp_context;
 		temp_str.push_back('0' + evaluate_overflow(context, &temp_context));
 	}
