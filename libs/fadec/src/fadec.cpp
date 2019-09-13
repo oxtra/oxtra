@@ -800,19 +800,19 @@ void fadec::format(const Instruction& instr, char* buffer, size_t len) {
 
 				if (base != Register::none) {
 					format_register(buf, end, base, RegisterType::gpl, instr.get_address_size());
-					if (idx != Register::none) fmt_concat(" + ")
-					else if(disp > 0) fmt_concat(" + ")
-					else if(disp < 0) fmt_concat(" - ")
+					if (idx != Register::none) fmt_concat("+")
+					else if(disp > 0) fmt_concat("+")
+					else if(disp < 0) fmt_concat("-")
 				}
 
 				if (idx != Register::none) {
 					format_register(buf, end, idx, RegisterType::gpl, instr.get_address_size());
-					fmt_concat(" * %u", 1 << instr.get_index_scale())
+					fmt_concat("*%u", 1 << instr.get_index_scale())
 
 					//fmt_concat("%u*r%u", 1 << instr.get_index_scale(), static_cast<unsigned int>(instr.get_index_register()))
 
-					if(disp > 0) fmt_concat(" + ")
-					else if(disp < 0) fmt_concat(" - ")
+					if(disp > 0) fmt_concat("+")
+					else if(disp < 0) fmt_concat("-")
 				}
 
 				if (disp < 0) {
