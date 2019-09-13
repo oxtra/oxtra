@@ -2,7 +2,7 @@
 
 .include "oxtra/dispatcher/assembly_defines.inc.s"
 .include "oxtra/dispatcher/dispatcher.inc.s"
-.include "oxtra/dispatcher/debugger/debugger.inc.s"
+.include "oxtra/debugger/debugger.inc.s"
 .include "oxtra/codegen/instructions/arithmetic/flags_carry.inc.s"
 .include "oxtra/codegen/instructions/arithmetic/flags_overflow.inc.s"
 
