@@ -1,7 +1,7 @@
 #include "oxtra/dispatcher/dispatcher.h"
 #include "oxtra/dispatcher/syscall_map.h"
 #include "execution_context.h"
-#include "debugger/debugger.h"
+#include "oxtra/debugger/debugger.h"
 #include <spdlog/spdlog.h>
 
 using namespace dispatcher;

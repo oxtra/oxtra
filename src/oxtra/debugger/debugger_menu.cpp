@@ -104,7 +104,7 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 					return "assembly limit                Print limit-number of instructions.";
 				case DebugInputKey::blocks:
 					return "blocks index                  Print assembly of block.\n"
-						   "blocks index limit            Print assembly of block and limit."
+						   "blocks index limit            Print assembly of block and limit.\n"
 						   "blocks index limit inst       Print assembly of block and limit with instruction.";
 				case DebugInputKey::breakpoint:
 					return "break address                 Set a break-point.\n"
@@ -117,7 +117,7 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 					return "config asm limit              Set the assembly-limit.\n"
 						   "config stack limit            Set the stack-limit.\n"
 						   "config riscv/rv               Set the registers to riscv.\n"
-						   "config x86/x                  Set the registers to x86.\n";
+						   "config x86/x                  Set the registers to x86.";
 				case DebugInputKey::continue_run:
 					return "continue count                Continue execution for count-instructions.";
 				case DebugInputKey::disable:
@@ -126,14 +126,14 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 						   "disable registers             Disable auto-print of registers.\n"
 						   "disable flags                 Disable auto-print of flags.\n"
 						   "disable stack                 Disable auto-print of stack.\n"
-						   "disable blocks                Disable auto-print of blocks.\n";
+						   "disable blocks                Disable auto-print of blocks.";
 				case DebugInputKey::enable:
 					return "enable assembly               Enable auto-print of assembly.\n"
 						   "enable break                  Enable auto-print of breakpoints.\n"
 						   "enable registers              Enable auto-print of registers.\n"
 						   "enable flags                  Enable auto-print of flags.\n"
 						   "enable stack                  Enable auto-print of stack.\n"
-						   "enable blocks                 Enable auto-print of blocks.\n";
+						   "enable blocks                 Enable auto-print of blocks.";
 				case DebugInputKey::read:
 					return "read address                  Read one quad-word from the address.\n"
 						   "read address count            Read count-quad-words from the address.";
@@ -146,11 +146,11 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 						   "registers riscv hex           Print riscv-registers in hexadecimal.\n"
 						   "registers x86 hex             Print x86-registers in hexadecimal.\n"
 						   "registers riscv dec           Print riscv-registers in decimal.\n"
-						   "registers x86 dec             Print x86-registers in decimal.\n";
+						   "registers x86 dec             Print x86-registers in decimal.";
 				case DebugInputKey::stack:
 					return "stack limit                   Print the stack with given limit.\n"
 						   "stack limit address           Print the stack with given limit and at given address.\n"
-						   "stack limit relative          Print the stack with given limit and relative to rsp.\n";
+						   "stack limit relative          Print the stack with given limit and relative to rsp.";
 				default:
 					return "no additional features!";
 			}

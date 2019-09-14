@@ -5,7 +5,7 @@
 void codegen::Jcxz::generate(codegen::CodeBatch& batch) const {
 	// check what operand size is used
 	auto reg = encoding::RiscVRegister::rcx;
-	if (get_address_size() != 8){
+	if (get_address_size() != 8) {
 		batch += encoding::SLLI(encoding::RiscVRegister::t0, reg, 32);
 		reg = encoding::RiscVRegister::t0;
 		batch += encoding::SRLI(reg, reg, 32);

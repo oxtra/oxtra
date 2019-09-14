@@ -1,6 +1,7 @@
 #include "debugger.h"
 #include <string>
-#include <oxtra/dispatcher/execution_context.h>
+#include "oxtra/dispatcher/execution_context.h"
+#include "oxtra/codegen/instruction.h"
 
 std::string debugger::Debugger::print_number(uint64_t nbr, bool hex, uint8_t dec_digits, uint8_t dec_pad) {
 	// build the string
@@ -210,7 +211,7 @@ std::string debugger::Debugger::print_assembly(utils::guest_addr_t guest, utils:
 	out_str.push_back('/');
 	out_str.append(print_number(guest_limit, false));
 	out_str.push_back(')');
-	out_str.insert(out_str.size(), 50 - out_str.size(), ' ');
+	out_str.insert(out_str.size(), 55 - out_str.size(), ' ');
 	out_str.append("Next instruction [riscv]: (");
 	out_str.append(print_number(host_index, false));
 	out_str.push_back('/');
@@ -255,8 +256,8 @@ std::string debugger::Debugger::print_assembly(utils::guest_addr_t guest, utils:
 				char buffer[256];
 				fadec::format(inst, buffer, 256);
 				size_t len = strlen(buffer);
-				if (len > 50 - line_buffer.size())
-					line_buffer.append(buffer, 50 - line_buffer.size());
+				if (len > 55 - line_buffer.size())
+					line_buffer.append(buffer, 55 - line_buffer.size());
 				else
 					line_buffer.append(buffer);
 			}
@@ -266,12 +267,12 @@ std::string debugger::Debugger::print_assembly(utils::guest_addr_t guest, utils:
 		}
 
 		// pad the string
-		if (line_buffer.size() < 50)
-			line_buffer.insert(line_buffer.size(), 50 - line_buffer.size(), ' ');
+		if (line_buffer.size() < 55)
+			line_buffer.insert(line_buffer.size(), 55 - line_buffer.size(), ' ');
 
 		// add the riscv-instruction
 		if ((i == 0 && host_start > 0) || (i + 1 == limit && host_start + i + 1 < host_limit)) {
-			line_buffer.append("    ...");
+			line_buffer.append("     ...");
 			host_src += _riscv_enabled ? 8 : 4;
 		} else if (host_start + i < host_limit) {
 			// set the pointer to the current riscv-instruction
@@ -325,7 +326,10 @@ std::string debugger::Debugger::print_flags(dispatcher::ExecutionContext* contex
 	if (context->flag_info.carry_operation == static_cast<uint16_t>(codegen::jump_table::Entry::unsupported_carry) * 4) {
 		temp_str.append("inv:");
 		temp_str.append(reinterpret_cast<const char*>(context->flag_info.carry_pointer));
-	} else {
+	} else if (context->flag_info.carry_operation == static_cast<uint16_t>(codegen::jump_table::Entry::high_level_carry) * 4)
+		temp_str.push_back(
+				'0' + reinterpret_cast<codegen::Instruction::c_callback_t>(context->flag_info.carry_pointer)(context));
+	else {
 		dispatcher::ExecutionContext::Context temp_context;
 		temp_str.push_back('0' + evaluate_carry(context, &temp_context));
 	}
@@ -337,7 +341,10 @@ std::string debugger::Debugger::print_flags(dispatcher::ExecutionContext* contex
 	if (context->flag_info.overflow_operation == static_cast<uint16_t>(codegen::jump_table::Entry::unsupported_overflow) * 4) {
 		temp_str.append("inv:");
 		temp_str.append(reinterpret_cast<const char*>(context->flag_info.overflow_pointer));
-	} else {
+	} else if (context->flag_info.carry_operation == static_cast<uint16_t>(codegen::jump_table::Entry::high_level_overflow) * 4)
+		temp_str.push_back(
+				'0' + reinterpret_cast<codegen::Instruction::c_callback_t>(context->flag_info.overflow_pointer)(context));
+	else {
 		dispatcher::ExecutionContext::Context temp_context;
 		temp_str.push_back('0' + evaluate_overflow(context, &temp_context));
 	}

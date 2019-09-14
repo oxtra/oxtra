@@ -208,7 +208,7 @@ void debugger::Debugger::entry(dispatcher::ExecutionContext* context, uintptr_t 
 	std::cout << '\n' << std::string(100, '-') << std::endl;
 
 	// update the halt-flag
-	_halt = (_state & DebugState::await) > 0;
+	_halt = (_state & DebugState::await) != 0;
 }
 
 utils::guest_addr_t debugger::Debugger::enter_break(uintptr_t break_point, utils::host_addr_t address) {

@@ -12,9 +12,9 @@ add_library(oxtra_libs
 		oxtra/codegen/codegen.cpp
 		oxtra/codegen/codestore/codestore.cpp
 		oxtra/dispatcher/dispatcher.cpp
-		oxtra/dispatcher/debugger/debugger.cpp
-		oxtra/dispatcher/debugger/debugger_menu.cpp
-		oxtra/dispatcher/debugger/debugger_print.cpp
+		oxtra/debugger/debugger.cpp
+		oxtra/debugger/debugger_menu.cpp
+		oxtra/debugger/debugger_print.cpp
 		oxtra/codegen/encoding/encoding.cpp
 		oxtra/codegen/decoding/decoding.cpp
 		oxtra/codegen/helper.cpp

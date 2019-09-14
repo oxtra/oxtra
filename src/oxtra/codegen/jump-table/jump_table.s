@@ -2,7 +2,7 @@
 
 .include "oxtra/dispatcher/assembly_defines.inc.s"
 .include "oxtra/dispatcher/dispatcher.inc.s"
-.include "oxtra/dispatcher/debugger/debugger.inc.s"
+.include "oxtra/debugger/debugger.inc.s"
 .include "oxtra/codegen/instructions/arithmetic/flags_carry.inc.s"
 .include "oxtra/codegen/instructions/arithmetic/flags_overflow.inc.s"
 
@@ -13,6 +13,9 @@
 c_wrapper:
 	# capture the context
 	capture_context_high_level s11
+
+	# work on the stack after the sysv red zone
+	addi sp, sp, -128
 
 	# invoke the function
     mv a0, s11
