@@ -116,7 +116,7 @@ namespace encoding {
 
 	/**
 	* rd = pc + 4
-	* pc += offset[20:1]
+	* pc += offset << 1 (offset must be even)
 	*/
 	utils::riscv_instruction_t JAL(RiscVRegister rd, uint32_t offset);
 

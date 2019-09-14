@@ -24,9 +24,9 @@ namespace codegen {
 	protected:
 		explicit Instruction(const fadec::Instruction& inst, uint8_t update, uint8_t require, bool eob = false);
 
+	public:
 		using c_callback_t = uintptr_t(*)(dispatcher::ExecutionContext*);
 
-	public:
 		virtual void generate(CodeBatch& batch) const = 0;
 
 		uint8_t get_require() const;
@@ -36,8 +36,6 @@ namespace codegen {
 		bool get_eob() const;
 
 		void set_update(uint8_t flags);
-
-		void set_eob();
 
 		std::string string() const;
 

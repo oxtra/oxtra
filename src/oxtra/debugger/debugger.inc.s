@@ -67,6 +67,9 @@ debug_entry:
 	debugger_enter:
     capture_context_debug s11
 
+	# work on the stack after the sysv red zone
+	addi sp, sp, -128
+
     # set the three arguments
     mv a0, t0	# Debugger
     mv a1, s11	# ExecutionContext
@@ -107,6 +110,9 @@ debug_entry_riscv:
 	# capture the context
 	debugger_riscv_enter:
     capture_context_debug s11
+
+	# work on the stack after the sysv red zone
+	addi sp, sp, -128
 
     # set the three arguments
     mv a0, t0	# Debugger

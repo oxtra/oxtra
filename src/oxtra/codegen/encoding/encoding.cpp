@@ -23,18 +23,18 @@ uint32_t itype(uint8_t opcode, RiscVRegister rd, uint8_t funct3, RiscVRegister r
 	itype.rd = static_cast<uint8_t>(rd);
 	itype.funct3 = funct3;
 	itype.rs1 = static_cast<uint8_t>(rs1);
-	itype.imm = imm;
+	itype.imm = static_cast<uint32_t>(imm);
 	return itype.raw;
 }
 
 uint32_t stype(uint8_t opcode, uint8_t funct3, RiscVRegister rs1, RiscVRegister rs2, uint16_t imm) {
 	SType stype;
 	stype.opcode = opcode;
-	stype.immlow = imm & 0x1f;
+	stype.immlow = static_cast<uint32_t>(imm) & 0x1fu;
 	stype.funct3 = funct3;
 	stype.rs1 = static_cast<uint8_t>(rs1);
 	stype.rs2 = static_cast<uint8_t>(rs2);
-	stype.immhigh = (imm >> 5) & 0x7f;
+	stype.immhigh = static_cast<uint32_t>(imm >> 5u) & 0x7fu;
 	return stype.raw;
 }
 
@@ -302,7 +302,6 @@ riscv_instruction_t encoding::SEQZ(RiscVRegister rd, RiscVRegister rs) {
 }
 
 riscv_instruction_t encoding::SNEZ(RiscVRegister rd, RiscVRegister rs) {
-
 	return SLTU(rd, RiscVRegister::zero, rs);
 }
 

@@ -1,9 +1,6 @@
-// The following methods are not meant to be used outside of this program.
-// The methods do not check boundaries or other important conditions and are just for testing purposes.
-
 long _syscall(long number, long param1, long param2, long param3) {
 	long ret;
-	
+
 	asm("mov rax, %1;"
 	"mov rdi, %2;"
 	"mov rdx, %4;"
@@ -13,8 +10,8 @@ long _syscall(long number, long param1, long param2, long param3) {
 	: "=r" (ret)
 	: "r" (number), "r" (param1), "r" (param2), "r" (param3)
 	);
-				
-        return ret;
+
+	return ret;
 }
 
 void _write (int fd, const void *buf, long count) {
@@ -33,84 +30,81 @@ long read(int fd, void *buf, long count) {
 }
 
 int digits(int number) {
-	if (number == 0) return 1;
+    if (number == 0) return 1;
 
-	int count = 0;
-	while (number != 0) {
-		count++;
-		number /= 10;
-	}
-	
-	return count;
+    int count = 0;
+    while (number != 0) {
+	count++;
+	number /= 10;
+    }
+
+    return count;
 }
 
 int setNumber(char* text, int number) {
-	int length = digits(number);
-	
-	for (int i = length - 1; i >= 0; i--) {
-		text[i] = (number % 10) + '0';
-		number /= 10;
-	}
+    int length = digits(number);
 
-	text[length] = '\n';
-	text[length + 1] = '\0';
-	
-	return length;
+    for (int i = length - 1; i >= 0; i--) {
+	text[i] = (number % 10) + '0';
+	number /= 10;
+    }
+
+    text[length] = '\n';
+    text[length + 1] = '\0';
+
+    return length;
 }
 
-int sqrt(int number) {
-	if (number == 0) return 0;
-	if (number == 1) return 1;
-	
-	int current = 2;
-	while (current * current <= number) current++;
-	
-	return current - 1;
+int isqrt(int number) {
+    if (number == 0) return 0;
+    if (number == 1) return 1;
+
+    int current = 2;
+    while (current * current <= number) current++;
+
+    return current - 1;
 }
 
 int isPrimeNumber(int number) {
-	if (number < 2) return 0;
-	if (number == 2) return 1;
-	if (number % 2 == 0) return 0;
-	
-	int check;
-	int limit = sqrt(number);
-	for (check = 3; check <= limit; check += 2) {
-		if (number % check == 0) return 0;
-	}
-	
-	return 1;
+    if (number < 2) return 0;
+    if (number == 2) return 1;
+    if (number % 2 == 0) return 0;
+
+    int check;
+    int limit = isqrt(number);
+    for (check = 3; check <= limit; check += 2) {
+	if (number % check == 0) return 0;
+    }
+
+    return 1;
 }
 
 int getNextPrime(int start) {
     start++;
-	while (1) {
-		if (isPrimeNumber(start)) return start;
-		
-		start++;
-		
-		if (start < 0) return -1;
-	}
+    while (1) {
+	if (isPrimeNumber(start)) return start;
+
+	start++;
+
+	if (start < 0) return -1;
+    }
 }
 
 int main() {
-	long start = _syscall(201, 0, 0, 0);
-	int currentPrime = 2;
-	char buffer[32];
-	
-	while (currentPrime < 1000000) {
+    int currentPrime = 2;
+	int primeCount = 0;
+    char buffer[32];
+
+    while (currentPrime < 1000) {
 		setNumber(buffer, currentPrime);
 		print(buffer);
 		currentPrime = getNextPrime(currentPrime);
-	}	
-	
-	print("Time to compute in seconds:\n");
-	setNumber(buffer, _syscall(201, 0, 0, 0) - start);
-	print(buffer);
-	
-	return currentPrime;
+		primeCount++;
+    }
+
+    return primeCount;
 }
 
-void _start() { 
+void _start() {
 	_syscall(60, main(), 0, 0);
 }

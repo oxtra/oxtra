@@ -75,11 +75,14 @@ _ZN10dispatcher10Dispatcher14reroute_staticEv:
 	# capture the guest context
 	capture_context s11
 
+	# work on the stack after the sysv red zone
+	addi sp, sp, -128
+
 	# store the callers address (needed for update_basic_block)
 	mv s1, ra
 
 	# t3 might be changed by upcoming function calls, which is why we back it up
-	mv s0, t3
+	mv s2, t3
 
 	# spdlog::info("reroute_static: 0x{0:x}")
 	# Speedlog requires a reference on the value.
@@ -87,27 +90,27 @@ _ZN10dispatcher10Dispatcher14reroute_staticEv:
 	# Afterwards we can just pass the stackpointer to SpeedLog.
 	la a0, reroute_static_fmt
 	addi sp, sp, -8
-	sd s0, 0(sp)
+	sd s2, 0(sp)
 	mv a1, sp
 	jal ra, _ZN6spdlog4infoIJmEEEvPKcDpRKT_
 	addi sp, sp, 8
 
 	# _codegen.translate(t3)
 	ld a0, codegen_offset(s11)
-	mv a1, s0
+	mv a1, s2
 	jal ra, _ZN7codegen13CodeGenerator9translateEm
 
 	# write the new address into s0
-	mv s0, a0
+	mv s2, a0
 
 	# _codegen.update_basic_block(ra, translated_address);
 	ld a0, codegen_offset(s11)
 	mv a1, s1
-	mv a2, s0
+	mv a2, s2
 	jal ra, _ZN7codegen13CodeGenerator18update_basic_blockEmm
 
 	# s0 will be overridden by restore_context so we have to save the translated address
-	mv t3, s0
+	mv t3, s2
 
 	# restore the guest context
 	restore_context s11
@@ -119,8 +122,11 @@ _ZN10dispatcher10Dispatcher15reroute_dynamicEv:
 	# capture the guest context
 	capture_context s11
 
+	# work on the stack after the sysv red zone
+	addi sp, sp, -128
+
 	# t3 might be changed by upcoming function calls, which is why we back it up
-	mv s0, t3
+	mv s2, t3
 
 	# spdlog::info("reroute_dynamic: 0x{0:x}")
 	# Speedlog requires a reference on the value.
@@ -128,14 +134,14 @@ _ZN10dispatcher10Dispatcher15reroute_dynamicEv:
 	# Afterwards we can just pass the stackpointer to SpeedLog.
 	la a0, reroute_dynamic_fmt
 	addi sp, sp, -8
-	sd s0, 0(sp)
+	sd s2, 0(sp)
 	mv a1, sp
 	jal ra, _ZN6spdlog4infoIJmEEEvPKcDpRKT_
 	addi sp, sp, 8
 
     # _codegen.translate(t3)
     ld a0, codegen_offset(s11)
-    mv a1, s0
+    mv a1, s2
     jal ra, _ZN7codegen13CodeGenerator9translateEm
 
 	# a0 will be overridden by restore_context so we have to save the translated address
@@ -150,6 +156,9 @@ _ZN10dispatcher10Dispatcher15reroute_dynamicEv:
 _ZN10dispatcher10Dispatcher15syscall_handlerEv:
 	# capture the guest context
 	capture_context s11
+
+	# work on the stack after the sysv red zone
+	addi sp, sp, -128
 
 	# invoke virtualize_syscall and check if it should be forwarded
     mv a0, s11

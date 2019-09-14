@@ -9,7 +9,7 @@ using namespace codegen::helper;
 codegen::Instruction::Instruction(const fadec::Instruction& inst, uint8_t update, uint8_t require, bool eob)
 		: fadec::Instruction{inst} {
 	update_flags = update;
-	require_flags = eob ? static_cast<uint8_t>(flags::all) : require;
+	require_flags = require;
 	end_of_block = eob;
 }
 
@@ -27,11 +27,6 @@ bool codegen::Instruction::get_eob() const {
 
 void codegen::Instruction::set_update(uint8_t flags) {
 	update_flags = flags;
-}
-
-void codegen::Instruction::set_eob() {
-	end_of_block = true;
-	require_flags = flags::all;
 }
 
 std::string codegen::Instruction::string() const {
@@ -122,7 +117,7 @@ RiscVRegister codegen::Instruction::translate_memory(CodeBatch& batch, size_t in
 
 	// analyze the input (0 = doesn't exist, 1 = optimizable, 2 = unoptimizable)
 	uint8_t disp_exists = displacement == 0 ? 0 : (displacement >= -0x800 && displacement < 0x800 ? 1 : 2);
-	uint8_t index_exists = get_index_register() == fadec::Register::none ? 0 : (get_index_scale() == 1 ? 1 : 2);
+	uint8_t index_exists = get_index_register() == fadec::Register::none ? 0 : (get_index_scale() == 0 ? 1 : 2);
 	uint8_t base_exists = operand.get_register() == fadec::Register::none ? 0 : (get_address_size() == 8 && disp_exists == 0 &&
 																				 index_exists == 0 ? 1 : 2);
 
@@ -222,14 +217,14 @@ RiscVRegister codegen::Instruction::read_from_memory(CodeBatch& batch, size_t in
 		// check if an index exists
 		if (get_index_register() != Register::none) {
 			if (base != RiscVRegister::zero) {
-				if (get_index_scale() == 1)
+				if (get_index_scale() == 0)
 					batch += encoding::ADD(temp, base, map_reg(get_index_register()));
 				else {
 					batch += encoding::SLLI(temp, map_reg(get_index_register()), get_index_scale());
 					batch += encoding::ADD(temp, temp, base);
 				}
 				base = temp;
-			} else if (get_index_scale() == 1)
+			} else if (get_index_scale() == 0)
 				base = map_reg(get_index_register());
 			else {
 				batch += encoding::SLLI(temp, map_reg(get_index_register()), get_index_scale());
@@ -282,14 +277,14 @@ void codegen::Instruction::write_to_memory(CodeBatch& batch, size_t index, encod
 			// check if an index exists
 			if (get_index_register() != Register::none) {
 				if (address != RiscVRegister::zero) {
-					if (get_index_scale() == 1)
+					if (get_index_scale() == 0)
 						batch += encoding::ADD(temp_a, address, map_reg(get_index_register()));
 					else {
 						batch += encoding::SLLI(temp_a, map_reg(get_index_register()), get_index_scale());
 						batch += encoding::ADD(temp_a, temp_a, address);
 					}
 					address = temp_a;
-				} else if (get_index_scale() == 1)
+				} else if (get_index_scale() == 0)
 					address = map_reg(get_index_register());
 				else {
 					batch += encoding::SLLI(temp_a, map_reg(get_index_register()), get_index_scale());
