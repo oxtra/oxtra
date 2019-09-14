@@ -95,8 +95,6 @@ void Dispatcher::init_guest_context() {
 
 	auto rsp = reinterpret_cast<size_t*>(_context.guest.map.rsp);
 
-	//TODO: reverse argument order???
-
 	// put argc and argv on stack
 	*(rsp++) = _args.get_guest_arguments().size();
 	for (size_t i = 0; i < _args.get_guest_arguments().size(); i++) {
@@ -110,25 +108,6 @@ void Dispatcher::init_guest_context() {
 
 	// put aux vectors on the stack
 	memcpy(rsp, auxvs, auxv_count * sizeof(Elf64_auxv_t));
-
-	/*rsp = reinterpret_cast<size_t*>(_context.guest.map.rsp);
-	printf("stack: 0x%p\n", rsp);
-	printf("argc: %d\n", rsp[0]);
-	printf("argv: %s\n", rsp[1]);
-	printf("argv: %s\n", rsp[2]);
-	printf("arg delimiter: %x\n", rsp[3]);
-
-	for (int i = 0; i < env_count; i++) {
-		printf("environment: %s\n", rsp[3 + i + 1]);
-	}
-
-	rsp = rsp + 3 + 1 + env_count;
-	auto aux_rsp = (Elf64_auxv_t*)(rsp);
-	for (int i = 0; i < auxv_count; i++) {
-		printf("A_Type %ld is: 0x%x\n", aux_rsp->a_type, aux_rsp->a_un.a_val);
-		aux_rsp++;
-	}
-	 */
 }
 
 long Dispatcher::virtualize_syscall(const ExecutionContext* context) {
