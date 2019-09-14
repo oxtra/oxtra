@@ -90,9 +90,8 @@ namespace codegen {
 		 * Reads from memory given an x86-memory operand.
 		 * @param index operand-index of instruction.
 		 * @param dest The register which will contain the value.
-		 * @param temp A temporary that might be changed.
 		 * @param sign_extended The result should be sign-extended.
-		 * @return Returns the register containing the partial address (either temp, a base-register/index-register or zero)
+		 * @return Returns the register containing the partial address (either temp_a, a base-register/index-register or zero)
 		 * 		   DONT USE THIS ADDRESS YOURSELF.
 		 * 		   Use write_to_memory, as it might be, that the displacement has not been added to the register.
 		 */
