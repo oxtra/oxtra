@@ -108,6 +108,17 @@ void Dispatcher::init_guest_context() {
 
 	// put aux vectors on the stack
 	memcpy(rsp, auxvs, auxv_count * sizeof(Elf64_auxv_t));
+
+	for (auxv = (Elf64_auxv_t*)rsp; auxv->a_type != AT_NULL; auxv++) {
+		if (auxv->a_type == AT_PHDR) {
+			auxv->a_un.a_val = _elf.get_base_vaddr();
+		} else if (auxv->a_type == AT_ENTRY) {
+			auxv->a_un.a_val = _elf.get_entry_point();
+		}
+	}
+
+	spdlog::debug("initialized guest stack with {} arguments, {} environment pointers, and {} auxiliary vectors.",
+				  _args.get_guest_arguments().size(), env_count, auxv_count);
 }
 
 long Dispatcher::virtualize_syscall(const ExecutionContext* context) {
