@@ -17,8 +17,8 @@ void codegen::Jg::generate(codegen::CodeBatch& batch) const {
 	size_t offset = batch.size() - index;
 	batch[index] = encoding::BEQZ(encoding::RiscVRegister::t4, offset * 4);
 
-	// load the carry flag
-	evaluate_carry(batch);
+	// load the sign flag
+	evaluate_sign(batch, encoding::RiscVRegister::t5);
 	batch += encoding::MV(encoding::RiscVRegister::t0, encoding::RiscVRegister::t4);
 
 	// load the overflow-flag
@@ -32,7 +32,7 @@ void codegen::Jg::generate(codegen::CodeBatch& batch) const {
 	if (get_operand(0).get_type() == fadec::OperandType::imm) {
 		helper::append_eob(batch, get_immediate());
 	} else {
-		translate_operand(batch, 0, 0, helper::address_destination, encoding::RiscVRegister::t0, true, false, false);
+		translate_operand(batch, 0, 0, helper::address_destination, encoding::RiscVRegister::t0, true, false, false, false);
 		helper::append_eob(batch, helper::address_destination);
 	}
 }

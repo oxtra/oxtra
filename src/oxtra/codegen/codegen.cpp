@@ -1,8 +1,8 @@
 #include "oxtra/codegen/codegen.h"
 #include "transform_instruction.h"
 #include "oxtra/dispatcher/dispatcher.h"
+#include "oxtra/debugger/debugger.h"
 #include "helper.h"
-#include "oxtra/dispatcher/debugger/debugger.h"
 #include <spdlog/spdlog.h>
 
 using namespace codegen;
@@ -15,7 +15,7 @@ using namespace dispatcher;
 CodeGenerator::CodeGenerator(const arguments::Arguments& args, const elf::Elf& elf)
 		: _elf{elf}, _codestore{args, elf} {
 	// instantiate the code-batch
-	if(args.get_debugging())
+	if (args.get_debugging())
 		_batch = std::make_unique<debugger::DebuggerBatch>();
 	else
 		_batch = std::make_unique<CodeBatchImpl>();
@@ -44,7 +44,6 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 					instructions.~vector();
 					Dispatcher::fault_exit("codestore::find(...) must have failed");
 				}
-				instructions[instructions.size() - 1]->set_eob();
 				break;
 			}
 		}
@@ -60,7 +59,7 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 	}
 
 	// iterate through the instructions backwards and check where the instructions have to be up-to-date
-	size_t required_updates = 0;
+	size_t required_updates = flags::all;
 	for (auto it = instructions.rbegin(); it != instructions.rend(); ++it) {
 		// get the instruction
 		auto&& inst = *it;
@@ -75,12 +74,18 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 		inst->set_update(need_update);
 	}
 
+	// initialize the basic block for the debugger
+	_batch->reset();
+	debugger::Debugger::begin_block(*_batch);
+
 	// iterate through the instructions and translate them to riscv-code
-	// TODO: instatiate code batch here based on the debug settings
 	auto&& codeblock = _codestore.create_block();
 	for (size_t i = 0; i < instructions.size(); i++) {
 		auto&& inst = instructions[i];
 		_batch->reset();
+
+		// add the instruction to the debugger
+		debugger::Debugger::insert(*_batch, inst.get());
 
 		// translate the instruction
 		inst->generate(*_batch);
@@ -96,15 +101,18 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 		_batch->end();
 
 		// print some debug-information
-		spdlog::debug("decoded {}", inst->string());
+		spdlog::debug("  {}", inst->string());
 		_batch->print();
 
 		// add the instruction to the store
 		_codestore.add_instruction(codeblock, inst->get_address(), inst->get_size(), _batch->get(), _batch->size());
 	}
 
+	// finalize the basic block for the debugger
+	debugger::Debugger::end_block(*_batch, &codeblock);
+
 	// add dynamic tracing-information for the basic-block
-	spdlog::info("basicblock translated: x86: [0x{0:x} - 0x{1:x}] riscv: 0x{2:x}", codeblock.x86_start, codeblock.x86_end,
+	spdlog::info("basicblock: [{0:#x} - {1:#x}] -> [{2:#x}]", codeblock.x86_start, codeblock.x86_end,
 				 codeblock.riscv_start);
 
 	return codeblock.riscv_start;

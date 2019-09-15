@@ -13,7 +13,7 @@
 namespace codegen::codestore {
 
 	constexpr size_t max_riscv_instructions_bits = 10;
-	constexpr size_t max_riscv_instructions = (0x01u << max_riscv_instructions_bits) - 1;
+	constexpr size_t max_riscv_instructions = ((0x01u << max_riscv_instructions_bits) - 1) >> 2u;
 
 	struct InstructionOffset {
 		/**

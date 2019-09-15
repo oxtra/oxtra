@@ -15,12 +15,14 @@ namespace codegen {
 		/**
 		 * The implementation of the execution_operation can use registers: t3, t4, t5, t6 as needed.
 		 * The content of register src must not be changed.
+		 * src & dest -> execute_operation -> dest
 		 */
 		virtual void execute_operation(CodeBatch& batch, encoding::RiscVRegister dst, encoding::RiscVRegister src) const = 0;
 
 		/**
 		 * The implementation of the execution_operation can use registers: t3, t4, t5, t6 as needed.
 		 * The immediate will always be in the range [-0x800;0x7ff], allowing: "operation dest, dest, imm"
+		 * imm & dest -> execute_operation -> dest
 		 */
 		virtual void execute_operation(CodeBatch& batch, encoding::RiscVRegister dst, intptr_t imm) const;
 	};

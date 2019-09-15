@@ -26,8 +26,8 @@ constexpr const char* register_string[32] = {
 		//"t3", "t4", "t5", "t6"
 
 		"zero", "Vra", "rsp", "Vgp", "Vtp", "Vt0", "Vt1", "Vt2", "rbp",
-		"flags", "rax", "rbx", "rcx", "rdx", "rsi", "rdi", "r8", "r9",
-		"r10", "r11", "r12", "r13", "r14", "r15", "s8", "s9",
+		"unmapped_s1", "rax", "rbx", "rcx", "rdx", "rsi", "rdi", "r8", "r9",
+		"r10", "r11", "r12", "r13", "r14", "r15", "unmapped_ss8", "unmapped_ss9",
 		"jump_table", "context", "Vt3", "Vt4", "Vt5", "Vt6"
 };
 constexpr const char* opcode_string[128] = {
@@ -183,14 +183,16 @@ string parse_load(RiscVOpcode opcode, riscv_instruction_t instruction) {
 		sstr << register_string[base];
 
 		if (offset > 0) {
-			sstr << " +";
 			// sign-extend the offset
 			if (offset & 0x0800u) {
+				sstr << " -";
 				offset |= 0xf000u;
 				offset = (~offset) + 1;
-				parse_number(sstr, offset, true);
-			} else
 				parse_number(sstr, offset, false);
+			} else {
+				sstr << " +";
+				parse_number(sstr, offset, false);
+			}
 		}
 	}
 
@@ -217,14 +219,16 @@ string parse_store(RiscVOpcode opcode, riscv_instruction_t instruction) {
 	if (!handle_context_addressing(sstr, base, offset)) {
 		sstr << register_string[base];
 		if (offset > 0) {
-			sstr << " +";
 			// sign-extend the offset
 			if (offset & 0x0800u) {
+				sstr << " -";
 				offset |= 0xf000u;
 				offset = (~offset) + 1;
-				parse_number(sstr, offset, true);
-			} else
 				parse_number(sstr, offset, false);
+			} else{
+				sstr << " +";
+				parse_number(sstr, offset, false);
+			}
 		}
 	}
 
@@ -241,18 +245,20 @@ string parse_jtype(RiscVOpcode opcode, riscv_instruction_t instruction) {
 					  (split_off(instruction, 12, 8) << 12u) | (split_off(instruction, 31, 1) << 20u);
 
 	// parse the offset
-	sstr << " $[pc";
+	sstr << " [pc";
 	if (offset > 0) {
-		sstr << " +";
 		// sign-extend the offset
 		if (offset & 0x100000u) {
+			sstr << " -";
 			offset |= 0xffe00000u;
 			offset = (~offset) + 1;
-			parse_number(sstr, offset, true);
-		} else
 			parse_number(sstr, offset, false);
+		} else {
+			sstr << " +";
+			parse_number(sstr, offset, false);
+		}
 	}
-	sstr << "] @ ";
+	sstr << "] -> ";
 
 	// parse the destination-register
 	sstr << register_string[split_off(instruction, 7)];
@@ -264,23 +270,25 @@ string parse_relative(RiscVOpcode opcode, riscv_instruction_t instruction) {
 	stringstream sstr = initialize_string(opcode);
 
 	// parse the base-register
-	sstr << " $[" << register_string[split_off(instruction, 15)];
+	sstr << " [" << register_string[split_off(instruction, 15)];
 
 	// extract the offset
 	uint16_t offset = split_off(instruction, 20, 12);
 
 	// parse the offset
 	if (offset > 0) {
-		sstr << " +";
 		// sign-extend the offset
 		if (offset & 0x0800u) {
+			sstr << " -";
 			offset |= 0xf000u;
 			offset = (~offset) + 1;
-			parse_number(sstr, offset, true);
-		} else
 			parse_number(sstr, offset, false);
+		} else {
+			sstr << " +";
+			parse_number(sstr, offset, false);
+		}
 	}
-	sstr << "] @ ";
+	sstr << "] -> ";
 
 	// parse the destination-register
 	sstr << register_string[split_off(instruction, 7)];
@@ -292,24 +300,26 @@ string parse_btype(RiscVOpcode opcode, riscv_instruction_t instruction) {
 	stringstream sstr = initialize_string(opcode);
 
 	// parse the two source-registers
-	sstr << " " << register_string[split_off(instruction, 15)];
-	sstr << ", " << register_string[split_off(instruction, 20)] << " ? ";
+	sstr << " (" << register_string[split_off(instruction, 15)];
+	sstr << ", " << register_string[split_off(instruction, 20)] << ") ? ";
 
 	// extract the offset
 	uint16_t offset = (split_off(instruction, 8, 4) << 1u) | (split_off(instruction, 25, 6) << 5u) |
 					  (split_off(instruction, 7, 1) << 11u) | (split_off(instruction, 31, 1) << 12u);
 
 	// parse the offset
-	sstr << "$[pc";
+	sstr << "[pc";
 	if (offset > 0) {
-		sstr << " +";
 		// sign-extend the offset
 		if (offset & 0x1000u) {
+			sstr << " -";
 			offset |= 0xe000u;
 			offset = (~offset) + 1;
-			parse_number(sstr, offset, true);
-		} else
 			parse_number(sstr, offset, false);
+		} else {
+			sstr << " +";
+			parse_number(sstr, offset, false);
+		}
 	}
 	sstr << "]";
 

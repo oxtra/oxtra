@@ -33,9 +33,9 @@ enum TableEntry : uint32_t {
 	entry_mask
 };
 
-inline void entry_unpack(const uint16_t *&table, uint32_t &kind, uint16_t entry) {
+inline void entry_unpack(const uint16_t*& table, uint32_t& kind, uint16_t entry) {
 	const auto entry_copy = entry;
-	table = reinterpret_cast<const uint16_t *>(&_decode_table[entry_copy & ~7]);
+	table = reinterpret_cast<const uint16_t*>(&_decode_table[entry_copy & ~7]);
 	kind = entry_copy & entry_mask;
 }
 
@@ -63,8 +63,8 @@ enum PrefixSet {
 	prefix_vex = 1 << 20,
 };
 
-int fadec::decode_prefixes(const uint8_t *buffer, size_t len, DecodeMode mode, int &prefixes,
-						   uint8_t &mandatory, Register &segment, uint8_t &vex_operand, int &opcode_escape) {
+int fadec::decode_prefixes(const uint8_t* buffer, size_t len, DecodeMode mode, int& prefixes,
+						   uint8_t& mandatory, Register& segment, uint8_t& vex_operand, int& opcode_escape) {
 
 	size_t off = 0;
 	prefixes = prefix_none;
@@ -213,8 +213,8 @@ int fadec::decode_prefixes(const uint8_t *buffer, size_t len, DecodeMode mode, i
 	return off;
 }
 
-int fadec::decode_modrm(const uint8_t *buffer, size_t len, DecodeMode mode, Instruction &instr, int prefixes, bool vsib,
-						Operand *o1, Operand *o2) {
+int fadec::decode_modrm(const uint8_t* buffer, size_t len, DecodeMode mode, Instruction& instr, int prefixes, bool vsib,
+						Operand* o1, Operand* o2) {
 	size_t off = 0;
 
 	if (UNLIKELY(off >= len))
@@ -358,8 +358,8 @@ struct InstrDesc {
 	}
 };
 
-int fadec::decode(const uint8_t *buffer, size_t len_sz, DecodeMode mode, uintptr_t address, Instruction &instr) {
-	const uint16_t *table = nullptr;
+int fadec::decode(const uint8_t* buffer, size_t len_sz, DecodeMode mode, uintptr_t address, Instruction& instr) {
+	const uint16_t* table = nullptr;
 
 	size_t len = len_sz > 15 ? 15 : len_sz;
 
@@ -369,7 +369,7 @@ int fadec::decode(const uint8_t *buffer, size_t len_sz, DecodeMode mode, uintptr
 #endif
 #if defined(ARCH_X86_64)
 	if (mode == DecodeMode::decode_64)
-		table = reinterpret_cast<const uint16_t *>(&_decode_table[FD_TABLE_OFFSET_64]);
+		table = reinterpret_cast<const uint16_t*>(&_decode_table[FD_TABLE_OFFSET_64]);
 #endif
 
 	if (UNLIKELY(table == nullptr))
@@ -450,7 +450,7 @@ int fadec::decode(const uint8_t *buffer, size_t len_sz, DecodeMode mode, uintptr
 	if (UNLIKELY(kind != entry_instr))
 		return -1;
 
-	const auto desc = reinterpret_cast<const InstrDesc *>(table);
+	const auto desc = reinterpret_cast<const InstrDesc*>(table);
 
 	instr.type = desc->type;
 	instr.flags = prefixes & 0x7f;
@@ -500,7 +500,7 @@ int fadec::decode(const uint8_t *buffer, size_t len_sz, DecodeMode mode, uintptr
 	}
 
 	if (desc->has_implicit()) {
-		auto &operand = instr.operands[desc->implicit_idx()];
+		auto& operand = instr.operands[desc->implicit_idx()];
 		operand.type = OperandType::reg;
 		operand.reg = Register::rax;
 	}
@@ -516,7 +516,7 @@ int fadec::decode(const uint8_t *buffer, size_t len_sz, DecodeMode mode, uintptr
 		off += retval;
 	} else if (desc->has_modreg()) {
 		// If there is no ModRM, but a Mod-Reg it's opcode encoded.
-		auto &op = instr.operands[desc->modreg_idx()];
+		auto& op = instr.operands[desc->modreg_idx()];
 
 		uint8_t reg_idx = buffer[off - 1] & 7;
 #if defined(ARCH_X86_64)
@@ -528,19 +528,19 @@ int fadec::decode(const uint8_t *buffer, size_t len_sz, DecodeMode mode, uintptr
 	}
 
 	if (UNLIKELY(desc->has_vexreg())) {
-		auto &op = instr.operands[desc->vexreg_idx()];
+		auto& op = instr.operands[desc->vexreg_idx()];
 		op.type = OperandType::reg;
 		op.reg = static_cast<Register>(vex_operand);
 	}
 
 	const auto imm_control = static_cast<uint32_t>(desc->imm_control());
 	if (imm_control == 1) {
-		auto &op = instr.operands[desc->imm_index()];
+		auto& op = instr.operands[desc->imm_index()];
 		op.type = OperandType::imm;
 		op.size = 1;
 		instr.imm = 1;
 	} else if (imm_control == 2) {
-		auto &op = instr.operands[desc->imm_index()];
+		auto& op = instr.operands[desc->imm_index()];
 		op.type = OperandType::mem;
 		op.reg = Register::none;
 		op.size = op_size;
@@ -563,7 +563,7 @@ int fadec::decode(const uint8_t *buffer, size_t len_sz, DecodeMode mode, uintptr
 
 		off += addr_size;
 	} else if (imm_control != 0) {
-		auto &op = instr.operands[desc->imm_index()];
+		auto& op = instr.operands[desc->imm_index()];
 
 		uint8_t imm_size = 0;
 		if (desc->imm_byte())
@@ -645,9 +645,7 @@ int fadec::decode(const uint8_t *buffer, size_t len_sz, DecodeMode mode, uintptr
 		if (op.type == OperandType::mem && op.reg == Register::ip) {
 			op.reg = Register::none;
 			instr.disp += instr.address + off;
-		}
-
-		else if (op.type != OperandType::reg)
+		} else if (op.type != OperandType::reg)
 			continue;
 
 		auto reg_type = static_cast<RegisterType>((desc->reg_types >> 4 * i) & 0xf);
@@ -664,8 +662,7 @@ int fadec::decode(const uint8_t *buffer, size_t len_sz, DecodeMode mode, uintptr
 }
 
 #define FD_DECODE_TABLE_STRTAB1
-static const char *_mnemonic_str =
-
+static const char* _mnemonic_str =
 #include <decode-table.inc>
 ;
 #undef FD_DECODE_TABLE_STRTAB1
@@ -682,14 +679,80 @@ static const uint16_t _mnemonic_offs[] = {
         buf = end; \
 }
 
-void fadec::format(const Instruction &instr, char *buffer, size_t len) {
+static void format_instruction(char*& buf, char*& end, const Instruction& instr) {
+	// extract the string
+	const char* string = &_mnemonic_str[_mnemonic_offs[static_cast<uint16_t>(instr.get_type())]];
+
+	// convert the string
+	char buffer[256];
+	char* curr_buffer = buffer;
+	while (string[0]) {
+		if (string[0] == '_')
+			break;
+		if (string[0] >= 'A' && string[0] <= 'Z')
+			curr_buffer[0] = string[0] - 'A' + 'a';
+		else
+			curr_buffer[0] = string[0];
+		string++;
+		curr_buffer++;
+	}
+	curr_buffer[0] = '\0';
+	fmt_concat("%s", buffer);
+	if (instr.get_operand_size()) fmt_concat("_%u", instr.get_operand_size())
+}
+
+static void format_register(char*& buf, char*& end, fadec::Register reg, fadec::RegisterType type, uint8_t size) {
+	static constexpr const char* string_map[] = {
+			"rax", "rcx", "rdx", "rbx",
+			"rsp", "rbp", "rsi", "rdi",
+			"r8", "r9", "r10", "r11",
+			"r12", "r13", "r14", "r15",
+
+			"eax", "ecx", "edx", "ebx",
+			"esp", "ebp", "esi", "edi",
+			"r8d", "r9d", "r10d", "r11d",
+			"r12d", "r13d", "r14d", "r15d",
+
+			"ax", "cx", "dx", "bx",
+			"sp", "bp", "si", "di",
+			"r8w", "r9w", "r10w", "r11w",
+			"r12w", "r13w", "r14w", "r15w",
+
+			"al", "cl", "dl", "bl",
+			"spl", "bpl", "sil", "dil",
+			"r8l", "r9l", "r10l", "r11l",
+			"r12l", "r13l", "r14l", "r15l",
+
+			"ah", "ch", "dh", "bh",
+			"sph", "bph", "sih", "dih",
+			"r8h", "r9h", "r10h", "r11h",
+			"r12h", "r13h", "r14h", "r15h"
+	};
+
+	if (type == RegisterType::gph && static_cast<uintptr_t>(reg) <= 15) fmt_concat(string_map[static_cast<uintptr_t>(reg) + 64])
+	else if (type == RegisterType::gpl && static_cast<uintptr_t>(reg) <= 15) {
+		switch (size) {
+			case 8: fmt_concat(string_map[static_cast<uintptr_t>(reg)])
+				break;
+			case 4: fmt_concat(string_map[static_cast<uintptr_t>(reg) + 16])
+				break;
+			case 2: fmt_concat(string_map[static_cast<uintptr_t>(reg) + 32])
+				break;
+			case 1:
+			default: fmt_concat(string_map[static_cast<uintptr_t>(reg) + 48])
+				break;
+
+		}
+	} else fmt_concat("r%u", static_cast<unsigned int>(reg))
+}
+
+void fadec::format(const Instruction& instr, char* buffer, size_t len) {
 	auto buf = buffer;
 	auto end = buffer + len;
 
-	fmt_concat("[")
-	if (instr.has_rep()) fmt_concat("rep:")
+	if (instr.has_rep()) fmt_concat("rep ")
 
-	if (instr.has_repnz()) fmt_concat("repnz:")
+	if (instr.has_repnz()) fmt_concat("repnz ")
 
 	if (static_cast<uint8_t>(instr.get_segment()) < 6) fmt_concat("%cs:",
 																  "ecsdfg"[static_cast<uint8_t>(instr.get_segment())]);
@@ -698,31 +761,23 @@ void fadec::format(const Instruction &instr, char *buffer, size_t len) {
 
 	else if (!instr.is_64() && instr.get_address_size() == 2) fmt_concat("addr16:")
 
-	if (instr.has_lock()) fmt_concat("lock:")
+	if (instr.has_lock()) fmt_concat("lock ")
 
-	fmt_concat("%s", &_mnemonic_str[_mnemonic_offs[static_cast<uint16_t>(instr.get_type())]]);
-	if (instr.get_operand_size()) fmt_concat("_%u", instr.get_operand_size())
+	format_instruction(buf, end, instr);
 
 	for (size_t i = 0; i < 4; ++i) {
-		auto &&operand = instr.get_operand(i);
+		auto&& operand = instr.get_operand(i);
 
 		const auto op_type = operand.get_type();
 		if (op_type == OperandType::none)
 			break;
 
-		auto op_type_name = "reg\0imm\0mem" + static_cast<uintptr_t>(op_type) * 4 - 4;
-		fmt_concat(" %s%u:", op_type_name, operand.get_size())
+		fmt_concat(i > 0 ? ", " : " ")
 
 		switch (op_type) {
-			case OperandType::reg: {
-				if (operand.get_register_type() == RegisterType::gph) fmt_concat("r%uh",
-																				 static_cast<uint8_t>(operand.get_register()) -
-																				 4)
-
-				else fmt_concat("r%u", static_cast<unsigned int>(operand.get_register()))
-
+			case OperandType::reg:
+				format_register(buf, end, operand.get_register(), operand.get_register_type(), operand.get_size());
 				break;
-			}
 			case OperandType::imm: {
 				auto immediate = instr.get_immediate();
 				if (instr.get_operand_size() == 1)
@@ -738,24 +793,35 @@ void fadec::format(const Instruction &instr, char *buffer, size_t len) {
 				break;
 			}
 			case OperandType::mem: {
+				fmt_concat("[")
 				const auto base = operand.get_register();
 				const auto idx = instr.get_index_register();
 				const auto disp = instr.get_displacement();
 
 				if (base != Register::none) {
-					fmt_concat("r%u", static_cast<unsigned int>(base))
-					if (idx != Register::none || disp != 0) fmt_concat("+")
+					format_register(buf, end, base, RegisterType::gpl, instr.get_address_size());
+					if (idx != Register::none) fmt_concat("+")
+					else if(disp > 0) fmt_concat("+")
+					else if(disp < 0) fmt_concat("-")
 				}
 
 				if (idx != Register::none) {
-					fmt_concat("%u*r%u", 1 << instr.get_index_scale(), static_cast<unsigned int>(instr.get_index_register()))
+					format_register(buf, end, idx, RegisterType::gpl, instr.get_address_size());
+					fmt_concat("*%u", 1 << instr.get_index_scale())
 
-					if (disp != 0) fmt_concat("+")
+					//fmt_concat("%u*r%u", 1 << instr.get_index_scale(), static_cast<unsigned int>(instr.get_index_register()))
+
+					if(disp > 0) fmt_concat("+")
+					else if(disp < 0) fmt_concat("-")
 				}
 
-				if (disp < 0) fmt_concat("-0x%lx", -disp)
+				if (disp < 0) {
+					if(base == Register::none && idx == Register::none) fmt_concat("-0x%lx", -disp)
+					else fmt_concat("0x%lx", -disp)
+				}
 
-				else if (disp != 0 || (base == Register::none && idx == Register::none)) fmt_concat("0x%lx", disp)
+				else if (disp > 0 || (base == Register::none && idx == Register::none)) fmt_concat("0x%lx", disp)
+				fmt_concat("]")
 			}
 
 			case OperandType::none:
@@ -763,6 +829,4 @@ void fadec::format(const Instruction &instr, char *buffer, size_t len) {
 				break;
 		}
 	}
-
-	fmt_concat("]")
 }

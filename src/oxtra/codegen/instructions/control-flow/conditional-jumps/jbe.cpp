@@ -14,7 +14,7 @@ void codegen::Jbe::generate(codegen::CodeBatch& batch) const {
 	if (get_operand(0).get_type() == fadec::OperandType::imm) {
 		helper::append_eob(batch, get_immediate());
 	} else {
-		translate_operand(batch, 0, 0, helper::address_destination, encoding::RiscVRegister::t0, true, false, false);
+		translate_operand(batch, 0, 0, helper::address_destination, encoding::RiscVRegister::t0, true, false, false, false);
 		helper::append_eob(batch, helper::address_destination);
 	}
 
@@ -26,7 +26,7 @@ void codegen::Jbe::generate(codegen::CodeBatch& batch) const {
 	evaluate_carry(batch);
 
 	// generate the jump to the out-jump
-	offset = batch.size() - finish;
+	offset = finish - batch.size();
 	batch += encoding::BNQZ(encoding::RiscVRegister::t4, offset * 4);
 
 	// generate the code to leave the function

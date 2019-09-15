@@ -5,6 +5,15 @@
 #include "oxtra/codegen/jump-table/jump_table.h"
 #include "oxtra/dispatcher/execution_context.h"
 
+/*
+ * IMPORTANT: At any point throughout the execution, the code must never rely on a certain
+ * value in the register ra, as its contents might change due to a debugger or other high-level-code.
+ *
+ * The c_callback_t-type describes a callback, which you can use in your code to call a given function in
+ * high-level-code. Within the callback, ra and t4's contents will have changed. But the callback's returned
+ * uintptr_t will be placed into t4, which is very convenient for high-level-flag-evaluation.
+ */
+
 namespace codegen {
 	class Instruction : protected fadec::Instruction {
 	private:
@@ -15,9 +24,9 @@ namespace codegen {
 	protected:
 		explicit Instruction(const fadec::Instruction& inst, uint8_t update, uint8_t require, bool eob = false);
 
+	public:
 		using c_callback_t = uintptr_t(*)(dispatcher::ExecutionContext*);
 
-	public:
 		virtual void generate(CodeBatch& batch) const = 0;
 
 		uint8_t get_require() const;
@@ -27,8 +36,6 @@ namespace codegen {
 		bool get_eob() const;
 
 		void set_update(uint8_t flags);
-
-		void set_eob();
 
 		std::string string() const;
 
@@ -44,15 +51,17 @@ namespace codegen {
 		 * 		  Either: zero, temp_b or one of the mapped registers. (can be Null)
 		 * @param temp_a A temporary that might be changed.
 		 * @param temp_b A temporary that might be changed.
-		 * @param modifiable If true, the function will ensure to load the value into a temporary register.
+		 * @param modifiable If true, the function will ensure to load the value into a temporary register (unless destination is true).
 		 * @param full_load If true, the register will only contain the value loaded. Otherwise the upper bits might still contain other contents.
 		 * @param sign_extend If full_load is true, this attribute allows to indicate whether or not the value should be stored as sign-extended or not.
+		 * @param destination indicates that this operand will later be used as destination (will optimize in conjunction with modifiable).
+		 * 	      If set to true, either call translate_destination, or clear the upper 32bits on 32-bit registers. (if returned)
 		 * @return The register which contains the value.
 		 * 		   Either: temp_a or one of the mapped registers (or zero, if the operand-type is unknown).
 		 */
 		encoding::RiscVRegister translate_operand(CodeBatch& batch, size_t index, encoding::RiscVRegister* address,
 												  encoding::RiscVRegister temp_a, encoding::RiscVRegister temp_b,
-												  bool modifiable, bool full_load, bool sign_extend) const;
+												  bool modifiable, bool full_load, bool sign_extend, bool destination) const;
 
 		/**
 		 * Writes the value in the register to the destination-operand of the instruction.
@@ -81,9 +90,8 @@ namespace codegen {
 		 * Reads from memory given an x86-memory operand.
 		 * @param index operand-index of instruction.
 		 * @param dest The register which will contain the value.
-		 * @param temp A temporary that might be changed.
 		 * @param sign_extended The result should be sign-extended.
-		 * @return Returns the register containing the partial address (either temp, a base-register/index-register or zero)
+		 * @return Returns the register containing the partial address (either temp_a, a base-register/index-register or zero)
 		 * 		   DONT USE THIS ADDRESS YOURSELF.
 		 * 		   Use write_to_memory, as it might be, that the displacement has not been added to the register.
 		 */

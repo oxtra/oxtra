@@ -1,0 +1,2 @@
+./oxtra test/resources/no_libc/test_read_write
+>>>= 0

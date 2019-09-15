@@ -12,12 +12,12 @@ void codegen::Comparable::generate(CodeBatch& batch) const {
 	auto source_register = RiscVRegister::zero;
 	if (src.get_type() != OperandType::imm ||
 		(static_cast<intptr_t>(get_immediate()) < -0x800 || static_cast<intptr_t>(get_immediate()) >= 0x800)) {
-		source_register = translate_operand(batch, 1, nullptr, RiscVRegister::t2, RiscVRegister::t3, false, false, false);
+		source_register = translate_operand(batch, 1, nullptr, RiscVRegister::t2, RiscVRegister::t3, false, false, false,
+											false);
 	}
 
 	// load the destination-register
-	auto dest_register = translate_operand(batch, 0, nullptr, RiscVRegister::t0, RiscVRegister::t1, dest.get_size() < 4, false,
-										   false);
+	auto dest_register = translate_operand(batch, 0, nullptr, RiscVRegister::t0, RiscVRegister::t1, true, false, false, true);
 
 	// call the callback to apply the changes
 	auto result = encoding::RiscVRegister::zero;
