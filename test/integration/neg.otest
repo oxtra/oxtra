@@ -1,0 +1,2 @@
+./oxtra test/resources/instructions/neg
+>>>= 0
