@@ -266,6 +266,7 @@ void Elf::unpack_file(size_t file_size) {
 
 	//map the bss-section to pages
 	if (bss_section != nullptr) {
+		memset(reinterpret_cast<void*>(bss_section->sh_addr), 0, bss_section->sh_size);
 		//compute the first and the last page the blocks are within
 		size_t page_start = bss_section->sh_addr - base_address;
 		size_t page_end = bss_section->sh_addr + bss_section->sh_size - base_address;

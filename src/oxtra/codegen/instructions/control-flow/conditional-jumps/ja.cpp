@@ -21,7 +21,7 @@ void codegen::Ja::generate(codegen::CodeBatch& batch) const {
 	evaluate_carry(batch);
 
 	// generate the jump to the leave
-	offset = batch.size() - leave;
+	offset = leave - batch.size();
 	batch += encoding::BNQZ(encoding::RiscVRegister::t4, offset * 4);
 
 	// compute the resulting operand

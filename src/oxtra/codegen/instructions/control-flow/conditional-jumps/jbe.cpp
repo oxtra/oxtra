@@ -26,7 +26,7 @@ void codegen::Jbe::generate(codegen::CodeBatch& batch) const {
 	evaluate_carry(batch);
 
 	// generate the jump to the out-jump
-	offset = batch.size() - finish;
+	offset = finish - batch.size();
 	batch += encoding::BNQZ(encoding::RiscVRegister::t4, offset * 4);
 
 	// generate the code to leave the function
