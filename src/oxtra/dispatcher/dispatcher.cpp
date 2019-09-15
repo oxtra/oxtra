@@ -99,8 +99,6 @@ void Dispatcher::init_guest_context() {
 
 	auto rsp = reinterpret_cast<size_t*>(_context.guest.map.rsp);
 
-	//TODO: reverse argument order???
-
 	// put argc and argv on stack
 	*rsp++ = _args.get_guest_arguments().size();
 	for (size_t i = 0; i < _args.get_guest_arguments().size(); i++) {
@@ -151,6 +149,9 @@ void Dispatcher::init_guest_context() {
 			aux_rsp++;
 		}
 	}*/
+
+	spdlog::debug("initialized guest stack with {} arguments, {} environment pointers, and {} auxiliary vectors.",
+				  _args.get_guest_arguments().size(), env_count, auxv_count);
 }
 
 long Dispatcher::virtualize_syscall(const ExecutionContext* context) {
