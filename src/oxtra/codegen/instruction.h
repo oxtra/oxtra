@@ -157,7 +157,7 @@ namespace codegen {
 		 * Updates the first overflow value with the value in register va and sets the operation.
 		 */
 		void update_overflow_single(CodeBatch& batch, jump_table::Entry entry, encoding::RiscVRegister va,
-				encoding::RiscVRegister temp) const;
+									encoding::RiscVRegister temp) const;
 
 		/**
 		 * Updates the second overflow value with the value in register vb.
@@ -176,7 +176,7 @@ namespace codegen {
 		 * Updates the first carry value with the value in register va nd sets the operation.
 		 */
 		void update_carry_single(CodeBatch& batch, jump_table::Entry entry, encoding::RiscVRegister va,
-				encoding::RiscVRegister temp) const;
+								 encoding::RiscVRegister temp) const;
 
 		/**
 		 * Updates the second carry value with the value in register vb.

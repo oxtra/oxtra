@@ -162,7 +162,7 @@ _ZN10dispatcher10Dispatcher15syscall_handlerEv:
 
 	# invoke virtualize_syscall and check if it should be forwarded
     mv a0, s11
-    jal ra, _ZN10dispatcher10Dispatcher18virtualize_syscallEPKNS_16ExecutionContextE
+    jal ra, _ZN10dispatcher10Dispatcher18virtualize_syscallEPNS_16ExecutionContextE
     bltz a0, syscall_handled
 
 	# arguments

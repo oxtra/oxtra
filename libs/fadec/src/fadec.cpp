@@ -754,9 +754,6 @@ void fadec::format(const Instruction& instr, char* buffer, size_t len) {
 
 	if (instr.has_repnz()) fmt_concat("repnz ")
 
-	if (static_cast<uint8_t>(instr.get_segment()) < 6) fmt_concat("%cs:",
-																  "ecsdfg"[static_cast<uint8_t>(instr.get_segment())]);
-
 	if (instr.is_64() && instr.get_address_size() == 4) fmt_concat("addr32:")
 
 	else if (!instr.is_64() && instr.get_address_size() == 2) fmt_concat("addr16:")
@@ -793,6 +790,9 @@ void fadec::format(const Instruction& instr, char* buffer, size_t len) {
 				break;
 			}
 			case OperandType::mem: {
+				if (static_cast<uint8_t>(instr.get_segment()) < 6)
+					fmt_concat("%cs:", "ecsdfg"[static_cast<uint8_t>(instr.get_segment())]);
+
 				fmt_concat("[")
 				const auto base = operand.get_register();
 				const auto idx = instr.get_index_register();
