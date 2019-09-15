@@ -12,8 +12,8 @@ void codegen::Repeatable::generate(codegen::CodeBatch& batch) const {
 
 		execute_operation(batch);
 
-		const auto loop_end = batch.add(encoding::BNQZ(rcx, (loop_begin - batch.size()) * sizeof(utils::riscv_instruction_t)));
-		batch[zero_test] = encoding::BEQZ(rcx, (loop_end - zero_test) * sizeof(utils::riscv_instruction_t));
+		batch += encoding::BNQZ(rcx, (loop_begin - batch.size()) * sizeof(utils::riscv_instruction_t));
+		batch[zero_test] = encoding::BEQZ(rcx, (batch.size() - zero_test) * sizeof(utils::riscv_instruction_t));
 	} else {
 		execute_operation(batch);
 	}

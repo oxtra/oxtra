@@ -64,71 +64,93 @@ void Dispatcher::init_guest_context() {
 	_context.guest.map.context = reinterpret_cast<uintptr_t>(&_context);
 	_context.codegen = &_codegen;
 
-	char** envp = _envp;
-	Elf64_auxv_t* auxvs;
-	size_t env_count, auxv_count;
+	auto envp = _envp;
 
 	// count environment pointers and search for aux vectors
 	while (*envp++ != nullptr); // find the first entry after the null entry
-	env_count = envp - _envp; // size includes nullptr
+	const size_t env_count = envp - _envp; // size includes nullptr
 
 	// aux vectors begin after the envp (null separated)
-	auxvs = reinterpret_cast<Elf64_auxv_t*>(envp);
+	const auto auxvs = reinterpret_cast<Elf64_auxv_t*>(envp);
 
 	// count aux vectors
 	auto auxv = auxvs;
 	while ((auxv++)->a_type != AT_NULL);
-	auxv_count = auxv - auxvs; // size includes nullptr
+	const size_t
+		auxv_count = auxv - auxvs, // size includes null entry
+		auxv_size = auxv_count * sizeof(Elf64_auxv_t) - 8; // last entry is 8 bytes
 
 	// the count of the necessary arguments with zero entries in between (in bytes). Zero paddings are included in size
-	size_t min_stack_size = auxv_count * sizeof(Elf64_auxv_t) + // auxv
+	auto min_stack_size = auxv_size + // auxv
 							env_count * sizeof(char*) + // envp
 							sizeof(char*) + _args.get_guest_arguments().size() * sizeof(char*) + // argv
 							sizeof(size_t); // argc
 
-	// initialize the stack
-	_context.guest.map.rsp = reinterpret_cast<uintptr_t>(new uint8_t[_args.get_stack_size()]) + _args.get_stack_size();
+	// page align it because why not
+	min_stack_size = ((min_stack_size - 1) & ~0xfffu) + 0x1000u;
+	//printf("abi stack size: 0x%lx\n", min_stack_size);
+	// initialize the stack (assume a page for the arg, env pointers and aux vectors)
+	const auto stack_size = _args.get_stack_size();
+	_context.guest.map.rsp = reinterpret_cast<uintptr_t>(new uint8_t[stack_size]) + stack_size - min_stack_size;
 	_context.guest.map.rbp = 0; // unspecified
 
 	// guaranteed to be 16-byte aligned, meaning that the lower 4 bits have to be cleared
-	_context.guest.map.rsp = (_context.guest.map.rsp - min_stack_size) & ~(static_cast<uintptr_t>(0xfu));
+	//_context.guest.map.rsp = (_context.guest.map.rsp - min_stack_size) & ~(static_cast<uintptr_t>(0xfu));
 
 	auto rsp = reinterpret_cast<size_t*>(_context.guest.map.rsp);
 
 	//TODO: reverse argument order???
 
 	// put argc and argv on stack
-	*(rsp++) = _args.get_guest_arguments().size();
+	*rsp++ = _args.get_guest_arguments().size();
 	for (size_t i = 0; i < _args.get_guest_arguments().size(); i++) {
-		*(rsp++) = (size_t)_args.get_guest_arguments()[i].c_str();
+		*rsp++ = (size_t)_args.get_guest_arguments()[i].c_str();
 	}
-	*(rsp++) = 0;
+	*rsp++ = 0;
 
 	// put environment strings on the stack
-	memcpy(rsp, _envp, env_count * sizeof(char*));
+	std::memcpy(rsp, _envp, env_count * sizeof(char*));
 	rsp += env_count;
 
 	// put aux vectors on the stack
-	memcpy(rsp, auxvs, auxv_count * sizeof(Elf64_auxv_t));
-
-	/*rsp = reinterpret_cast<size_t*>(_context.guest.map.rsp);
-	printf("stack: 0x%p\n", rsp);
-	printf("argc: %d\n", rsp[0]);
-	printf("argv: %s\n", rsp[1]);
-	printf("argv: %s\n", rsp[2]);
-	printf("arg delimiter: %x\n", rsp[3]);
-
-	for (int i = 0; i < env_count; i++) {
-		printf("environment: %s\n", rsp[3 + i + 1]);
+	std::memcpy(rsp, auxvs, auxv_size);
+	// TODO: decide if this should be added to the elf class
+	{
+		const auto guest_auxv = reinterpret_cast<Elf64_auxv_t*>(rsp);
+		for (auto entry = guest_auxv; entry->a_type != AT_NULL; ++entry) {
+			if (entry->a_type == AT_PHDR) {
+				const auto elf_hdr = reinterpret_cast<const Elf64_Ehdr*>(_elf.get_base_vaddr());
+				entry->a_un.a_val = _elf.get_base_vaddr() + elf_hdr->e_phoff;
+			}
+			else if (entry->a_type == AT_ENTRY) {
+				entry->a_un.a_val = _elf.get_entry_point();
+			}
+		}
 	}
 
-	rsp = rsp + 3 + 1 + env_count;
-	auto aux_rsp = (Elf64_auxv_t*)(rsp);
-	for (int i = 0; i < auxv_count; i++) {
-		printf("A_Type %ld is: 0x%x\n", aux_rsp->a_type, aux_rsp->a_un.a_val);
-		aux_rsp++;
-	}
-	 */
+	/*{
+		rsp = reinterpret_cast<size_t*>(_context.guest.map.rsp);
+		printf("stack: 0x%p\n", rsp);
+
+		const auto argc = *rsp++;
+		printf("argc: %ld\n", argc);
+		for (size_t i = 0; i < argc; ++i) {
+			printf("argv: %s\n", reinterpret_cast<const char*>(*rsp++));
+		}
+		printf("arg delimiter: %lx\n", *rsp++);
+
+		printf("environment count: %ld\n", env_count);
+		for (size_t i = 0; i < env_count; i++) {
+			printf("environment: %s\n", reinterpret_cast<const char*>(*rsp++));
+		}
+
+		printf("aux count: %ld\n", auxv_count);
+		auto aux_rsp = (Elf64_auxv_t*)(rsp);
+		for (size_t i = 0; i < auxv_count; i++) {
+			printf("auxv[%.2ld]: 0x%lx (type %ld)\n", i, aux_rsp->a_un.a_val, aux_rsp->a_type);
+			aux_rsp++;
+		}
+	}*/
 }
 
 long Dispatcher::virtualize_syscall(const ExecutionContext* context) {
