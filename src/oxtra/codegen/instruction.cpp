@@ -125,72 +125,99 @@ RiscVRegister codegen::Instruction::translate_memory(CodeBatch& batch, size_t in
 	if (disp_exists == 0 && index_exists == 0 && base_exists == 0)
 		return RiscVRegister::zero;
 
+	// extract the registers
+	const auto base_reg = base_exists ? map_reg(operand.get_register()) : RiscVRegister::zero;
+	const auto index_reg = index_exists ? map_reg(get_index_register()) : RiscVRegister::zero;
+
+	// swap the registers, if one of them is the source-registers
+	bool swapped = false;
+	if(base_reg == temp_a || index_reg == temp_b){
+		auto temp = temp_a;
+		temp_a = temp_b;
+		temp_b = temp;
+		swapped = true;
+	}
+
 	// build the output
-	RiscVRegister result = temp_a;
+	auto result = temp_a;
 	if (base_exists) {
 		// [base + ?]
 		if (disp_exists == 1) {
 			// [base + sDisp + ?]
-			batch += encoding::ADDI(result, map_reg(operand.get_register()), operation_displacement);
-
-			if (index_exists == 1)
+			if(index_exists == 0)
+				batch += encoding::ADDI(temp_a, base_reg, operation_displacement);
+			else if (index_exists == 1) {
 				// [base + sDisp + index]
-				batch += encoding::ADD(result, result, map_reg(get_index_register()));
+				batch += encoding::ADDI(temp_b, base_reg, operation_displacement);
+				batch += encoding::ADD(temp_a, temp_b, index_reg);
+			}
 			else if (index_exists == 2) {
 				// [base + sDisp + index * n]
-				batch += encoding::SLLI(temp_b, map_reg(get_index_register()), get_index_scale());
-				batch += encoding::ADD(result, result, temp_b);
+				batch += encoding::SLLI(temp_b, index_reg, get_index_scale());
+				batch += encoding::ADD(temp_b, base_reg, temp_b);
+				batch += encoding::ADDI(temp_a, temp_b, operation_displacement);
 			}
 		} else if (index_exists == 1) {
 			// [base + index*1 + ?]
-			batch += encoding::ADD(result, map_reg(operand.get_register()), map_reg(get_index_register()));
-
 			if (disp_exists) {
 				// [base + index*1 + lDisp]
 				helper::load_immediate(batch, operation_displacement, temp_b);
-				batch += encoding::ADD(result, result, temp_b);
+				batch += encoding::ADD(temp_b, map_reg(operand.get_register()), temp_b);
+				batch += encoding::ADD(temp_a, map_reg(get_index_register()), temp_b);
 			}
-		} else if (base_exists == 1)
+			else
+				batch += encoding::ADD(temp_a, map_reg(operand.get_register()), map_reg(get_index_register()));
+		} else if (index_exists == 0 && disp_exists == 0)
 			// [base]
-			result = map_reg(operand.get_register());
+			if(base_exists == 1)
+				result = map_reg(operand.get_register());
+			else
+				batch += encoding::ADD(temp_a, map_reg(operand.get_register()), RiscVRegister::zero);
 		else {
 			// nothing can be optimized
-			batch += encoding::ADD(result, RiscVRegister::zero, map_reg(operand.get_register()));
-			if (disp_exists) {
-				helper::load_immediate(batch, operation_displacement, temp_b);
-				batch += encoding::ADD(result, result, temp_b);
-			}
+			auto temp = RiscVRegister::zero;
 			if (index_exists) {
 				batch += encoding::SLLI(temp_b, map_reg(get_index_register()), get_index_scale());
-				batch += encoding::ADD(result, result, temp_b);
+				temp = temp_b;
+			}
+			batch += encoding::ADD(temp_a, temp, map_reg(operand.get_register()));
+			if (disp_exists) {
+				helper::load_immediate(batch, operation_displacement, temp_b);
+				batch += encoding::ADD(temp_a, temp_a, temp_b);
 			}
 		}
 	} else if (index_exists && disp_exists)
 		if (index_exists == 1 && disp_exists == 1)
 			// [index*1 + sDisp]
-			batch += encoding::ADDI(result, map_reg(get_index_register()), operation_displacement);
+			batch += encoding::ADDI(temp_a, map_reg(get_index_register()), operation_displacement);
 		else {
 			// [index*n + lDisp]
-			batch += encoding::SLLI(result, map_reg(get_index_register()), get_index_scale());
+			batch += encoding::SLLI(temp_a, map_reg(get_index_register()), get_index_scale());
 			helper::load_immediate(batch, operation_displacement, temp_b);
-			batch += encoding::ADD(result, result, temp_b);
+			batch += encoding::ADD(temp_a, temp_a, temp_b);
 		}
 	else if (index_exists) {
 		// [index*n]
 		if (get_address_size() == 8 && index_exists == 1)
 			result = map_reg(get_index_register());
 		else if (index_exists == 1)
-			batch += encoding::ADD(result, RiscVRegister::zero, map_reg(get_index_register()));
+			batch += encoding::ADD(temp_a, RiscVRegister::zero, map_reg(get_index_register()));
 		else
-			batch += encoding::SLLI(result, map_reg(get_index_register()), get_index_scale());
+			batch += encoding::SLLI(temp_a, map_reg(get_index_register()), get_index_scale());
 	} else
 		// [disp]
-		load_immediate(batch, operation_displacement, result);
+		load_immediate(batch, operation_displacement, temp_a);
 
+	// update the result-register
 	// check if the addressing-mode is a 32-bit mode
 	if (get_address_size() == 4 && (index_exists || base_exists)) {
-		batch += encoding::SLLI(result, result, 32);
-		batch += encoding::SRLI(result, result, 32);
+		auto dest = (swapped && result == temp_a ? temp_b : result);
+		batch += encoding::SLLI(dest, result, 32);
+		batch += encoding::SRLI(dest, dest, 32);
+	}
+	else if(swapped && result == temp_a){
+		batch += encoding::MV(temp_b, result);
+		return temp_b;
 	}
 	return result;
 }
@@ -280,8 +307,8 @@ void codegen::Instruction::write_to_memory(CodeBatch& batch, size_t index, encod
 					if (get_index_scale() == 0)
 						batch += encoding::ADD(temp_a, address, map_reg(get_index_register()));
 					else {
-						batch += encoding::SLLI(temp_a, map_reg(get_index_register()), get_index_scale());
-						batch += encoding::ADD(temp_a, temp_a, address);
+						batch += encoding::SLLI(temp_b, map_reg(get_index_register()), get_index_scale());
+						batch += encoding::ADD(temp_a, temp_b, address);
 					}
 					address = temp_a;
 				} else if (get_index_scale() == 0)
