@@ -46,5 +46,5 @@ encoding::RiscVRegister codegen::Cmp::execute_operation(codegen::CodeBatch& batc
 	update_carry_single(batch, carry, result, encoding::RiscVRegister::t4);
 	update_overflow_single(batch, result);
 
-	return encoding::RiscVRegister::t5;
+	return result;
 }
