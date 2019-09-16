@@ -261,7 +261,6 @@ RiscVRegister codegen::Instruction::read_from_memory(CodeBatch& batch, size_t in
 		operation_displacement = 0;
 	}
 
-	// handle segment override
 	handle_segment_override(batch, base, base == temp ? dest : temp);
 
 	// generate the memory-access

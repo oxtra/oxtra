@@ -41,6 +41,7 @@ void dispatcher::syscalls::arch_prctl(dispatcher::ExecutionContext* context) {
 
 		default:
 			context->guest.a0 = static_cast<uintptr_t>(-1);
+			return;
 	}
 
 	context->guest.a0 = 0;
