@@ -112,6 +112,12 @@ namespace codegen {
 							 encoding::RiscVRegister temp_b, encoding::RiscVRegister address) const;
 
 		/**
+		 * Handles the segment overrides in addressing.
+		 * @param base Reference to the register that holds the current address of the operand. This register might be modified.
+		 */
+		void handle_segment_override(CodeBatch& batch, encoding::RiscVRegister& base, encoding::RiscVRegister temp) const;
+
+		/**
 		 * The value of the zero flag is returned in t4 = 0/1. Registers t4, t5, t6 may be modified.
 		 */
 		void evaluate_zero(CodeBatch& batch) const;

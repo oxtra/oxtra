@@ -262,17 +262,7 @@ RiscVRegister codegen::Instruction::read_from_memory(CodeBatch& batch, size_t in
 	}
 
 	// handle segment override
-	if (const auto offset = get_segment() == Register::fs ? dispatcher::ExecutionContext::fs_offset
-			: get_segment() == Register::gs ? dispatcher::ExecutionContext::gs_offset : 0)
-	{
-		const auto load_reg = base == temp ? dest : temp;
-		batch += encoding::LD(load_reg, helper::context_address, offset);
-
-		if (base != RiscVRegister::zero)
-			batch += encoding::ADD(load_reg, base, load_reg);
-
-		base = load_reg; // the base could be the addressing base register
-	}
+	handle_segment_override(batch, base, base == temp ? dest : temp);
 
 	// generate the memory-access
 	switch (operand.get_size()) {
@@ -335,6 +325,8 @@ void codegen::Instruction::write_to_memory(CodeBatch& batch, size_t index, encod
 		}
 	}
 
+	handle_segment_override(batch, address, address == temp_a ? temp_b : temp_a);
+
 	// handle segment override
 	if (const auto offset = get_segment() == Register::fs ? dispatcher::ExecutionContext::fs_offset
 			: get_segment() == Register::gs ? dispatcher::ExecutionContext::gs_offset : 0)
@@ -363,6 +355,20 @@ void codegen::Instruction::write_to_memory(CodeBatch& batch, size_t index, encod
 		default:
 			batch += encoding::SB(address, src, operation_displacement);
 			break;
+	}
+}
+
+void codegen::Instruction::handle_segment_override(codegen::CodeBatch& batch, encoding::RiscVRegister& base,
+												   encoding::RiscVRegister temp) const {
+	if (const auto offset = get_segment() == Register::fs ? dispatcher::ExecutionContext::fs_offset
+			: get_segment() == Register::gs ? dispatcher::ExecutionContext::gs_offset : 0)
+	{
+		batch += encoding::LD(temp, helper::context_address, offset);
+
+		if (base != RiscVRegister::zero)
+			batch += encoding::ADD(temp, base, temp);
+
+		base = temp;
 	}
 }
 
