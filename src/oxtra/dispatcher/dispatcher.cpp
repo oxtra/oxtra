@@ -112,7 +112,7 @@ void Dispatcher::init_guest_context() {
 
 	// put aux vectors on the stack
 	std::memcpy(rsp, auxvs, auxv_size);
-	// TODO: decide if this should be added to the elf class
+
 	{
 		const auto guest_auxv = reinterpret_cast<Elf64_auxv_t*>(rsp);
 		for (auto entry = guest_auxv; entry->a_type != AT_NULL; ++entry) {
@@ -177,8 +177,8 @@ long Dispatcher::virtualize_syscall(ExecutionContext* context) {
 				return entry.riscv_index;
 			}
 
-
-			if (entry.is_emulated()) {
+			// should this syscall be emulated?
+			else /*if (entry.is_emulated())*/ {
 				entry.emulation_fn(context);
 				return -1;
 			}

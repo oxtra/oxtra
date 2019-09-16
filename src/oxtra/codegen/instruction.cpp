@@ -327,19 +327,6 @@ void codegen::Instruction::write_to_memory(CodeBatch& batch, size_t index, encod
 
 	handle_segment_override(batch, address, address == temp_a ? temp_b : temp_a);
 
-	// handle segment override
-	if (const auto offset = get_segment() == Register::fs ? dispatcher::ExecutionContext::fs_offset
-			: get_segment() == Register::gs ? dispatcher::ExecutionContext::gs_offset : 0)
-	{
-		const auto load_reg = address == temp_a ? temp_b : temp_a;
-		batch += encoding::LD(load_reg, helper::context_address, offset);
-
-		if (address != RiscVRegister::zero)
-			batch += encoding::ADD(load_reg, address, load_reg);
-
-		address = load_reg;
-	}
-
 	// generate the memory-access
 	switch (operand.get_size()) {
 		case 8:
