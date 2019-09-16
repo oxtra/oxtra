@@ -108,6 +108,13 @@ namespace dispatcher {
 
 		// 0x200
 		codegen::flags::Info flag_info;
+
+		// 0x248
+		uint64_t fs_base, gs_base;
+
+		static constexpr uintptr_t
+			fs_offset = 0x248,
+			gs_offset = 0x250;
 	};
 }
 

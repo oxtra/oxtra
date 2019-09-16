@@ -131,7 +131,7 @@ RiscVRegister codegen::Instruction::translate_memory(CodeBatch& batch, size_t in
 
 	// swap the registers, if one of them is the source-registers
 	bool swapped = false;
-	if(base_reg == temp_a || index_reg == temp_b){
+	if (base_reg == temp_a || index_reg == temp_b) {
 		auto temp = temp_a;
 		temp_a = temp_b;
 		temp_b = temp;
@@ -144,14 +144,13 @@ RiscVRegister codegen::Instruction::translate_memory(CodeBatch& batch, size_t in
 		// [base + ?]
 		if (disp_exists == 1) {
 			// [base + sDisp + ?]
-			if(index_exists == 0)
+			if (index_exists == 0)
 				batch += encoding::ADDI(temp_a, base_reg, operation_displacement);
 			else if (index_exists == 1) {
 				// [base + sDisp + index]
 				batch += encoding::ADDI(temp_b, base_reg, operation_displacement);
 				batch += encoding::ADD(temp_a, temp_b, index_reg);
-			}
-			else if (index_exists == 2) {
+			} else if (index_exists == 2) {
 				// [base + sDisp + index * n]
 				batch += encoding::SLLI(temp_b, index_reg, get_index_scale());
 				batch += encoding::ADD(temp_b, base_reg, temp_b);
@@ -164,12 +163,11 @@ RiscVRegister codegen::Instruction::translate_memory(CodeBatch& batch, size_t in
 				helper::load_immediate(batch, operation_displacement, temp_b);
 				batch += encoding::ADD(temp_b, map_reg(operand.get_register()), temp_b);
 				batch += encoding::ADD(temp_a, map_reg(get_index_register()), temp_b);
-			}
-			else
+			} else
 				batch += encoding::ADD(temp_a, map_reg(operand.get_register()), map_reg(get_index_register()));
 		} else if (index_exists == 0 && disp_exists == 0)
 			// [base]
-			if(base_exists == 1)
+			if (base_exists == 1)
 				result = map_reg(operand.get_register());
 			else
 				batch += encoding::ADD(temp_a, map_reg(operand.get_register()), RiscVRegister::zero);
@@ -214,8 +212,7 @@ RiscVRegister codegen::Instruction::translate_memory(CodeBatch& batch, size_t in
 		auto dest = (swapped && result == temp_a ? temp_b : result);
 		batch += encoding::SLLI(dest, result, 32);
 		batch += encoding::SRLI(dest, dest, 32);
-	}
-	else if(swapped && result == temp_a){
+	} else if (swapped && result == temp_a) {
 		batch += encoding::MV(temp_b, result);
 		return temp_b;
 	}
@@ -223,7 +220,8 @@ RiscVRegister codegen::Instruction::translate_memory(CodeBatch& batch, size_t in
 }
 
 RiscVRegister codegen::Instruction::read_from_memory(CodeBatch& batch, size_t index, encoding::RiscVRegister dest,
-													 encoding::RiscVRegister temp, bool sign_extended) const {
+													 encoding::RiscVRegister temp,
+													 bool sign_extended) const {
 	if (get_address_size() < 4)
 		dispatcher::Dispatcher::fault_exit("invalid addressing-size");
 	const auto& operand = get_operand(index);
@@ -262,6 +260,8 @@ RiscVRegister codegen::Instruction::read_from_memory(CodeBatch& batch, size_t in
 		base = translate_memory(batch, index, temp, dest);
 		operation_displacement = 0;
 	}
+
+	handle_segment_override(batch, base, base == temp ? dest : temp);
 
 	// generate the memory-access
 	switch (operand.get_size()) {
@@ -324,6 +324,8 @@ void codegen::Instruction::write_to_memory(CodeBatch& batch, size_t index, encod
 		}
 	}
 
+	handle_segment_override(batch, address, address == temp_a ? temp_b : temp_a);
+
 	// generate the memory-access
 	switch (operand.get_size()) {
 		case 8:
@@ -339,6 +341,20 @@ void codegen::Instruction::write_to_memory(CodeBatch& batch, size_t index, encod
 		default:
 			batch += encoding::SB(address, src, operation_displacement);
 			break;
+	}
+}
+
+void codegen::Instruction::handle_segment_override(codegen::CodeBatch& batch, encoding::RiscVRegister& base,
+												   encoding::RiscVRegister temp) const {
+	if (const auto offset = get_segment() == Register::fs ? dispatcher::ExecutionContext::fs_offset
+			: get_segment() == Register::gs ? dispatcher::ExecutionContext::gs_offset : 0)
+	{
+		batch += encoding::LD(temp, helper::context_address, offset);
+
+		if (base != RiscVRegister::zero)
+			batch += encoding::ADD(temp, base, temp);
+
+		base = temp;
 	}
 }
 

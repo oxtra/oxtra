@@ -1,13 +1,68 @@
-#ifndef OXTRA_SYSCALL_MAP_H
-#define OXTRA_SYSCALL_MAP_H
+#ifndef OXTRA_SYSCALLS_H
+#define OXTRA_SYSCALLS_H
 
 #define __ARCH_WANT_SYSCALL_NO_AT
 #include <sys/syscall.h>
 #undef __ARCH_WANT_SYSCALL_NO_AT
 
-namespace dispatcher::internal {
-	// a map translating every x86 syscall index into a riscv index
-	static constexpr std::array<long, 322> syscall_map = {
+#include "execution_context.h"
+
+namespace dispatcher::syscalls {
+	/**
+	 * Describes an entry in the syscall map.
+	 * Either contains the index of the syscall for the riscv kernel or a function that emulates the syscall.
+	 */
+	union syscall_entry {
+		using EmulationFn = void(*)(ExecutionContext*);
+
+		/**
+		 * Constructs a syscall entry from a riscv syscall index or an empty syscall entry if the index is -1.
+		 */
+		constexpr syscall_entry(const int index)
+			: riscv_index{static_cast<uintptr_t>(index)} {}
+
+		/**
+		 * Constructs a syscall entry from a emulation function.
+		 */
+		constexpr syscall_entry(EmulationFn emulation_fn)
+			: emulation_fn{emulation_fn} {}
+
+		/**
+		 * Returns true if the syscall_entry is valid.
+		 */
+		bool is_valid() const {
+			return riscv_index != std::numeric_limits<uintptr_t>::max();
+		}
+
+		/**
+		 * Returns true if the syscall should be emulated.
+		 */
+		bool is_emulated() const {
+			return riscv_index >= 0x1000;
+		}
+
+		/**
+		 * Returns true if the syscall should be forwarded.
+		 */
+		bool is_forwarded() const {
+			return riscv_index < 0x1000;
+		}
+
+		uintptr_t riscv_index;
+		EmulationFn emulation_fn;
+	};
+
+	/*
+	 * Emulation functions.
+	 */
+	void exit(ExecutionContext* context);
+	void arch_prctl(ExecutionContext* context);
+
+	/*
+	 * This map contains information about how syscalls should be handled.
+	 * (Either remapped and forwarded or emulated).
+	 */
+	static constexpr std::array<syscall_entry, 322> syscall_map = {
 		SYS_read,
 		SYS_write,
 		-1, //__NR_open,
@@ -68,7 +123,7 @@ namespace dispatcher::internal {
 		-1, //SYS_fork,
 		-1, //SYS_vfork,
 		SYS_execve,
-		SYS_exit,
+		exit,
 		SYS_wait4,
 		SYS_kill,
 		SYS_uname,
@@ -166,7 +221,7 @@ namespace dispatcher::internal {
 		SYS_pivot_root,
 		-1, //SYS__sysctl,
 		SYS_prctl,
-		-1, //SYS_arch_prctl,
+		arch_prctl, //SYS_arch_prctl,
 		SYS_adjtimex,
 		SYS_setrlimit,
 		SYS_chroot,
@@ -333,4 +388,4 @@ namespace dispatcher::internal {
 	};
 }
 
-#endif //OXTRA_SYSCALL_MAP_H
+#endif //OXTRA_SYSCALLS_H

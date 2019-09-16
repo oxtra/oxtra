@@ -1,5 +1,5 @@
 #include "oxtra/dispatcher/dispatcher.h"
-#include "oxtra/dispatcher/syscall_map.h"
+#include "oxtra/dispatcher/syscalls.h"
 #include "execution_context.h"
 #include "oxtra/debugger/debugger.h"
 #include <spdlog/spdlog.h>
@@ -77,14 +77,14 @@ void Dispatcher::init_guest_context() {
 	auto auxv = auxvs;
 	while ((auxv++)->a_type != AT_NULL);
 	const size_t
-		auxv_count = auxv - auxvs, // size includes null entry
-		auxv_size = auxv_count * sizeof(Elf64_auxv_t) - 8; // last entry is 8 bytes
+			auxv_count = auxv - auxvs, // size includes null entry
+			auxv_size = auxv_count * sizeof(Elf64_auxv_t) - 8; // last entry is 8 bytes
 
 	// the count of the necessary arguments with zero entries in between (in bytes). Zero paddings are included in size
 	auto min_stack_size = auxv_size + // auxv
-							env_count * sizeof(char*) + // envp
-							sizeof(char*) + _args.get_guest_arguments().size() * sizeof(char*) + // argv
-							sizeof(size_t); // argc
+						  env_count * sizeof(char*) + // envp
+						  sizeof(char*) + _args.get_guest_arguments().size() * sizeof(char*) + // argv
+						  sizeof(size_t); // argc
 
 	// page align it because why not
 	min_stack_size = ((min_stack_size - 1) & ~0xfffu) + 0x1000u;
@@ -112,15 +112,14 @@ void Dispatcher::init_guest_context() {
 
 	// put aux vectors on the stack
 	std::memcpy(rsp, auxvs, auxv_size);
-	// TODO: decide if this should be added to the elf class
+
 	{
 		const auto guest_auxv = reinterpret_cast<Elf64_auxv_t*>(rsp);
 		for (auto entry = guest_auxv; entry->a_type != AT_NULL; ++entry) {
 			if (entry->a_type == AT_PHDR) {
 				const auto elf_hdr = reinterpret_cast<const Elf64_Ehdr*>(_elf.get_base_vaddr());
 				entry->a_un.a_val = _elf.get_base_vaddr() + elf_hdr->e_phoff;
-			}
-			else if (entry->a_type == AT_ENTRY) {
+			} else if (entry->a_type == AT_ENTRY) {
 				entry->a_un.a_val = _elf.get_entry_point();
 			}
 		}
@@ -154,32 +153,36 @@ void Dispatcher::init_guest_context() {
 				  _args.get_guest_arguments().size(), env_count, auxv_count);
 }
 
-long Dispatcher::virtualize_syscall(const ExecutionContext* context) {
-	using namespace internal;
+long Dispatcher::virtualize_syscall(ExecutionContext* context) {
+	using namespace syscalls;
 
 	// the x86 syscall index
 	const auto guest_index = context->guest.map.rax;
 
-	// we emulate exit
-	if (guest_index == 60) {
-		guest_exit(context->guest.map.rdi);
-		return -1;
-	}
-
-	/**
-	 * if the syscall is handled write the return value to _guest_context.a0.
-	 */
-
 	// is this an invalid index?
 	if (guest_index < syscall_map.size()) {
-		const auto syscall_index = syscall_map[guest_index];
 
-		// print the systemcall with its attributes
-		spdlog::info("syscall: [{:03}]->[{:03}]({:#x}, {:#x}, {:#x}, {:#x}, {:#x}, {:#x})", guest_index, syscall_index,
-					 context->guest.map.rdi, context->guest.map.rsi, context->guest.map.rdx,
-					 context->guest.map.r10, context->guest.map.r8, context->guest.map.r9);
-		if (syscall_index >= 0)
-			return syscall_index;
+		// get the entry from the syscall map
+		const auto entry = syscall_map[guest_index];
+		if (entry.is_valid()) {
+
+			// do we forward this syscall to the riscv kernel?
+			if (entry.is_forwarded()) {
+				// print the systemcall with its attributes
+				spdlog::info("syscall: [{:03}]->[{:03}]({:#x}, {:#x}, {:#x}, {:#x}, {:#x}, {:#x})",
+							 guest_index, entry.riscv_index,
+							 context->guest.map.rdi, context->guest.map.rsi, context->guest.map.rdx,
+							 context->guest.map.r10, context->guest.map.r8, context->guest.map.r9);
+
+				return entry.riscv_index;
+			}
+
+			// should this syscall be emulated?
+			else /*if (entry.is_emulated())*/ {
+				entry.emulation_fn(context);
+				return -1;
+			}
+		}
 	}
 
 	// we will only reach this if the system call is not supported

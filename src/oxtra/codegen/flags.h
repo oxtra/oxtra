@@ -21,16 +21,16 @@ namespace codegen {
 			 * the assembly_globals file has to be updated as well.
 			 */
 
-			uint64_t zero_value;
-			uint64_t sign_value;
-			uint64_t overflow_value[2];
-			uint64_t carry_value[2];
-			uint64_t overflow_pointer;
-			uint64_t carry_pointer;
-			uint16_t overflow_operation;
-			uint16_t carry_operation;
-			uint8_t sign_size;
-			uint8_t parity_value;
+			uint64_t zero_value;		// 0x00
+			uint64_t sign_value;		// 0x08
+			uint64_t overflow_value[2];	// 0x10
+			uint64_t carry_value[2];	// 0x20
+			uint64_t overflow_pointer;	// 0x30
+			uint64_t carry_pointer;		// 0x38
+			uint16_t overflow_operation;// 0x40
+			uint16_t carry_operation;	// 0x42
+			uint8_t sign_size;			// 0x44
+			uint8_t parity_value;		// 0x45
 
 			static constexpr uint32_t
 					flag_info_offset = 0x200,
