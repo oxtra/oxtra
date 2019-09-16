@@ -1,0 +1,3 @@
+# Testing if the sub instruction works.
+./oxtra -l 2 test/resources/instructions/sub
+>>>= 0

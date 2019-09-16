@@ -40,6 +40,7 @@ void codegen::Adc::execute_operation(CodeBatch& batch, encoding::RiscVRegister d
 }
 
 void codegen::Adc::execute_operation(CodeBatch& batch, encoding::RiscVRegister dst, intptr_t imm) const {
+	// just move the immediate into a register for now.. this could be optimized
 	batch += encoding::ADDI(encoding::RiscVRegister::t3, encoding::RiscVRegister::zero, imm);
 	execute_operation(batch, dst, encoding::RiscVRegister::t3);
 }

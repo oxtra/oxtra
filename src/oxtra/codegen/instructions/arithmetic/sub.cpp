@@ -34,7 +34,7 @@ void codegen::Sub::execute_operation(CodeBatch& batch, encoding::RiscVRegister d
 
 	if (imm == -0x800) {
 		batch += encoding::ADDI(dst, dst, 1);
-		batch += encoding::ADDI(dst, dst, -imm);
+		batch += encoding::ADDI(dst, dst, -imm - 1);
 	} else
 		batch += encoding::ADDI(dst, dst, -imm);
 

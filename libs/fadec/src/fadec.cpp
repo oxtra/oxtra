@@ -729,7 +729,7 @@ static void format_register(char*& buf, char*& end, fadec::Register reg, fadec::
 			"r12h", "r13h", "r14h", "r15h"
 	};
 
-	if (type == RegisterType::gph && static_cast<uintptr_t>(reg) <= 15) fmt_concat(string_map[static_cast<uintptr_t>(reg) + 64])
+	if (type == RegisterType::gph && static_cast<uintptr_t>(reg) <= 15) fmt_concat(string_map[static_cast<uintptr_t>(reg) + 60])
 	else if (type == RegisterType::gpl && static_cast<uintptr_t>(reg) <= 15) {
 		switch (size) {
 			case 8: fmt_concat(string_map[static_cast<uintptr_t>(reg)])
