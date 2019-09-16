@@ -1,5 +1,5 @@
 #include "oxtra/dispatcher/dispatcher.h"
-#include "oxtra/dispatcher/syscall_map.h"
+#include "oxtra/dispatcher/syscalls.h"
 #include "execution_context.h"
 #include "oxtra/debugger/debugger.h"
 #include <spdlog/spdlog.h>
@@ -77,14 +77,14 @@ void Dispatcher::init_guest_context() {
 	auto auxv = auxvs;
 	while ((auxv++)->a_type != AT_NULL);
 	const size_t
-		auxv_count = auxv - auxvs, // size includes null entry
-		auxv_size = auxv_count * sizeof(Elf64_auxv_t) - 8; // last entry is 8 bytes
+			auxv_count = auxv - auxvs, // size includes null entry
+			auxv_size = auxv_count * sizeof(Elf64_auxv_t) - 8; // last entry is 8 bytes
 
 	// the count of the necessary arguments with zero entries in between (in bytes). Zero paddings are included in size
 	auto min_stack_size = auxv_size + // auxv
-							env_count * sizeof(char*) + // envp
-							sizeof(char*) + _args.get_guest_arguments().size() * sizeof(char*) + // argv
-							sizeof(size_t); // argc
+						  env_count * sizeof(char*) + // envp
+						  sizeof(char*) + _args.get_guest_arguments().size() * sizeof(char*) + // argv
+						  sizeof(size_t); // argc
 
 	// page align it because why not
 	min_stack_size = ((min_stack_size - 1) & ~0xfffu) + 0x1000u;
@@ -119,8 +119,7 @@ void Dispatcher::init_guest_context() {
 			if (entry->a_type == AT_PHDR) {
 				const auto elf_hdr = reinterpret_cast<const Elf64_Ehdr*>(_elf.get_base_vaddr());
 				entry->a_un.a_val = _elf.get_base_vaddr() + elf_hdr->e_phoff;
-			}
-			else if (entry->a_type == AT_ENTRY) {
+			} else if (entry->a_type == AT_ENTRY) {
 				entry->a_un.a_val = _elf.get_entry_point();
 			}
 		}
@@ -155,74 +154,35 @@ void Dispatcher::init_guest_context() {
 }
 
 long Dispatcher::virtualize_syscall(ExecutionContext* context) {
-	using namespace internal;
+	using namespace syscalls;
 
 	// the x86 syscall index
 	const auto guest_index = context->guest.map.rax;
 
-	// we emulate exit
-	if (guest_index == 60) {
-		// exit
-		guest_exit(context->guest.map.rdi);
-		return -1;
-	}
-	else if (guest_index == 158) {
-		// arch_prctl
-		static constexpr auto
-			arch_set_gs = 0x1001,
-			arch_set_fs = 0x1002,
-			arch_get_fs = 0x1003,
-			arch_get_gs = 0x1004;
-
-		switch (context->guest.map.rdi) {
-			case arch_set_gs:
-				context->gs_base = context->guest.map.rsi;
-
-				// gs:[0] = gs_base
-				*reinterpret_cast<uint64_t*>(context->gs_base) = context->gs_base;
-				spdlog::debug("gs base set to {0:x}", context->gs_base);
-				break;
-
-			case arch_set_fs:
-				context->fs_base = context->guest.map.rsi;
-
-				// fs:[0] = fs_base
-				*reinterpret_cast<uint64_t*>(context->fs_base) = context->fs_base;
-				spdlog::debug("fs base set to {0:x}", context->fs_base);
-				break;
-
-			case arch_get_fs:
-				*reinterpret_cast<uint64_t*>(context->guest.map.rsi) = context->fs_base;
-				break;
-
-			case arch_get_gs:
-				*reinterpret_cast<uint64_t*>(context->guest.map.rsi) = context->gs_base;
-				break;
-
-			default:
-				context->guest.a0 = static_cast<uintptr_t>(-1);
-				return -1;
-		}
-
-		context->guest.a0 = 0;
-
-		return -1;
-	}
-
-	/**
-	 * if the syscall is handled write the return value to _guest_context.a0.
-	 */
-
 	// is this an invalid index?
 	if (guest_index < syscall_map.size()) {
-		const auto syscall_index = syscall_map[guest_index];
 
-		// print the systemcall with its attributes
-		spdlog::info("syscall: [{:03}]->[{:03}]({:#x}, {:#x}, {:#x}, {:#x}, {:#x}, {:#x})", guest_index, syscall_index,
-					 context->guest.map.rdi, context->guest.map.rsi, context->guest.map.rdx,
-					 context->guest.map.r10, context->guest.map.r8, context->guest.map.r9);
-		if (syscall_index >= 0)
-			return syscall_index;
+		// get the entry from the syscall map
+		const auto entry = syscall_map[guest_index];
+		if (entry.is_valid()) {
+
+			// do we forward this syscall to the riscv kernel?
+			if (entry.is_forwarded()) {
+				// print the systemcall with its attributes
+				spdlog::info("syscall: [{:03}]->[{:03}]({:#x}, {:#x}, {:#x}, {:#x}, {:#x}, {:#x})",
+							 guest_index, entry.riscv_index,
+							 context->guest.map.rdi, context->guest.map.rsi, context->guest.map.rdx,
+							 context->guest.map.r10, context->guest.map.r8, context->guest.map.r9);
+
+				return entry.riscv_index;
+			}
+
+
+			if (entry.is_emulated()) {
+				entry.emulation_fn(context);
+				return -1;
+			}
+		}
 	}
 
 	// we will only reach this if the system call is not supported
