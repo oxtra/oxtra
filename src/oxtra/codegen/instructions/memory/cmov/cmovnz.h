@@ -8,16 +8,7 @@ namespace codegen {
 				: Cmov{inst, flags::zero} {}
 
 	private:
-		// zf == 0
-		void execute_operation(CodeBatch& batch) const final {
-			evaluate_zero(batch);
-			const auto zero = batch.add(encoding::NOP());
-
-			generate_move(batch);
-
-			batch[zero] = encoding::BNQZ(encoding::RiscVRegister::t4,
-										 (batch.size() - zero) * sizeof(utils::riscv_instruction_t));
-		}
+		void execute_operation(CodeBatch& batch) const final;
 	};
 }
 

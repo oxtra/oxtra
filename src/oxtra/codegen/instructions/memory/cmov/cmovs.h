@@ -8,16 +8,7 @@ namespace codegen {
 				: Cmov{inst, flags::sign} {}
 
 	private:
-		// sf == 1
-		void execute_operation(CodeBatch& batch) const final {
-			evaluate_sign(batch, encoding::RiscVRegister::t0);
-			const auto sign = batch.add(encoding::NOP());
-
-			generate_move(batch);
-
-			batch[sign] = encoding::BEQZ(encoding::RiscVRegister::t4,
-										 (batch.size() - sign) * sizeof(utils::riscv_instruction_t));
-		}
+		void execute_operation(CodeBatch& batch) const final;
 	};
 }
 

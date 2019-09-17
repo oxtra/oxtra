@@ -8,16 +8,7 @@ namespace codegen {
 				: Cmov{inst, flags::overflow} {}
 
 	private:
-		// of == 0
-		void execute_operation(CodeBatch& batch) const final {
-			evaluate_overflow(batch);
-			const auto overflow = batch.add(encoding::NOP());
-
-			generate_move(batch);
-
-			batch[overflow] = encoding::BNQZ(encoding::RiscVRegister::t4,
-										  (batch.size() - overflow) * sizeof(utils::riscv_instruction_t));
-		}
+		void execute_operation(CodeBatch& batch) const final;
 	};
 }
 
