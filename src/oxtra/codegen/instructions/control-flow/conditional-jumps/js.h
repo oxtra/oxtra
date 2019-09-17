@@ -1,15 +1,13 @@
 #ifndef OXTRA_JS_H
 #define OXTRA_JS_H
 
-#include "oxtra/codegen/instruction.h"
-
 namespace codegen {
-	class Js : public codegen::Instruction {
+	class Js : public Jcc {
 	public:
 		explicit Js(const fadec::Instruction& inst)
-				: codegen::Instruction{inst, flags::none, flags::sign, true} {}
+				: Jcc{inst, flags::sign} {}
 
-		void generate(CodeBatch& batch) const override;
+		void generate(CodeBatch& batch) const final;
 	};
 }
 

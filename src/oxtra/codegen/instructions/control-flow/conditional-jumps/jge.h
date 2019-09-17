@@ -1,15 +1,13 @@
 #ifndef OXTRA_JGE_H
 #define OXTRA_JGE_H
 
-#include "oxtra/codegen/instruction.h"
-
 namespace codegen {
-	class Jge : public codegen::Instruction {
+	class Jge : public Jcc {
 	public:
 		explicit Jge(const fadec::Instruction& inst)
-				: codegen::Instruction{inst, flags::none, flags::sign | flags::overflow, true} {}
+				: Jcc{inst, flags::sign | flags::overflow} {}
 
-		void generate(CodeBatch& batch) const override;
+		void generate(CodeBatch& batch) const final;
 	};
 }
 

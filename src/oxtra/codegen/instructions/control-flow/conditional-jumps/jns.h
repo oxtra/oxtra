@@ -1,15 +1,13 @@
 #ifndef OXTRA_JNS_H
 #define OXTRA_JNS_H
 
-#include "oxtra/codegen/instruction.h"
-
 namespace codegen {
-	class Jns : public codegen::Instruction {
+	class Jns : public Jcc {
 	public:
 		explicit Jns(const fadec::Instruction& inst)
-				: codegen::Instruction{inst, flags::none, flags::sign, true} {}
+				: Jcc{inst, flags::sign} {}
 
-		void generate(CodeBatch& batch) const override;
+		void generate(CodeBatch& batch) const final;
 	};
 }
 
