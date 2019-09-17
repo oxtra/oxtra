@@ -40,7 +40,7 @@ RiscVRegister codegen::Instruction::translate_operand(CodeBatch& batch, size_t i
 													  RiscVRegister temp_a, RiscVRegister temp_b, bool modifiable,
 													  bool full_load, bool sign_extend, bool destination) const {
 	// extract the operand
-	auto& operand = get_operand(index);
+	const auto& operand = get_operand(index);
 
 	// check if the operand is a memory-access
 	if (operand.get_type() == OperandType::mem) {
@@ -82,12 +82,12 @@ RiscVRegister codegen::Instruction::translate_operand(CodeBatch& batch, size_t i
 
 void codegen::Instruction::translate_destination(CodeBatch& batch, RiscVRegister reg, RiscVRegister address,
 												 RiscVRegister temp_a, RiscVRegister temp_b) const {
-	auto& operand = get_operand(0);
+	const auto& operand = get_operand(0);
 
 	// check if the destination is a register
 	if (operand.get_type() == OperandType::reg) {
 		// extract the mapped register
-		const bool high_reg = operand.get_register_type() == RegisterType::gph;
+		const auto high_reg = operand.get_register_type() == RegisterType::gph;
 		const auto mapped_reg = (high_reg ? map_reg_high : map_reg)(operand.get_register());
 
 		// write the register to the destination

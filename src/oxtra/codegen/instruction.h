@@ -45,7 +45,6 @@ namespace codegen {
 	protected:
 		/**
 		 * Translates a single operand (either register, or memory or immediate value) into the specified register.
-		 * @param inst The x86 instruction object.
 		 * @param index operand-index of instruction.
 		 * @param address If the operation was a memory-operation, this register will contain the address (for optimizations).
 		 * 		  Either: zero, temp_b or one of the mapped registers. (can be Null)
@@ -66,8 +65,6 @@ namespace codegen {
 		/**
 		 * Writes the value in the register to the destination-operand of the instruction.
 		 * The register will be preserved. Undefined behavior for reg == operand->reg.
-		 * @param batch Store the current riscv-batch.
-		 * @param inst The x86 instruction object.
 		 * @param reg This value will be written to the destination.
 		 * @param address If the destination is a memory address, this address will be used as destination.
 		 * @param temp_a A temporary that might be changed.

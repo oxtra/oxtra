@@ -30,6 +30,7 @@
 #include "oxtra/codegen/instructions/memory/pop.h"
 #include "oxtra/codegen/instructions/memory/push.h"
 #include "oxtra/codegen/instructions/control-flow/conditional-jumps/jcc.h"
+#include "oxtra/codegen/instructions/memory/cmov/cmov.h"
 #include "oxtra/codegen/instructions/comparable/cmp.h"
 #include "oxtra/codegen/instructions/comparable/test.h"
 #include "oxtra/codegen/instructions/flags/clc.h"
@@ -82,6 +83,39 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 			return std::make_unique<Jle>(inst);
 		case InstructionType::JCXZ:
 			return std::make_unique<Jcxz>(inst);
+
+		case InstructionType::CMOVA:
+			return std::make_unique<Cmova>(inst);
+		case InstructionType::CMOVBE:
+			return std::make_unique<Cmovbe>(inst);
+		case InstructionType::CMOVC:
+			return std::make_unique<Cmovc>(inst);
+		case InstructionType::CMOVG:
+			return std::make_unique<Cmovg>(inst);
+		case InstructionType::CMOVGE:
+			return std::make_unique<Cmovge>(inst);
+		case InstructionType::CMOVL:
+			return std::make_unique<Cmovl>(inst);
+		case InstructionType::CMOVLE:
+			return std::make_unique<Cmovle>(inst);
+		case InstructionType::CMOVNC:
+			return std::make_unique<Cmovnc>(inst);
+		case InstructionType::CMOVNO:
+			return std::make_unique<Cmovno>(inst);
+		case InstructionType::CMOVNP:
+			return std::make_unique<Cmovnp>(inst);
+		case InstructionType::CMOVNS:
+			return std::make_unique<Cmovns>(inst);
+		case InstructionType::CMOVNZ:
+			return std::make_unique<Cmovnz>(inst);
+		case InstructionType::CMOVO:
+			return std::make_unique<Cmovo>(inst);
+		case InstructionType::CMOVP:
+			return std::make_unique<Cmovp>(inst);
+		case InstructionType::CMOVS:
+			return std::make_unique<Cmovs>(inst);
+		case InstructionType::CMOVZ:
+			return std::make_unique<Cmovz>(inst);
 
 		case InstructionType::CMP:
 		case InstructionType::CMP_IMM:
