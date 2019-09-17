@@ -5,8 +5,8 @@ void codegen::Cmov::generate(codegen::CodeBatch& batch) const {
 	if (get_operand(0).get_size() == 4) {
 		// the upper 32-bits are cleared even if the condition is not true
 		const auto dst_reg = helper::map_reg(get_operand(0).get_register());
-		batch += encoding::SRLI(dst_reg, dst_reg, 32);
 		batch += encoding::SLLI(dst_reg, dst_reg, 32);
+		batch += encoding::SRLI(dst_reg, dst_reg, 32);
 	}
 
 	execute_operation(batch);
