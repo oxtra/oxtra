@@ -320,6 +320,11 @@ namespace encoding {
 	*/
 	utils::riscv_instruction_t ADDW(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2);
 
+	/**
+	 * rd = (rs1 - rs2) [31:0] sign extended to 64bit
+	 */
+	utils::riscv_instruction_t SUBW(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2);
+
 	/* --- M Standard Extension --- */
 
 	/**
