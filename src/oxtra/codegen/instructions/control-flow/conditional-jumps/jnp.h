@@ -1,15 +1,13 @@
 #ifndef OXTRA_JNP_H
 #define OXTRA_JNP_H
 
-#include "oxtra/codegen/instruction.h"
-
 namespace codegen {
-	class Jnp : public codegen::Instruction {
+	class Jnp : public Jcc {
 	public:
 		explicit Jnp(const fadec::Instruction& inst)
-				: codegen::Instruction{inst, flags::none, flags::parity, true} {}
+				: Jcc{inst, flags::parity} {}
 
-		void generate(CodeBatch& batch) const override;
+		void generate(CodeBatch& batch) const final;
 	};
 }
 

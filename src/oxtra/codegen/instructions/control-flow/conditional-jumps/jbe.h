@@ -1,15 +1,13 @@
 #ifndef OXTRA_JBE_H
 #define OXTRA_JBE_H
 
-#include "oxtra/codegen/instruction.h"
-
 namespace codegen {
-	class Jbe : public codegen::Instruction {
+	class Jbe : public Jcc {
 	public:
 		explicit Jbe(const fadec::Instruction& inst)
-				: codegen::Instruction{inst, flags::none, flags::carry | flags::zero, true} {}
+				: Jcc{inst, flags::carry | flags::zero} {}
 
-		void generate(CodeBatch& batch) const override;
+		void generate(CodeBatch& batch) const final;
 	};
 }
 

@@ -1,15 +1,13 @@
 #ifndef OXTRA_JZ_H
 #define OXTRA_JZ_H
 
-#include "oxtra/codegen/instruction.h"
-
 namespace codegen {
-	class Jz : public codegen::Instruction {
+	class Jz : public Jcc {
 	public:
 		explicit Jz(const fadec::Instruction& inst)
-				: codegen::Instruction{inst, flags::none, flags::zero, true} {}
+				: Jcc{inst, flags::zero} {}
 
-		void generate(CodeBatch& batch) const override;
+		void generate(CodeBatch& batch) const final;
 	};
 }
 

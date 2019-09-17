@@ -1,15 +1,13 @@
 #ifndef OXTRA_JA_H
 #define OXTRA_JA_H
 
-#include "oxtra/codegen/instruction.h"
-
 namespace codegen {
-	class Ja : public codegen::Instruction {
+	class Ja : public Jcc {
 	public:
 		explicit Ja(const fadec::Instruction& inst)
-				: codegen::Instruction{inst, flags::none, flags::carry | flags::zero, true} {}
+				: Jcc{inst, flags::carry | flags::zero} {}
 
-		void generate(CodeBatch& batch) const override;
+		void generate(CodeBatch& batch) const final;
 	};
 }
 

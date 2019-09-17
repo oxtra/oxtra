@@ -1,15 +1,13 @@
 #ifndef OXTRA_JNO_H
 #define OXTRA_JNO_H
 
-#include "oxtra/codegen/instruction.h"
-
 namespace codegen {
-	class Jno : public codegen::Instruction {
+	class Jno : public Jcc {
 	public:
 		explicit Jno(const fadec::Instruction& inst)
-				: codegen::Instruction{inst, flags::none, flags::overflow, true} {}
+				: Jcc{inst, flags::overflow} {}
 
-		void generate(CodeBatch& batch) const override;
+		void generate(CodeBatch& batch) const final;
 	};
 }
 
