@@ -25,7 +25,7 @@ void codegen::Jg::generate(codegen::CodeBatch& batch) const {
 	evaluate_overflow(batch);
 
 	// generate the jump to the leave
-	offset = batch.size() - leave;
+	offset = leave - batch.size();
 	batch += encoding::BNE(encoding::RiscVRegister::t4, encoding::RiscVRegister::t0, offset * 4);
 
 	// compute the resulting operand

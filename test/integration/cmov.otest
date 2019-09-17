@@ -1,0 +1,3 @@
+# Testing if the cmovcc instructions work.
+./oxtra -l 2 test/resources/instructions/cmov
+>>>= 0

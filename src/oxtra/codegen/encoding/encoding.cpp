@@ -236,9 +236,13 @@ riscv_instruction_t encoding::ECALL() {
 	return itype(115, RiscVRegister::zero, 0, RiscVRegister::zero, 0);
 }
 
-/* --- RV32I Base Instruction Set --- */
+/* --- RV64I Base Instruction Set --- */
 riscv_instruction_t encoding::ADDW(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2) {
 	return rtype(59, rd, 0, rs1, rs2, 0);
+}
+
+riscv_instruction_t encoding::SUBW(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2) {
+	return rtype(59, rd, 0, rs1, rs2, 32);
 }
 
 // probably not needed: FENCE, FENCE.I, EBREAK, CSRRW, CSRRS, CSRRC, CSRRWI, CSRRSI, CSRRCI
