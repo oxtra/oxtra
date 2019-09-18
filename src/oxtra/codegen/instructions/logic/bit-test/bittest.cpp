@@ -1,0 +1,116 @@
+#include "bittest.h"
+#include "oxtra/codegen/helper.h"
+#include "oxtra/dispatcher/dispatcher.h"
+
+void codegen::BitTest::generate(codegen::CodeBatch& batch) const {
+	const auto& bit_base = get_operand(0);
+	const auto& bit_off = get_operand(1);
+
+	const auto operand_size = bit_base.get_size();
+
+	auto bit_base_reg = encoding::RiscVRegister::t0;
+	auto address = encoding::RiscVRegister::zero;
+	if (bit_base.get_type() == fadec::OperandType::reg) {
+		bit_base_reg = helper::map_reg(bit_base.get_register());
+	} else /*if (bit_base.get_type() == fadec::OperandType::mem)*/ {
+		address = read_from_memory(batch, 0, bit_base_reg, encoding::RiscVRegister::t3, false);
+	}
+
+	batch += encoding::ADDI(mask_reg, encoding::RiscVRegister::zero, 1);
+
+	if (bit_off.get_type() == fadec::OperandType::imm) {
+		batch += encoding::SLLI(mask_reg, mask_reg, BitTest::get_shift_amount(operand_size, get_immediate()));
+
+	} else /*if (bit_off.get_type() == fadec::OperandType::reg)*/ {
+		const auto bit_off_reg = helper::map_reg(bit_off.get_register());
+		switch (operand_size) {
+			case 8:
+				encoding::SLL(mask_reg, mask_reg, bit_off_reg);
+				break;
+			case 4:
+				encoding::SLLW(mask_reg, mask_reg, bit_off_reg);
+				break;
+			case 2:
+				// bit_base % 16
+				encoding::ANDI(encoding::RiscVRegister::t2, bit_off_reg, 0xf);
+				encoding::SLL(mask_reg, mask_reg, bit_off_reg);
+				break;
+		}
+	}
+
+	batch += encoding::AND(bit_value_reg, bit_base_reg, mask_reg);
+	batch += encoding::SNEZ(bit_value_reg, bit_value_reg);
+	batch += encoding::SLLI(bit_value_reg, bit_value_reg, 2);
+	batch += encoding::ADDI(bit_value_reg, bit_value_reg, static_cast<uint16_t>(jump_table::Entry::carry_clear) * 4);
+
+	update_carry(batch, bit_value_reg, encoding::RiscVRegister::zero, encoding::RiscVRegister::zero);
+
+	manipulate_bit(batch, bit_base_reg);
+
+	if (bit_base.get_type() == fadec::OperandType::mem) {
+		write_to_memory(batch, 0, bit_base_reg, encoding::RiscVRegister::t1, encoding::RiscVRegister::t2, address);
+	}
+}
+
+uint16_t codegen::BitTest::get_shift_amount(uint8_t size, uintptr_t imm) {
+	switch (size) {
+		case 8: return static_cast<uint16_t>(imm & 0x3fu); // mod 64
+		case 4: return static_cast<uint16_t>(imm & 0x1fu); // mod 32
+		case 2: return static_cast<uint16_t>(imm & 0x0fu); // mod 16
+		default: dispatcher::Dispatcher::fault_exit("BitTest: Invalid operand size"); return 0;
+	}
+}
+
+void codegen::Bt::generate(codegen::CodeBatch& batch) const {
+	const auto& bit_base = get_operand(0);
+	const auto& bit_off = get_operand(1);
+
+	const auto operand_size = bit_base.get_size();
+
+	auto bit_base_reg = encoding::RiscVRegister::t0;
+	if (bit_base.get_type() == fadec::OperandType::reg) {
+		bit_base_reg = helper::map_reg(bit_base.get_register());
+	} else /*if (bit_base.get_type() == fadec::OperandType::mem)*/ {
+		read_from_memory(batch, 0, bit_base_reg, encoding::RiscVRegister::t1, false);
+	}
+
+	constexpr auto bit_value_reg = encoding::RiscVRegister::t1;
+	if (bit_off.get_type() == fadec::OperandType::imm) {
+		batch += encoding::SRLI(bit_value_reg, bit_base_reg, BitTest::get_shift_amount(operand_size, get_immediate()));
+
+	} else /*if (bit_off.get_type() == fadec::OperandType::reg)*/ {
+		const auto bit_off_reg = helper::map_reg(bit_off.get_register());
+		switch (operand_size) {
+			case 8:
+				encoding::SRL(bit_value_reg, bit_base_reg, bit_off_reg);
+				break;
+			case 4:
+				encoding::SRLW(bit_value_reg, bit_base_reg, bit_off_reg);
+				break;
+			case 2:
+				// bit_base % 16
+				encoding::ANDI(encoding::RiscVRegister::t2, bit_off_reg, 0xf);
+				encoding::SRL(bit_value_reg, bit_base_reg, bit_off_reg);
+				break;
+		}
+	}
+
+	batch += encoding::ANDI(bit_value_reg, bit_value_reg, 1);
+	batch += encoding::SLLI(bit_value_reg, bit_value_reg, 2);
+	batch += encoding::ADDI(bit_value_reg, bit_value_reg, static_cast<uint16_t>(jump_table::Entry::carry_clear) * 4);
+
+	update_carry(batch, bit_value_reg, encoding::RiscVRegister::zero, encoding::RiscVRegister::zero);
+}
+
+void codegen::Btc::manipulate_bit(codegen::CodeBatch& batch, encoding::RiscVRegister bit_base) const {
+	batch += encoding::XOR(bit_base, bit_base, mask_reg);
+}
+
+void codegen::Btr::manipulate_bit(codegen::CodeBatch& batch, encoding::RiscVRegister bit_base) const {
+	batch += encoding::NOT(mask_reg, mask_reg);
+	batch += encoding::AND(bit_base, bit_base, mask_reg);
+}
+
+void codegen::Bts::manipulate_bit(codegen::CodeBatch& batch, encoding::RiscVRegister bit_base) const {
+	batch += encoding::OR(bit_base, bit_base, mask_reg);
+}
