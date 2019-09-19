@@ -67,6 +67,7 @@ add_library(oxtra_libs
 		oxtra/codegen/instructions/string/lods.cpp
 		oxtra/codegen/instructions/string/movs.cpp
 		oxtra/codegen/instructions/memory/cmov/cmov.cpp
+		oxtra/codegen/instructions/logic/setcc/setcc.cpp
 )
 
 target_link_libraries(oxtra_libs
