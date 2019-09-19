@@ -1,6 +1,7 @@
 // DISCLAIMER: This program is not meant to be used in any other scenario than testing many different conditional jumps
 
 #include <stdio.h>
+#include <stdlib.h>
 
 int sqrti(int number) {
 	if (number == 0) return 0;
@@ -41,10 +42,14 @@ int getNextPrime(int start) {
 	}
 }
 
-int main() {
-	int currentPrime = 2;
+int main(int argc, const char* argv[]) {
+	int max = 100;
 
-	while (currentPrime < 1000000) {
+	if (argc == 2)
+		max = atoi(argv[1]);
+
+	int currentPrime = 2;
+	while (currentPrime < max) {
 		printf("%d\n", currentPrime);
 		currentPrime = getNextPrime(currentPrime);
 	}
