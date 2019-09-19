@@ -8,20 +8,37 @@ void codegen::BitTest::generate(codegen::CodeBatch& batch) const {
 
 	const auto operand_size = bit_base.get_size();
 
+	// the register that contains the bit base value
 	auto bit_base_reg = encoding::RiscVRegister::t0;
+
+	// this register contains the address that is passed to write_to_memory
 	auto address = encoding::RiscVRegister::zero;
+
+	// get the bit_base_reg
 	if (bit_base.get_type() == fadec::OperandType::reg) {
 		bit_base_reg = helper::map_reg(bit_base.get_register());
 	} else /*if (bit_base.get_type() == fadec::OperandType::mem)*/ {
 		address = read_from_memory(batch, 0, bit_base_reg, encoding::RiscVRegister::t3, false);
 	}
 
-	batch += encoding::ADDI(mask_reg, encoding::RiscVRegister::zero, 1);
-
 	if (bit_off.get_type() == fadec::OperandType::imm) {
-		batch += encoding::SLLI(mask_reg, mask_reg, BitTest::get_shift_amount(operand_size, get_immediate()));
+		// we should just be able to helper::load_immediate here, but i don't trust it with being this optimized
+		const auto shift_amount = BitTest::get_shift_amount(operand_size, get_immediate());
+		if (shift_amount < 11) {
+			batch += encoding::ADDI(mask_reg, encoding::RiscVRegister::zero, 1u << shift_amount);
+		}
+		else if (shift_amount > 11 && shift_amount < 31) {
+			batch += encoding::LUI(mask_reg, 1u << (shift_amount - 12u));
+		}
+		else {
+			batch += encoding::ADDI(mask_reg, encoding::RiscVRegister::zero, 1);
+			batch += encoding::SLLI(mask_reg, mask_reg, shift_amount);
+		}
 
 	} else /*if (bit_off.get_type() == fadec::OperandType::reg)*/ {
+		// write a 1 into the mask. it will be shifted to produce the actual mask
+		batch += encoding::ADDI(mask_reg, encoding::RiscVRegister::zero, 1);
+
 		const auto bit_off_reg = helper::map_reg(bit_off.get_register());
 		switch (operand_size) {
 			case 8:
@@ -38,6 +55,7 @@ void codegen::BitTest::generate(codegen::CodeBatch& batch) const {
 		}
 	}
 
+	//
 	batch += encoding::AND(bit_value_reg, bit_base_reg, mask_reg);
 	batch += encoding::SNEZ(bit_value_reg, bit_value_reg);
 	batch += encoding::SLLI(bit_value_reg, bit_value_reg, 2);
