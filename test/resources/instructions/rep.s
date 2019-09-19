@@ -1,0 +1,23 @@
+.intel_syntax noprefix
+.global _start
+_start:
+MOV RDI, RSP
+SUB RDI, 128
+
+MOV RAX, 0x1337
+
+MOV RCX, 0
+REP STOSD
+
+MOV RCX, 1
+REP STOSD
+
+MOV RCX, 2
+REP STOSD
+
+MOV RCX, 2
+REPZ
+
+MOV RDI, 0
+MOV RAX, 60
+SYSCALL

@@ -8,11 +8,12 @@ void codegen::Repeatable::generate(codegen::CodeBatch& batch) const {
 	if (has_rep()) {
 		static constexpr auto rcx = helper::map_reg(fadec::Register::rcx);
 		const auto zero_test = batch.add(encoding::NOP());
-		const auto loop_begin = batch.add(encoding::ADDI(rcx, rcx, -1));
+
+		batch.add(encoding::ADDI(rcx, rcx, -1));
 
 		execute_operation(batch);
 
-		batch += encoding::BNQZ(rcx, (loop_begin - batch.size()) * sizeof(utils::riscv_instruction_t));
+		batch += encoding::BNQZ(rcx, (zero_test - batch.size()) * sizeof(utils::riscv_instruction_t));
 		batch[zero_test] = encoding::BEQZ(rcx, (batch.size() - zero_test) * sizeof(utils::riscv_instruction_t));
 	} else {
 		execute_operation(batch);
@@ -41,7 +42,7 @@ void codegen::RepeatableFlag::generate_loop(codegen::CodeBatch& batch, bool z) c
 	const auto zero_test = batch.add(encoding::NOP());
 
 	// decrement the loop counter
-	const auto loop_begin = batch.add(encoding::ADDI(rcx, rcx, -1));
+	batch.add(encoding::ADDI(rcx, rcx, -1));
 
 	// execute the string instruction
 	execute_operation(batch);
@@ -50,7 +51,7 @@ void codegen::RepeatableFlag::generate_loop(codegen::CodeBatch& batch, bool z) c
 	const auto diff_test = batch.add(encoding::NOP());
 
 	// do the loop again if the counter isn't 0
-	batch += (encoding::BNQZ(rcx, (loop_begin - batch.size()) * sizeof(utils::riscv_instruction_t)));
+	batch += (encoding::BNQZ(rcx, (zero_test - batch.size()) * sizeof(utils::riscv_instruction_t)));
 
 	// replace the dummy with the actual branch instruction
 	batch[diff_test] = (z ? encoding::BNQZ : encoding::BEQZ)(diff_reg, (batch.size() - diff_test) * sizeof(utils::riscv_instruction_t));
