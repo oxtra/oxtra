@@ -23,7 +23,7 @@ void codegen::BitTest::generate(codegen::CodeBatch& batch) const {
 
 	if (bit_off.get_type() == fadec::OperandType::imm) {
 		// we should just be able to helper::load_immediate here, but i don't trust it with being this optimized
-		const auto shift_amount = BitTest::get_shift_amount(operand_size, get_immediate());
+		const auto shift_amount = get_immediate() % (operand_size * 8);
 		if (shift_amount < 11) {
 			batch += encoding::ADDI(mask_reg, encoding::RiscVRegister::zero, 1u << shift_amount);
 		}
@@ -61,21 +61,12 @@ void codegen::BitTest::generate(codegen::CodeBatch& batch) const {
 	batch += encoding::SLLI(bit_value_reg, bit_value_reg, 2);
 	batch += encoding::ADDI(bit_value_reg, bit_value_reg, static_cast<uint16_t>(jump_table::Entry::carry_clear) * 4);
 
-	update_carry(batch, bit_value_reg, encoding::RiscVRegister::zero, encoding::RiscVRegister::zero);
+	update_carry(batch, bit_value_reg);
 
 	manipulate_bit(batch, bit_base_reg);
 
 	if (bit_base.get_type() == fadec::OperandType::mem) {
 		write_to_memory(batch, 0, bit_base_reg, encoding::RiscVRegister::t1, encoding::RiscVRegister::t2, address);
-	}
-}
-
-uint16_t codegen::BitTest::get_shift_amount(uint8_t size, uintptr_t imm) {
-	switch (size) {
-		case 8: return static_cast<uint16_t>(imm & 0x3fu); // mod 64
-		case 4: return static_cast<uint16_t>(imm & 0x1fu); // mod 32
-		case 2: return static_cast<uint16_t>(imm & 0x0fu); // mod 16
-		default: dispatcher::Dispatcher::fault_exit("BitTest: Invalid operand size"); return 0;
 	}
 }
 
@@ -94,7 +85,7 @@ void codegen::Bt::generate(codegen::CodeBatch& batch) const {
 
 	constexpr auto bit_value_reg = encoding::RiscVRegister::t1;
 	if (bit_off.get_type() == fadec::OperandType::imm) {
-		batch += encoding::SRLI(bit_value_reg, bit_base_reg, BitTest::get_shift_amount(operand_size, get_immediate()));
+		batch += encoding::SRLI(bit_value_reg, bit_base_reg, get_immediate() % (operand_size * 8));
 
 	} else /*if (bit_off.get_type() == fadec::OperandType::reg)*/ {
 		const auto bit_off_reg = helper::map_reg(bit_off.get_register());
@@ -117,7 +108,7 @@ void codegen::Bt::generate(codegen::CodeBatch& batch) const {
 	batch += encoding::SLLI(bit_value_reg, bit_value_reg, 2);
 	batch += encoding::ADDI(bit_value_reg, bit_value_reg, static_cast<uint16_t>(jump_table::Entry::carry_clear) * 4);
 
-	update_carry(batch, bit_value_reg, encoding::RiscVRegister::zero, encoding::RiscVRegister::zero);
+	update_carry(batch, bit_value_reg);
 }
 
 void codegen::Btc::manipulate_bit(codegen::CodeBatch& batch, encoding::RiscVRegister bit_base) const {

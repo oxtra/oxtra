@@ -18,9 +18,6 @@ namespace codegen {
 		static constexpr auto
 			bit_value_reg = encoding::RiscVRegister::t1,
 			mask_reg = encoding::RiscVRegister::t2;
-
-	private:
-		static uint16_t get_shift_amount(uint8_t size, uintptr_t imm);
 	};
 }
 
