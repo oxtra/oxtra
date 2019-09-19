@@ -138,6 +138,13 @@ namespace codegen::helper {
 		return map_reg(static_cast<fadec::Register>(static_cast<uint8_t>(reg) - 4));
 	}
 
+	constexpr encoding::RiscVRegister map_reg(const fadec::Register reg, const fadec::RegisterType type) {
+		if (type == fadec::RegisterType::gph)
+			return map_reg_high(reg);
+
+		return map_reg(reg);
+	}
+
 #if 0
 	/**
 	 * Software implementation of 128 by 64 bit division.

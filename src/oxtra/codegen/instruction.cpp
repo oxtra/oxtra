@@ -59,7 +59,7 @@ RiscVRegister codegen::Instruction::translate_operand(CodeBatch& batch, size_t i
 	if (operand.get_type() == OperandType::reg) {
 		// extract the mapped register
 		const bool high_reg = operand.get_register_type() == RegisterType::gph;
-		const auto mapped_reg = (high_reg ? map_reg_high : map_reg)(operand.get_register());
+		const auto mapped_reg = map_reg(operand.get_register(), operand.get_register_type());
 
 		// extract the register
 		if (destination && operand.get_size() >= 4) {
@@ -88,7 +88,7 @@ void codegen::Instruction::translate_destination(CodeBatch& batch, RiscVRegister
 	if (operand.get_type() == OperandType::reg) {
 		// extract the mapped register
 		const auto high_reg = operand.get_register_type() == RegisterType::gph;
-		const auto mapped_reg = (high_reg ? map_reg_high : map_reg)(operand.get_register());
+		const auto mapped_reg = map_reg(operand.get_register(), operand.get_register_type());
 
 		// write the register to the destination
 		if (operand.get_size() != 8 || mapped_reg != reg)
