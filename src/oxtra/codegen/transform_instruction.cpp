@@ -21,6 +21,7 @@
 #include "oxtra/codegen/instructions/logic/shr.h"
 #include "oxtra/codegen/instructions/logic/xor.h"
 #include "oxtra/codegen/instructions/logic/bit-test/bittest.h"
+#include "oxtra/codegen/instructions/logic/setcc/setcc.h"
 #include "oxtra/codegen/instructions/memory/cex.h"
 #include "oxtra/codegen/instructions/memory/csep.h"
 #include "oxtra/codegen/instructions/memory/lea.h"
@@ -117,6 +118,39 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 			return std::make_unique<Cmovs>(inst);
 		case InstructionType::CMOVZ:
 			return std::make_unique<Cmovz>(inst);
+
+		case InstructionType::SETA:
+			return std::make_unique<Seta>(inst);
+		case InstructionType::SETBE:
+			return std::make_unique<Setbe>(inst);
+		case InstructionType::SETC:
+			return std::make_unique<Setc>(inst);
+		case InstructionType::SETG:
+			return std::make_unique<Setg>(inst);
+		case InstructionType::SETGE:
+			return std::make_unique<Setge>(inst);
+		case InstructionType::SETL:
+			return std::make_unique<Setl>(inst);
+		case InstructionType::SETLE:
+			return std::make_unique<Setle>(inst);
+		case InstructionType::SETNC:
+			return std::make_unique<Setnc>(inst);
+		case InstructionType::SETNO:
+			return std::make_unique<Setno>(inst);
+		case InstructionType::SETNP:
+			return std::make_unique<Setnp>(inst);
+		case InstructionType::SETNS:
+			return std::make_unique<Setns>(inst);
+		case InstructionType::SETNZ:
+			return std::make_unique<Setnz>(inst);
+		case InstructionType::SETO:
+			return std::make_unique<Seto>(inst);
+		case InstructionType::SETP:
+			return std::make_unique<Setp>(inst);
+		case InstructionType::SETS:
+			return std::make_unique<Sets>(inst);
+		case InstructionType::SETZ:
+			return std::make_unique<Setz>(inst);
 
 		case InstructionType::CMP:
 		case InstructionType::CMP_IMM:
