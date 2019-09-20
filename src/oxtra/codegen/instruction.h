@@ -186,6 +186,12 @@ namespace codegen {
 		 */
 		void update_carry_single(CodeBatch& batch, encoding::RiscVRegister vb) const;
 
+		/**
+		 * Updates the carry operation with the entry specified in a register.
+		 * Mostly useful to set carry_clear and carry_set.
+		 */
+		void update_carry(CodeBatch& batch, encoding::RiscVRegister entry) const;
+
 		void update_carry(CodeBatch& batch, encoding::RiscVRegister entry,
 						  encoding::RiscVRegister va, encoding::RiscVRegister vb) const;
 

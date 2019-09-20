@@ -87,11 +87,15 @@ void Dispatcher::init_guest_context() {
 						  sizeof(size_t); // argc
 
 	// page align it because why not
-	min_stack_size = ((min_stack_size - 1) & ~0xfffu) + 0x1000u;
+	min_stack_size = (min_stack_size + 0xfffu) & ~0xfffu;
 	//printf("abi stack size: 0x%lx\n", min_stack_size);
 	// initialize the stack (assume a page for the arg, env pointers and aux vectors)
 	const auto stack_size = _args.get_stack_size();
-	_context.guest.map.rsp = reinterpret_cast<uintptr_t>(new uint8_t[stack_size]) + stack_size - min_stack_size;
+
+	const auto stack_memory = reinterpret_cast<uintptr_t>(mmap(nullptr, stack_size, PROT_READ | PROT_WRITE,
+								   MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+
+	_context.guest.map.rsp = stack_memory + stack_size - min_stack_size;
 	_context.guest.map.rbp = 0; // unspecified
 
 	// guaranteed to be 16-byte aligned, meaning that the lower 4 bits have to be cleared
@@ -100,9 +104,10 @@ void Dispatcher::init_guest_context() {
 	auto rsp = reinterpret_cast<size_t*>(_context.guest.map.rsp);
 
 	// put argc and argv on stack
-	*rsp++ = _args.get_guest_arguments().size();
-	for (size_t i = 0; i < _args.get_guest_arguments().size(); i++) {
-		*rsp++ = (size_t)_args.get_guest_arguments()[i].c_str();
+	*rsp++ = _args.get_guest_arguments().size() + 1;
+	*rsp++ = reinterpret_cast<size_t>(_args.get_guest_path());
+	for (const auto& arg : _args.get_guest_arguments()) {
+		*rsp++ = reinterpret_cast<size_t>(arg.c_str());
 	}
 	*rsp++ = 0;
 
@@ -132,7 +137,8 @@ void Dispatcher::init_guest_context() {
 		const auto argc = *rsp++;
 		printf("argc: %ld\n", argc);
 		for (size_t i = 0; i < argc; ++i) {
-			printf("argv: %s\n", reinterpret_cast<const char*>(*rsp++));
+			const auto arg = reinterpret_cast<const char*>(*rsp++);
+			printf("argv[%lx]: %s\n", i, arg);
 		}
 		printf("arg delimiter: %lx\n", *rsp++);
 
@@ -150,7 +156,7 @@ void Dispatcher::init_guest_context() {
 	}*/
 
 	spdlog::debug("initialized guest stack with {} arguments, {} environment pointers, and {} auxiliary vectors.",
-				  _args.get_guest_arguments().size(), env_count, auxv_count);
+				  _args.get_guest_arguments().size() + 1, env_count, auxv_count);
 }
 
 long Dispatcher::virtualize_syscall(ExecutionContext* context) {
@@ -177,7 +183,7 @@ long Dispatcher::virtualize_syscall(ExecutionContext* context) {
 				return entry.riscv_index;
 			}
 
-			// should this syscall be emulated?
+				// should this syscall be emulated?
 			else /*if (entry.is_emulated())*/ {
 				entry.emulation_fn(context);
 				return -1;

@@ -62,7 +62,7 @@ namespace arguments {
 	public:
 		const char* get_guest_path() const;
 
-		std::vector<std::string> get_guest_arguments() const;
+		const std::vector<std::string>& get_guest_arguments() const;
 
 		enum spdlog::level::level_enum get_log_level() const;
 

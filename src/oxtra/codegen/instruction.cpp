@@ -610,6 +610,11 @@ void codegen::Instruction::update_carry_single(codegen::CodeBatch& batch, encodi
 	batch += encoding::SD(helper::context_address, vb, flags::Info::carry_values_offset + 8);
 }
 
+void codegen::Instruction::update_carry(CodeBatch& batch, encoding::RiscVRegister entry) const {
+	// store the jump table index
+	batch += encoding::SH(helper::context_address, entry, flags::Info::carry_operation_offset);
+}
+
 void codegen::Instruction::update_carry(codegen::CodeBatch& batch, encoding::RiscVRegister entry, encoding::RiscVRegister va,
 										encoding::RiscVRegister vb) const {
 	// store the values

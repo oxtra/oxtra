@@ -20,6 +20,7 @@
 #include "oxtra/codegen/instructions/logic/shl.h"
 #include "oxtra/codegen/instructions/logic/shr.h"
 #include "oxtra/codegen/instructions/logic/xor.h"
+#include "oxtra/codegen/instructions/logic/bit-test/bittest.h"
 #include "oxtra/codegen/instructions/logic/setcc/setcc.h"
 #include "oxtra/codegen/instructions/memory/cex.h"
 #include "oxtra/codegen/instructions/memory/csep.h"
@@ -222,6 +223,19 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 		case InstructionType::SAR_CL:
 		case InstructionType::SAR_IMM:
 			return std::make_unique<Sar>(inst);
+
+		case InstructionType::BT:
+		case InstructionType::BT_IMM:
+			return std::make_unique<Bt>(inst);
+		case InstructionType::BTC:
+		case InstructionType::BTC_IMM:
+			return std::make_unique<Btc>(inst);
+		case InstructionType::BTR:
+		case InstructionType::BTR_IMM:
+			return std::make_unique<Btr>(inst);
+		case InstructionType::BTS:
+		case InstructionType::BTS_IMM:
+			return std::make_unique<Bts>(inst);
 
 		case InstructionType::SYSCALL:
 			return std::make_unique<Syscall>(inst);
