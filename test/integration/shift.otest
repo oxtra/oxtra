@@ -1,0 +1,3 @@
+# Testing if the shift instructions work.
+./oxtra -l 2 test/resources/instructions/shift
+>>>= 0
