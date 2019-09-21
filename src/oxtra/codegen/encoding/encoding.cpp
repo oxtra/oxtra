@@ -317,274 +317,245 @@ riscv_instruction_t encoding::REMU(RiscVRegister rd, RiscVRegister rs1, RiscVReg
 
 /* --- RV32F Standard Extension --------------------------------------------------------------------------------------- */
 
-utils::riscv_instruction_t FLW(RiscVFloatingRegister rd, RiscVRegister rs1, uint16_t imm) {
+utils::riscv_instruction_t encoding::FLW(RiscVFloatingRegister rd, RiscVRegister rs1, uint16_t imm) {
 	return itype(7, static_cast<RiscVRegister>(rd), 2, rs1, imm);
 }
 
-utils::riscv_instruction_t FSW(RiscVRegister rs1, RiscVFloatingRegister rs2, uint16_t imm) {
+utils::riscv_instruction_t encoding::FSW(RiscVRegister rs1, RiscVFloatingRegister rs2, uint16_t imm) {
 	return stype(39, 2, rs1, static_cast<RiscVRegister>(rs2), imm);
 }
 
-utils::riscv_instruction_t FMADDS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3) {
+utils::riscv_instruction_t encoding::FMADDS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3) {
 	return r4type(67, rd, 0, rs1, rs2, 0, rs3);
 }
 
-utils::riscv_instruction_t FNMSUBS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3) {
+utils::riscv_instruction_t encoding::FNMSUBS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3) {
 	return r4type(71, rd, 0, rs1, rs2, 0, rs3);
 }
 
-utils::riscv_instruction_t FMSUBS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3) {
+utils::riscv_instruction_t encoding::FMSUBS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3) {
 	return r4type(75, rd, 0, rs1, rs2, 0, rs3);
 }
 
-utils::riscv_instruction_t FNMADDS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3) {
+utils::riscv_instruction_t encoding::FNMADDS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3) {
 	return r4type(79, rd, 0, rs1, rs2, 0, rs3);
 }
 
-utils::riscv_instruction_t FADDS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+utils::riscv_instruction_t encoding::FADDS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
 	return frtype(83, rd, 0, rs1, rs2, 0);
 }
 
-utils::riscv_instruction_t FSUBS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+utils::riscv_instruction_t encoding::FSUBS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
 	return frtype(83, rd, 0, rs1, rs2, 4);
 }
 
-utils::riscv_instruction_t FMULS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+utils::riscv_instruction_t encoding::FMULS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
 	return frtype(83, rd, 0, rs1, rs2, 8);
 }
 
-utils::riscv_instruction_t FDIVS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+utils::riscv_instruction_t encoding::FDIVS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
 	return frtype(83, rd, 0, rs1, rs2, 12);
 }
 
-utils::riscv_instruction_t FSQRTS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1) {
+utils::riscv_instruction_t encoding::FSQRTS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1) {
 	return frtype(83, rd, 0, rs1, static_cast<RiscVFloatingRegister>(0), 44);
 }
 
-utils::riscv_instruction_t FSGNJS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+utils::riscv_instruction_t encoding::FSGNJS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
 	return frtype(83, rd, 0, rs1, rs2, 16);
 }
 
-utils::riscv_instruction_t FSGNJNS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+utils::riscv_instruction_t encoding::FSGNJNS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
 	return frtype(83, rd, 1, rs1, rs2, 16);
 }
 
-utils::riscv_instruction_t FSGNJXS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+utils::riscv_instruction_t encoding::FSGNJXS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
 	return frtype(83, rd, 2, rs1, rs2, 16);
 }
 
-utils::riscv_instruction_t FMINS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+utils::riscv_instruction_t encoding::FMINS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
 	return frtype(83, rd, 0, rs1, rs2, 20);
 }
 
-utils::riscv_instruction_t FMAXS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+utils::riscv_instruction_t encoding::FMAXS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
 	return frtype(83, rd, 1, rs1, rs2, 20);
 }
 
-utils::riscv_instruction_t FCVTWS(RiscVRegister rd, RiscVFloatingRegister rs1) {
+utils::riscv_instruction_t encoding::FCVTWS(RiscVRegister rd, RiscVFloatingRegister rs1) {
 	return frtype(83, static_cast<RiscVFloatingRegister>(rd), 0, rs1, static_cast<RiscVFloatingRegister>(0), 96);
 }
 
-utils::riscv_instruction_t FCVTWUS(RiscVRegister rd, RiscVFloatingRegister rs1) {
+utils::riscv_instruction_t encoding::FCVTWUS(RiscVRegister rd, RiscVFloatingRegister rs1) {
 	return frtype(83, static_cast<RiscVFloatingRegister>(rd), 0, rs1, static_cast<RiscVFloatingRegister>(1), 96);
 }
 
-// FMVXW seems narrow
+// FMVXW probably not needed
 
-utils::riscv_instruction_t FEQS(RiscVRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+utils::riscv_instruction_t encoding::FEQS(RiscVRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
 	return frtype(83, static_cast<RiscVFloatingRegister>(rd), 2, rs1, rs2, 70);
 }
 
-utils::riscv_instruction_t FLTS(RiscVRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+utils::riscv_instruction_t encoding::FLTS(RiscVRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
 	return frtype(83, static_cast<RiscVFloatingRegister>(rd), 1, rs1, rs2, 70);
 }
 
-utils::riscv_instruction_t FLES(RiscVRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+utils::riscv_instruction_t encoding::FLES(RiscVRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
 	return frtype(83, static_cast<RiscVFloatingRegister>(rd), 0, rs1, rs2, 70);
 }
 
-// FCLASS seems narrow
+// FCLASS probably not needed
 
-utils::riscv_instruction_t FCVTSW(RiscVFloatingRegister rd, RiscVRegister rs1) {
+utils::riscv_instruction_t encoding::FCVTSW(RiscVFloatingRegister rd, RiscVRegister rs1) {
 	return frtype(83, rd, 0, static_cast<RiscVFloatingRegister>(rs1), static_cast<RiscVFloatingRegister>(0), 112);
 }
 
-utils::riscv_instruction_t FCVTSWU(RiscVFloatingRegister rd, RiscVRegister rs1) {
+utils::riscv_instruction_t encoding::FCVTSWU(RiscVFloatingRegister rd, RiscVRegister rs1) {
 	return frtype(83, rd, 0, static_cast<RiscVFloatingRegister>(rs1), static_cast<RiscVFloatingRegister>(1), 112);
 }
 
 /* --- RV64F Standard Extension --------------------------------------------------------------------------------------- */
 
-utils::riscv_instruction_t FCVTLS(RiscVRegister rd, RiscVFloatingRegister rs1) {
+utils::riscv_instruction_t encoding::FCVTLS(RiscVRegister rd, RiscVFloatingRegister rs1) {
 	return frtype(83, static_cast<RiscVFloatingRegister>(rd), 0, rs1, static_cast<RiscVFloatingRegister>(2), 96);
 }
 
-utils::riscv_instruction_t FCVTLUS(RiscVRegister rd, RiscVFloatingRegister rs1) {
+utils::riscv_instruction_t encoding::FCVTLUS(RiscVRegister rd, RiscVFloatingRegister rs1) {
 	return frtype(83, static_cast<RiscVFloatingRegister>(rd), 0, rs1, static_cast<RiscVFloatingRegister>(3), 96);
 }
 
-utils::riscv_instruction_t FCVTSL(RiscVFloatingRegister rd, RiscVRegister rs1) {
+utils::riscv_instruction_t encoding::FCVTSL(RiscVFloatingRegister rd, RiscVRegister rs1) {
 	return frtype(83, rd, 0, static_cast<RiscVFloatingRegister>(rs1), static_cast<RiscVFloatingRegister>(2), 96);
 }
 
-utils::riscv_instruction_t FCVTSLU(RiscVFloatingRegister rd, RiscVRegister rs1) {
+utils::riscv_instruction_t encoding::FCVTSLU(RiscVFloatingRegister rd, RiscVRegister rs1) {
 	return frtype(83, rd, 0, static_cast<RiscVFloatingRegister>(rs1), static_cast<RiscVFloatingRegister>(3), 96);
 }
 
 /* --- RV32D Standard Extension --------------------------------------------------------------------------------------- */
 
-	/**
-	 * rd = [rs + imm] (double precision)
-	 */
-	utils::riscv_instruction_t FLD(RiscVFloatingRegister rd, RiscVRegister rs, uint16_t imm);
+utils::riscv_instruction_t encoding::FLD(RiscVFloatingRegister rd, RiscVRegister rs, uint16_t imm) {
+	return itype(7, static_cast<RiscVRegister>(rd), 3, rs, imm);
+}
 
-	/*
-	 * [rs1 + imm] = rd (double precision)
-	 */
-	utils::riscv_instruction_t FSD(RiscVRegister rs1, RiscVFloatingRegister rs2, uint16_t imm);
+utils::riscv_instruction_t encoding::FSD(RiscVRegister rs1, RiscVFloatingRegister rs2, uint16_t imm) {
+	return stype(39, 3, rs1, static_cast<RiscVRegister>(rs2), imm);
+}
 
-	/*
-	 * rd = rs1*rs2 + rs3 (double precision)
-	 */
-	utils::riscv_instruction_t FMADDD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3);
+utils::riscv_instruction_t encoding::FMADDD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3) {
+	return r4type(67, rd, 0, rs1, rs2, 1, rs3);
+}
 
-	/*
-	 * rd = rs1*rs2 + rs3 (double precision)
-	 */
-	utils::riscv_instruction_t FMSUBD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3);
+utils::riscv_instruction_t encoding::FMSUBD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3) {
+	return r4type(71, rd, 0, rs1, rs2, 1, rs3);
+}
 
-	/*
-	 * rd = -(rs1*rs2 + rs3) (double precision)
-	 */
-	utils::riscv_instruction_t FNMADDD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3);
+utils::riscv_instruction_t encoding::FNMADDD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3) {
+	return r4type(75, rd, 0, rs1, rs2, 1, rs3);
+}
 
-	/*
-	 * rd = -(rs1*rs2 - rs3) (double precision)
-	 */
-	utils::riscv_instruction_t FNMSUBD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3);
+utils::riscv_instruction_t encoding::FNMSUBD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3) {
+	return r4type(79, rd, 0, rs1, rs2, 1, rs3);
+}
 
-	/*
-	 * rd = rs1 + rs2 (double precision)
-	 */
-	utils::riscv_instruction_t FADDD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+utils::riscv_instruction_t encoding::FADDD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, rd, 0, rs1, rs2, 1);
+}
 
-	/*
-	 * rd = rs1 - rs2 (double precision)
-	 */
-	utils::riscv_instruction_t FSUBD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+utils::riscv_instruction_t encoding::FSUBD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, rd, 0, rs1, rs2, 5);
+}
 
-	/*
-	 * rd = rs1 * rs2 (double precision)
-	 */
-	utils::riscv_instruction_t FMULD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+utils::riscv_instruction_t encoding::FMULD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, rd, 0, rs1, rs2, 9);
+}
 
-	/*
-	 * rd = rs1 / rs2 (double precision)
-	 */
-	utils::riscv_instruction_t FDIVD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+utils::riscv_instruction_t encoding::FDIVD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, rd, 0, rs1, rs2, 13);
+}
 
-	/*
-	 * rd = sqrt(s1) (double precision)
-	 */
-	utils::riscv_instruction_t FSQRTD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1);
+utils::riscv_instruction_t encoding::FSQRTD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1) {
+	return frtype(83, rd, 0, rs1, static_cast<RiscVFloatingRegister>(0), 45);
+}
 
-	/*
-	 * rd = rs1 except the sign, which is taken from rs2 (double precision)
-	 */
-	utils::riscv_instruction_t FSGNJS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+utils::riscv_instruction_t encoding::FSGNJD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, rd, 0, rs1, rs2, 17);
+}
 
-	/*
-	 * rd = rs1 except the sign, which is the negation of the one from rs2 (double precision)
-	 */
-	utils::riscv_instruction_t FSGNJNS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+utils::riscv_instruction_t encoding::FSGNJND(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, rd, 1, rs1, rs2, 17);
+}
 
-	/*
-	 * rd = rs1 except the sign, which is the XOR of the sign bits of rs1 and rs2 (double precision)
-	 */
-	utils::riscv_instruction_t FSGNJXS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+utils::riscv_instruction_t encoding::FSGNJXD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, rd, 2, rs1, rs2, 17);
+}
 
-	/*
-	 * rd = min(rs1, rs2) (double precision)
-	 */
-	utils::riscv_instruction_t FMIND(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+utils::riscv_instruction_t encoding::FMIND(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, rd, 0, rs1, rs2, 21);
+}
 
-	/*
-	 * rd = max(rs1, rs2) (double precision)
-	 */
-	utils::riscv_instruction_t FMAXD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+utils::riscv_instruction_t encoding::FMAXD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, rd, 1, rs1, rs2, 21);
+}
 
-	/*
-	 * single precision float <-- double precision float
-	 */
-	utils::riscv_instruction_t FCVTSD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1);
+utils::riscv_instruction_t encoding::FCVTSD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1) {
+	return frtype(83, rd, 0, rs1, static_cast<RiscVFloatingRegister>(1), 32);
+}
 
-	/*
-	 * double precision float <-- single precision float
-	 */
-	utils::riscv_instruction_t FCVTDS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1);
+utils::riscv_instruction_t encoding::FCVTDS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1) {
+	return frtype(83, rd, 0, rs1, static_cast<RiscVFloatingRegister>(0), 33);
+}
 
-	/*
-	 * rd = rs1 == rs2 (double precision)
-	 */
-	utils::riscv_instruction_t FEQD(RiscVRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+utils::riscv_instruction_t encoding::FEQD(RiscVRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, static_cast<RiscVFloatingRegister>(rd), 2, rs1, rs2, 81);
+}
 
-	/*
-	 * rd = rs1 < rs2 (double precision)
-	 */
-	utils::riscv_instruction_t FLTD(RiscVRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+utils::riscv_instruction_t encoding::FLTD(RiscVRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, static_cast<RiscVFloatingRegister>(rd), 1, rs1, rs2, 81);
+}
 
-	/*
-	 * rd = rs1 <= rs2 (double precision)
-	 */
-	utils::riscv_instruction_t FLED(RiscVRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+utils::riscv_instruction_t encoding::FLED(RiscVRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, static_cast<RiscVFloatingRegister>(rd), 0, rs1, rs2, 81);
+}
 
-	// FCLASS seems narrow
+// FCLASS probably not needed
 
-	/*
-	 * signed 32 bit integer <-- double precision float
-	 */
-	utils::riscv_instruction_t FCVTWD(RiscVRegister rd, RiscVFloatingRegister rs1);
+utils::riscv_instruction_t encoding::FCVTWD(RiscVRegister rd, RiscVFloatingRegister rs1) {
+	return frtype(83, static_cast<RiscVFloatingRegister>(rd), 0, rs1, static_cast<RiscVFloatingRegister>(0), 97);
+}
 
-	/*
-	 * unsigned 32 bit integer <-- double precision float
-	 */
-	utils::riscv_instruction_t FCVTWUD(RiscVRegister rd, RiscVFloatingRegister rs1);
+utils::riscv_instruction_t encoding::FCVTWUD(RiscVRegister rd, RiscVFloatingRegister rs1) {
+	return frtype(83, static_cast<RiscVFloatingRegister>(rd), 0, rs1, static_cast<RiscVFloatingRegister>(1), 97);
+}
 
-	/*
-	 * double precision float <-- signed 32 bit integer
-	 */
-	utils::riscv_instruction_t FCVTDW(RiscVFloatingRegister rd, RiscVRegister rs1);
+utils::riscv_instruction_t encoding::FCVTDW(RiscVFloatingRegister rd, RiscVRegister rs1) {
+	return frtype(83, rd, 0, static_cast<RiscVFloatingRegister>(rs1), static_cast<RiscVFloatingRegister>(0), 105);
+}
 
-	/*
-	 * double precision float <-- unsigned 32 bit integer
-	 */
-	utils::riscv_instruction_t FCVTDWU(RiscVFloatingRegister rd, RiscVRegister rs1);
+utils::riscv_instruction_t encoding::FCVTDWU(RiscVFloatingRegister rd, RiscVRegister rs1) {
+	return frtype(83, rd, 0, static_cast<RiscVFloatingRegister>(rs1), static_cast<RiscVFloatingRegister>(1), 105);
+}
 
 /* --- RV64D Standard Extension --------------------------------------------------------------------------------------- */
 
-	/*
-	 * signed 64 bit integer <-- double precision float
-	 */
-	utils::riscv_instruction_t FCVTLD(RiscVRegister rd, RiscVFloatingRegister rs1);
+utils::riscv_instruction_t encoding::FCVTLD(RiscVRegister rd, RiscVFloatingRegister rs1) {
+	return frtype(83, static_cast<RiscVFloatingRegister>(rd), 0, rs1, static_cast<RiscVFloatingRegister>(2), 97);
+}
 
-	/*
-	 * unsigned 64 bit integer <-- double precision float
-	 */
-	utils::riscv_instruction_t FCVTLUD(RiscVRegister rd, RiscVFloatingRegister rs1);
+utils::riscv_instruction_t encoding::FCVTLUD(RiscVRegister rd, RiscVFloatingRegister rs1) {
+	return frtype(83, static_cast<RiscVFloatingRegister>(rd), 0, rs1, static_cast<RiscVFloatingRegister>(3), 97);
+}
 
-	// FMVXD seems narrow
+// FMVXD probably not needed
 
-	/*
-	 * double precision float <-- signed 64 bit integer
-	 */
-	utils::riscv_instruction_t FCVTDL(RiscVFloatingRegister rd, RiscVRegister rs1);
+utils::riscv_instruction_t encoding::FCVTDL(RiscVFloatingRegister rd, RiscVRegister rs1) {
+	return frtype(83, rd, 0, static_cast<RiscVFloatingRegister>(rs1), static_cast<RiscVFloatingRegister>(2), 105);
+}
 
-	/*
-	 * double precision float <-- unsigned 64 bit integer
-	 */
-	utils::riscv_instruction_t FCVTDLU(RiscVFloatingRegister rd, RiscVRegister rs1);
+utils::riscv_instruction_t encoding::FCVTDLU(RiscVFloatingRegister rd, RiscVRegister rs1) {
+	return frtype(83, rd, 0, static_cast<RiscVFloatingRegister>(rs1), static_cast<RiscVFloatingRegister>(3), 105);
+}
 
-	// FMVDX seems narrow
+// FMVDX probably not needed
 
 /* --- Pseudoinstructions --------------------------------------------------------------------------------------------- */
 
@@ -620,35 +591,29 @@ riscv_instruction_t encoding::SGTZ(RiscVRegister rd, RiscVRegister rs) {
 	return SLT(rd, RiscVRegister::zero, rs);
 }
 
-	/**
-	 * rd = rs (single precision)
-	 */
-	utils::riscv_instruction_t FMVS(RiscVFloatingRegister rd, RiscVFloatingRegister rs);
+utils::riscv_instruction_t encoding::FMVS(RiscVFloatingRegister rd, RiscVFloatingRegister rs) {
+	return FSGNJS(rd, rs, rs);
+}
 
-	/**
-	 * rd = abs(rs) (single precision)
-	 */
-	utils::riscv_instruction_t FABSS(RiscVFloatingRegister rd, RiscVFloatingRegister rs);
+utils::riscv_instruction_t encoding::FABSS(RiscVFloatingRegister rd, RiscVFloatingRegister rs) {
+	return FSGNJXS(rd, rs, rs);
+}
 
-	/**
-	 * rd = -rs (single precision
-	 */
-	utils::riscv_instruction_t FNEGS(RiscVFloatingRegister rd, RiscVFloatingRegister rs);
+utils::riscv_instruction_t encoding::FNEGS(RiscVFloatingRegister rd, RiscVFloatingRegister rs) {
+	return FSGNJNS(rd, rs, rs);
+}
 
-	/**
-	 * rd = rs (double precision)
-	 */
-	utils::riscv_instruction_t FMVD(RiscVFloatingRegister rd, RiscVFloatingRegister rs);
+utils::riscv_instruction_t encoding::FMVD(RiscVFloatingRegister rd, RiscVFloatingRegister rs) {
+	return FSGNJD(rd, rs, rs);
+}
 
-	/**
-	 * rd = abs(rs) (double precision)
-	 */
-	utils::riscv_instruction_t FABSD(RiscVFloatingRegister rd, RiscVFloatingRegister rs);
+utils::riscv_instruction_t encoding::FABSD(RiscVFloatingRegister rd, RiscVFloatingRegister rs) {
+	return FSGNJXD(rd, rs, rs);
+}
 
-	/**
-	 * rd = -rs (double precision)
-	 */
-	utils::riscv_instruction_t FNEGD(RiscVFloatingRegister rd, RiscVFloatingRegister rs);
+utils::riscv_instruction_t encoding::FNEGD(RiscVFloatingRegister rd, RiscVFloatingRegister rs) {
+	return FSGNJND(rd, rs, rs);
+}
 
 riscv_instruction_t encoding::BEQZ(RiscVRegister rs, uint32_t offset) {
 	return BEQ(rs, RiscVRegister::zero, offset);

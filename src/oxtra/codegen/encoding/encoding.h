@@ -494,7 +494,7 @@ namespace encoding {
 	 */
 	utils::riscv_instruction_t FCVTWUS(RiscVRegister rd, RiscVFloatingRegister rs1);
 
-	// FMVXW seems narrow
+	// FMVXW probably not needed
 
 	/*
 	 * rd = rs1 == rs2 (single precision)
@@ -511,7 +511,7 @@ namespace encoding {
 	 */
 	utils::riscv_instruction_t FLES(RiscVRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
 
-	// FCLASS seems narrow
+	// FCLASS probably not needed
 
 	/*
 	 * single precision float <-- signed 32 bit integer
@@ -605,17 +605,17 @@ namespace encoding {
 	/*
 	 * rd = rs1 except the sign, which is taken from rs2 (double precision)
 	 */
-	utils::riscv_instruction_t FSGNJS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+	utils::riscv_instruction_t FSGNJD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
 
 	/*
 	 * rd = rs1 except the sign, which is the negation of the one from rs2 (double precision)
 	 */
-	utils::riscv_instruction_t FSGNJNS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+	utils::riscv_instruction_t FSGNJND(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
 
 	/*
 	 * rd = rs1 except the sign, which is the XOR of the sign bits of rs1 and rs2 (double precision)
 	 */
-	utils::riscv_instruction_t FSGNJXS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+	utils::riscv_instruction_t FSGNJXD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
 
 	/*
 	 * rd = min(rs1, rs2) (double precision)
@@ -652,7 +652,7 @@ namespace encoding {
 	 */
 	utils::riscv_instruction_t FLED(RiscVRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
 
-	// FCLASS seems narrow
+	// FCLASS probably not needed
 
 	/*
 	 * signed 32 bit integer <-- double precision float
@@ -686,7 +686,7 @@ namespace encoding {
 	 */
 	utils::riscv_instruction_t FCVTLUD(RiscVRegister rd, RiscVFloatingRegister rs1);
 
-	// FMVXD seems narrow
+	// FMVXD probably not needed
 
 	/*
 	 * double precision float <-- signed 64 bit integer
@@ -698,7 +698,7 @@ namespace encoding {
 	 */
 	utils::riscv_instruction_t FCVTDLU(RiscVFloatingRegister rd, RiscVRegister rs1);
 
-	// FMVDX seems narrow
+	// FMVDX probably not needed
 
 	/* --- Pseudoinstructions ----------------------------------------------------------------------------------------- */
 
