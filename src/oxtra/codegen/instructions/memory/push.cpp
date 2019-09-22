@@ -10,7 +10,7 @@ void codegen::Push::generate(CodeBatch& batch) const {
 	batch += encoding::ADDI(rsp_reg, rsp_reg, -operand.get_size());
 
 	// extract the value
-	auto value_register = translate_operand(batch, 0, nullptr, encoding::RiscVRegister::t0, encoding::RiscVRegister::t1,
+	auto value_register = translate_operand(batch, operand, nullptr, encoding::RiscVRegister::t0, encoding::RiscVRegister::t1,
 											false, false, false, false);
 
 	// write the value to memory

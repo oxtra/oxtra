@@ -26,11 +26,11 @@ void codegen::Cmov::generate_move(CodeBatch& batch) const {
 	if (src.get_type() == fadec::OperandType::mem) {
 		if (get_operand(0).get_size() == 2) {
 			constexpr auto load = encoding::RiscVRegister::t0;
-			read_from_memory(batch, 1, load, encoding::RiscVRegister::t1, false);
+			read_from_memory(batch, src, load, encoding::RiscVRegister::t1, false);
 
 			helper::move_to_register(batch, dst_reg, load, 2, encoding::RiscVRegister::t1, false);
 		} else /*if (get_operand(0).get_size() >= 4)*/ {
-			read_from_memory(batch, 1, dst_reg, encoding::RiscVRegister::t0, false);
+			read_from_memory(batch, src, dst_reg, encoding::RiscVRegister::t0, false);
 		}
 	} else /*if (src.get_type() == fadec::OperandType::reg)*/ {
 		helper::move_to_register(batch, dst_reg, helper::map_reg(src.get_register()), get_operand(0).get_size(),

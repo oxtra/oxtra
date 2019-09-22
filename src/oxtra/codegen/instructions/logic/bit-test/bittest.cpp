@@ -18,7 +18,7 @@ void codegen::BitTest::generate(codegen::CodeBatch& batch) const {
 	if (bit_base.get_type() == fadec::OperandType::reg) {
 		bit_base_reg = helper::map_reg(bit_base.get_register());
 	} else /*if (bit_base.get_type() == fadec::OperandType::mem)*/ {
-		address = read_from_memory(batch, 0, bit_base_reg, encoding::RiscVRegister::t3, false);
+		address = read_from_memory(batch, bit_base, bit_base_reg, encoding::RiscVRegister::t3, false);
 	}
 
 	if (bit_off.get_type() == fadec::OperandType::imm) {
@@ -66,7 +66,7 @@ void codegen::BitTest::generate(codegen::CodeBatch& batch) const {
 	manipulate_bit(batch, bit_base_reg);
 
 	if (bit_base.get_type() == fadec::OperandType::mem) {
-		write_to_memory(batch, 0, bit_base_reg, encoding::RiscVRegister::t1, encoding::RiscVRegister::t2, address);
+		write_to_memory(batch, bit_base, bit_base_reg, encoding::RiscVRegister::t1, encoding::RiscVRegister::t2, address);
 	}
 }
 
@@ -80,7 +80,7 @@ void codegen::Bt::generate(codegen::CodeBatch& batch) const {
 	if (bit_base.get_type() == fadec::OperandType::reg) {
 		bit_base_reg = helper::map_reg(bit_base.get_register());
 	} else /*if (bit_base.get_type() == fadec::OperandType::mem)*/ {
-		read_from_memory(batch, 0, bit_base_reg, encoding::RiscVRegister::t1, false);
+		read_from_memory(batch, bit_base, bit_base_reg, encoding::RiscVRegister::t1, false);
 	}
 
 	constexpr auto bit_value_reg = encoding::RiscVRegister::t1;
