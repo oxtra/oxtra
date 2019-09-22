@@ -16,9 +16,7 @@
 #include "oxtra/codegen/instructions/logic/nop.h"
 #include "oxtra/codegen/instructions/logic/not.h"
 #include "oxtra/codegen/instructions/logic/or.h"
-#include "oxtra/codegen/instructions/logic/sar.h"
-#include "oxtra/codegen/instructions/logic/shl.h"
-#include "oxtra/codegen/instructions/logic/shr.h"
+#include "oxtra/codegen/instructions/logic/shift.h"
 #include "oxtra/codegen/instructions/logic/xor.h"
 #include "oxtra/codegen/instructions/logic/bit-test/bittest.h"
 #include "oxtra/codegen/instructions/logic/setcc/setcc.h"
@@ -213,14 +211,15 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 			return std::make_unique<Xor>(inst);
 
 		case InstructionType::SHL_CL:
+			return std::make_unique<ShlCl>(inst);
 		case InstructionType::SHL_IMM:
 			return std::make_unique<Shl>(inst);
-
 		case InstructionType::SHR_CL:
+			return std::make_unique<ShrCl>(inst);
 		case InstructionType::SHR_IMM:
 			return std::make_unique<Shr>(inst);
-
 		case InstructionType::SAR_CL:
+			return std::make_unique<SarCl>(inst);
 		case InstructionType::SAR_IMM:
 			return std::make_unique<Sar>(inst);
 

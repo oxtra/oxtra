@@ -829,4 +829,10 @@ void fadec::format(const Instruction& instr, char* buffer, size_t len) {
 				break;
 		}
 	}
+
+	if (instr.get_type() == InstructionType::SHL_CL
+		|| instr.get_type() == InstructionType::SHR_CL
+		|| instr.get_type() == InstructionType::SAR_CL) {
+		fmt_concat(", cl")
+	}
 }

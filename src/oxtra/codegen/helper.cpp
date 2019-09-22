@@ -10,7 +10,8 @@ void codegen::helper::move_to_register(CodeBatch& batch, RiscVRegister dest, Ris
 									   RiscVRegister temp, bool cleared) {
 	switch (access) {
 		case 8:
-			batch += encoding::MV(dest, src);
+			if (src != dest)
+				batch += encoding::MV(dest, src);
 			return;
 		case 4:
 			batch += encoding::SLLI(dest, src, 32);
