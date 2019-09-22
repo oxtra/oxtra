@@ -128,18 +128,14 @@ RiscVRegister codegen::Instruction::translate_memory(CodeBatch& batch, const fad
 	if (get_address_size() < 4)
 		dispatcher::Dispatcher::fault_exit("invalid addressing-size");
 
-	// index information
 	const auto has_index = get_index_register() != fadec::Register::none;
-	auto index_reg = has_index ? helper::map_reg(get_index_register()) : encoding::RiscVRegister::zero;
-
-	// base information
 	const auto has_base = op.get_register() != fadec::Register::none;
-	const auto base_reg = has_base ? helper::map_reg(op.get_register()) : encoding::RiscVRegister::zero;
 
 	// register that contains the current address
 	auto temp_result = encoding::RiscVRegister::zero;
 
 	if (has_index) {
+		const auto index_reg = helper::map_reg(get_index_register());
 		if (get_index_scale() == 0) {
 			// an index with no scale
 			temp_result = index_reg;
@@ -150,6 +146,7 @@ RiscVRegister codegen::Instruction::translate_memory(CodeBatch& batch, const fad
 	}
 
 	if (has_base) {
+		const auto base_reg = helper::map_reg(op.get_register());
 		if (temp_result != encoding::RiscVRegister::zero) {
 			batch += encoding::ADD(dst, temp_result, base_reg);
 			temp_result = dst;

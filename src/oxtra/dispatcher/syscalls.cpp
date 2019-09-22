@@ -51,3 +51,8 @@ void dispatcher::syscalls::sigaction(dispatcher::ExecutionContext* context) {
 	spdlog::debug("ignored sigaction syscall.");
 	context->guest.a0 = 0;
 }
+
+void dispatcher::syscalls::sigprocmask(dispatcher::ExecutionContext* context) {
+	spdlog::debug("ignored sigprocmask syscall.");
+	context->guest.a0 = 0;
+}
