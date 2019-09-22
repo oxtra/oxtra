@@ -105,7 +105,7 @@ void codegen::Instruction::translate_destination(CodeBatch& batch, RiscVRegister
 RiscVRegister codegen::Instruction::translate_memory(CodeBatch& batch, const fadec::Operand& op, const RiscVRegister dst,
 													 const RiscVRegister temp, const bool force_dst) const {
 	/*
-	 * list of hopefully optimal translation that this algorithm is based on
+	 * list of hopefully optimal translations that this algorithm is based on
 	 * [0]: ret zero;
 	 * [disp]: load_immediate(dst);
 	 * [base]: ret base;
@@ -140,6 +140,7 @@ RiscVRegister codegen::Instruction::translate_memory(CodeBatch& batch, const fad
 			// an index with no scale
 			temp_result = index_reg;
 		} else {
+			// the base could potentially be dst so use the temp register instead
 			temp_result = has_base ? temp : dst;
 			batch += encoding::SLLI(temp_result, index_reg, get_index_scale());
 		}
@@ -178,8 +179,7 @@ RiscVRegister codegen::Instruction::translate_memory(CodeBatch& batch, const fad
 		batch += encoding::SLLI(dst, temp_result, 32);
 		batch += encoding::SRLI(dst, dst, 32);
 		temp_result = dst;
-	}
-	else if (force_dst && temp_result != dst) {
+	} else if (force_dst && temp_result != dst) {
 		// this can only happen for [0], [base] or [index*1]
 		batch += encoding::MV(dst, temp_result);
 		temp_result = dst;
