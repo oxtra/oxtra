@@ -26,9 +26,9 @@ void codegen::ShiftCl::generate(codegen::CodeBatch& batch) const {
 		}
 	} else /*if (dst.get_type() == fadec::OperandType::mem)*/ {
 		constexpr auto temp = encoding::RiscVRegister::t0;
-		const auto address = read_from_memory(batch, 0, temp, encoding::RiscVRegister::t1, false);
+		const auto address = read_from_memory(batch, dst, temp, encoding::RiscVRegister::t1, false);
 		execute_operation(batch, temp, temp);
-		write_to_memory(batch, 0, temp, encoding::RiscVRegister::t1, encoding::RiscVRegister::t2, address);
+		write_to_memory(batch, dst, temp, encoding::RiscVRegister::t1, encoding::RiscVRegister::t2, address);
 	}
 }
 
