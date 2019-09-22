@@ -165,8 +165,12 @@ RiscVRegister codegen::Instruction::translate_memory(CodeBatch& batch, const fad
 			batch += encoding::ADDI(dst, temp_result, displacement);
 		} else {
 			// assert(temp_result != temp)
-			load_immediate(batch, displacement, temp);
-			batch += encoding::ADD(dst, temp_result, temp);
+			if (temp_result == encoding::RiscVRegister::zero) {
+				load_immediate(batch, displacement, dst);
+			} else {
+				load_immediate(batch, displacement, temp);
+				batch += encoding::ADD(dst, temp_result, temp);
+			}
 		}
 
 		// in both cases the new temp result is in the temp register
