@@ -74,14 +74,16 @@ namespace codegen {
 								   encoding::RiscVRegister temp_a, encoding::RiscVRegister temp_b) const;
 
 		/**
-		 * Translates a x86-memory operand into risc-v instructions.
+		 * Writes the resulting address of a x86-memory operand into a risc-v register.
 		 * @param op The operand that contains the memory addressing.
-		 * @param temp_a A temporary that might be changed.
-		 * @param temp_b A temporary that might be changed.
-		 * @return Returns the register containing the address (either temp_a, a base-register/index-register or zero)
+		 * @param dst The destination register. Might not be used, unless force_dst is true.
+		 * @param temp_a A temporary register.
+		 * @param temp_b A temporary register.
+		 * @param force_dst Forces the address to be written to the dst register.
+		 * @return The register that contains the address.
 		 */
-		encoding::RiscVRegister translate_memory(CodeBatch& batch, const fadec::Operand& op, encoding::RiscVRegister temp_a,
-												 encoding::RiscVRegister temp_b) const;
+		encoding::RiscVRegister translate_memory(CodeBatch& batch, const fadec::Operand& op, encoding::RiscVRegister dst,
+				encoding::RiscVRegister temp, bool force_dst = false) const;
 
 		/**
 		 * Reads from memory given an x86-memory operand.
