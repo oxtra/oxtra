@@ -54,5 +54,5 @@ int main(int argc, const char* argv[]) {
 		currentPrime = getNextPrime(currentPrime);
 	}
 
-	return currentPrime;
+	return 0;
 }
