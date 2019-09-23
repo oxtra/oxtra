@@ -1,6 +1,7 @@
 .global _ZN10dispatcher10Dispatcher11guest_enterEPNS_16ExecutionContextEmPPKc # guest_enter
 .global _ZN10dispatcher10Dispatcher10guest_exitEl # guest_exit
 .global _ZN10dispatcher10Dispatcher10fault_exitEPKcl # fault_exit
+.global _ZN10dispatcher10Dispatcher17execution_contextEv # execution_context
 .global _ZN10dispatcher10Dispatcher14reroute_staticEv # reroute_static
 .global _ZN10dispatcher10Dispatcher15reroute_dynamicEv # reroute_dynamic
 .global _ZN10dispatcher10Dispatcher15syscall_handlerEv # syscall_handler
@@ -69,6 +70,10 @@ _ZN10dispatcher10Dispatcher10fault_exitEPKcl:
 	mv a0, t2
 	ret
 
+# execution_context
+_ZN10dispatcher10Dispatcher17execution_contextEv:
+	mv a0, s11
+	ret
 
 # reroute_static
 _ZN10dispatcher10Dispatcher14reroute_staticEv:

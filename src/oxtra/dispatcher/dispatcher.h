@@ -26,7 +26,6 @@ namespace dispatcher {
 		Dispatcher(const elf::Elf& elf, const arguments::Arguments& args, char** envp);
 
 		Dispatcher(const Dispatcher&) = delete;
-
 		Dispatcher(Dispatcher&&) = delete;
 
 	public:
@@ -48,6 +47,11 @@ namespace dispatcher {
 		 * @param exit_code the exit-code to be returned
 		 */
 		static void fault_exit(const char* fault_string, long exit_code = -1);
+
+		/**
+		 * Returns the execution context. Only valid while the guest context is loaded.
+		 */
+		static ExecutionContext* execution_context();
 
 	private:
 		/**
