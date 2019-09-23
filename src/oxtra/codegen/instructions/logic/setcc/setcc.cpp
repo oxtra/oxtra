@@ -13,7 +13,7 @@ void codegen::Setcc::set_value(CodeBatch& batch, encoding::RiscVRegister reg) co
 
 		// if the operand is memory then store it in a temp register and store that to memore
 	else /*if (dst.get_type() == fadec::OperandType::mem)*/ {
-		write_to_memory(batch, 0, reg, encoding::RiscVRegister::t0, encoding::RiscVRegister::t1,
+		write_to_memory(batch, dst, reg, encoding::RiscVRegister::t0, encoding::RiscVRegister::t1,
 						encoding::RiscVRegister::zero);
 	}
 }

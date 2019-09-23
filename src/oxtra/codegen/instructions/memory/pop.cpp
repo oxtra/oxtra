@@ -4,11 +4,13 @@
 
 void codegen::Pop::generate(CodeBatch& batch) const {
 	constexpr auto rsp_reg = helper::map_reg(fadec::Register::rsp);
-	const auto operand_size = get_operand(0).get_size();
+
+	const auto& dst = get_operand(0);
+	const auto operand_size = dst.get_size();
 
 	// if the destination operand is a register then we can optimize it
-	if (get_operand(0).get_type() == fadec::OperandType::reg) {
-		const auto dest_reg = helper::map_reg(get_operand(0).get_register());
+	if (dst.get_type() == fadec::OperandType::reg) {
+		const auto dest_reg = helper::map_reg(dst.get_register());
 		switch (operand_size) {
 			case 8:
 				batch += encoding::LD(dest_reg, rsp_reg, 0);
@@ -22,8 +24,8 @@ void codegen::Pop::generate(CodeBatch& batch) const {
 				helper::move_to_register(batch, dest_reg, encoding::RiscVRegister::t0, helper::RegisterAccess::WORD, encoding::RiscVRegister::t1, true);
 				break;
 		}
-	} else if (get_operand(0).get_type() == fadec::OperandType::mem) {
-		encoding::RiscVRegister reg = translate_memory(batch, 0, encoding::RiscVRegister::t0, encoding::RiscVRegister::t1);
+	} else if (dst.get_type() == fadec::OperandType::mem) {
+		encoding::RiscVRegister reg = translate_memory(batch, dst, encoding::RiscVRegister::t0, encoding::RiscVRegister::t1);
 		switch (operand_size) {
 			case 8:
 				batch += encoding::LD(encoding::RiscVRegister::t1, rsp_reg, 0);
