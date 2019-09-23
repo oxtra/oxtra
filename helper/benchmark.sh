@@ -7,7 +7,7 @@ fi
 
 echo "Benchmarking is about to start ... performing 10 runs ..."
 
-#set -e
+set -e
 
 for i in {1..10}; do
 	timestamp=$(date +%s%N)
