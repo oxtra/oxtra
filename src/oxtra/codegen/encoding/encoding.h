@@ -351,9 +351,14 @@ namespace encoding {
 	utils::riscv_instruction_t SLLW(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2);
 
 	/**
-	 * rd = (rs1 >> rs2[4:0]) [31:0] sign extended to 64-bit
+	 * rd = (rs1 >> rs2[4:0]) [31:0] sign extended to 64-bit (logical)
 	 */
 	utils::riscv_instruction_t SRLW(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2);
+
+	/**
+	 * rd = (rs1 >> rs2[4:0]) [31:0] sign extended to 64-bit (arithmetic)
+	 */
+	utils::riscv_instruction_t SRAW(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2);
 
 	/* --- M Standard Extension --------------------------------------------------------------------------------------- */
 

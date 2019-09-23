@@ -277,6 +277,10 @@ riscv_instruction_t encoding::SRLW(RiscVRegister rd, RiscVRegister rs1, RiscVReg
 	return rtype(59, rd, 5, rs1, rs2, 0);
 }
 
+riscv_instruction_t encoding::SRAW(encoding::RiscVRegister rd, encoding::RiscVRegister rs1, encoding::RiscVRegister rs2) {
+	return rtype(59, rd, 5, rs1, rs2, 32);
+}
+
 // probably not needed: FENCE, FENCE.I, EBREAK, CSRRW, CSRRS, CSRRC, CSRRWI, CSRRSI, CSRRCI
 
 /* --- M Standard Extensions ------------------------------------------------------------------------------------------ */
