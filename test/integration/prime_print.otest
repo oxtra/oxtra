@@ -1,4 +1,4 @@
-# Testing if oxtra prints the version and returns with 0.
+# Testing if the no_libc prime program prints prime numbers < 100 and returns the first prime number larger than 100.
 ./oxtra test/resources/no_libc/prime_print
 >>>
 2
