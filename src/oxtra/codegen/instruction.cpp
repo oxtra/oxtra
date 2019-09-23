@@ -358,40 +358,40 @@ void codegen::Instruction::handle_segment_override(codegen::CodeBatch& batch, en
 	}
 }
 
-void codegen::Instruction::evaluate_zero(CodeBatch& batch) const {
-	batch += encoding::LD(RiscVRegister::t4, context_address, flags::Info::zero_value_offset);
-	batch += encoding::SEQZ(RiscVRegister::t4, RiscVRegister::t4);
+void codegen::Instruction::evaluate_zero(CodeBatch& batch, encoding::RiscVRegister dest) const {
+	batch += encoding::LD(dest, context_address, flags::Info::zero_value_offset);
+	batch += encoding::SEQZ(dest, dest);
 }
 
-void codegen::Instruction::evaluate_sign(CodeBatch& batch, encoding::RiscVRegister temp) const {
+void codegen::Instruction::evaluate_sign(CodeBatch& batch, encoding::RiscVRegister dest, encoding::RiscVRegister temp) const {
 	// load the shift amount
-	batch += encoding::LBU(RiscVRegister::t4, context_address, flags::Info::sign_size_offset);
+	batch += encoding::LBU(temp, context_address, flags::Info::sign_size_offset);
 
 	// load the value
-	batch += encoding::LD(temp, context_address, flags::Info::sign_value_offset);
+	batch += encoding::LD(dest, context_address, flags::Info::sign_value_offset);
 
 	// shift the value
-	batch += encoding::SRL(temp, temp, RiscVRegister::t4);
-	batch += encoding::ANDI(RiscVRegister::t4, temp, 1);
+	batch += encoding::SRL(dest, dest, temp);
+	batch += encoding::ANDI(dest, dest, 1);
 }
 
-void codegen::Instruction::evaluate_parity(CodeBatch& batch, encoding::RiscVRegister temp) const {
+void codegen::Instruction::evaluate_parity(CodeBatch& batch, encoding::RiscVRegister dest, encoding::RiscVRegister temp) const {
 	// load the pf_value
-	batch += encoding::LBU(temp, helper::context_address, flags::Info::parity_value_offset);
+	batch += encoding::LBU(dest, helper::context_address, flags::Info::parity_value_offset);
 
 	// calculate the pf
-	batch += encoding::SRLI(RiscVRegister::t4, temp, 4);
-	batch += encoding::XOR(temp, temp, RiscVRegister::t4);
-	batch += encoding::SRLI(RiscVRegister::t4, temp, 2);
-	batch += encoding::XOR(temp, temp, RiscVRegister::t4);
-	batch += encoding::SRLI(RiscVRegister::t4, temp, 1);
-	batch += encoding::XOR(temp, temp, RiscVRegister::t4);
+	batch += encoding::SRLI(temp, dest, 4);
+	batch += encoding::XOR(dest, dest, temp);
+	batch += encoding::SRLI(temp, dest, 2);
+	batch += encoding::XOR(dest, dest, temp);
+	batch += encoding::SRLI(temp, dest, 1);
+	batch += encoding::XOR(dest, dest, temp);
 
 	// only look at the least significant bit
-	batch += encoding::ANDI(temp, temp, 1);
+	batch += encoding::ANDI(dest, dest, 1);
 
 	// set if the parity flag is set (bit is 0)
-	batch += encoding::SEQZ(RiscVRegister::t4, temp);
+	batch += encoding::SEQZ(dest, dest);
 }
 
 void codegen::Instruction::evaluate_overflow(CodeBatch& batch) const {

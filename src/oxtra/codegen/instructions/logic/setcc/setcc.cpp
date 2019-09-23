@@ -20,10 +20,7 @@ void codegen::Setcc::set_value(CodeBatch& batch, encoding::RiscVRegister reg) co
 
 // (cf || zf) == 0
 void codegen::Seta::generate(codegen::CodeBatch& batch) const {
-	evaluate_zero(batch);
-
-	// move the result in another register so that we don't override it
-	batch += encoding::MV(encoding::RiscVRegister::t0, encoding::RiscVRegister::t4);
+	evaluate_zero(batch, encoding::RiscVRegister::t0);
 
 	evaluate_carry(batch);
 
@@ -35,10 +32,7 @@ void codegen::Seta::generate(codegen::CodeBatch& batch) const {
 
 // (cf || zf) == 1
 void codegen::Setbe::generate(CodeBatch& batch) const {
-	evaluate_zero(batch);
-
-	// move the result in another register so that we don't override it
-	batch += encoding::MV(encoding::RiscVRegister::t0, encoding::RiscVRegister::t4);
+	evaluate_zero(batch, encoding::RiscVRegister::t0);
 
 	evaluate_carry(batch);
 
@@ -54,13 +48,12 @@ void codegen::Setc::generate(CodeBatch& batch) const {
 
 // ((sf ^ of) || zf) == 0
 void codegen::Setg::generate(CodeBatch& batch) const {
-	evaluate_sign(batch, encoding::RiscVRegister::t0);
-	batch += encoding::MV(encoding::RiscVRegister::t0, encoding::RiscVRegister::t4);
+	evaluate_sign(batch, encoding::RiscVRegister::t0, encoding::RiscVRegister::t5);
 
 	evaluate_overflow(batch);
 	batch += encoding::XOR(encoding::RiscVRegister::t0, encoding::RiscVRegister::t0, encoding::RiscVRegister::t4);
 
-	evaluate_zero(batch);
+	evaluate_zero(batch, encoding::RiscVRegister::t4);
 	batch += encoding::OR(encoding::RiscVRegister::t0, encoding::RiscVRegister::t0, encoding::RiscVRegister::t4);
 
 	batch += encoding::SEQZ(encoding::RiscVRegister::t0, encoding::RiscVRegister::t0);
@@ -69,8 +62,7 @@ void codegen::Setg::generate(CodeBatch& batch) const {
 
 // (sf ^ of) == 0
 void codegen::Setge::generate(CodeBatch& batch) const {
-	evaluate_sign(batch, encoding::RiscVRegister::t0);
-	batch += encoding::MV(encoding::RiscVRegister::t0, encoding::RiscVRegister::t4);
+	evaluate_sign(batch, encoding::RiscVRegister::t0, encoding::RiscVRegister::t5);
 
 	evaluate_overflow(batch);
 	batch += encoding::XOR(encoding::RiscVRegister::t0, encoding::RiscVRegister::t0, encoding::RiscVRegister::t4);
@@ -81,8 +73,7 @@ void codegen::Setge::generate(CodeBatch& batch) const {
 
 // (sf ^ of) == 1
 void codegen::Setl::generate(CodeBatch& batch) const {
-	evaluate_sign(batch, encoding::RiscVRegister::t0);
-	batch += encoding::MV(encoding::RiscVRegister::t0, encoding::RiscVRegister::t4);
+	evaluate_sign(batch, encoding::RiscVRegister::t0, encoding::RiscVRegister::t5);
 
 	evaluate_overflow(batch);
 	batch += encoding::XOR(encoding::RiscVRegister::t0, encoding::RiscVRegister::t0, encoding::RiscVRegister::t4);
@@ -91,13 +82,12 @@ void codegen::Setl::generate(CodeBatch& batch) const {
 
 // ((sf ^ of) || zf) == 1
 void codegen::Setle::generate(CodeBatch& batch) const {
-	evaluate_sign(batch, encoding::RiscVRegister::t0);
-	batch += encoding::MV(encoding::RiscVRegister::t0, encoding::RiscVRegister::t4);
+	evaluate_sign(batch, encoding::RiscVRegister::t0, encoding::RiscVRegister::t5);
 
 	evaluate_overflow(batch);
 	batch += encoding::XOR(encoding::RiscVRegister::t0, encoding::RiscVRegister::t0, encoding::RiscVRegister::t4);
 
-	evaluate_zero(batch);
+	evaluate_zero(batch, encoding::RiscVRegister::t4);
 	batch += encoding::OR(encoding::RiscVRegister::t0, encoding::RiscVRegister::t0, encoding::RiscVRegister::t4);
 	set_value(batch, encoding::RiscVRegister::t0);
 }
@@ -118,21 +108,21 @@ void codegen::Setno::generate(CodeBatch& batch) const {
 
 // pf == 0
 void codegen::Setnp::generate(CodeBatch& batch) const {
-	evaluate_parity(batch, encoding::RiscVRegister::t0);
+	evaluate_parity(batch, encoding::RiscVRegister::t4, encoding::RiscVRegister::t5);
 	batch += encoding::SEQZ(encoding::RiscVRegister::t0, encoding::RiscVRegister::t4);
 	set_value(batch, encoding::RiscVRegister::t0);
 }
 
 // sf == 0
 void codegen::Setns::generate(CodeBatch& batch) const {
-	evaluate_sign(batch, encoding::RiscVRegister::t0);
+	evaluate_sign(batch, encoding::RiscVRegister::t4, encoding::RiscVRegister::t0);
 	batch += encoding::SEQZ(encoding::RiscVRegister::t0, encoding::RiscVRegister::t4);
 	set_value(batch, encoding::RiscVRegister::t0);
 }
 
 // zf == 0
 void codegen::Setnz::generate(CodeBatch& batch) const {
-	evaluate_zero(batch);
+	evaluate_zero(batch, encoding::RiscVRegister::t4);
 	batch += encoding::SEQZ(encoding::RiscVRegister::t0, encoding::RiscVRegister::t4);
 	set_value(batch, encoding::RiscVRegister::t0);
 }
@@ -145,18 +135,18 @@ void codegen::Seto::generate(CodeBatch& batch) const {
 
 // pf == 1
 void codegen::Setp::generate(CodeBatch& batch) const {
-	evaluate_parity(batch, encoding::RiscVRegister::t0);
+	evaluate_parity(batch, encoding::RiscVRegister::t4, encoding::RiscVRegister::t5);
 	set_value(batch, encoding::RiscVRegister::t4);
 }
 
 // sf == 1
 void codegen::Sets::generate(CodeBatch& batch) const {
-	evaluate_sign(batch, encoding::RiscVRegister::t0);
+	evaluate_sign(batch, encoding::RiscVRegister::t4, encoding::RiscVRegister::t0);
 	set_value(batch, encoding::RiscVRegister::t4);
 }
 
 // zf == 1
 void codegen::Setz::generate(CodeBatch& batch) const {
-	evaluate_zero(batch);
+	evaluate_zero(batch, encoding::RiscVRegister::t4);
 	set_value(batch, encoding::RiscVRegister::t4);
 }
