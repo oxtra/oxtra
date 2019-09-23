@@ -70,7 +70,30 @@ uint32_t jtype(uint8_t opcode, RiscVRegister rd, uint32_t imm) {
 	return jtype.raw;
 }
 
-/* --- RV32I Base Instruction Set --- */
+uint32_t frtype(uint8_t opcode, RiscVFloatingRegister rd, uint8_t funct3, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, uint8_t funct7) {
+	RType rtype;
+	rtype.opcode = opcode;
+	rtype.rd = static_cast<uint8_t>(rd);
+	rtype.funct3 = funct3;
+	rtype.rs1 = static_cast<uint8_t>(rs1);
+	rtype.rs2 = static_cast<uint8_t>(rs2);
+	rtype.funct7 = funct7;
+	return rtype.raw;
+};
+
+uint32_t r4type(uint8_t opcode, RiscVFloatingRegister rd, uint8_t funct3, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, uint8_t funct2, RiscVFloatingRegister rs3) {
+	R4Type r4type;
+	r4type.opcode = opcode;
+	r4type.rd = static_cast<uint8_t>(rd);
+	r4type.funct3 = funct3;
+	r4type.rs1 = static_cast<uint8_t>(rs1);
+	r4type.rs2 = static_cast<uint8_t>(rs2);
+	r4type.funct2 = funct2;
+	r4type.rs3 = static_cast<uint8_t>(rs3);
+	return r4type.raw;
+};
+
+/* --- RV32I Base Instruction Set ------------------------------------------------------------------------------------- */
 
 riscv_instruction_t encoding::LUI(RiscVRegister rd, uint32_t imm) {
 	return utype(55, rd, imm);
@@ -236,7 +259,8 @@ riscv_instruction_t encoding::ECALL() {
 	return itype(115, RiscVRegister::zero, 0, RiscVRegister::zero, 0);
 }
 
-/* --- RV64I Base Instruction Set --- */
+/* --- RV64I Base Instruction Set ------------------------------------------------------------------------------------- */
+
 riscv_instruction_t encoding::ADDW(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2) {
 	return rtype(59, rd, 0, rs1, rs2, 0);
 }
@@ -259,7 +283,7 @@ riscv_instruction_t encoding::SRAW(encoding::RiscVRegister rd, encoding::RiscVRe
 
 // probably not needed: FENCE, FENCE.I, EBREAK, CSRRW, CSRRS, CSRRC, CSRRWI, CSRRSI, CSRRCI
 
-/* --- M Standard Extensions --- */
+/* --- M Standard Extensions ------------------------------------------------------------------------------------------ */
 
 riscv_instruction_t encoding::MUL(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2) {
 	return rtype(51, rd, 0, rs1, rs2, 1);
@@ -295,7 +319,252 @@ riscv_instruction_t encoding::REMU(RiscVRegister rd, RiscVRegister rs1, RiscVReg
 
 // maybe needed: *W instructions
 
-/* --- Pseudoinstructions --- */
+/* --- RV32F Standard Extension --------------------------------------------------------------------------------------- */
+
+const auto rm = 7; // this is what gcc uses
+
+utils::riscv_instruction_t encoding::FLW(RiscVFloatingRegister rd, RiscVRegister rs1, uint16_t imm) {
+	return itype(7, static_cast<RiscVRegister>(rd), 2, rs1, imm);
+}
+
+utils::riscv_instruction_t encoding::FSW(RiscVRegister rs1, RiscVFloatingRegister rs2, uint16_t imm) {
+	return stype(39, 2, rs1, static_cast<RiscVRegister>(rs2), imm);
+}
+
+utils::riscv_instruction_t encoding::FMADDS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3) {
+	return r4type(67, rd, rm, rs1, rs2, 0, rs3);
+}
+
+utils::riscv_instruction_t encoding::FMSUBS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3) {
+	return r4type(71, rd, rm, rs1, rs2, 0, rs3);
+}
+
+utils::riscv_instruction_t encoding::FNMSUBS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3) {
+	return r4type(75, rd, rm, rs1, rs2, 0, rs3);
+}
+
+utils::riscv_instruction_t encoding::FNMADDS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3) {
+	return r4type(79, rd, rm, rs1, rs2, 0, rs3);
+}
+
+utils::riscv_instruction_t encoding::FADDS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, rd, rm, rs1, rs2, 0);
+}
+
+utils::riscv_instruction_t encoding::FSUBS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, rd, rm, rs1, rs2, 4);
+}
+
+utils::riscv_instruction_t encoding::FMULS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, rd, rm, rs1, rs2, 8);
+}
+
+utils::riscv_instruction_t encoding::FDIVS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, rd, rm, rs1, rs2, 12);
+}
+
+utils::riscv_instruction_t encoding::FSQRTS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1) {
+	return frtype(83, rd, rm, rs1, static_cast<RiscVFloatingRegister>(0), 44);
+}
+
+utils::riscv_instruction_t encoding::FSGNJS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, rd, 0, rs1, rs2, 16);
+}
+
+utils::riscv_instruction_t encoding::FSGNJNS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, rd, 1, rs1, rs2, 16);
+}
+
+utils::riscv_instruction_t encoding::FSGNJXS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, rd, 2, rs1, rs2, 16);
+}
+
+utils::riscv_instruction_t encoding::FMINS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, rd, 0, rs1, rs2, 20);
+}
+
+utils::riscv_instruction_t encoding::FMAXS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, rd, 1, rs1, rs2, 20);
+}
+
+utils::riscv_instruction_t encoding::FCVTWS(RiscVRegister rd, RiscVFloatingRegister rs1) {
+	return frtype(83, static_cast<RiscVFloatingRegister>(rd), rm, rs1, static_cast<RiscVFloatingRegister>(0), 96);
+}
+
+utils::riscv_instruction_t encoding::FCVTWUS(RiscVRegister rd, RiscVFloatingRegister rs1) {
+	return frtype(83, static_cast<RiscVFloatingRegister>(rd), rm, rs1, static_cast<RiscVFloatingRegister>(1), 96);
+}
+
+// FMVXW probably not needed
+
+utils::riscv_instruction_t encoding::FEQS(RiscVRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, static_cast<RiscVFloatingRegister>(rd), 2, rs1, rs2, 80);
+}
+
+utils::riscv_instruction_t encoding::FLTS(RiscVRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, static_cast<RiscVFloatingRegister>(rd), 1, rs1, rs2, 80);
+}
+
+utils::riscv_instruction_t encoding::FLES(RiscVRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, static_cast<RiscVFloatingRegister>(rd), 0, rs1, rs2, 80);
+}
+
+// FCLASS probably not needed
+
+utils::riscv_instruction_t encoding::FCVTSW(RiscVFloatingRegister rd, RiscVRegister rs1) {
+	return frtype(83, rd, rm, static_cast<RiscVFloatingRegister>(rs1), static_cast<RiscVFloatingRegister>(0), 104);
+}
+
+utils::riscv_instruction_t encoding::FCVTSWU(RiscVFloatingRegister rd, RiscVRegister rs1) {
+	return frtype(83, rd, rm, static_cast<RiscVFloatingRegister>(rs1), static_cast<RiscVFloatingRegister>(1), 104);
+}
+
+/* --- RV64F Standard Extension --------------------------------------------------------------------------------------- */
+
+utils::riscv_instruction_t encoding::FCVTLS(RiscVRegister rd, RiscVFloatingRegister rs1) {
+	return frtype(83, static_cast<RiscVFloatingRegister>(rd), rm, rs1, static_cast<RiscVFloatingRegister>(2), 96);
+}
+
+utils::riscv_instruction_t encoding::FCVTLUS(RiscVRegister rd, RiscVFloatingRegister rs1) {
+	return frtype(83, static_cast<RiscVFloatingRegister>(rd), rm, rs1, static_cast<RiscVFloatingRegister>(3), 96);
+}
+
+utils::riscv_instruction_t encoding::FCVTSL(RiscVFloatingRegister rd, RiscVRegister rs1) {
+	return frtype(83, rd, rm, static_cast<RiscVFloatingRegister>(rs1), static_cast<RiscVFloatingRegister>(2), 104);
+}
+
+utils::riscv_instruction_t encoding::FCVTSLU(RiscVFloatingRegister rd, RiscVRegister rs1) {
+	return frtype(83, rd, rm, static_cast<RiscVFloatingRegister>(rs1), static_cast<RiscVFloatingRegister>(3), 104);
+}
+
+/* --- RV32D Standard Extension --------------------------------------------------------------------------------------- */
+
+utils::riscv_instruction_t encoding::FLD(RiscVFloatingRegister rd, RiscVRegister rs, uint16_t imm) {
+	return itype(7, static_cast<RiscVRegister>(rd), 3, rs, imm);
+}
+
+utils::riscv_instruction_t encoding::FSD(RiscVRegister rs1, RiscVFloatingRegister rs2, uint16_t imm) {
+	return stype(39, 3, rs1, static_cast<RiscVRegister>(rs2), imm);
+}
+
+utils::riscv_instruction_t encoding::FMADDD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3) {
+	return r4type(67, rd, rm, rs1, rs2, 1, rs3);
+}
+
+utils::riscv_instruction_t encoding::FMSUBD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3) {
+	return r4type(71, rd, rm, rs1, rs2, 1, rs3);
+}
+
+utils::riscv_instruction_t encoding::FNMSUBD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3) {
+	return r4type(75, rd, rm, rs1, rs2, 1, rs3);
+}
+
+utils::riscv_instruction_t encoding::FNMADDD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3) {
+	return r4type(79, rd, rm, rs1, rs2, 1, rs3);
+}
+
+utils::riscv_instruction_t encoding::FADDD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, rd, rm, rs1, rs2, 1);
+}
+
+utils::riscv_instruction_t encoding::FSUBD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, rd, rm, rs1, rs2, 5);
+}
+
+utils::riscv_instruction_t encoding::FMULD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, rd, rm, rs1, rs2, 9);
+}
+
+utils::riscv_instruction_t encoding::FDIVD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, rd, rm, rs1, rs2, 13);
+}
+
+utils::riscv_instruction_t encoding::FSQRTD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1) {
+	return frtype(83, rd, rm, rs1, static_cast<RiscVFloatingRegister>(0), 45);
+}
+
+utils::riscv_instruction_t encoding::FSGNJD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, rd, 0, rs1, rs2, 17);
+}
+
+utils::riscv_instruction_t encoding::FSGNJND(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, rd, 1, rs1, rs2, 17);
+}
+
+utils::riscv_instruction_t encoding::FSGNJXD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, rd, 2, rs1, rs2, 17);
+}
+
+utils::riscv_instruction_t encoding::FMIND(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, rd, 0, rs1, rs2, 21);
+}
+
+utils::riscv_instruction_t encoding::FMAXD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, rd, 1, rs1, rs2, 21);
+}
+
+utils::riscv_instruction_t encoding::FCVTSD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1) {
+	return frtype(83, rd, rm, rs1, static_cast<RiscVFloatingRegister>(1), 32);
+}
+
+utils::riscv_instruction_t encoding::FCVTDS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1) {
+	return frtype(83, rd, rm, rs1, static_cast<RiscVFloatingRegister>(0), 33);
+}
+
+utils::riscv_instruction_t encoding::FEQD(RiscVRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, static_cast<RiscVFloatingRegister>(rd), 2, rs1, rs2, 81);
+}
+
+utils::riscv_instruction_t encoding::FLTD(RiscVRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, static_cast<RiscVFloatingRegister>(rd), 1, rs1, rs2, 81);
+}
+
+utils::riscv_instruction_t encoding::FLED(RiscVRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2) {
+	return frtype(83, static_cast<RiscVFloatingRegister>(rd), 0, rs1, rs2, 81);
+}
+
+// FCLASS probably not needed
+
+utils::riscv_instruction_t encoding::FCVTWD(RiscVRegister rd, RiscVFloatingRegister rs1) {
+	return frtype(83, static_cast<RiscVFloatingRegister>(rd), rm, rs1, static_cast<RiscVFloatingRegister>(0), 97);
+}
+
+utils::riscv_instruction_t encoding::FCVTWUD(RiscVRegister rd, RiscVFloatingRegister rs1) {
+	return frtype(83, static_cast<RiscVFloatingRegister>(rd), rm, rs1, static_cast<RiscVFloatingRegister>(1), 97);
+}
+
+// gcc uses different rm for these two
+utils::riscv_instruction_t encoding::FCVTDW(RiscVFloatingRegister rd, RiscVRegister rs1) {
+	return frtype(83, rd, 0, static_cast<RiscVFloatingRegister>(rs1), static_cast<RiscVFloatingRegister>(0), 105);
+}
+
+utils::riscv_instruction_t encoding::FCVTDWU(RiscVFloatingRegister rd, RiscVRegister rs1) {
+	return frtype(83, rd, 0, static_cast<RiscVFloatingRegister>(rs1), static_cast<RiscVFloatingRegister>(1), 105);
+}
+
+/* --- RV64D Standard Extension --------------------------------------------------------------------------------------- */
+
+utils::riscv_instruction_t encoding::FCVTLD(RiscVRegister rd, RiscVFloatingRegister rs1) {
+	return frtype(83, static_cast<RiscVFloatingRegister>(rd), rm, rs1, static_cast<RiscVFloatingRegister>(2), 97);
+}
+
+utils::riscv_instruction_t encoding::FCVTLUD(RiscVRegister rd, RiscVFloatingRegister rs1) {
+	return frtype(83, static_cast<RiscVFloatingRegister>(rd), rm, rs1, static_cast<RiscVFloatingRegister>(3), 97);
+}
+
+// FMVXD probably not needed
+
+utils::riscv_instruction_t encoding::FCVTDL(RiscVFloatingRegister rd, RiscVRegister rs1) {
+	return frtype(83, rd, rm, static_cast<RiscVFloatingRegister>(rs1), static_cast<RiscVFloatingRegister>(2), 105);
+}
+
+utils::riscv_instruction_t encoding::FCVTDLU(RiscVFloatingRegister rd, RiscVRegister rs1) {
+	return frtype(83, rd, rm, static_cast<RiscVFloatingRegister>(rs1), static_cast<RiscVFloatingRegister>(3), 105);
+}
+
+// FMVDX probably not needed
+
+/* --- Pseudoinstructions --------------------------------------------------------------------------------------------- */
 
 riscv_instruction_t encoding::NOP() {
 	return ADDI(RiscVRegister::zero, RiscVRegister::zero, 0);
@@ -327,6 +596,30 @@ riscv_instruction_t encoding::SLTZ(RiscVRegister rd, RiscVRegister rs) {
 
 riscv_instruction_t encoding::SGTZ(RiscVRegister rd, RiscVRegister rs) {
 	return SLT(rd, RiscVRegister::zero, rs);
+}
+
+utils::riscv_instruction_t encoding::FMVS(RiscVFloatingRegister rd, RiscVFloatingRegister rs) {
+	return FSGNJS(rd, rs, rs);
+}
+
+utils::riscv_instruction_t encoding::FABSS(RiscVFloatingRegister rd, RiscVFloatingRegister rs) {
+	return FSGNJXS(rd, rs, rs);
+}
+
+utils::riscv_instruction_t encoding::FNEGS(RiscVFloatingRegister rd, RiscVFloatingRegister rs) {
+	return FSGNJNS(rd, rs, rs);
+}
+
+utils::riscv_instruction_t encoding::FMVD(RiscVFloatingRegister rd, RiscVFloatingRegister rs) {
+	return FSGNJD(rd, rs, rs);
+}
+
+utils::riscv_instruction_t encoding::FABSD(RiscVFloatingRegister rd, RiscVFloatingRegister rs) {
+	return FSGNJXD(rd, rs, rs);
+}
+
+utils::riscv_instruction_t encoding::FNEGD(RiscVFloatingRegister rd, RiscVFloatingRegister rs) {
+	return FSGNJND(rd, rs, rs);
 }
 
 riscv_instruction_t encoding::BEQZ(RiscVRegister rs, uint32_t offset) {

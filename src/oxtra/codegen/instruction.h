@@ -117,19 +117,19 @@ namespace codegen {
 		void handle_segment_override(CodeBatch& batch, encoding::RiscVRegister& base, encoding::RiscVRegister temp) const;
 
 		/**
-		 * The value of the zero flag is returned in t4 = 0/1. Registers t4, t5, t6 may be modified.
+		 * The value of the zero flag is returned in dest = 0/1.
 		 */
-		void evaluate_zero(CodeBatch& batch) const;
+		void evaluate_zero(CodeBatch& batch, encoding::RiscVRegister dest) const;
 
 		/**
-		 * The value of the sign flag is returned in t4 = 0/1. Registers t4, t5, t6 may be modified.
+		 * The value of the sign flag is returned in dest = 0/1.
 		 */
-		void evaluate_sign(CodeBatch& batch, encoding::RiscVRegister temp) const;
+		void evaluate_sign(CodeBatch& batch, encoding::RiscVRegister dest, encoding::RiscVRegister temp) const;
 
 		/**
-		 * The value of the parity flag is returned in t4 = 0/1. Registers t4, t5, t6 may be modified.
+		 * The value of the parity flag is returned in dest = 0/1.
 		 */
-		void evaluate_parity(CodeBatch& batch, encoding::RiscVRegister temp) const;
+		void evaluate_parity(CodeBatch& batch, encoding::RiscVRegister dest, encoding::RiscVRegister temp) const;
 
 		/**
 		 * The value of the overflow flag is returned in t4 = 0/1. Registers t4, t5, t6 may be modified.

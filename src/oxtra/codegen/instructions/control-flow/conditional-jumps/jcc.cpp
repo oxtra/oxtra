@@ -17,7 +17,7 @@ void codegen::Jcc::generate_step(codegen::CodeBatch& batch) const {
 // cf == 0 && zf == 0
 void codegen::Ja::generate(codegen::CodeBatch& batch) const {
 	// load the zero-flag (first, as it is easier to compute)
-	evaluate_zero(batch);
+	evaluate_zero(batch, encoding::RiscVRegister::t4);
 
 	// append a dummy-branch
 	size_t index = batch.add(encoding::NOP());
@@ -43,7 +43,7 @@ void codegen::Ja::generate(codegen::CodeBatch& batch) const {
 // cf == 1 || zf == 1
 void codegen::Jbe::generate(codegen::CodeBatch& batch) const {
 	// load the zero-flag (first, as it is easier to compute)
-	evaluate_zero(batch);
+	evaluate_zero(batch, encoding::RiscVRegister::t4);
 
 	// append a dummy-branch
 	size_t index = batch.add(encoding::NOP());
@@ -111,7 +111,7 @@ void codegen::Jcxz::generate(codegen::CodeBatch& batch) const {
 //(ZF == 0 && SF == OF)
 void codegen::Jg::generate(codegen::CodeBatch& batch) const {
 	// load the zero-flag (first, as it is easier to compute)
-	evaluate_zero(batch);
+	evaluate_zero(batch, encoding::RiscVRegister::t4);
 
 	// append a dummy-branch
 	size_t index = batch.add(encoding::NOP());
@@ -125,8 +125,7 @@ void codegen::Jg::generate(codegen::CodeBatch& batch) const {
 	batch[index] = encoding::BEQZ(encoding::RiscVRegister::t4, offset * 4);
 
 	// load the sign flag
-	evaluate_sign(batch, encoding::RiscVRegister::t5);
-	batch += encoding::MV(encoding::RiscVRegister::t0, encoding::RiscVRegister::t4);
+	evaluate_sign(batch, encoding::RiscVRegister::t0, encoding::RiscVRegister::t5);
 
 	// load the overflow-flag
 	evaluate_overflow(batch);
@@ -141,8 +140,7 @@ void codegen::Jg::generate(codegen::CodeBatch& batch) const {
 // sf == of
 void codegen::Jge::generate(codegen::CodeBatch& batch) const {
 	// load the sign flag
-	evaluate_sign(batch, encoding::RiscVRegister::t3);
-	batch += encoding::MV(encoding::RiscVRegister::t0, encoding::RiscVRegister::t4);
+	evaluate_sign(batch, encoding::RiscVRegister::t0, encoding::RiscVRegister::t5);
 
 	// load the overflow-flag
 	evaluate_overflow(batch);
@@ -163,8 +161,7 @@ void codegen::Jge::generate(codegen::CodeBatch& batch) const {
 // sf != of
 void codegen::Jl::generate(codegen::CodeBatch& batch) const {
 	// load the sign flag
-	evaluate_sign(batch, encoding::RiscVRegister::t5);
-	batch += encoding::MV(encoding::RiscVRegister::t0, encoding::RiscVRegister::t4);
+	evaluate_sign(batch, encoding::RiscVRegister::t0, encoding::RiscVRegister::t5);
 
 	// load the overflow-flag
 	evaluate_overflow(batch);
@@ -185,7 +182,7 @@ void codegen::Jl::generate(codegen::CodeBatch& batch) const {
 // zf == 1 || sf != of
 void codegen::Jle::generate(codegen::CodeBatch& batch) const {
 	// load the zero-flag (first, as it is easier to compute)
-	evaluate_zero(batch);
+	evaluate_zero(batch, encoding::RiscVRegister::t4);
 
 	// append a dummy-branch
 	size_t index = batch.add(encoding::NOP());
@@ -199,8 +196,7 @@ void codegen::Jle::generate(codegen::CodeBatch& batch) const {
 	batch[index] = encoding::BEQZ(encoding::RiscVRegister::t4, offset * 4);
 
 	// load the sign flag
-	evaluate_sign(batch, encoding::RiscVRegister::t0);
-	batch += encoding::MV(encoding::RiscVRegister::t0, encoding::RiscVRegister::t4);
+	evaluate_sign(batch, encoding::RiscVRegister::t0, encoding::RiscVRegister::t5);
 
 	// load the overflow-flag
 	evaluate_overflow(batch);
@@ -252,7 +248,7 @@ void codegen::Jno::generate(codegen::CodeBatch& batch) const {
 // pf == 0
 void codegen::Jnp::generate(codegen::CodeBatch& batch) const {
 	// load the parity-flag
-	evaluate_parity(batch, encoding::RiscVRegister::t0);
+	evaluate_parity(batch, encoding::RiscVRegister::t4, encoding::RiscVRegister::t5);
 
 	// append a dummy-branch
 	size_t index = batch.add(encoding::NOP());
@@ -270,7 +266,7 @@ void codegen::Jnp::generate(codegen::CodeBatch& batch) const {
 // sf == 0
 void codegen::Jns::generate(codegen::CodeBatch& batch) const {
 	// load the sign-flag
-	evaluate_sign(batch, encoding::RiscVRegister::t0);
+	evaluate_sign(batch, encoding::RiscVRegister::t4, encoding::RiscVRegister::t0);
 
 	// append a dummy-branch
 	size_t index = batch.add(encoding::NOP());
@@ -288,7 +284,7 @@ void codegen::Jns::generate(codegen::CodeBatch& batch) const {
 // zf == 0
 void codegen::Jnz::generate(codegen::CodeBatch& batch) const {
 	// load the zero-flag
-	evaluate_zero(batch);
+	evaluate_zero(batch, encoding::RiscVRegister::t4);
 
 	// append a dummy-branch
 	size_t index = batch.add(encoding::NOP());
@@ -324,7 +320,7 @@ void codegen::Jo::generate(codegen::CodeBatch& batch) const {
 // pf == 1
 void codegen::Jp::generate(codegen::CodeBatch& batch) const {
 	// load the parity-flag
-	evaluate_parity(batch, encoding::RiscVRegister::t0);
+	evaluate_parity(batch, encoding::RiscVRegister::t4, encoding::RiscVRegister::t5);
 
 	// append a dummy-branch
 	size_t index = batch.add(encoding::NOP());
@@ -342,7 +338,7 @@ void codegen::Jp::generate(codegen::CodeBatch& batch) const {
 // sf == 1
 void codegen::Js::generate(codegen::CodeBatch& batch) const {
 	// load the sign-flag
-	evaluate_sign(batch, encoding::RiscVRegister::t0);
+	evaluate_sign(batch, encoding::RiscVRegister::t4, encoding::RiscVRegister::t0);
 
 	// append a dummy-branch
 	size_t index = batch.add(encoding::NOP());
@@ -360,7 +356,7 @@ void codegen::Js::generate(codegen::CodeBatch& batch) const {
 // zf == 1
 void codegen::Jz::generate(codegen::CodeBatch& batch) const {
 	// load the zero-flag
-	evaluate_zero(batch);
+	evaluate_zero(batch, encoding::RiscVRegister::t4);
 
 	// append a dummy-branch
 	size_t index = batch.add(encoding::NOP());

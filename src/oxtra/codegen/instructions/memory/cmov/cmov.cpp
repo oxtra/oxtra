@@ -41,7 +41,7 @@ void codegen::Cmov::generate_move(CodeBatch& batch) const {
 
 // cf == 0 && zf == 0
 void codegen::Cmova::execute_operation(CodeBatch& batch) const {
-	evaluate_zero(batch);
+	evaluate_zero(batch, encoding::RiscVRegister::t4);
 	const auto zero = batch.add(encoding::NOP());
 
 	evaluate_carry(batch);
@@ -58,7 +58,7 @@ void codegen::Cmova::execute_operation(CodeBatch& batch) const {
 
 // cf == 1 || zf == 1
 void codegen::Cmovbe::execute_operation(CodeBatch& batch) const {
-	evaluate_zero(batch);
+	evaluate_zero(batch, encoding::RiscVRegister::t4);
 	const auto zero = batch.add(encoding::NOP());
 
 	evaluate_carry(batch);
@@ -86,11 +86,10 @@ void codegen::Cmovc::execute_operation(CodeBatch& batch) const {
 
 // zf == 0 && sf == of
 void codegen::Cmovg::execute_operation(CodeBatch& batch) const {
-	evaluate_zero(batch);
+	evaluate_zero(batch, encoding::RiscVRegister::t4);
 	const auto zero = batch.add(encoding::NOP());
 
-	evaluate_sign(batch, encoding::RiscVRegister::t0);
-	batch += encoding::MV(encoding::RiscVRegister::t0, encoding::RiscVRegister::t4);
+	evaluate_sign(batch, encoding::RiscVRegister::t0, encoding::RiscVRegister::t5);
 
 	evaluate_overflow(batch);
 	const auto equal = batch.add(encoding::NOP());
@@ -106,8 +105,7 @@ void codegen::Cmovg::execute_operation(CodeBatch& batch) const {
 
 // sf == of
 void codegen::Cmovge::execute_operation(CodeBatch& batch) const {
-	evaluate_sign(batch, encoding::RiscVRegister::t0);
-	batch += encoding::MV(encoding::RiscVRegister::t0, encoding::RiscVRegister::t4);
+	evaluate_sign(batch, encoding::RiscVRegister::t0, encoding::RiscVRegister::t5);
 
 	evaluate_overflow(batch);
 	const auto equal = batch.add(encoding::NOP());
@@ -120,8 +118,7 @@ void codegen::Cmovge::execute_operation(CodeBatch& batch) const {
 
 // sf != of
 void codegen::Cmovl::execute_operation(CodeBatch& batch) const {
-	evaluate_sign(batch, encoding::RiscVRegister::t0);
-	batch += encoding::MV(encoding::RiscVRegister::t0, encoding::RiscVRegister::t4);
+	evaluate_sign(batch, encoding::RiscVRegister::t0, encoding::RiscVRegister::t5);
 
 	evaluate_overflow(batch);
 	const auto equal = batch.add(encoding::NOP());
@@ -134,11 +131,10 @@ void codegen::Cmovl::execute_operation(CodeBatch& batch) const {
 
 // zf == 1 || sf != of
 void codegen::Cmovle::execute_operation(CodeBatch& batch) const {
-	evaluate_zero(batch);
+	evaluate_zero(batch, encoding::RiscVRegister::t4);
 	const auto zero = batch.add(encoding::NOP());
 
-	evaluate_sign(batch, encoding::RiscVRegister::t0);
-	batch += encoding::MV(encoding::RiscVRegister::t0, encoding::RiscVRegister::t4);
+	evaluate_sign(batch, encoding::RiscVRegister::t0, encoding::RiscVRegister::t5);
 
 	evaluate_overflow(batch);
 	const auto equal = batch.add(encoding::NOP());
@@ -176,7 +172,7 @@ void codegen::Cmovno::execute_operation(CodeBatch& batch) const {
 
 // pf == 0
 void codegen::Cmovnp::execute_operation(CodeBatch& batch) const {
-	evaluate_parity(batch, encoding::RiscVRegister::t0);
+	evaluate_parity(batch, encoding::RiscVRegister::t4, encoding::RiscVRegister::t5);
 	const auto parity = batch.add(encoding::NOP());
 
 	generate_move(batch);
@@ -187,7 +183,7 @@ void codegen::Cmovnp::execute_operation(CodeBatch& batch) const {
 
 // sf == 0
 void codegen::Cmovns::execute_operation(CodeBatch& batch) const {
-	evaluate_sign(batch, encoding::RiscVRegister::t0);
+	evaluate_sign(batch, encoding::RiscVRegister::t4, encoding::RiscVRegister::t0);
 	const auto sign = batch.add(encoding::NOP());
 
 	generate_move(batch);
@@ -198,7 +194,7 @@ void codegen::Cmovns::execute_operation(CodeBatch& batch) const {
 
 // zf == 0
 void codegen::Cmovnz::execute_operation(CodeBatch& batch) const {
-	evaluate_zero(batch);
+	evaluate_zero(batch, encoding::RiscVRegister::t4);
 	const auto zero = batch.add(encoding::NOP());
 
 	generate_move(batch);
@@ -220,7 +216,7 @@ void codegen::Cmovo::execute_operation(CodeBatch& batch) const {
 
 // pf == 1
 void codegen::Cmovp::execute_operation(CodeBatch& batch) const {
-	evaluate_parity(batch, encoding::RiscVRegister::t0);
+	evaluate_parity(batch, encoding::RiscVRegister::t4, encoding::RiscVRegister::t5);
 	const auto parity = batch.add(encoding::NOP());
 
 	generate_move(batch);
@@ -231,7 +227,7 @@ void codegen::Cmovp::execute_operation(CodeBatch& batch) const {
 
 // sf == 1
 void codegen::Cmovs::execute_operation(CodeBatch& batch) const {
-	evaluate_sign(batch, encoding::RiscVRegister::t0);
+	evaluate_sign(batch, encoding::RiscVRegister::t4, encoding::RiscVRegister::t0);
 	const auto sign = batch.add(encoding::NOP());
 
 	generate_move(batch);
@@ -242,7 +238,7 @@ void codegen::Cmovs::execute_operation(CodeBatch& batch) const {
 
 // zf == 1
 void codegen::Cmovz::execute_operation(CodeBatch& batch) const {
-	evaluate_zero(batch);
+	evaluate_zero(batch, encoding::RiscVRegister::t4);
 	const auto zero = batch.add(encoding::NOP());
 
 	generate_move(batch);
