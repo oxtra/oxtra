@@ -30,6 +30,7 @@
 .equ debug_halt, 0x02
 .equ debug_step_riscv, 0x03
 .equ debug_bp_array, 0x08
+.equ red_zone, -128
 
 # global important strings
 .section .rodata

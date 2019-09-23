@@ -59,6 +59,7 @@ namespace dispatcher::syscalls {
 	void arch_prctl(ExecutionContext* context);
 	void sigaction(ExecutionContext* context);
 	void sigprocmask(ExecutionContext* context);
+	void ioctl(ExecutionContext* context);
 
 	/*
 	 * This map contains information about how syscalls should be handled.
@@ -296,7 +297,7 @@ namespace dispatcher::syscalls {
 		SYS_clock_gettime,
 		SYS_clock_getres,
 		SYS_clock_nanosleep,
-		SYS_exit_group,
+		exit, //SYS_exit_group,
 		-1, //SYS_epoll_wait,
 		SYS_epoll_ctl,
 		SYS_tgkill,

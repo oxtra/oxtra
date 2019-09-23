@@ -70,6 +70,9 @@ void CodeStore::add_instruction(BlockEntry& block, utils::guest_addr_t address, 
 	block.riscv_start = reinterpret_cast<host_addr_t>(
 			_code_buffer.add(reinterpret_cast<riscv_instruction_t*>(block.riscv_start), riscv_instructions,
 							 num_instructions));
+	
+	if (!block.riscv_start)
+		dispatcher::Dispatcher::fault_exit("failed to add the riscv instructions to the static list");
 
 	block.offsets = _instruction_offset_buffer.add(block.offsets, {size, static_cast<uint16_t>(num_instructions * 4)});
 	block.instruction_count++;

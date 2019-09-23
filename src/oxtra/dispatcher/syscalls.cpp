@@ -56,3 +56,8 @@ void dispatcher::syscalls::sigprocmask(dispatcher::ExecutionContext* context) {
 	spdlog::info("ignored sigprocmask syscall.");
 	context->guest.a0 = 0;
 }
+
+void dispatcher::syscalls::ioctl(dispatcher::ExecutionContext* context) {
+	spdlog::info("ignored ioctl syscall.");
+	context->guest.a0 = 0;
+}

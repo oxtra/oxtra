@@ -83,7 +83,7 @@ TEST_CASE("static_list supports copying elements", "[static_list]") {
 		start = list.add(start, 43);
 		REQUIRE(start[1] == 43);
 
-		REQUIRE_THROWS(list.add(start, 44));
+		REQUIRE(list.add(start, 44) == nullptr);
 	}
 }
 
