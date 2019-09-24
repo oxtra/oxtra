@@ -82,7 +82,7 @@ namespace dispatcher::syscalls {
 		sigaction, //SYS_rt_sigaction,
 		sigprocmask, //SYS_rt_sigprocmask,
 		-1, //SYS_rt_sigreturn,
-		SYS_ioctl,
+		ioctl, //SYS_ioctl,
 		SYS_pread64,
 		SYS_pwrite64,
 		SYS_readv,

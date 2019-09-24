@@ -295,12 +295,15 @@ std::string debugger::Debugger::print_assembly(utils::guest_addr_t guest, utils:
 }
 
 std::string debugger::Debugger::print_flags(dispatcher::ExecutionContext* context) {
+	// TODO this is a temporary fix.. this needs to be changed
+	static constexpr size_t flag_str_size = 20;
+
 	// build the string
 	std::string out_str = "flags:\n";
 
 	// append the zero-flag
 	std::string temp_str((context->flag_info.zero_value == 0) ? " ZF: 1" : " ZF: 0");
-	temp_str.insert(temp_str.size(), 15 - temp_str.size(), ' ');
+	temp_str.insert(temp_str.size(), flag_str_size - temp_str.size(), ' ');
 	out_str.append(temp_str);
 
 	// append the sign-flag
@@ -309,7 +312,7 @@ std::string debugger::Debugger::print_flags(dispatcher::ExecutionContext* contex
 		temp_str.push_back('1');
 	else
 		temp_str.push_back('0');
-	temp_str.insert(temp_str.size(), 15 - temp_str.size(), ' ');
+	temp_str.insert(temp_str.size(), flag_str_size - temp_str.size(), ' ');
 	out_str.append(temp_str);
 
 	// append the parity-flag
@@ -318,7 +321,7 @@ std::string debugger::Debugger::print_flags(dispatcher::ExecutionContext* contex
 	temp = (temp & 0x03u) ^ (temp >> 2u);
 	temp = (temp & 0x01u) ^ (temp >> 1u);
 	temp_str.append((temp == 0) ? "1" : "0");
-	temp_str.insert(temp_str.size(), 15 - temp_str.size(), ' ');
+	temp_str.insert(temp_str.size(), flag_str_size - temp_str.size(), ' ');
 	out_str.append(temp_str);
 
 	// append the carry-flag
@@ -333,7 +336,8 @@ std::string debugger::Debugger::print_flags(dispatcher::ExecutionContext* contex
 		dispatcher::ExecutionContext::Context temp_context;
 		temp_str.push_back('0' + evaluate_carry(context, &temp_context));
 	}
-	temp_str.insert(temp_str.size(), 15 - temp_str.size(), ' ');
+
+	temp_str.insert(temp_str.size(), flag_str_size - temp_str.size(), ' ');
 	out_str.append(temp_str);
 
 	// append the overflow-flag
@@ -341,16 +345,18 @@ std::string debugger::Debugger::print_flags(dispatcher::ExecutionContext* contex
 	if (context->flag_info.overflow_operation == static_cast<uint16_t>(codegen::jump_table::Entry::unsupported_overflow) * 4) {
 		temp_str.append("inv:");
 		temp_str.append(reinterpret_cast<const char*>(context->flag_info.overflow_pointer));
-	} else if (context->flag_info.carry_operation == static_cast<uint16_t>(codegen::jump_table::Entry::high_level_overflow) * 4)
+	} else if (context->flag_info.overflow_operation == static_cast<uint16_t>(codegen::jump_table::Entry::high_level_overflow) * 4)
 		temp_str.push_back(
 				'0' + reinterpret_cast<codegen::Instruction::c_callback_t>(context->flag_info.overflow_pointer)(context));
 	else {
 		dispatcher::ExecutionContext::Context temp_context;
 		temp_str.push_back('0' + evaluate_overflow(context, &temp_context));
 	}
-	temp_str.insert(temp_str.size(), 15 - temp_str.size(), ' ');
+
+	temp_str.insert(temp_str.size(), flag_str_size - temp_str.size(), ' ');
 	out_str.append(temp_str);
 	out_str.push_back('\n');
+
 	return out_str;
 }
 

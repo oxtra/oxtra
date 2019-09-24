@@ -88,9 +88,9 @@ void Dispatcher::init_guest_context() {
 
 	// page align it because why not
 	min_stack_size = (min_stack_size + 0xfffu) & ~0xfffu;
-	//printf("abi stack size: 0x%lx\n", min_stack_size);
 	// initialize the stack (assume a page for the arg, env pointers and aux vectors)
-	const auto stack_size = _args.get_stack_size();
+	auto stack_size = _args.get_stack_size();
+	stack_size = (stack_size + 0xfffu) & ~0xfffu;
 
 	const auto stack_memory = reinterpret_cast<uintptr_t>(mmap(nullptr, stack_size, PROT_READ | PROT_WRITE,
 								   MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));

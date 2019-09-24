@@ -52,8 +52,8 @@ void codegen::SarCl::execute_operation(codegen::CodeBatch& batch,
 		batch += encoding::SRAW(dst, src, helper::map_reg(fadec::Register::cl));
 	}
 
-	update_overflow_unsupported(batch, "SAR - Imm", encoding::RiscVRegister::t4);
-	update_carry_unsupported(batch, "SAR - Imm", encoding::RiscVRegister::t4);
+	update_overflow_unsupported(batch, "SAR - Cl", encoding::RiscVRegister::t4);
+	update_carry_unsupported(batch, "SAR - Cl", encoding::RiscVRegister::t4);
 }
 
 void codegen::Shl::execute_operation(CodeBatch& batch, encoding::RiscVRegister dst, encoding::RiscVRegister src) const {
@@ -76,8 +76,8 @@ void codegen::ShlCl::execute_operation(codegen::CodeBatch& batch,
 		batch += encoding::SLLW(dst, src, helper::map_reg(fadec::Register::cl));
 	}
 
-	update_overflow_unsupported(batch, "SHL - Imm", encoding::RiscVRegister::t4);
-	update_carry_unsupported(batch, "SHL - Imm", encoding::RiscVRegister::t4);
+	update_overflow_unsupported(batch, "SHL - Cl", encoding::RiscVRegister::t4);
+	update_carry_unsupported(batch, "SHL - Cl", encoding::RiscVRegister::t4);
 }
 
 void codegen::Shr::execute_operation(CodeBatch& batch, encoding::RiscVRegister dst, encoding::RiscVRegister src) const {
@@ -100,6 +100,6 @@ void codegen::ShrCl::execute_operation(codegen::CodeBatch& batch,
 		batch += encoding::SRLW(dst, src, helper::map_reg(fadec::Register::cl));
 	}
 
-	update_overflow_unsupported(batch, "SHR - Imm", encoding::RiscVRegister::t4);
-	update_carry_unsupported(batch, "SHR - Imm", encoding::RiscVRegister::t4);
+	update_overflow_unsupported(batch, "SHR - Cl", encoding::RiscVRegister::t4);
+	update_carry_unsupported(batch, "SHR - Cl", encoding::RiscVRegister::t4);
 }
