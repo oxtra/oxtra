@@ -2,6 +2,7 @@
 #include <spdlog/spdlog.h>
 #include <string>
 #include <iostream>
+#include <csignal>
 
 #include "oxtra/dispatcher/dispatcher.h"
 
@@ -48,9 +49,18 @@ debugger::Debugger::Debugger(const elf::Elf& elf, bool riscv_enabled, uintptr_t 
 	_riscv_enabled = riscv_enabled;
 	_stack_low = stack_low;
 	_stack_high = stack_low + stack_size;
+	_signal_address = 0;
 
 	// mark this as the active debugger
 	active_debugger = this;
+
+	// register the signal-handler
+	struct sigaction action;
+	memset(&action, 0, sizeof(action));
+	action.sa_flags = SA_SIGINFO;
+	action.sa_sigaction = Debugger::signal_handler;
+	if (sigaction(SIGSEGV, &action, nullptr) < 0)
+		std::cout << "failed to register SIGSEGV-handler of the debugger!" << std::endl;
 }
 
 debugger::Debugger::~Debugger() {
@@ -117,6 +127,36 @@ void debugger::Debugger::end_block(codegen::CodeBatch& batch, codegen::codestore
 
 	// update the break-points
 	active_debugger->update_break_points(active_debugger->_blocks[insert_index]);
+}
+
+void debugger::Debugger::signal_handler(int signum, siginfo_t* info, void* ptr) {
+	for (size_t i = 0; i < 32; i++) {
+		std::cout << "reg[" << std::dec << i << "]: 0x" << std::hex
+				  << reinterpret_cast<ucontext_t*>(ptr)->uc_mcontext.__gregs[i] << std::endl;
+	}
+
+	// print the assembly
+	utils::guest_addr_t guest_addr = active_debugger->resolve_block(active_debugger->_signal_address);
+	if (guest_addr == 0)
+		std::cout << "signal raised outside of guest-code!" << std::endl;
+	else
+		std::cout << active_debugger->print_assembly(active_debugger->_signal_address, guest_addr, active_debugger->_current,
+										active_debugger->_current->entry->instruction_count) << std::endl;
+
+	// extract the context
+	const auto context = reinterpret_cast<dispatcher::ExecutionContext*>(reinterpret_cast<ucontext_t*>(ptr)->uc_mcontext.__gregs[27]);
+
+	// build the context
+	for (size_t i = 0; i < 31; i++)
+		context->guest.reg[i] = reinterpret_cast<ucontext_t*>(ptr)->uc_mcontext.__gregs[i + 1];
+	context->guest.ra = active_debugger->_signal_address;
+	active_debugger->entry(context, 0x8000);
+
+	if (signum == SIGSEGV) {
+		std::cout << "Sefault! :D" << std::endl;
+	}
+	std::cout << "sig-addr: 0x" << std::hex << active_debugger->_signal_address << std::endl;
+	dispatcher::Dispatcher::fault_exit("guest segmentation-faulted!");
 }
 
 void debugger::Debugger::entry(dispatcher::ExecutionContext* context, uintptr_t break_point) {

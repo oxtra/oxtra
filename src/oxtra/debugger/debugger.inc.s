@@ -21,6 +21,9 @@ debug_entry:
 	sd t1, guest_t1_offset(s11)
 	sd t2, guest_t2_offset(s11)
 
+	# set the upcoming address
+	sd ra, debug_sig_address(t0)
+
 	# check if the execution is supposed to be halted
 	lbu t2, debug_halt(t0)
 	beqz t2, debugger_no_halt
@@ -97,6 +100,9 @@ debug_entry_riscv:
 
 	# store the current t1-register
 	sd t1, guest_t1_offset(s11)
+
+	# set the upcoming address
+	sd ra, debug_sig_address(t0)
 
 	# check if the execution is supposed to be halted
 	lbu t1, debug_step_riscv(t0)

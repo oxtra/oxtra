@@ -179,6 +179,7 @@ high_level_carry:
 	j c_wrapper
 
 
+
 # don't use the 'j' pseudo-instruction as it might unwrap to multiple instructions
 .align 8
 _ZN7codegen10jump_table13table_addressEv:
