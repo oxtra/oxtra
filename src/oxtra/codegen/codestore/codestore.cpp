@@ -75,6 +75,10 @@ void CodeStore::add_instruction(BlockEntry& block, utils::guest_addr_t address, 
 		dispatcher::Dispatcher::fault_exit("failed to add the riscv instructions to the static list");
 
 	block.offsets = _instruction_offset_buffer.add(block.offsets, {size, static_cast<uint16_t>(num_instructions * 4)});
+
+	if (!block.offsets)
+		dispatcher::Dispatcher::fault_exit("failed to add riscv instruction sizes (i.e. offsets) to the static list");
+
 	block.instruction_count++;
 	block.x86_end = address + size;
 
