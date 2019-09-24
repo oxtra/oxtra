@@ -232,7 +232,7 @@ std::string debugger::Debugger::print_assembly(utils::guest_addr_t guest, utils:
 				line_buffer = "   ";
 
 			// add break-points
-			for (size_t j = 0; j < _bp_count; j++) {
+			for (size_t j = 0; j < static_cast<size_t>(_bp_count - ((_state & DebugState::temp_break) ? 1 : 0)); j++) {
 				if (_bp_x86_array[j] >= guest_src &&
 					_bp_x86_array[j] < guest_src + entry->entry->offsets[guest_index + i].x86) {
 					line_buffer.push_back('*');
@@ -296,68 +296,60 @@ std::string debugger::Debugger::print_assembly(utils::guest_addr_t guest, utils:
 
 std::string debugger::Debugger::print_flags(dispatcher::ExecutionContext* context) {
 	// build the string
-	std::string out_str = "flags:\n";
+	std::string out_str = "flags:\n  [ ";
+	std::string end_str = "";
 
 	// append the zero-flag
-	std::string temp_str((context->flag_info.zero_value == 0) ? " ZF: 1" : " ZF: 0");
-	temp_str.insert(temp_str.size(), 15 - temp_str.size(), ' ');
-	out_str.append(temp_str);
+	if (context->flag_info.zero_value == 0)
+		out_str.append("ZF ");
 
 	// append the sign-flag
-	temp_str = " SF: ";
 	if ((context->flag_info.sign_value >> context->flag_info.sign_size) == 1)
-		temp_str.push_back('1');
-	else
-		temp_str.push_back('0');
-	temp_str.insert(temp_str.size(), 15 - temp_str.size(), ' ');
-	out_str.append(temp_str);
+		out_str.append("SF ");
 
 	// append the parity-flag
-	temp_str = " PF: ";
 	uint8_t temp = (context->flag_info.parity_value & 0x0fu) ^(context->flag_info.parity_value >> 4u);
 	temp = (temp & 0x03u) ^ (temp >> 2u);
 	temp = (temp & 0x01u) ^ (temp >> 1u);
-	temp_str.append((temp == 0) ? "1" : "0");
-	temp_str.insert(temp_str.size(), 15 - temp_str.size(), ' ');
-	out_str.append(temp_str);
+	if (temp == 0)
+		out_str.append("PF ");
 
 	// append the carry-flag
-	temp_str = " CF: ";
 	if (context->flag_info.carry_operation == static_cast<uint16_t>(codegen::jump_table::Entry::unsupported_carry) * 4) {
-		temp_str.append("inv:");
-		temp_str.append(reinterpret_cast<const char*>(context->flag_info.carry_pointer));
-	} else if (context->flag_info.carry_operation == static_cast<uint16_t>(codegen::jump_table::Entry::high_level_carry) * 4)
-		temp_str.push_back(
-				'0' + reinterpret_cast<codegen::Instruction::c_callback_t>(context->flag_info.carry_pointer)(context));
-	else {
-		dispatcher::ExecutionContext::Context temp_context;
-		temp_str.push_back('0' + evaluate_carry(context, &temp_context));
+		end_str.append("CF: ").append(reinterpret_cast<const char*>(context->flag_info.carry_pointer));
+	} else if (context->flag_info.carry_operation == static_cast<uint16_t>(codegen::jump_table::Entry::high_level_carry) * 4) {
+		if (reinterpret_cast<codegen::Instruction::c_callback_t>(context->flag_info.carry_pointer)(context) != 0)
+			out_str.append("CF ");
+		else {
+			dispatcher::ExecutionContext::Context temp_context;
+			if (evaluate_carry(context, &temp_context) != 0)
+				out_str.append("CF ");
+		}
 	}
-	temp_str.insert(temp_str.size(), 15 - temp_str.size(), ' ');
-	out_str.append(temp_str);
 
 	// append the overflow-flag
-	temp_str = " OF: ";
 	if (context->flag_info.overflow_operation == static_cast<uint16_t>(codegen::jump_table::Entry::unsupported_overflow) * 4) {
-		temp_str.append("inv:");
-		temp_str.append(reinterpret_cast<const char*>(context->flag_info.overflow_pointer));
-	} else if (context->flag_info.carry_operation == static_cast<uint16_t>(codegen::jump_table::Entry::high_level_overflow) * 4)
-		temp_str.push_back(
-				'0' + reinterpret_cast<codegen::Instruction::c_callback_t>(context->flag_info.overflow_pointer)(context));
-	else {
-		dispatcher::ExecutionContext::Context temp_context;
-		temp_str.push_back('0' + evaluate_overflow(context, &temp_context));
+		if (!end_str.empty())
+			end_str.append("; ");
+		end_str.append("OF: ").append(reinterpret_cast<const char*>(context->flag_info.overflow_pointer));
+	} else if (context->flag_info.carry_operation ==
+			   static_cast<uint16_t>(codegen::jump_table::Entry::high_level_overflow) * 4) {
+		if (reinterpret_cast<codegen::Instruction::c_callback_t>(context->flag_info.overflow_pointer)(context) != 0)
+			out_str.append("OF ");
+		else {
+			dispatcher::ExecutionContext::Context temp_context;
+			if (evaluate_overflow(context, &temp_context) != 0)
+				out_str.append("OF ");
+		}
 	}
-	temp_str.insert(temp_str.size(), 15 - temp_str.size(), ' ');
-	out_str.append(temp_str);
-	out_str.push_back('\n');
+	out_str.append("] ").append(end_str).push_back('\n');
 	return out_str;
 }
 
 std::string debugger::Debugger::print_break_points() {
 	// iterate through the break-points and print them
 	std::string out_string = "break-points:\n";
-	for (size_t i = 0; i < _bp_count; i++) {
+	for (size_t i = 0; i < static_cast<size_t>(_bp_count - ((_state & DebugState::temp_break) ? 1 : 0)); i++) {
 		// build the string
 		std::string temp_string = print_number(i, false);
 		while (temp_string.size() < 3)
@@ -446,7 +438,7 @@ std::string debugger::Debugger::print_blocks() {
 	for (size_t i = 0; i < _blocks.size(); i++) {
 		// check if a break-point lies within the block
 		bool contains_bp = false;
-		for (size_t j = 0; j < _bp_count; j++) {
+		for (size_t j = 0; j < static_cast<size_t>(_bp_count - ((_state & DebugState::temp_break) ? 1 : 0)); j++) {
 			if (_bp_x86_array[j] >= _blocks[i].entry->x86_start && _bp_x86_array[j] < _blocks[i].entry->x86_end) {
 				contains_bp = true;
 				break;
