@@ -46,3 +46,13 @@ void dispatcher::syscalls::arch_prctl(dispatcher::ExecutionContext* context) {
 
 	context->guest.a0 = 0;
 }
+
+void dispatcher::syscalls::sigaction(dispatcher::ExecutionContext* context) {
+	spdlog::info("ignored sigaction syscall.");
+	context->guest.a0 = 0;
+}
+
+void dispatcher::syscalls::sigprocmask(dispatcher::ExecutionContext* context) {
+	spdlog::info("ignored sigprocmask syscall.");
+	context->guest.a0 = 0;
+}

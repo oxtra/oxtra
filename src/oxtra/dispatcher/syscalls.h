@@ -57,6 +57,8 @@ namespace dispatcher::syscalls {
 	 */
 	void exit(ExecutionContext* context);
 	void arch_prctl(ExecutionContext* context);
+	void sigaction(ExecutionContext* context);
+	void sigprocmask(ExecutionContext* context);
 
 	/*
 	 * This map contains information about how syscalls should be handled.
@@ -76,9 +78,9 @@ namespace dispatcher::syscalls {
 		SYS_mprotect,
 		SYS_munmap,
 		SYS_brk,
-		SYS_rt_sigaction,
-		SYS_rt_sigprocmask,
-		SYS_rt_sigreturn,
+		sigaction, //SYS_rt_sigaction,
+		sigprocmask, //SYS_rt_sigprocmask,
+		-1, //SYS_rt_sigreturn,
 		SYS_ioctl,
 		SYS_pread64,
 		SYS_pwrite64,

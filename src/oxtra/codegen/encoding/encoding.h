@@ -31,6 +31,14 @@ namespace encoding {
 		rsp = sp, rbp = s0
 	};
 
+	enum class RiscVFloatingRegister {
+		f0, f1, f2, f3, f4, f5, f6, f7, f8, f9,
+		f10, f11, f12, f13, f14, f15, f16, f17, f18, f19,
+		f20, f21, f22, f23, f24, f25, f26, f27, f28, f29,
+		f30, f31,
+		fcsr // control and status register
+	};
+
 	union RType {
 		struct {
 			uint32_t opcode : 7;
@@ -101,7 +109,20 @@ namespace encoding {
 		uint32_t raw;
 	};
 
-	/* --- RV32I Base Instruction Set --- */
+	union R4Type {
+		struct {
+			uint32_t opcode : 7;
+			uint32_t rd : 5;
+			uint32_t funct3 : 3;
+			uint32_t rs1 : 5;
+			uint32_t rs2 : 5;
+			uint32_t funct2 : 2;
+			uint32_t rs3 : 5;
+		};
+		uint32_t raw;
+	};
+
+	/* --- RV32I Base Instruction Set --------------------------------------------------------------------------------- */
 
 	/**
 	* rd[31:12] = imm
@@ -171,8 +192,7 @@ namespace encoding {
 	*/
 	utils::riscv_instruction_t LW(RiscVRegister rd, RiscVRegister rs1, uint16_t imm);
 
-	/**
-	* rd = [rs1 + imm] (64 bit)
+	/**	* rd = [rs1 + imm] (64 bit)
 	*/
 	utils::riscv_instruction_t LD(RiscVRegister rd, RiscVRegister rs1, uint16_t imm);
 
@@ -313,8 +333,8 @@ namespace encoding {
 
 	// probably not needed: FENCE, FENCE.I, EBREAK, CSRRW, CSRRS, CSRRC, CSRRWI, CSRRSI, CSRRCI
 
-	/* --- RV64I Base Integer instructions --- */
-	//*W instructions maybe necessary
+	/* --- RV64I Base Integer instructions ---------------------------------------------------------------------------- */
+
 	/**
 	* rd = (rs1 + rs2) [31:0] sign extended to 64bit
 	*/
@@ -325,7 +345,22 @@ namespace encoding {
 	 */
 	utils::riscv_instruction_t SUBW(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2);
 
-	/* --- M Standard Extension --- */
+	/**
+	 * rd = (rs1 << rs2[4:0]) [31:0] sign extended to 64-bit
+	 */
+	utils::riscv_instruction_t SLLW(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2);
+
+	/**
+	 * rd = (rs1 >> rs2[4:0]) [31:0] sign extended to 64-bit (logical)
+	 */
+	utils::riscv_instruction_t SRLW(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2);
+
+	/**
+	 * rd = (rs1 >> rs2[4:0]) [31:0] sign extended to 64-bit (arithmetic)
+	 */
+	utils::riscv_instruction_t SRAW(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2);
+
+	/* --- M Standard Extension --------------------------------------------------------------------------------------- */
 
 	/**
 	* rd = (rs1 * rs2)[63:0]
@@ -371,9 +406,306 @@ namespace encoding {
 	//*W instructions maybe necessary
 
 	// probably not needed: atomics
-	// nice to have: floating point
 
-	/* --- Pseudoinstructions --- */
+	/* --- RV32F Standard Extension ----------------------------------------------------------------------------------- */
+
+	/**
+	 * rd = [rs + imm] (single precision)
+	 */
+	utils::riscv_instruction_t FLW(RiscVFloatingRegister rd, RiscVRegister rs, uint16_t imm);
+
+	/*
+	 * [rs1 + imm] = rd (single precision)
+	 */
+	utils::riscv_instruction_t FSW(RiscVRegister rs1, RiscVFloatingRegister rs2, uint16_t imm);
+
+	/*
+	 * rd = rs1*rs2 + rs3 (single precision)
+	 */
+	utils::riscv_instruction_t FMADDS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3);
+
+	/*
+	 * rd = rs1*rs2 + rs3 (single precision)
+	 */
+	utils::riscv_instruction_t FMSUBS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3);
+
+	/*
+	 * rd = -(rs1*rs2 + rs3) (single precision)
+	 */
+	utils::riscv_instruction_t FNMADDS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3);
+
+	/*
+	 * rd = -(rs1*rs2 - rs3) (single precision)
+	 */
+	utils::riscv_instruction_t FNMSUBS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3);
+
+	/*
+	 * rd = rs1 + rs2 (single precision)
+	 */
+	utils::riscv_instruction_t FADDS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+
+	/*
+	 * rd = rs1 - rs2 (single precision)
+	 */
+	utils::riscv_instruction_t FSUBS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+
+	/*
+	 * rd = rs1 * rs2 (single precision)
+	 */
+	utils::riscv_instruction_t FMULS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+
+	/*
+	 * rd = rs1 / rs2 (single precision)
+	 */
+	utils::riscv_instruction_t FDIVS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+
+	/*
+	 * rd = sqrt(s1) (single precision)
+	 */
+	utils::riscv_instruction_t FSQRTS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1);
+
+	/*
+	 * rd = rs1 except the sign, which is taken from rs2 (single precision)
+	 */
+	utils::riscv_instruction_t FSGNJS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+
+	/*
+	 * rd = rs1 except the sign, which is the negation of the one from rs2 (single precision)
+	 */
+	utils::riscv_instruction_t FSGNJNS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+
+	/*
+	 * rd = rs1 except the sign, which is the XOR of the sign bits of rs1 and rs2 (single precision)
+	 */
+	utils::riscv_instruction_t FSGNJXS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+
+	/*
+	 * rd = min(rs1, rs2) (single precision)
+	 */
+	utils::riscv_instruction_t FMINS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+
+	/*
+	 * rd = max(rs1, rs2) (single precision)
+	 */
+	utils::riscv_instruction_t FMAXS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+
+	/*
+	 * signed 32 bit integer <-- single precision float
+	 */
+	utils::riscv_instruction_t FCVTWS(RiscVRegister rd, RiscVFloatingRegister rs1);
+
+	/*
+	 * unsigned 32 bit integer <-- single precision float
+	 */
+	utils::riscv_instruction_t FCVTWUS(RiscVRegister rd, RiscVFloatingRegister rs1);
+
+	// FMVXW probably not needed
+
+	/*
+	 * rd = rs1 == rs2 (single precision)
+	 */
+	utils::riscv_instruction_t FEQS(RiscVRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+
+	/*
+	 * rd = rs1 < rs2 (single precision)
+	 */
+	utils::riscv_instruction_t FLTS(RiscVRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+
+	/*
+	 * rd = rs1 <= rs2 (single precision)
+	 */
+	utils::riscv_instruction_t FLES(RiscVRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+
+	// FCLASS probably not needed
+
+	/*
+	 * single precision float <-- signed 32 bit integer
+	 */
+	utils::riscv_instruction_t FCVTSW(RiscVFloatingRegister rd, RiscVRegister rs1);
+
+	/*
+	 * single precision float <-- unsigned 32 bit integer
+	 */
+	utils::riscv_instruction_t FCVTSWU(RiscVFloatingRegister rd, RiscVRegister rs1);
+
+	/* --- RV64F Standard Extension ----------------------------------------------------------------------------------- */
+
+	/*
+	 * signed 64 bit integer <-- single precision float
+	 */
+	utils::riscv_instruction_t FCVTLS(RiscVRegister rd, RiscVFloatingRegister rs1);
+
+	/*
+	 * unsigned 64 bit integer <-- single precision float
+	 */
+	utils::riscv_instruction_t FCVTLUS(RiscVRegister rd, RiscVFloatingRegister rs1);
+
+	/*
+	 * single precision float <-- signed 64 bit integer
+	 */
+	utils::riscv_instruction_t FCVTSL(RiscVFloatingRegister rd, RiscVRegister rs1);
+
+	/*
+	 * single precision float <-- unsigned 64 bit integer
+	 */
+	utils::riscv_instruction_t FCVTSLU(RiscVFloatingRegister rd, RiscVRegister rs1);
+
+	/* --- RV32D Standard Extension ----------------------------------------------------------------------------------- */
+
+	/**
+	 * rd = [rs + imm] (double precision)
+	 */
+	utils::riscv_instruction_t FLD(RiscVFloatingRegister rd, RiscVRegister rs, uint16_t imm);
+
+	/*
+	 * [rs1 + imm] = rd (double precision)
+	 */
+	utils::riscv_instruction_t FSD(RiscVRegister rs1, RiscVFloatingRegister rs2, uint16_t imm);
+
+	/*
+	 * rd = rs1*rs2 + rs3 (double precision)
+	 */
+	utils::riscv_instruction_t FMADDD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3);
+
+	/*
+	 * rd = rs1*rs2 + rs3 (double precision)
+	 */
+	utils::riscv_instruction_t FMSUBD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3);
+
+	/*
+	 * rd = -(rs1*rs2 + rs3) (double precision)
+	 */
+	utils::riscv_instruction_t FNMADDD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3);
+
+	/*
+	 * rd = -(rs1*rs2 - rs3) (double precision)
+	 */
+	utils::riscv_instruction_t FNMSUBD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2, RiscVFloatingRegister rs3);
+
+	/*
+	 * rd = rs1 + rs2 (double precision)
+	 */
+	utils::riscv_instruction_t FADDD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+
+	/*
+	 * rd = rs1 - rs2 (double precision)
+	 */
+	utils::riscv_instruction_t FSUBD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+
+	/*
+	 * rd = rs1 * rs2 (double precision)
+	 */
+	utils::riscv_instruction_t FMULD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+
+	/*
+	 * rd = rs1 / rs2 (double precision)
+	 */
+	utils::riscv_instruction_t FDIVD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+
+	/*
+	 * rd = sqrt(s1) (double precision)
+	 */
+	utils::riscv_instruction_t FSQRTD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1);
+
+	/*
+	 * rd = rs1 except the sign, which is taken from rs2 (double precision)
+	 */
+	utils::riscv_instruction_t FSGNJD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+
+	/*
+	 * rd = rs1 except the sign, which is the negation of the one from rs2 (double precision)
+	 */
+	utils::riscv_instruction_t FSGNJND(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+
+	/*
+	 * rd = rs1 except the sign, which is the XOR of the sign bits of rs1 and rs2 (double precision)
+	 */
+	utils::riscv_instruction_t FSGNJXD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+
+	/*
+	 * rd = min(rs1, rs2) (double precision)
+	 */
+	utils::riscv_instruction_t FMIND(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+
+	/*
+	 * rd = max(rs1, rs2) (double precision)
+	 */
+	utils::riscv_instruction_t FMAXD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+
+	/*
+	 * single precision float <-- double precision float
+	 */
+	utils::riscv_instruction_t FCVTSD(RiscVFloatingRegister rd, RiscVFloatingRegister rs1);
+
+	/*
+	 * double precision float <-- single precision float
+	 */
+	utils::riscv_instruction_t FCVTDS(RiscVFloatingRegister rd, RiscVFloatingRegister rs1);
+
+	/*
+	 * rd = rs1 == rs2 (double precision)
+	 */
+	utils::riscv_instruction_t FEQD(RiscVRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+
+	/*
+	 * rd = rs1 < rs2 (double precision)
+	 */
+	utils::riscv_instruction_t FLTD(RiscVRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+
+	/*
+	 * rd = rs1 <= rs2 (double precision)
+	 */
+	utils::riscv_instruction_t FLED(RiscVRegister rd, RiscVFloatingRegister rs1, RiscVFloatingRegister rs2);
+
+	// FCLASS probably not needed
+
+	/*
+	 * signed 32 bit integer <-- double precision float
+	 */
+	utils::riscv_instruction_t FCVTWD(RiscVRegister rd, RiscVFloatingRegister rs1);
+
+	/*
+	 * unsigned 32 bit integer <-- double precision float
+	 */
+	utils::riscv_instruction_t FCVTWUD(RiscVRegister rd, RiscVFloatingRegister rs1);
+
+	/*
+	 * double precision float <-- signed 32 bit integer
+	 */
+	utils::riscv_instruction_t FCVTDW(RiscVFloatingRegister rd, RiscVRegister rs1);
+
+	/*
+	 * double precision float <-- unsigned 32 bit integer
+	 */
+	utils::riscv_instruction_t FCVTDWU(RiscVFloatingRegister rd, RiscVRegister rs1);
+
+	/* --- RV64D Standard Extension ----------------------------------------------------------------------------------- */
+
+	/*
+	 * signed 64 bit integer <-- double precision float
+	 */
+	utils::riscv_instruction_t FCVTLD(RiscVRegister rd, RiscVFloatingRegister rs1);
+
+	/*
+	 * unsigned 64 bit integer <-- double precision float
+	 */
+	utils::riscv_instruction_t FCVTLUD(RiscVRegister rd, RiscVFloatingRegister rs1);
+
+	// FMVXD probably not needed
+
+	/*
+	 * double precision float <-- signed 64 bit integer
+	 */
+	utils::riscv_instruction_t FCVTDL(RiscVFloatingRegister rd, RiscVRegister rs1);
+
+	/*
+	 * double precision float <-- unsigned 64 bit integer
+	 */
+	utils::riscv_instruction_t FCVTDLU(RiscVFloatingRegister rd, RiscVRegister rs1);
+
+	// FMVDX probably not needed
+
+	/* --- Pseudoinstructions ----------------------------------------------------------------------------------------- */
 
 	/**
 	*/
@@ -413,6 +745,36 @@ namespace encoding {
 	* rd == (rs > 0) ? 1 : 0
 	*/
 	utils::riscv_instruction_t SGTZ(RiscVRegister rd, RiscVRegister rs);
+
+	/**
+	 * rd = rs (single precision)
+	 */
+	utils::riscv_instruction_t FMVS(RiscVFloatingRegister rd, RiscVFloatingRegister rs);
+
+	/**
+	 * rd = abs(rs) (single precision)
+	 */
+	utils::riscv_instruction_t FABSS(RiscVFloatingRegister rd, RiscVFloatingRegister rs);
+
+	/**
+	 * rd = -rs (single precision
+	 */
+	utils::riscv_instruction_t FNEGS(RiscVFloatingRegister rd, RiscVFloatingRegister rs);
+
+	/**
+	 * rd = rs (double precision)
+	 */
+	utils::riscv_instruction_t FMVD(RiscVFloatingRegister rd, RiscVFloatingRegister rs);
+
+	/**
+	 * rd = abs(rs) (double precision)
+	 */
+	utils::riscv_instruction_t FABSD(RiscVFloatingRegister rd, RiscVFloatingRegister rs);
+
+	/**
+	 * rd = -rs (double precision)
+	 */
+	utils::riscv_instruction_t FNEGD(RiscVFloatingRegister rd, RiscVFloatingRegister rs);
 
 	/**
 	* pc += (rs == 0) ? offset : 0

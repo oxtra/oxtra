@@ -37,9 +37,6 @@ add_library(oxtra_libs
 		oxtra/codegen/instructions/logic/or.cpp
 		oxtra/codegen/instructions/logic/not.cpp
 		oxtra/codegen/instructions/logic/xor.cpp
-		oxtra/codegen/instructions/logic/shl.cpp
-		oxtra/codegen/instructions/logic/shr.cpp
-		oxtra/codegen/instructions/logic/sar.cpp
 		oxtra/codegen/instructions/logic/nop.cpp
 		oxtra/codegen/instructions/control-flow/syscall.cpp
 		oxtra/codegen/instructions/control-flow/call.cpp
@@ -67,6 +64,9 @@ add_library(oxtra_libs
 		oxtra/codegen/instructions/string/lods.cpp
 		oxtra/codegen/instructions/string/movs.cpp
 		oxtra/codegen/instructions/memory/cmov/cmov.cpp
+		oxtra/codegen/instructions/logic/bit-test/bittest.cpp
+		oxtra/codegen/instructions/logic/setcc/setcc.cpp
+		oxtra/codegen/instructions/logic/shift.cpp
 )
 
 target_link_libraries(oxtra_libs

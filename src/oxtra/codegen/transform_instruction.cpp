@@ -16,10 +16,10 @@
 #include "oxtra/codegen/instructions/logic/nop.h"
 #include "oxtra/codegen/instructions/logic/not.h"
 #include "oxtra/codegen/instructions/logic/or.h"
-#include "oxtra/codegen/instructions/logic/sar.h"
-#include "oxtra/codegen/instructions/logic/shl.h"
-#include "oxtra/codegen/instructions/logic/shr.h"
+#include "oxtra/codegen/instructions/logic/shift.h"
 #include "oxtra/codegen/instructions/logic/xor.h"
+#include "oxtra/codegen/instructions/logic/bit-test/bittest.h"
+#include "oxtra/codegen/instructions/logic/setcc/setcc.h"
 #include "oxtra/codegen/instructions/memory/cex.h"
 #include "oxtra/codegen/instructions/memory/csep.h"
 #include "oxtra/codegen/instructions/memory/lea.h"
@@ -117,6 +117,39 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 		case InstructionType::CMOVZ:
 			return std::make_unique<Cmovz>(inst);
 
+		case InstructionType::SETA:
+			return std::make_unique<Seta>(inst);
+		case InstructionType::SETBE:
+			return std::make_unique<Setbe>(inst);
+		case InstructionType::SETC:
+			return std::make_unique<Setc>(inst);
+		case InstructionType::SETG:
+			return std::make_unique<Setg>(inst);
+		case InstructionType::SETGE:
+			return std::make_unique<Setge>(inst);
+		case InstructionType::SETL:
+			return std::make_unique<Setl>(inst);
+		case InstructionType::SETLE:
+			return std::make_unique<Setle>(inst);
+		case InstructionType::SETNC:
+			return std::make_unique<Setnc>(inst);
+		case InstructionType::SETNO:
+			return std::make_unique<Setno>(inst);
+		case InstructionType::SETNP:
+			return std::make_unique<Setnp>(inst);
+		case InstructionType::SETNS:
+			return std::make_unique<Setns>(inst);
+		case InstructionType::SETNZ:
+			return std::make_unique<Setnz>(inst);
+		case InstructionType::SETO:
+			return std::make_unique<Seto>(inst);
+		case InstructionType::SETP:
+			return std::make_unique<Setp>(inst);
+		case InstructionType::SETS:
+			return std::make_unique<Sets>(inst);
+		case InstructionType::SETZ:
+			return std::make_unique<Setz>(inst);
+
 		case InstructionType::CMP:
 		case InstructionType::CMP_IMM:
 			return std::make_unique<Cmp>(inst);
@@ -178,16 +211,30 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 			return std::make_unique<Xor>(inst);
 
 		case InstructionType::SHL_CL:
+			return std::make_unique<ShlCl>(inst);
 		case InstructionType::SHL_IMM:
 			return std::make_unique<Shl>(inst);
-
 		case InstructionType::SHR_CL:
+			return std::make_unique<ShrCl>(inst);
 		case InstructionType::SHR_IMM:
 			return std::make_unique<Shr>(inst);
-
 		case InstructionType::SAR_CL:
+			return std::make_unique<SarCl>(inst);
 		case InstructionType::SAR_IMM:
 			return std::make_unique<Sar>(inst);
+
+		case InstructionType::BT:
+		case InstructionType::BT_IMM:
+			return std::make_unique<Bt>(inst);
+		case InstructionType::BTC:
+		case InstructionType::BTC_IMM:
+			return std::make_unique<Btc>(inst);
+		case InstructionType::BTR:
+		case InstructionType::BTR_IMM:
+			return std::make_unique<Btr>(inst);
+		case InstructionType::BTS:
+		case InstructionType::BTS_IMM:
+			return std::make_unique<Bts>(inst);
 
 		case InstructionType::SYSCALL:
 			return std::make_unique<Syscall>(inst);

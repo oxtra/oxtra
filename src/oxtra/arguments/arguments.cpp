@@ -18,7 +18,7 @@ const char* Arguments::get_guest_path() const {
 	return _stored_arguments.guest_path;
 }
 
-std::vector<std::string> Arguments::get_guest_arguments() const {
+const std::vector<std::string>& Arguments::get_guest_arguments() const {
 	return _stored_arguments.guest_arguments;
 }
 

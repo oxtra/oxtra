@@ -1,0 +1,3 @@
+# Testing if the bt, btc, btr and bts instructions work.
+./oxtra -l 2 test/resources/instructions/bt
+>>>= 0

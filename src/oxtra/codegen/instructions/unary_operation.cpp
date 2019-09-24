@@ -14,7 +14,7 @@ void codegen::UnaryOperation::generate(codegen::CodeBatch& batch) const {
 
 	// extract the register for the destination-value
 	auto address = RiscVRegister::zero;
-	auto dest_register = translate_operand(batch, 0, &address, RiscVRegister::t0, RiscVRegister::t1, true, false, false, true);
+	auto dest_register = translate_operand(batch, dest, &address, RiscVRegister::t0, RiscVRegister::t1, true, false, false, true);
 
 	// call the callback to apply the changes
 	execute_operation(batch, dest_register);
