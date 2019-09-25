@@ -291,6 +291,11 @@ void codegen::Instruction::write_to_memory(CodeBatch& batch, const fadec::Operan
 		}
 	}
 
+	// if the displacement is too big to be encoded in 12-bits then it was added to the address before
+	else if (displacement < -0x800 || displacement >= 0x800) {
+		operation_displacement = 0;
+	}
+
 	handle_segment_override(batch, address, address == temp_a ? temp_b : temp_a);
 
 	// generate the memory-access
