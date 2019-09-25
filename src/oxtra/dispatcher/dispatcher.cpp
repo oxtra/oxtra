@@ -95,11 +95,9 @@ void Dispatcher::init_guest_context() {
 	const auto stack_memory = reinterpret_cast<uintptr_t>(mmap(nullptr, stack_size, PROT_READ | PROT_WRITE,
 								   MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
 
+	// page aligned by only using page-aligned values
 	_context.guest.map.rsp = stack_memory + stack_size - min_stack_size;
 	_context.guest.map.rbp = 0; // unspecified
-
-	// guaranteed to be 16-byte aligned, meaning that the lower 4 bits have to be cleared
-	//_context.guest.map.rsp = (_context.guest.map.rsp - min_stack_size) & ~(static_cast<uintptr_t>(0xfu));
 
 	auto rsp = reinterpret_cast<size_t*>(_context.guest.map.rsp);
 
@@ -118,42 +116,15 @@ void Dispatcher::init_guest_context() {
 	// put aux vectors on the stack
 	std::memcpy(rsp, auxvs, auxv_size);
 
-	{
-		const auto guest_auxv = reinterpret_cast<Elf64_auxv_t*>(rsp);
-		for (auto entry = guest_auxv; entry->a_type != AT_NULL; ++entry) {
-			if (entry->a_type == AT_PHDR) {
-				const auto elf_hdr = reinterpret_cast<const Elf64_Ehdr*>(_elf.get_base_vaddr());
-				entry->a_un.a_val = _elf.get_base_vaddr() + elf_hdr->e_phoff;
-			} else if (entry->a_type == AT_ENTRY) {
-				entry->a_un.a_val = _elf.get_entry_point();
-			}
+	const auto guest_auxv = reinterpret_cast<Elf64_auxv_t*>(rsp);
+	for (auto entry = guest_auxv; entry->a_type != AT_NULL; ++entry) {
+		if (entry->a_type == AT_PHDR) {
+			const auto elf_hdr = reinterpret_cast<const Elf64_Ehdr*>(_elf.get_base_vaddr());
+			entry->a_un.a_val = _elf.get_base_vaddr() + elf_hdr->e_phoff;
+		} else if (entry->a_type == AT_ENTRY) {
+			entry->a_un.a_val = _elf.get_entry_point();
 		}
 	}
-
-	/*{
-		rsp = reinterpret_cast<size_t*>(_context.guest.map.rsp);
-		printf("stack: 0x%p\n", rsp);
-
-		const auto argc = *rsp++;
-		printf("argc: %ld\n", argc);
-		for (size_t i = 0; i < argc; ++i) {
-			const auto arg = reinterpret_cast<const char*>(*rsp++);
-			printf("argv[%lx]: %s\n", i, arg);
-		}
-		printf("arg delimiter: %lx\n", *rsp++);
-
-		printf("environment count: %ld\n", env_count);
-		for (size_t i = 0; i < env_count; i++) {
-			printf("environment: %s\n", reinterpret_cast<const char*>(*rsp++));
-		}
-
-		printf("aux count: %ld\n", auxv_count);
-		auto aux_rsp = (Elf64_auxv_t*)(rsp);
-		for (size_t i = 0; i < auxv_count; i++) {
-			printf("auxv[%.2ld]: 0x%lx (type %ld)\n", i, aux_rsp->a_un.a_val, aux_rsp->a_type);
-			aux_rsp++;
-		}
-	}*/
 
 	spdlog::debug("initialized guest stack with {} arguments, {} environment pointers, and {} auxiliary vectors.",
 				  _args.get_guest_arguments().size() + 1, env_count, auxv_count);
