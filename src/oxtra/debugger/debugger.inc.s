@@ -88,11 +88,10 @@ debug_entry:
 
     # set the three arguments
     mv a0, t0	# Debugger
-    mv a1, s11	# ExecutionContext
-    mv a2, t1	# BreakPointEntry
+    mv a1, t1	# BreakPointEntry
 
 	# call the debugging-entry-function
-	jal ra, _ZN8debugger8Debugger5entryEPN10dispatcher16ExecutionContextEm
+	jal ra, _ZN8debugger8Debugger5entryEm
 
 	# restore the context and return to the execution
 	restore_context_debug s11
@@ -148,11 +147,10 @@ debug_entry_riscv:
 
     # set the three arguments
     mv a0, t0	# Debugger
-    mv a1, s11	# ExecutionContext
-    addi a2, zero, 0x600
+    addi a1, zero, 0x600 # entry-type
 
 	# call the debugging-entry-function
-	jal ra, _ZN8debugger8Debugger5entryEPN10dispatcher16ExecutionContextEm
+	jal ra, _ZN8debugger8Debugger5entryEm
 
 	# restore the context and return to the execution
 	restore_context_debug s11

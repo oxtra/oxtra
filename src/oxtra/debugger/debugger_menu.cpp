@@ -2,6 +2,7 @@
 #include <spdlog/spdlog.h>
 #include <string>
 #include <iostream>
+#include <csignal>
 
 #include "oxtra/dispatcher/dispatcher.h"
 
@@ -36,7 +37,7 @@ bool debugger::Debugger::parse_argument(std::string& str, uint8_t& state, uintpt
 	return true;
 }
 
-std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatcher::ExecutionContext* context) {
+std::string debugger::Debugger::parse_input(utils::guest_addr_t address) {
 	// await input
 	std::cout << "debug>";
 	std::string input;
@@ -90,10 +91,11 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 					   "hex        hx                      Set the register print-type to hexadecimal.\n"
 					   "logging    log                     Set the current logging-level (same as argument).\n"
 					   "quit       q                       Disable the debugger and continue normal execution.\n"
-					   "read       rd                      Read from memory.\n"
+					   "read       rd                      Read from memory. (Won't protect from segmentation-faults!)\n"
 					   "remove     rbp                     Remove one break-point.\n"
 					   "registers  reg                     List all of the registers with the current configuration.\n"
 					   "run        r                       Continue execution until given instruction has been reached.\n"
+					   "signal     sig                     Attach signal-catcher for SIGILL & SIGSEGV.\n"
 					   "stack      stk                     Print the stack.\n"
 					   "start      sob                     Continue execution until start-of-block or break-point.\n"
 					   "step       s                       Step by one x86-instruction.";
@@ -137,7 +139,8 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 						   "enable stack                  Enable auto-print of stack.\n"
 						   "enable blocks                 Enable auto-print of blocks.";
 				case DebugInputKey::read:
-					return "read address                  Read one quad-word from the address.\n"
+					return "Warning: the debugger won't protect from Segmentation-faults.\n"
+						   "read address                  Read one quad-word from the address.\n"
 						   "read address count            Read count-quad-words from the address.";
 				case DebugInputKey::run:
 					return "run address                   Continue execution until address.\n"
@@ -149,6 +152,10 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 						   "registers x86 hex             Print x86-registers in hexadecimal.\n"
 						   "registers riscv dec           Print riscv-registers in decimal.\n"
 						   "registers x86 dec             Print x86-registers in decimal.";
+				case DebugInputKey::signal:
+					return "Attach a signal-handler for SIGILL and SIGSEGV. This will overwrite registered\n"
+						   "signal-handlers, but can as well be overwritten. It will log useful information\n"
+						   "but will slow the entire execution down.";
 				case DebugInputKey::stack:
 					return "stack limit                   Print the stack with given limit.\n"
 						   "stack limit address           Print the stack with given limit and at given address.\n"
@@ -163,9 +170,9 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 			if (arg_state[0] == arg_state_number) {
 				if (arg_number[0] < 3 || arg_number[0] > 96)
 					return "assembly-limit out of range [3;96]!";
-				return print_assembly(address, context->guest.ra, _current, arg_number[0]);
+				return print_assembly(address, _context->guest.ra, _current, arg_number[0]);
 			}
-			return print_assembly(address, context->guest.ra, _current, _inst_limit);
+			return print_assembly(address, _context->guest.ra, _current, _inst_limit);
 		case DebugInputKey::blocks:
 			if (arg_state[0] == arg_state_number) {
 				if (arg_number[0] >= _blocks.size())
@@ -319,7 +326,7 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 			dispatcher::Dispatcher::fault_exit("the debugger exited via a fault.");
 			break;
 		case DebugInputKey::flags:
-			return print_flags(context);
+			return print_flags();
 		case DebugInputKey::hexadecimal:
 			_state &= ~DebugState::reg_dec;
 			return "set register-printing to hex!";
@@ -353,13 +360,9 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 			}
 			return "logging-level set!";
 		case DebugInputKey::quit:
-			context->debugger = nullptr;
+			_context->debugger = nullptr;
 			return "";
 		case DebugInputKey::read:
-			if ((_state & DebugState::read_warning) == 0) {
-				_state |= DebugState::read_warning;
-				return "Warning: the debugger won't protect from Segmentation-faults.";
-			}
 			if (arg_state[0] != arg_state_number)
 				return "invalid address!";
 			if (arg_state[1] == arg_state_number) {
@@ -395,7 +398,7 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 				else if (arg_key[0] == DebugInputKey::x86)
 					riscv = false;
 				else
-					return print_reg(context, hex, riscv);
+					return print_reg(hex, riscv);
 
 				// check if a second attribte exists
 				if (arg_state[1] == arg_state_key) {
@@ -408,9 +411,9 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 					else if (arg_key[1] == DebugInputKey::x86)
 						riscv = false;
 				}
-				return print_reg(context, hex, riscv);
+				return print_reg(hex, riscv);
 			}
-			return print_reg(context, (_state & DebugState::reg_dec) == 0, _state & DebugState::reg_riscv);
+			return print_reg((_state & DebugState::reg_dec) == 0, _state & DebugState::reg_riscv);
 		case DebugInputKey::run:
 			if (arg_state[0] == arg_state_neg_rel || arg_state[0] == arg_state_pos_rel ||
 				arg_state[0] == arg_state_number) {
@@ -423,6 +426,30 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 				_state |= DebugState::temp_break;
 			}
 			return "";
+		case DebugInputKey::signal:
+			if (_state & DebugState::search_signal)
+				return "signal-handler already attached!";
+			else {
+				std::string str = "";
+				_state |= DebugState::search_signal;
+				_signal_address = _context->guest.ra;
+				for (size_t i = 0; i < 31; i++)
+					_signal_registers[i] = _context->guest.reg[i];
+				struct sigaction action;
+				memset(&action, 0, sizeof(action));
+				action.sa_handler = Debugger::signal_handler;
+				if (sigaction(SIGSEGV, &action, nullptr) < 0)
+					str.append("failed to register SIGSEGV-handler of the debugger!");
+				if (sigaction(SIGILL, &action, nullptr) < 0) {
+					if (!str.empty())
+						str.push_back('\n');
+					str.append("failed to register SIGILL-handler of the debugger!");
+				}
+				if (!str.empty())
+					str.push_back('\n');
+				str.append("signal-handler attachted!");
+				return str;
+			}
 		case DebugInputKey::stack:
 			if (arg_state[0] == arg_state_number) {
 				if (arg_number[0] < 2 || arg_number[0] > 128)
@@ -430,14 +457,14 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 				if (arg_state[1] == arg_state_number || arg_state[1] == arg_state_pos_rel ||
 					arg_state[1] == arg_state_neg_rel) {
 					if (arg_state[1] == arg_state_pos_rel)
-						arg_number[1] = context->guest.map.rsp + arg_number[1];
+						arg_number[1] = _context->guest.map.rsp + arg_number[1];
 					else if (arg_state[1] == arg_state_neg_rel)
-						arg_number[1] = context->guest.map.rsp - arg_number[1];
-					return print_stack(arg_number[1], context, arg_number[0]);
+						arg_number[1] = _context->guest.map.rsp - arg_number[1];
+					return print_stack(arg_number[1], arg_number[0]);
 				}
-				return print_stack(context->guest.map.rsp, context, arg_number[0]);
+				return print_stack(_context->guest.map.rsp, arg_number[0]);
 			}
-			return print_stack(context->guest.map.rsp, context, _stack_limit);
+			return print_stack(_context->guest.map.rsp, _stack_limit);
 		case DebugInputKey::startofblock:
 			_state |= DebugState::await_sob;
 			return "";
@@ -566,7 +593,9 @@ debugger::Debugger::DebugInputKey debugger::Debugger::parse_key(std::string key)
 				return DebugInputKey::read;
 			break;
 		case 's':
-			if (key == "step" || key == "s")
+			if (key == "signal" || key == "sig")
+				return DebugInputKey::signal;
+			else if (key == "step" || key == "s")
 				return DebugInputKey::step;
 			else if (key == "start" || key == "sob")
 				return DebugInputKey::startofblock;

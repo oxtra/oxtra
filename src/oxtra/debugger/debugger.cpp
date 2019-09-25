@@ -51,7 +51,8 @@ size_t debugger::DebuggerBatch::offset(size_t start, size_t end) {
 
 debugger::Debugger* debugger::Debugger::active_debugger = nullptr;
 
-debugger::Debugger::Debugger(const elf::Elf& elf, bool riscv_enabled, uintptr_t stack_low, uintptr_t stack_size) : _elf{elf} {
+debugger::Debugger::Debugger(const elf::Elf& elf, dispatcher::ExecutionContext* context, bool riscv_enabled,
+							 uintptr_t stack_low, uintptr_t stack_size) : _elf{elf} {
 	// initialize the attributes
 	_halt = true;
 	_bp_count = 0;
@@ -65,19 +66,11 @@ debugger::Debugger::Debugger(const elf::Elf& elf, bool riscv_enabled, uintptr_t 
 	_riscv_enabled = riscv_enabled;
 	_stack_low = stack_low;
 	_stack_high = stack_low + stack_size;
-	_signal_address = 1;
+	_context = context;
+	_signal_address = 0;
 
 	// mark this as the active debugger
 	active_debugger = this;
-
-	// register the signal-handler
-	struct sigaction action;
-	memset(&action, 0, sizeof(action));
-	action.sa_handler = Debugger::signal_handler;
-	if (sigaction(SIGSEGV, &action, nullptr) < 0)
-		std::cout << "failed to register SIGSEGV-handler of the debugger!" << std::endl;
-	if (sigaction(SIGILL, &action, nullptr) < 0)
-		std::cout << "failed to register SIGILL-handler of the debugger!" << std::endl;
 }
 
 debugger::Debugger::~Debugger() {
@@ -147,32 +140,62 @@ void debugger::Debugger::end_block(codegen::CodeBatch& batch, codegen::codestore
 }
 
 void debugger::Debugger::signal_handler(int signum) {
-	for (size_t i = 0; i < 31; i++) {
-		std::cout << "reg[" << std::dec << i << "]: 0x" << std::hex
-				  << active_debugger->_signal_registers[i] << std::endl;
-	}
-
-	// print the assembly
+	// resolve the block
 	utils::guest_addr_t guest_addr = active_debugger->resolve_block(active_debugger->_signal_address);
 	if (guest_addr == 0)
-		std::cout << "signal raised outside of guest-code!" << std::endl;
-	else
-		std::cout << active_debugger->print_assembly(guest_addr, active_debugger->_signal_address, active_debugger->_current,
-													 active_debugger->_current->entry->instruction_count) << std::endl;
-	std::cout << active_debugger->print_blocks() << std::endl;
+		std::cout << "signal raised outside of known guest-code!\n" << std::endl;
+	else {
+		// update the context
+		for (size_t i = 0; i < 31; i++)
+			active_debugger->_context->guest.reg[i] = active_debugger->_signal_registers[i];
 
+		// print the blocks
+		std::cout << active_debugger->print_blocks() << '\n';
+
+		// print the stack
+		std::cout << active_debugger->print_stack(active_debugger->_context->guest.map.rsp, active_debugger->_stack_limit)
+				  << '\n';
+
+		// print the flags
+		std::cout << active_debugger->print_flags() << '\n';
+
+		// print the registers
+		std::cout << "x86 " << active_debugger->print_reg(true, false) << '\n';
+		std::cout << "riscv " << active_debugger->print_reg(true, true) << '\n';
+
+		// print the assembly
+		std::cout << active_debugger->print_assembly(guest_addr, active_debugger->_signal_address,
+													 active_debugger->_current, active_debugger->_inst_limit) << '\n';
+	}
+
+	// print some default information
 	if (signum == SIGSEGV)
-		std::cout << "Sefault!" << std::endl;
+		std::cout << "Error: Segmentation-fault!" << std::endl;
 	else if (signum == SIGILL)
-		std::cout << "illegal!" << std::endl;
-	std::cout << "sig-addr: 0x" << std::hex << active_debugger->_signal_address << std::endl;
-	std::cout << "guest   : 0x" << std::hex << guest_addr << std::endl;
+		std::cout << "Error: Illegal-instruction!" << std::endl;
+	std::cout << "  host-address : " << print_number(active_debugger->_signal_address, true) << '\n';
+	if (guest_addr != 0) {
+		std::cout << "  guest-address: " << print_number(guest_addr, true) << '\n';
+		std::cout << "  block-index  : " << print_number(active_debugger->_current_index, false, 3, '0') << '\n';
+		std::cout << "  block-guest  : [" << print_number(active_debugger->_current->entry->x86_start, true);
+		std::cout << " - " << print_number(active_debugger->_current->entry->x86_end, true) << "]\n";
+		std::cout << "  block-host   : [" << print_number(active_debugger->_current->entry->riscv_start, true);
+		std::cout << " - " << print_number(active_debugger->_current->riscv_end, true) << "]\n";
+	} else {
+		std::cout << "  guest-address: unknown!\n";
+		std::cout << "  block-index  : unknown!\n";
+		std::cout << "  block-guest  : [unknown - unknown]\n";
+		std::cout << "  block-host   : [unknown - unknown]\n";
+	}
+	std::cout << std::endl;
+
+	// fault-exit
 	dispatcher::Dispatcher::fault_exit("guest segmentation-faulted!");
 }
 
-void debugger::Debugger::entry(dispatcher::ExecutionContext* context, uintptr_t break_point) {
+void debugger::Debugger::entry(uintptr_t break_point) {
 	// check if the debugger should be entered
-	utils::guest_addr_t address = enter_break(break_point, context->guest.ra);
+	utils::guest_addr_t address = enter_break(break_point, _context->guest.ra);
 	if (address == 0)
 		return;
 
@@ -183,10 +206,12 @@ void debugger::Debugger::entry(dispatcher::ExecutionContext* context, uintptr_t 
 		std::stringstream out;
 		out << '\n' << std::string(100, '-') << '\n';
 		out << "guest-address: " << print_number(address, true) << '\n';
-		out << "host-address : " << print_number(context->guest.ra, true) << '\n';
-		out << "block        : " << print_number(_current_index, false, 3, '0') << " ["
-			<< print_number(_current->entry->x86_start, true);
-		out << " - " << print_number(_current->entry->x86_end, true) << "]\n\n";
+		out << "host-address : " << print_number(_context->guest.ra, true) << '\n';
+		out << "block-index  : " << print_number(_current_index, false, 3, '0') << '\n';
+		out << "block-guest  : [" << print_number(_current->entry->x86_start, true);
+		out << " - " << print_number(_current->entry->x86_end, true) << "]\n";
+		out << "block-host   : [" << print_number(_current->entry->riscv_start, true);
+		out << " - " << print_number(_current->riscv_end, true) << "]\n\n";
 
 		// print the break-points
 		if (_state & DebugState::print_bp)
@@ -198,19 +223,19 @@ void debugger::Debugger::entry(dispatcher::ExecutionContext* context, uintptr_t 
 
 		// print the stack
 		if (_state & DebugState::print_stack)
-			out << print_stack(context->guest.map.rsp, context, _stack_limit) << '\n';
+			out << print_stack(_context->guest.map.rsp, _stack_limit) << '\n';
 
 		// print the flags
 		if (_state & DebugState::print_flags)
-			out << print_flags(context) << '\n';
+			out << print_flags() << '\n';
 
 		// print the registers
 		if (_state & DebugState::print_reg)
-			out << print_reg(context, (_state & DebugState::reg_dec) == 0, _state & DebugState::reg_riscv) << '\n';
+			out << print_reg((_state & DebugState::reg_dec) == 0, _state & DebugState::reg_riscv) << '\n';
 
 		// print the assembly
 		if (_state & DebugState::print_asm)
-			out << print_assembly(address, context->guest.ra, _current, _inst_limit) << '\n';
+			out << print_assembly(address, _context->guest.ra, _current, _inst_limit) << '\n';
 
 		// check if the menu has to be printed
 		if (menu_string.empty()) {
@@ -222,7 +247,7 @@ void debugger::Debugger::entry(dispatcher::ExecutionContext* context, uintptr_t 
 					out << "break-point hit! (index: " << std::dec << break_point << ")\n";
 			}
 			if (_step_riscv) {
-				if(_state & DebugState::await_counter)
+				if (_state & DebugState::await_counter)
 					out << "riscv-counter elapsed!\n";
 				else
 					out << "stepped by one riscv-instruction!\n";
@@ -256,7 +281,7 @@ void debugger::Debugger::entry(dispatcher::ExecutionContext* context, uintptr_t 
 		std::cout << out.str() << std::endl;
 
 		// handle input
-		menu_string = parse_input(address, context);
+		menu_string = parse_input(address);
 	} while (!menu_string.empty());
 
 	// print the closing line
@@ -281,7 +306,7 @@ utils::guest_addr_t debugger::Debugger::enter_break(uintptr_t break_point, utils
 
 	// check if a break-point has been hit or if this is the init-break
 	if (break_point != halt_break || (_state & DebugState::init) == 0) {
-		if(!_step_riscv || (_state & DebugState::await_counter) == 0)
+		if (!_step_riscv || (_state & DebugState::await_counter) == 0)
 			return resolve_block(address);
 	}
 
