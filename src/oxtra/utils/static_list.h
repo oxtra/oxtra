@@ -59,7 +59,7 @@ namespace utils {
 				actual_start = reallocate(start, store_count);
 				_buffer = actual_start + store_count;
 
-				_size_left = _max_elements - store_count;
+				_size_left = _max_elements;
 			}
 
 			std::copy(elements, elements + num_elements, _buffer);

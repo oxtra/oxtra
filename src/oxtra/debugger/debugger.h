@@ -97,6 +97,7 @@ namespace debugger {
 		uint8_t _halt;
 		uint8_t _step_riscv;
 		uintptr_t _signal_address;
+		uintptr_t _signal_registers[31];
 		uintptr_t _bp_array[256]{};
 
 		// The instructions beneath may be moved around without updating the assembly_globals-file.
@@ -127,7 +128,7 @@ namespace debugger {
 		static void end_block(codegen::CodeBatch& batch, codegen::codestore::BlockEntry* block);
 
 	private:
-		static void signal_handler(int signum, siginfo_t* info, void* ptr);
+		static void signal_handler(int signum);
 
 		static uintptr_t evaluate_overflow(dispatcher::ExecutionContext* context, dispatcher::ExecutionContext::Context* temp);
 

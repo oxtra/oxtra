@@ -65,7 +65,7 @@ debugger::Debugger::Debugger(const elf::Elf& elf, bool riscv_enabled, uintptr_t 
 	_riscv_enabled = riscv_enabled;
 	_stack_low = stack_low;
 	_stack_high = stack_low + stack_size;
-	_signal_address = 0;
+	_signal_address = 1;
 
 	// mark this as the active debugger
 	active_debugger = this;
@@ -73,8 +73,7 @@ debugger::Debugger::Debugger(const elf::Elf& elf, bool riscv_enabled, uintptr_t 
 	// register the signal-handler
 	struct sigaction action;
 	memset(&action, 0, sizeof(action));
-	action.sa_flags = SA_SIGINFO;
-	action.sa_sigaction = Debugger::signal_handler;
+	action.sa_handler = Debugger::signal_handler;
 	if (sigaction(SIGSEGV, &action, nullptr) < 0)
 		std::cout << "failed to register SIGSEGV-handler of the debugger!" << std::endl;
 	if (sigaction(SIGILL, &action, nullptr) < 0)
@@ -147,12 +146,10 @@ void debugger::Debugger::end_block(codegen::CodeBatch& batch, codegen::codestore
 	active_debugger->update_break_points(active_debugger->_blocks[insert_index]);
 }
 
-void debugger::Debugger::signal_handler(int signum, siginfo_t* info, void* ptr) {
-	unused_parameter(info);
-
-	for (size_t i = 0; i < 32; i++) {
+void debugger::Debugger::signal_handler(int signum) {
+	for (size_t i = 0; i < 31; i++) {
 		std::cout << "reg[" << std::dec << i << "]: 0x" << std::hex
-				  << reinterpret_cast<ucontext_t*>(ptr)->uc_mcontext.__gregs[i] << std::endl;
+				  << active_debugger->_signal_registers[i] << std::endl;
 	}
 
 	// print the assembly
@@ -224,14 +221,18 @@ void debugger::Debugger::entry(dispatcher::ExecutionContext* context, uintptr_t 
 				else
 					out << "break-point hit! (index: " << std::dec << break_point << ")\n";
 			}
-			if (break_point == halt_riscv || _step_riscv)
-				out << "stepped by one riscv-instruction!\n";
+			if (_step_riscv) {
+				if(_state & DebugState::await_counter)
+					out << "riscv-counter elapsed!\n";
+				else
+					out << "stepped by one riscv-instruction!\n";
+			}
 			if ((_state & DebugState::init) == 0) {
 				out << "initial halt! Type \"help\" for a help-menu.\n";
 				_state |= DebugState::init;
 			}
-			if (_run_break == 0 && (_state & DebugState::await_counter))
-				out << "run-counter ellapsed.\n";
+			if (_run_break == 0 && (_state & DebugState::await_counter) && !_step_riscv)
+				out << "run-counter elapsed.\n";
 			if ((_state & DebugState::await_step) && !_step_riscv)
 				out << "stepped by one instruction!\n";
 			if (address == _current->entry->x86_start && (_state & DebugState::await_sob))
@@ -275,12 +276,14 @@ utils::guest_addr_t debugger::Debugger::enter_break(uintptr_t break_point, utils
 	}
 
 	// check for a stepper
-	if (_state & DebugState::await_step)
+	if ((_state & DebugState::await_step) || (_step_riscv && (_state & DebugState::await_counter) == 0))
 		return resolve_block(address);
 
-	// check if a break-point has been hit or if this is the init-break or if riscv has been stepped (implicitly tested)
-	if (break_point != halt_break || (_state & DebugState::init) == 0)
-		return resolve_block(address);
+	// check if a break-point has been hit or if this is the init-break
+	if (break_point != halt_break || (_state & DebugState::init) == 0) {
+		if(!_step_riscv || (_state & DebugState::await_counter) == 0)
+			return resolve_block(address);
+	}
 
 	// check if a basic block has been reached
 	if ((_state & DebugState::await_eob) || (_state & DebugState::await_sob)) {

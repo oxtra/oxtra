@@ -120,6 +120,8 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 						   "config x86/x                  Set the registers to x86.";
 				case DebugInputKey::continue_run:
 					return "continue count                Continue execution for count-instructions.";
+				case DebugInputKey::crawl:
+					return "crawl count                   Continue execution for count riscv-instructions.";
 				case DebugInputKey::disable:
 					return "disable assembly              Disable auto-print of assembly.\n"
 						   "disable break                 Disable auto-print of breakpoints.\n"
@@ -213,7 +215,7 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 					else
 						address = block->entry->x86_end - block->entry->offsets[block->entry->instruction_count - 1].x86;
 				}
-				if(!insert_break_point(address, true))
+				if (!insert_break_point(address, true))
 					return "break-point already set!";
 				return "break-point set!";
 			}
@@ -253,7 +255,10 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address, dispatc
 			if (!_riscv_enabled)
 				return "riscv-stepping is disabled!";
 			_step_riscv = true;
-			_state |= DebugState::await_step;
+			if (arg_state[0] == arg_state_number) {
+				_state |= DebugState::await_counter;
+				_run_break = arg_number[0];
+			}
 			return "";
 		case DebugInputKey::decimal:
 			_state |= DebugState::reg_dec;
