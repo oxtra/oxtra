@@ -80,7 +80,7 @@ namespace dispatcher::syscalls {
 		SYS_mmap,
 		SYS_mprotect,
 		SYS_munmap,
-		-1, //SYS_brk,
+		SYS_brk,
 		sigaction, //SYS_rt_sigaction,
 		sigprocmask, //SYS_rt_sigprocmask,
 		-1, //SYS_rt_sigreturn,
