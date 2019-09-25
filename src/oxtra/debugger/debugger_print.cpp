@@ -52,7 +52,7 @@ std::string debugger::Debugger::print_number(uint64_t nbr, bool hex, uint8_t dec
 	return str;
 }
 
-std::string debugger::Debugger::print_reg(dispatcher::ExecutionContext* context, bool hex, bool riscv) {
+std::string debugger::Debugger::print_reg(bool hex, bool riscv) {
 	static constexpr const char* riscv_map[] = {
 			" ra", " sp", " gp", " tp", " t0", " t1", " t2", " s0", " s1",
 			" a0", " a1", " a2", " a3", " a4", " a5", " a6", " a7", " s2",
@@ -63,11 +63,17 @@ std::string debugger::Debugger::print_reg(dispatcher::ExecutionContext* context,
 	// check if riscv or x86 is supposed to be printed
 	std::string out_string = "registers:\n";
 	if (riscv) {
-		for (size_t i = 0; i < 31; i++) {
-			// build the string
-			std::string temp_string = riscv_map[i];
-			temp_string.push_back('=');
-			temp_string.append(print_number(context->guest.reg[i], hex));
+		for (int i = 0; i < 32; i++) {
+			// check if its the zero-entry
+			std::string temp_string;
+			if (i == 0)
+				temp_string = " zero-register";
+			else {
+				// build the string
+				temp_string = riscv_map[i - 1];
+				temp_string.push_back('=');
+				temp_string.append(print_number(_context->guest.reg[i - 1], hex));
+			}
 
 			// adjust the string and append the string to the output
 			if (temp_string.size() < 25)
@@ -85,53 +91,53 @@ std::string debugger::Debugger::print_reg(dispatcher::ExecutionContext* context,
 		std::string temp_string;
 		switch (i) {
 			case 0:
-				temp_string = "rax=" + print_number(context->guest.map.rax, hex);
+				temp_string = "rax=" + print_number(_context->guest.map.rax, hex);
 				break;
 			case 1:
-				temp_string = "rcx=" + print_number(context->guest.map.rcx, hex);
+				temp_string = "rcx=" + print_number(_context->guest.map.rcx, hex);
 				break;
 			case 2:
-				temp_string = "rdx=" + print_number(context->guest.map.rdx, hex);
+				temp_string = "rdx=" + print_number(_context->guest.map.rdx, hex);
 				break;
 			case 3:
-				temp_string = "rbx=" + print_number(context->guest.map.rbx, hex);
+				temp_string = "rbx=" + print_number(_context->guest.map.rbx, hex);
 				break;
 			case 4:
-				temp_string = "rsp=" + print_number(context->guest.map.rsp, hex);
+				temp_string = "rsp=" + print_number(_context->guest.map.rsp, hex);
 				break;
 			case 5:
-				temp_string = "rbp=" + print_number(context->guest.map.rbp, hex);
+				temp_string = "rbp=" + print_number(_context->guest.map.rbp, hex);
 				break;
 			case 6:
-				temp_string = "rsi=" + print_number(context->guest.map.rsi, hex);
+				temp_string = "rsi=" + print_number(_context->guest.map.rsi, hex);
 				break;
 			case 7:
-				temp_string = "rdi=" + print_number(context->guest.map.rdi, hex);
+				temp_string = "rdi=" + print_number(_context->guest.map.rdi, hex);
 				break;
 			case 8:
-				temp_string = "r08=" + print_number(context->guest.map.r8, hex);
+				temp_string = "r08=" + print_number(_context->guest.map.r8, hex);
 				break;
 			case 9:
-				temp_string = "r09=" + print_number(context->guest.map.r9, hex);
+				temp_string = "r09=" + print_number(_context->guest.map.r9, hex);
 				break;
 			case 10:
-				temp_string = "r10=" + print_number(context->guest.map.r10, hex);
+				temp_string = "r10=" + print_number(_context->guest.map.r10, hex);
 				break;
 			case 11:
-				temp_string = "r11=" + print_number(context->guest.map.r11, hex);
+				temp_string = "r11=" + print_number(_context->guest.map.r11, hex);
 				break;
 			case 12:
-				temp_string = "r12=" + print_number(context->guest.map.r12, hex);
+				temp_string = "r12=" + print_number(_context->guest.map.r12, hex);
 				break;
 			case 13:
-				temp_string = "r13=" + print_number(context->guest.map.r13, hex);
+				temp_string = "r13=" + print_number(_context->guest.map.r13, hex);
 				break;
 			case 14:
-				temp_string = "r14=" + print_number(context->guest.map.r14, hex);
+				temp_string = "r14=" + print_number(_context->guest.map.r14, hex);
 				break;
 			case 15:
 			default:
-				temp_string = "r15=" + print_number(context->guest.map.r15, hex);
+				temp_string = "r15=" + print_number(_context->guest.map.r15, hex);
 				break;
 		}
 
@@ -232,7 +238,7 @@ std::string debugger::Debugger::print_assembly(utils::guest_addr_t guest, utils:
 				line_buffer = "   ";
 
 			// add break-points
-			for (size_t j = 0; j < _bp_count; j++) {
+			for (size_t j = 0; j < static_cast<size_t>(_bp_count - ((_state & DebugState::temp_break) ? 1 : 0)); j++) {
 				if (_bp_x86_array[j] >= guest_src &&
 					_bp_x86_array[j] < guest_src + entry->entry->offsets[guest_index + i].x86) {
 					line_buffer.push_back('*');
@@ -294,70 +300,62 @@ std::string debugger::Debugger::print_assembly(utils::guest_addr_t guest, utils:
 	return out_str;
 }
 
-std::string debugger::Debugger::print_flags(dispatcher::ExecutionContext* context) {
+std::string debugger::Debugger::print_flags() {
 	// build the string
-	std::string out_str = "flags:\n";
+	std::string out_str = "flags:\n  [ ";
+	std::string end_str = "";
 
 	// append the zero-flag
-	std::string temp_str((context->flag_info.zero_value == 0) ? " ZF: 1" : " ZF: 0");
-	temp_str.insert(temp_str.size(), 15 - temp_str.size(), ' ');
-	out_str.append(temp_str);
+	if (_context->flag_info.zero_value == 0)
+		out_str.append("ZF ");
 
 	// append the sign-flag
-	temp_str = " SF: ";
-	if ((context->flag_info.sign_value >> context->flag_info.sign_size) == 1)
-		temp_str.push_back('1');
-	else
-		temp_str.push_back('0');
-	temp_str.insert(temp_str.size(), 15 - temp_str.size(), ' ');
-	out_str.append(temp_str);
+	if ((_context->flag_info.sign_value >> _context->flag_info.sign_size) == 1)
+		out_str.append("SF ");
 
 	// append the parity-flag
-	temp_str = " PF: ";
-	uint8_t temp = (context->flag_info.parity_value & 0x0fu) ^(context->flag_info.parity_value >> 4u);
+	uint8_t temp = (_context->flag_info.parity_value & 0x0fu) ^(_context->flag_info.parity_value >> 4u);
 	temp = (temp & 0x03u) ^ (temp >> 2u);
 	temp = (temp & 0x01u) ^ (temp >> 1u);
-	temp_str.append((temp == 0) ? "1" : "0");
-	temp_str.insert(temp_str.size(), 15 - temp_str.size(), ' ');
-	out_str.append(temp_str);
+	if (temp == 0)
+		out_str.append("PF ");
 
 	// append the carry-flag
-	temp_str = " CF: ";
-	if (context->flag_info.carry_operation == static_cast<uint16_t>(codegen::jump_table::Entry::unsupported_carry) * 4) {
-		temp_str.append("inv:");
-		temp_str.append(reinterpret_cast<const char*>(context->flag_info.carry_pointer));
-	} else if (context->flag_info.carry_operation == static_cast<uint16_t>(codegen::jump_table::Entry::high_level_carry) * 4)
-		temp_str.push_back(
-				'0' + reinterpret_cast<codegen::Instruction::c_callback_t>(context->flag_info.carry_pointer)(context));
-	else {
-		dispatcher::ExecutionContext::Context temp_context;
-		temp_str.push_back('0' + evaluate_carry(context, &temp_context));
+	if (_context->flag_info.carry_operation == static_cast<uint16_t>(codegen::jump_table::Entry::unsupported_carry) * 4) {
+		end_str.append("CF: ").append(reinterpret_cast<const char*>(_context->flag_info.carry_pointer));
+	} else if (_context->flag_info.carry_operation == static_cast<uint16_t>(codegen::jump_table::Entry::high_level_carry) * 4) {
+		if (reinterpret_cast<codegen::Instruction::c_callback_t>(_context->flag_info.carry_pointer)(_context) != 0)
+			out_str.append("CF ");
+		else {
+			dispatcher::ExecutionContext::Context temp_context;
+			if (evaluate_carry(_context, &temp_context) != 0)
+				out_str.append("CF ");
+		}
 	}
-	temp_str.insert(temp_str.size(), 15 - temp_str.size(), ' ');
-	out_str.append(temp_str);
 
 	// append the overflow-flag
-	temp_str = " OF: ";
-	if (context->flag_info.overflow_operation == static_cast<uint16_t>(codegen::jump_table::Entry::unsupported_overflow) * 4) {
-		temp_str.append("inv:");
-		temp_str.append(reinterpret_cast<const char*>(context->flag_info.overflow_pointer));
-	} else if (context->flag_info.carry_operation == static_cast<uint16_t>(codegen::jump_table::Entry::high_level_overflow) * 4)
-		temp_str.push_back(
-				'0' + reinterpret_cast<codegen::Instruction::c_callback_t>(context->flag_info.overflow_pointer)(context));
-	else {
-		dispatcher::ExecutionContext::Context temp_context;
-		temp_str.push_back('0' + evaluate_overflow(context, &temp_context));
+	if (_context->flag_info.overflow_operation == static_cast<uint16_t>(codegen::jump_table::Entry::unsupported_overflow) * 4) {
+		if (!end_str.empty())
+			end_str.append("; ");
+		end_str.append("OF: ").append(reinterpret_cast<const char*>(_context->flag_info.overflow_pointer));
+	} else if (_context->flag_info.carry_operation ==
+			   static_cast<uint16_t>(codegen::jump_table::Entry::high_level_overflow) * 4) {
+		if (reinterpret_cast<codegen::Instruction::c_callback_t>(_context->flag_info.overflow_pointer)(_context) != 0)
+			out_str.append("OF ");
+		else {
+			dispatcher::ExecutionContext::Context temp_context;
+			if (evaluate_overflow(_context, &temp_context) != 0)
+				out_str.append("OF ");
+		}
 	}
-	temp_str.insert(temp_str.size(), 15 - temp_str.size(), ' ');
-	out_str.append(temp_str);
-	out_str.push_back('\n');
+	out_str.append("] ").append(end_str).push_back('\n');
 	return out_str;
 }
 
 std::string debugger::Debugger::print_break_points() {
 	// iterate through the break-points and print them
 	std::string out_string = "break-points:\n";
-	for (size_t i = 0; i < _bp_count; i++) {
+	for (size_t i = 0; i < static_cast<size_t>(_bp_count - ((_state & DebugState::temp_break) ? 1 : 0)); i++) {
 		// build the string
 		std::string temp_string = print_number(i, false);
 		while (temp_string.size() < 3)
@@ -377,7 +375,7 @@ std::string debugger::Debugger::print_break_points() {
 	return out_string;
 }
 
-std::string debugger::Debugger::print_stack(uintptr_t address, dispatcher::ExecutionContext* context, uint16_t limit) {
+std::string debugger::Debugger::print_stack(uintptr_t address, uint16_t limit) {
 	std::string out_str = "stack:\n";
 
 	// clip the address
@@ -406,28 +404,28 @@ std::string debugger::Debugger::print_stack(uintptr_t address, dispatcher::Execu
 
 		// add the offset to rsp
 		std::string temp_str = "[";
-		if (address == context->guest.map.rsp)
+		if (address == _context->guest.map.rsp)
 			temp_str.append("rsp");
-		else if (address > context->guest.map.rsp) {
+		else if (address > _context->guest.map.rsp) {
 			temp_str.append("rsp+");
-			temp_str.append(print_number(address - context->guest.map.rsp, false));
+			temp_str.append(print_number(address - _context->guest.map.rsp, false));
 		} else {
 			temp_str.append("rsp-");
-			temp_str.append(print_number(context->guest.map.rsp - address, false));
+			temp_str.append(print_number(_context->guest.map.rsp - address, false));
 		}
 		temp_str.push_back(']');
 		if (temp_str.size() < 12)
 			temp_str.insert(temp_str.size(), 12 - temp_str.size(), ' ');
 
 		// add the offset to tbp
-		if (address == context->guest.map.rbp)
+		if (address == _context->guest.map.rbp)
 			temp_str.append("[rbp");
-		else if (address > context->guest.map.rbp) {
+		else if (address > _context->guest.map.rbp) {
 			temp_str.append("[rbp+");
-			temp_str.append(print_number(address - context->guest.map.rbp, false));
+			temp_str.append(print_number(address - _context->guest.map.rbp, false));
 		} else {
 			temp_str.append("[rbp-");
-			temp_str.append(print_number(context->guest.map.rbp - address, false));
+			temp_str.append(print_number(_context->guest.map.rbp - address, false));
 		}
 		temp_str.push_back(']');
 		out_str.append(temp_str);
@@ -446,7 +444,7 @@ std::string debugger::Debugger::print_blocks() {
 	for (size_t i = 0; i < _blocks.size(); i++) {
 		// check if a break-point lies within the block
 		bool contains_bp = false;
-		for (size_t j = 0; j < _bp_count; j++) {
+		for (size_t j = 0; j < static_cast<size_t>(_bp_count - ((_state & DebugState::temp_break) ? 1 : 0)); j++) {
 			if (_bp_x86_array[j] >= _blocks[i].entry->x86_start && _bp_x86_array[j] < _blocks[i].entry->x86_end) {
 				contains_bp = true;
 				break;

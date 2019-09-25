@@ -1,7 +1,6 @@
 #include <fadec.h>
 
 #include <spdlog/spdlog.h>
-#include <spdlog/sinks/basic_file_sink.h>
 
 #include "oxtra/arguments/arguments.h"
 #include "oxtra/elf/elf.h"
