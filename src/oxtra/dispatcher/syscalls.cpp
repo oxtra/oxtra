@@ -3,6 +3,16 @@
 
 #include <spdlog/spdlog.h>
 
+#include <fcntl.h>
+
+void dispatcher::syscalls::open(dispatcher::ExecutionContext* context) {
+	const auto fd = openat(AT_FDCWD, reinterpret_cast<const char*>(context->guest.map.rdi),
+			static_cast<int>(context->guest.map.rsi), static_cast<mode_t>(context->guest.map.rdx));
+
+	spdlog::info("open syscall handled (returned: {}.)", fd);
+	context->guest.a0 = fd;
+}
+
 void dispatcher::syscalls::exit(dispatcher::ExecutionContext* context) {
 	dispatcher::Dispatcher::guest_exit(context->guest.map.rdi);
 }

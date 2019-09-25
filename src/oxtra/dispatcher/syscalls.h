@@ -55,6 +55,7 @@ namespace dispatcher::syscalls {
 	/*
 	 * Emulation functions.
 	 */
+	void open(ExecutionContext* context);
 	void exit(ExecutionContext* context);
 	void arch_prctl(ExecutionContext* context);
 	void sigaction(ExecutionContext* context);
@@ -68,7 +69,7 @@ namespace dispatcher::syscalls {
 	static constexpr std::array<syscall_entry, 322> syscall_map = {
 		SYS_read,
 		SYS_write,
-		-1, //__NR_open,
+		open, //__NR_open,
 		SYS_close,
 		-1, //__NR_stat,
 		SYS_fstat,
