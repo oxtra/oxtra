@@ -33,6 +33,22 @@ void debugger::DebuggerBatch::print() const {
 	}
 }
 
+size_t debugger::DebuggerBatch::offset(size_t start, size_t end) {
+	if (Debugger::step_riscv()) {
+		if (start == end)
+			return 0;
+		if (start & 0x01u) {
+			if (end & 0x01u)
+				return end - start - 1;
+			else
+				return end - start;
+		} else if (end & 0x01u)
+			return end > start ? end - start - 1 : end - start - 2;
+		return end - start - 1;
+	} else
+		return end - start;
+}
+
 debugger::Debugger* debugger::Debugger::active_debugger = nullptr;
 
 debugger::Debugger::Debugger(const elf::Elf& elf, bool riscv_enabled, uintptr_t stack_low, uintptr_t stack_size) : _elf{elf} {
@@ -61,6 +77,8 @@ debugger::Debugger::Debugger(const elf::Elf& elf, bool riscv_enabled, uintptr_t 
 	action.sa_sigaction = Debugger::signal_handler;
 	if (sigaction(SIGSEGV, &action, nullptr) < 0)
 		std::cout << "failed to register SIGSEGV-handler of the debugger!" << std::endl;
+	if (sigaction(SIGILL, &action, nullptr) < 0)
+		std::cout << "failed to register SIGILL-handler of the debugger!" << std::endl;
 }
 
 debugger::Debugger::~Debugger() {
@@ -130,6 +148,8 @@ void debugger::Debugger::end_block(codegen::CodeBatch& batch, codegen::codestore
 }
 
 void debugger::Debugger::signal_handler(int signum, siginfo_t* info, void* ptr) {
+	unused_parameter(info);
+
 	for (size_t i = 0; i < 32; i++) {
 		std::cout << "reg[" << std::dec << i << "]: 0x" << std::hex
 				  << reinterpret_cast<ucontext_t*>(ptr)->uc_mcontext.__gregs[i] << std::endl;
@@ -140,22 +160,16 @@ void debugger::Debugger::signal_handler(int signum, siginfo_t* info, void* ptr) 
 	if (guest_addr == 0)
 		std::cout << "signal raised outside of guest-code!" << std::endl;
 	else
-		std::cout << active_debugger->print_assembly(active_debugger->_signal_address, guest_addr, active_debugger->_current,
-										active_debugger->_current->entry->instruction_count) << std::endl;
+		std::cout << active_debugger->print_assembly(guest_addr, active_debugger->_signal_address, active_debugger->_current,
+													 active_debugger->_current->entry->instruction_count) << std::endl;
+	std::cout << active_debugger->print_blocks() << std::endl;
 
-	// extract the context
-	const auto context = reinterpret_cast<dispatcher::ExecutionContext*>(reinterpret_cast<ucontext_t*>(ptr)->uc_mcontext.__gregs[27]);
-
-	// build the context
-	for (size_t i = 0; i < 31; i++)
-		context->guest.reg[i] = reinterpret_cast<ucontext_t*>(ptr)->uc_mcontext.__gregs[i + 1];
-	context->guest.ra = active_debugger->_signal_address;
-	active_debugger->entry(context, 0x8000);
-
-	if (signum == SIGSEGV) {
-		std::cout << "Sefault! :D" << std::endl;
-	}
+	if (signum == SIGSEGV)
+		std::cout << "Sefault!" << std::endl;
+	else if (signum == SIGILL)
+		std::cout << "illegal!" << std::endl;
 	std::cout << "sig-addr: 0x" << std::hex << active_debugger->_signal_address << std::endl;
+	std::cout << "guest   : 0x" << std::hex << guest_addr << std::endl;
 	dispatcher::Dispatcher::fault_exit("guest segmentation-faulted!");
 }
 

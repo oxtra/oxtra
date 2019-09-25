@@ -19,6 +19,8 @@ namespace debugger {
 		virtual size_t add(utils::riscv_instruction_t inst) override;
 
 		virtual void print() const override;
+
+		virtual size_t offset(size_t start, size_t end) override;
 	};
 
 	class Debugger {

@@ -17,12 +17,12 @@ size_t codegen::CodeMemory::add(utils::riscv_instruction_t inst) {
 	return count++;
 }
 
-void codegen::CodeMemory::insert(size_t index, utils::riscv_instruction_t inst) {
-	address[index] = inst;
+size_t codegen::CodeMemory::offset(size_t start, size_t end) {
+	return end - start;
 }
 
-utils::riscv_instruction_t& codegen::CodeMemory::operator[](size_t index) {
-	return address[index];
+void codegen::CodeMemory::insert(size_t index, utils::riscv_instruction_t inst) {
+	address[index] = inst;
 }
 
 size_t codegen::CodeBatchImpl::add(utils::riscv_instruction_t inst) {
@@ -32,12 +32,12 @@ size_t codegen::CodeBatchImpl::add(utils::riscv_instruction_t inst) {
 	return count++;
 }
 
-void codegen::CodeBatchImpl::insert(size_t index, utils::riscv_instruction_t inst) {
-	riscv[index] = inst;
+size_t codegen::CodeBatchImpl::offset(size_t start, size_t end) {
+	return end - start;
 }
 
-utils::riscv_instruction_t& codegen::CodeBatchImpl::operator[](size_t index) {
-	return riscv[index];
+void codegen::CodeBatchImpl::insert(size_t index, utils::riscv_instruction_t inst) {
+	riscv[index] = inst;
 }
 
 void codegen::CodeBatchImpl::reset() {

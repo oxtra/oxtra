@@ -16,12 +16,12 @@ void codegen::Idiv::generate(codegen::CodeBatch& batch) const {
 	constexpr auto remainder = encoding::RiscVRegister::t2;
 	constexpr auto dividend = encoding::RiscVRegister::t1;
 	constexpr auto divisor = encoding::RiscVRegister::t0;
-	translate_operand(batch, get_operand(0), 0, divisor, tmp, true, true, idiv, false);
+	translate_operand(batch, get_operand(0), nullptr, divisor, tmp, true, true, idiv, false);
 
 	// if (divisor == 0) raise #DE (divide by zero)
 	auto branch = batch.add(encoding::NOP());
 	call_high_level(batch, &codegen::Idiv::division_exception);
-	batch.insert(branch, encoding::BNQZ(divisor, (batch.size() - branch)*4));
+	batch.insert(branch, encoding::BNQZ(divisor, batch.offset(branch, batch.size()) * 4));
 
 	// 1. build dividend
 	if (op_size == 1) {
@@ -53,15 +53,13 @@ void codegen::Idiv::generate(codegen::CodeBatch& batch) const {
 			helper::load_immediate(batch, -32768, tmp);
 		} else if (op_size == 2) {
 			helper::load_immediate(batch, -2147483648, tmp);
-		} else if (op_size == 4) {
-			helper::load_immediate(batch, 0x8000000000000000, tmp);
 		} else {
 			helper::load_immediate(batch, 0x8000000000000000, tmp);
 		}
 		auto branch_b = batch.add(encoding::NOP());
 		call_high_level(batch, &codegen::Idiv::division_exception);
-		batch.insert(branch_a, encoding::BNE(tmp, divisor, (batch.size() - branch_a)*4));
-		batch.insert(branch_b, encoding::BNE(tmp, dividend, (batch.size() - branch_b)*4));
+		batch.insert(branch_a, encoding::BNE(tmp, divisor, batch.offset(branch_a, batch.size()) * 4));
+		batch.insert(branch_b, encoding::BNE(tmp, dividend, batch.offset(branch_b, batch.size()) * 4));
 	}
 
 	// 2. do the division
