@@ -56,6 +56,7 @@ namespace dispatcher::syscalls {
 	 * Emulation functions.
 	 */
 	void open(ExecutionContext* context);
+	void fstat(ExecutionContext* context);
 	void exit(ExecutionContext* context);
 	void arch_prctl(ExecutionContext* context);
 	void sigaction(ExecutionContext* context);
@@ -72,14 +73,14 @@ namespace dispatcher::syscalls {
 		open, //__NR_open,
 		SYS_close,
 		-1, //__NR_stat,
-		SYS_fstat,
+		fstat, //SYS_fstat,
 		-1, //__NR_lstat,
 		-1, // SYS_poll,
 		SYS_lseek,
 		SYS_mmap,
 		SYS_mprotect,
 		SYS_munmap,
-		SYS_brk,
+		-1, //SYS_brk,
 		sigaction, //SYS_rt_sigaction,
 		sigprocmask, //SYS_rt_sigprocmask,
 		-1, //SYS_rt_sigreturn,
