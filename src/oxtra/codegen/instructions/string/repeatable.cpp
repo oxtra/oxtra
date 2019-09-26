@@ -12,8 +12,8 @@ void codegen::Repeatable::generate(codegen::CodeBatch& batch) const {
 
 		execute_operation(batch);
 
-		batch += encoding::BNQZ(rcx, (loop_begin - batch.size()) * sizeof(utils::riscv_instruction_t));
-		batch[zero_test] = encoding::BEQZ(rcx, (batch.size() - zero_test) * sizeof(utils::riscv_instruction_t));
+		batch += encoding::BNQZ(rcx, batch.offset(batch.size(), loop_begin) * sizeof(utils::riscv_instruction_t));
+		batch.insert(zero_test, encoding::BEQZ(rcx, batch.offset(zero_test, batch.size()) * sizeof(utils::riscv_instruction_t)));
 	} else {
 		execute_operation(batch);
 	}
@@ -53,13 +53,13 @@ void codegen::RepeatableFlag::generate_loop(codegen::CodeBatch& batch, bool z) c
 	batch += (encoding::BNQZ(rcx, (loop_begin - batch.size()) * sizeof(utils::riscv_instruction_t)));
 
 	// replace the dummy with the actual branch instruction
-	batch[diff_test] = (z ? encoding::BNQZ : encoding::BEQZ)(diff_reg, (batch.size() - diff_test) * sizeof(utils::riscv_instruction_t));
+	batch.insert(diff_test, (z ? encoding::BNQZ : encoding::BEQZ)(diff_reg, batch.offset(diff_test, batch.size()) * sizeof(utils::riscv_instruction_t)));
 
 	// update the flags
 	update_flags(batch);
 
 	// if we didn't execute the instruction a single time because of the loop counter then also skip the flags
-	batch[zero_test] = encoding::BEQZ(rcx, (batch.size() - zero_test) * sizeof(utils::riscv_instruction_t));
+	batch.insert(zero_test, encoding::BEQZ(rcx, batch.offset(zero_test, batch.size()) * sizeof(utils::riscv_instruction_t)));
 }
 
 void codegen::RepeatableFlag::update_flags(codegen::CodeBatch& batch) const {

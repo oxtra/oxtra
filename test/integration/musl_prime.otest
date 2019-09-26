@@ -1,4 +1,4 @@
-# Testing if oxtra runs the musl libc prime program correctly.
+# Testing if oxtra runs the musl libc prime program correctly with the default args.
 ./oxtra test/resources/musl/prime
 >>>
 2
@@ -26,8 +26,9 @@
 83
 89
 97
->>>= 101
+>>>= 0
 
+# Testing if oxtra runs the musl libs prime program correctly, with a single argument
 ./oxtra test/resources/musl/prime -a 1000
 >>>
 2
@@ -198,4 +199,4 @@
 983
 991
 997
->>>= 241
+>>>= 0

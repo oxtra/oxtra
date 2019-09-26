@@ -18,6 +18,8 @@ namespace debugger {
 		virtual size_t add(utils::riscv_instruction_t inst) override;
 
 		virtual void print() const override;
+
+		virtual size_t offset(size_t start, size_t end) override;
 	};
 
 	class Debugger {
@@ -25,13 +27,13 @@ namespace debugger {
 		struct DebugState {
 			static constexpr uint16_t none = 0x0000u;
 			static constexpr uint16_t init = 0x0001u;
-			static constexpr uint16_t read_warning = 0x0002u;
 			static constexpr uint16_t await_sob = 0x0004u;
 			static constexpr uint16_t await_eob = 0x0008u;
 			static constexpr uint16_t await_counter = 0x0010u;
 			static constexpr uint16_t await_step = 0x0020u;
 			static constexpr uint16_t await = 0x003cu;
 			static constexpr uint16_t temp_break = 0x0040u;
+			static constexpr uint16_t search_signal = 0x0080u;
 			static constexpr uint16_t reg_riscv = 0x0100u;
 			static constexpr uint16_t reg_dec = 0x0200u;
 			static constexpr uint16_t print_reg = 0x0400u;
@@ -69,7 +71,8 @@ namespace debugger {
 			stack,
 			blocks,
 			quit,
-			read
+			read,
+			signal
 		};
 
 		struct BlockEntry {
@@ -92,6 +95,8 @@ namespace debugger {
 		uint16_t _bp_count;
 		uint8_t _halt;
 		uint8_t _step_riscv;
+		uintptr_t _signal_address;
+		uintptr_t _signal_registers[31];
 		uintptr_t _bp_array[256]{};
 
 		// The instructions beneath may be moved around without updating the assembly_globals-file.
@@ -107,9 +112,10 @@ namespace debugger {
 		uintptr_t _stack_high;
 		uint16_t _inst_limit;
 		uint16_t _stack_limit;
-
+		dispatcher::ExecutionContext* _context;
 	public:
-		explicit Debugger(const elf::Elf& elf, bool riscv_enabled, uintptr_t stack_low, uintptr_t stack_size);
+		explicit Debugger(const elf::Elf& elf, dispatcher::ExecutionContext* context, bool riscv_enabled,
+				uintptr_t stack_low, uintptr_t stack_size);
 
 		~Debugger();
 
@@ -122,11 +128,13 @@ namespace debugger {
 		static void end_block(codegen::CodeBatch& batch, codegen::codestore::BlockEntry* block);
 
 	private:
+		static void signal_handler(int signum);
+
 		static uintptr_t evaluate_overflow(dispatcher::ExecutionContext* context, dispatcher::ExecutionContext::Context* temp);
 
 		static uintptr_t evaluate_carry(dispatcher::ExecutionContext* context, dispatcher::ExecutionContext::Context* temp);
 
-		void entry(dispatcher::ExecutionContext* context, uintptr_t break_point);
+		void entry(uintptr_t break_point);
 
 		utils::guest_addr_t enter_break(uintptr_t break_point, utils::host_addr_t address);
 
@@ -136,7 +144,7 @@ namespace debugger {
 
 		bool insert_break_point(uintptr_t addr, bool static_insert);
 
-		std::string parse_input(utils::guest_addr_t address, dispatcher::ExecutionContext* context);
+		std::string parse_input(utils::guest_addr_t address);
 
 		bool parse_argument(std::string& str, uint8_t& state, uintptr_t& number, DebugInputKey& key);
 
@@ -144,17 +152,17 @@ namespace debugger {
 
 		DebugInputKey parse_key(std::string key);
 
-		std::string print_number(uint64_t nbr, bool hex, uint8_t dec_digits = 1, uint8_t dec_pad = ' ');
+		static std::string print_number(uint64_t nbr, bool hex, uint8_t dec_digits = 1, uint8_t dec_pad = ' ');
 
-		std::string print_reg(dispatcher::ExecutionContext* context, bool hex, bool riscv);
+		std::string print_reg(bool hex, bool riscv);
 
 		std::string print_assembly(utils::guest_addr_t guest, utils::host_addr_t host, BlockEntry* entry, uint16_t limit);
 
-		std::string print_flags(dispatcher::ExecutionContext* context);
+		std::string print_flags();
 
 		std::string print_break_points();
 
-		std::string print_stack(uintptr_t address, dispatcher::ExecutionContext* context, uint16_t limit);
+		std::string print_stack(uintptr_t address, uint16_t limit);
 
 		std::string print_blocks();
 

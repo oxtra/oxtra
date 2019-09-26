@@ -25,7 +25,7 @@ long Dispatcher::run() {
 	// initialize the debugger if necessary
 	std::unique_ptr<debugger::Debugger> debugger = nullptr;
 	if (_args.get_debugging() > 0) {
-		debugger = std::make_unique<debugger::Debugger>(_elf, _args.get_debugging() == 2,
+		debugger = std::make_unique<debugger::Debugger>(_elf, &_context, _args.get_debugging() == 2,
 														_context.guest.map.rsp - _args.get_stack_size(),
 														_args.get_stack_size());
 		_context.debugger = debugger.get();
