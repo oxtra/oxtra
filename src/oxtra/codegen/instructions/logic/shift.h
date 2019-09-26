@@ -1,8 +1,6 @@
 #ifndef OXTRA_SHIFT_H
 #define OXTRA_SHIFT_H
 
-#include "oxtra/codegen/instruction.h"
-
 namespace codegen {
 	class ShiftCl : public codegen::Instruction {
 	public:

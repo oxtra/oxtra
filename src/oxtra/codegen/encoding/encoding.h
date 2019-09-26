@@ -360,6 +360,21 @@ namespace encoding {
 	 */
 	utils::riscv_instruction_t SRAW(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2);
 
+	/**
+	 * rd = (rs << shamt) [31:0] sign extended to 64-bit
+	 */
+	utils::riscv_instruction_t SLLIW(RiscVRegister rd, RiscVRegister rs, uint8_t shamt);
+
+	/**
+	 * rd = (rs >> shamt) [31:0] sign extended to 64-bit (logical)
+	 */
+	utils::riscv_instruction_t SRLIW(RiscVRegister rd, RiscVRegister rs, uint8_t shamt);
+
+	/**
+	 * rd = (rs >> shamt) [31:0] sign extended to 64-bit (arithmetic)
+	 */
+	utils::riscv_instruction_t SRAIW(RiscVRegister rd, RiscVRegister rs, uint8_t shamt);
+
 	/* --- M Standard Extension --------------------------------------------------------------------------------------- */
 
 	/**

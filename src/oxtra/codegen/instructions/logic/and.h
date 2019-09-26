@@ -1,8 +1,6 @@
 #ifndef OXTRA_AND_H
 #define OXTRA_AND_H
 
-#include "oxtra/codegen/instructions/binary_operation.h"
-
 namespace codegen {
 	class And : public BinaryOperation {
 	public:
