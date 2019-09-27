@@ -82,16 +82,13 @@ void Dispatcher::init_guest_context() {
 			auxv_size = auxv_count * sizeof(Elf64_auxv_t) - 8; // last entry is 8 bytes
 
 	// the count of the necessary arguments with zero entries in between (in bytes). Zero paddings are included in size
-	auto min_stack_size = auxv_size + // auxv
+	const auto min_stack_size = utils::page_align(auxv_size + // auxv
 						  env_count * sizeof(char*) + // envp
 						  sizeof(char*) + _args.get_guest_arguments().size() * sizeof(char*) + // argv
-						  sizeof(size_t); // argc
+						  sizeof(size_t)); // argc
 
-	// page align it because why not
-	min_stack_size = (min_stack_size + 0xfffu) & ~0xfffu;
 	// initialize the stack (assume a page for the arg, env pointers and aux vectors)
-	auto stack_size = _args.get_stack_size();
-	stack_size = (stack_size + 0xfffu) & ~0xfffu;
+	const auto stack_size = utils::page_align(_args.get_stack_size());
 
 	const auto stack_memory = reinterpret_cast<uintptr_t>(mmap(nullptr, stack_size, PROT_READ | PROT_WRITE,
 								   MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));

@@ -107,7 +107,7 @@ void dispatcher::syscalls::brk(dispatcher::ExecutionContext* context) {
 			PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
 
 	// failed to allocate the memory
-	if (mem == static_cast<uintptr_t>(-1)) {
+	if (reinterpret_cast<void*>(mem) == MAP_FAILED) {
 		spdlog::error("failed to allocate memory for brk (size: 0x{:x})", alloc_size);
 		context->guest.map.rax = context->program_break;
 		return;
