@@ -63,6 +63,7 @@ void Dispatcher::init_guest_context() {
 	_context.guest.map.jump_table = reinterpret_cast<uintptr_t>(jump_table::table_address);
 	_context.guest.map.context = reinterpret_cast<uintptr_t>(&_context);
 	_context.codegen = &_codegen;
+	_context.program_break = _context.initial_break = _context.last_break_page = _elf.get_base_vaddr() + _elf.get_image_size();
 
 	auto envp = _envp;
 

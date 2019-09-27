@@ -1,5 +1,6 @@
 #include "syscalls.h"
 #include "dispatcher.h"
+#include "execution_context.h"
 
 #include <spdlog/spdlog.h>
 
@@ -71,6 +72,60 @@ void dispatcher::syscalls::fstat(dispatcher::ExecutionContext* context) {
 
 void dispatcher::syscalls::exit(dispatcher::ExecutionContext* context) {
 	dispatcher::Dispatcher::guest_exit(context->guest.map.rdi);
+}
+
+void dispatcher::syscalls::brk(dispatcher::ExecutionContext* context) {
+	const auto address = context->guest.map.rdi;
+
+	spdlog::info("brk(0x{:x}) (current break: 0x{:x})", address, context->program_break);
+
+	// we neither allocate nor free
+	if (address < context->initial_break) {
+		// just return the current break
+		// glib and musl call brk(0) to get the current break
+		context->guest.map.rax = context->program_break;
+		return;
+	}
+
+	// if the address is smaller than the current break then we free memory
+	if (address <= context->program_break) {
+		// if there is at least a page to free then free it
+		if (const auto addr_page = utils::page_align(address); addr_page < context->last_break_page) {
+			munmap(reinterpret_cast<void*>(addr_page), context->last_break_page - addr_page);
+			context->last_break_page = addr_page;
+		}
+
+		context->program_break = address;
+		context->guest.map.rax = context->program_break;
+		return;
+	}
+
+	// the page aligned size that we have to allocate
+	const auto alloc_size = utils::page_align(address - context->last_break_page);
+
+	const auto mem = reinterpret_cast<uintptr_t>(mmap(reinterpret_cast<void*>(context->last_break_page), alloc_size,
+			PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+
+	// failed to allocate the memory
+	if (mem == static_cast<uintptr_t>(-1)) {
+		spdlog::error("failed to allocate memory for brk (size: 0x{:x})", alloc_size);
+		context->guest.map.rax = context->program_break;
+		return;
+	}
+
+	// allocated the memory but at a wrong address
+	else if (mem != context->last_break_page) {
+		munmap(reinterpret_cast<void*>(mem), alloc_size);
+		spdlog::error("failed to allocate memory for brk (size: 0x{:x})", alloc_size);
+		context->guest.map.rax = context->program_break;
+		return;
+	}
+
+	spdlog::info("allocated 0x{:x} bytes for brk. new program break: 0x{:x}.", alloc_size, address);
+
+	context->last_break_page += alloc_size;
+	context->program_break = address;
+	context->guest.map.rax = context->program_break;
 }
 
 void dispatcher::syscalls::arch_prctl(dispatcher::ExecutionContext* context) {
