@@ -97,9 +97,8 @@ void codegen::helper::load_immediate(CodeBatch& batch, uintptr_t imm, encoding::
 	/* Number-structure: 00 00 01 11 22 23 33 44 */
 
 	// initialize the variables used for the generation
-	uint32_t packages[5] = {0};
-	bool increase[5] = {true, true, true, true, true};
-	uint8_t shifts[4] = {0};
+	uint32_t packages[5] = { 0 };
+	uint8_t shifts[4] = { 0 };
 	uint8_t index = 0;
 	int8_t current_bit = 63u;
 	bool lui_used = false;
@@ -127,74 +126,47 @@ void codegen::helper::load_immediate(CodeBatch& batch, uintptr_t imm, encoding::
 			if (digits > 12) {
 				equal_digits = digits - 12;
 				digits = 12;
-			} else
+			}
+			else
 				equal_digits = 0;
 			current_bit = -1;
-		} else if (digits > 12) {
+		}
+		else if (digits > 12) {
 			if (digits >= 32 && index == 0) {
 				current_bit = digits - 21;
 				digits = 20;
-			} else if (digits + equal_digits >= 32 && index == 0) {
+			}
+			else if (digits + equal_digits >= 32 && index == 0) {
 				digits += equal_digits;
 				if (digits > 32) {
 					equal_digits = digits - 32;
 					digits = 32;
-				} else
+				}
+				else
 					equal_digits = 0;
 				digits -= 12;
 				current_bit = 11;
-			} else {
+			}
+			else {
 				current_bit = digits - 13;
 				digits = 12;
 			}
-		} else
-			current_bit -= digits - 1;
-
-		/* In case of the number with multiple zeros in front of it, it must not
-		 * be affected by an addition of a negative number. Thus, if the lowest bit
-		 * of the number is set, or the two others before, we have to move the entire
-		 * digit up one, to have two zero's at its beginning. Otherwise the sign-extension
-		 * might lead to all of the zeros in front of the number to become one's. */
-		if (upper_value == 0 && equal_digits > 0 && current_bit >= 11) {
-			// check if the lowest bit is set
-			if ((imm >> static_cast<uint8_t>(current_bit + 1)) & 0x01u) {
-				bool move_bit = true;
-				if (((imm >> static_cast<uint8_t>(current_bit)) & 0x01u) == 0) {
-					// look for another zero, which could catch a bit-flip in the upcoming 11 bits
-					for (uint8_t i = 1; i < 12; i++) {
-						if (i > current_bit)
-							break;
-						else if (((imm >> static_cast<uint8_t>(current_bit - i)) & 0x01u) == 0)
-							move_bit = false;
-					}
-				}
-				if (move_bit) {
-					equal_digits--;
-					current_bit++;
-				}
-			}
 		}
+		else
+			current_bit -= digits - 1;
 
 		// store the number to the package-array and check if its parent can be increased, or not
 		packages[index] = (imm >> static_cast<uint8_t>(current_bit + 1)) & (0xffffffffffffffffull >> (64u - digits));
 		if (index == 0 && digits == 20)
 			lui_used = true;
-		if (equal_digits > 0 && index > 0 && upper_value == 0)
-			increase[index - 1] = false;
 
-		// check if the number requires the parent to be increased, as it will decrease the parent on load
-		if (packages[index] >= 0x800 && index > 0) {
-			uint8_t temp = index - 1;
-			while (packages[temp + 1] >= 0x800) {
-				if (!increase[temp])
-					break;
-				increase[temp] = false;
-				packages[temp]++;
-				if (temp == 0)
-					break;
-				temp--;
-			}
-		}
+		/* check if the number requires the parent to be inverted, as it will invert the parent on load
+		 * Note: Eventhough the loaded value will affect all parents, only the first parent has to be inverted.
+	             This is because: due to the inversion of the parent, will its sign-extension for the other
+				 parents also flip on load. This means, that they will be implicitly inverted as well.
+		 */
+		if (upper_value && digits == 12 && index > 0)
+			packages[index - 1] = ~packages[index - 1];
 		index++;
 
 		// compute the shifts and store them in the shift-array
@@ -217,7 +189,7 @@ void codegen::helper::load_immediate(CodeBatch& batch, uintptr_t imm, encoding::
 			reg = dest;
 			batch += encoding::LUI(dest, packages[i]);
 		} else if (packages[i] > 0 || i == 0) {
-			batch += encoding::ADDI(dest, reg, packages[i]);
+			batch += encoding::XORI(dest, reg, packages[i]);
 			reg = dest;
 		}
 		if (i + 1 < index && shifts[i] > 0) {
@@ -298,28 +270,3 @@ codegen::helper::calculate_entries(jump_table::Entry carry, jump_table::Entry ov
 			return {};
 	}
 }
-
-#if 0
-uintptr_t codegen::helper::idiv_128_bits(dispatcher::ExecutionContext::Context *context) {
-	auto upper = context->map.rdx;
-	auto lower = context->map.rax;
-	if (context->t1) {
-		__int128 dividend = (static_cast<__int128>(upper) << 64) + lower;
-		int64_t divisor= context->t0;
-		if (dividend == -(static_cast<__int128>(2)<<126) && divisor == -1)
-			dispatcher::Dispatcher::fault_exit("Division overflow");
-		int64_t quotient = dividend / divisor;
-		int64_t remainder = dividend % divisor;
-		context->map.rax = quotient;
-		context->map.rdx = remainder;
-	} else {
-		unsigned __int128 dividend = (static_cast<__int128>(upper) << 64) + lower;
-		uint64_t divisor = context->t0;
-		uint64_t quotient = dividend / divisor;
-		uint64_t remainder = dividend % divisor;
-		context->map.rax = quotient;
-		context->map.rdx = remainder;
-	}
-	return context->t4;
-}
-#endif
