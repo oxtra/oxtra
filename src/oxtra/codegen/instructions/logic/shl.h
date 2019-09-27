@@ -1,8 +1,6 @@
 #ifndef OXTRA_SHL_H
 #define OXTRA_SHL_H
 
-#include "oxtra/codegen/instructions/binary_operation.h"
-
 namespace codegen {
 	class Shl : public BinaryOperation {
 	public:

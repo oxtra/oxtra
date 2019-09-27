@@ -12,12 +12,7 @@
 #include "oxtra/codegen/instructions/control-flow/jmp.h"
 #include "oxtra/codegen/instructions/control-flow/ret.h"
 #include "oxtra/codegen/instructions/control-flow/syscall.h"
-#include "oxtra/codegen/instructions/logic/and.h"
-#include "oxtra/codegen/instructions/logic/nop.h"
-#include "oxtra/codegen/instructions/logic/not.h"
-#include "oxtra/codegen/instructions/logic/or.h"
-#include "oxtra/codegen/instructions/logic/shift.h"
-#include "oxtra/codegen/instructions/logic/xor.h"
+#include "oxtra/codegen/instructions/logic/logic.h"
 #include "oxtra/codegen/instructions/logic/bit-test/bittest.h"
 #include "oxtra/codegen/instructions/logic/setcc/setcc.h"
 #include "oxtra/codegen/instructions/memory/cex.h"
@@ -222,6 +217,15 @@ std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec
 			return std::make_unique<SarCl>(inst);
 		case InstructionType::SAR_IMM:
 			return std::make_unique<Sar>(inst);
+
+		case InstructionType::ROL_IMM:
+			return std::make_unique<RolImm>(inst);
+		case InstructionType::ROL_CL:
+			return std::make_unique<RolCl>(inst);
+		case InstructionType::ROR_IMM:
+			return std::make_unique<RorImm>(inst);
+		case InstructionType::ROR_CL:
+			return std::make_unique<RorCl>(inst);
 
 		case InstructionType::BT:
 		case InstructionType::BT_IMM:

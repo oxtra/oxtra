@@ -38,13 +38,14 @@ namespace utils {
 		 * @param start The start of the section. May be null.
 		 * @param elements Pointer to a list of elements to add.
 		 * @param num_elements The number of elements to add.
-		 * @return The (new) start of the section.
+		 * @return The (new) start of the section or null if the elements could not be added.
 		 */
 		const T* add(const T* start, const T* elements, size_t num_elements) {
 			const size_t store_count = (start == nullptr) ? 0 : _buffer - start;
 
 			if (num_elements + store_count > _max_elements) {
-				throw std::invalid_argument("Number of elements may not be larger than max elements");
+				// number of elements may not be larger than max elements
+				return nullptr;
 			}
 
 			// keep track of where the new start is
@@ -57,6 +58,11 @@ namespace utils {
 
 			if (_size_left < num_elements) {
 				actual_start = reallocate(start, store_count);
+
+				// failed to allocate memory
+				if (!actual_start)
+					return nullptr;
+
 				_buffer = actual_start + store_count;
 
 				_size_left = _max_elements - store_count;
@@ -98,7 +104,7 @@ namespace utils {
 
 	protected:
 		virtual T* allocate() {
-			return new T[_max_elements];
+			return new(std::nothrow) T[_max_elements];
 		}
 
 		/**
@@ -108,8 +114,9 @@ namespace utils {
 		 * @return The start address of the new buffer. The number of elements have to be added manually.
 		 */
 		T* reallocate(const T* start, const size_t elements) {
-			T* new_buffer = allocate();
-			if (elements > 0) {
+			const auto new_buffer = allocate();
+
+			if (new_buffer && elements > 0) {
 				std::copy(start, start + elements, new_buffer);
 			}
 
@@ -126,7 +133,8 @@ namespace utils {
 		virtual T* allocate() override {
 			auto data = static_cast<T*>(mmap(nullptr, StaticList<T>::_max_elements * sizeof(T), PROT_READ | PROT_WRITE | PROT_EXEC,
 											 MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
-			if (data == MAP_FAILED) throw std::bad_alloc();
+			if (data == MAP_FAILED)
+				return nullptr;
 
 			for (size_t i = 0; i < StaticList<T>::_max_elements; i++) {
 				data[i] = T();
