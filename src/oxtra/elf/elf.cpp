@@ -1,5 +1,6 @@
 #include <sys/mman.h>
 #include "elf.h"
+#include "oxtra/utils/types.h"
 
 using namespace elf;
 
@@ -198,8 +199,7 @@ void Elf::unpack_file(size_t file_size) {
 
 	//page-align the base and the range
 	base_address ^= (base_address & 0x00000FFFu);
-	image_size = (image_size & 0x00000FFFu) > 0 ? image_size + 0x00001000 : image_size;
-	image_size ^= (image_size & 0x00000FFFu);
+	image_size = utils::page_align(image_size);
 	image_size -= base_address;
 
 	//allocate the buffer for the image & the table for the page-entries

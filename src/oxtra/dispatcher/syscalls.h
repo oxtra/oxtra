@@ -55,10 +55,14 @@ namespace dispatcher::syscalls {
 	/*
 	 * Emulation functions.
 	 */
+	void open(ExecutionContext* context);
+	void fstat(ExecutionContext* context);
 	void exit(ExecutionContext* context);
-	void arch_prctl(ExecutionContext* context);
+	void brk(ExecutionContext* context);
 	void sigaction(ExecutionContext* context);
 	void sigprocmask(ExecutionContext* context);
+	void ioctl(ExecutionContext* context);
+	void arch_prctl(ExecutionContext* context);
 
 	/*
 	 * This map contains information about how syscalls should be handled.
@@ -67,21 +71,21 @@ namespace dispatcher::syscalls {
 	static constexpr std::array<syscall_entry, 322> syscall_map = {
 		SYS_read,
 		SYS_write,
-		-1, //__NR_open,
+		open, //__NR_open,
 		SYS_close,
 		-1, //__NR_stat,
-		SYS_fstat,
+		fstat, //SYS_fstat,
 		-1, //__NR_lstat,
 		-1, // SYS_poll,
 		SYS_lseek,
 		SYS_mmap,
 		SYS_mprotect,
 		SYS_munmap,
-		SYS_brk,
+		brk, //SYS_brk,
 		sigaction, //SYS_rt_sigaction,
 		sigprocmask, //SYS_rt_sigprocmask,
 		-1, //SYS_rt_sigreturn,
-		SYS_ioctl,
+		ioctl, //SYS_ioctl,
 		SYS_pread64,
 		SYS_pwrite64,
 		SYS_readv,
@@ -296,7 +300,7 @@ namespace dispatcher::syscalls {
 		SYS_clock_gettime,
 		SYS_clock_getres,
 		SYS_clock_nanosleep,
-		SYS_exit_group,
+		exit, //SYS_exit_group,
 		-1, //SYS_epoll_wait,
 		SYS_epoll_ctl,
 		SYS_tgkill,

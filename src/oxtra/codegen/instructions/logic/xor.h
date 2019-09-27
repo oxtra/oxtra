@@ -1,8 +1,6 @@
 #ifndef OXTRA_XOR_H
 #define OXTRA_XOR_H
 
-#include "oxtra/codegen/instructions/binary_operation.h"
-
 namespace codegen {
 	class Xor : public BinaryOperation {
 	public:

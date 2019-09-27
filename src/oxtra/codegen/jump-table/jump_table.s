@@ -15,7 +15,7 @@ c_wrapper:
 	capture_context_high_level s11
 
 	# work on the stack after the sysv red zone
-	addi sp, sp, -128
+	addi sp, sp, red_zone
 
 	# invoke the function
     mv a0, s11

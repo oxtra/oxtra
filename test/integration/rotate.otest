@@ -1,0 +1,3 @@
+# Testing if the rotation instructions work.
+./oxtra -l 2 test/resources/instructions/rotate
+>>>= 0

@@ -832,7 +832,11 @@ void fadec::format(const Instruction& instr, char* buffer, size_t len) {
 
 	if (instr.get_type() == InstructionType::SHL_CL
 		|| instr.get_type() == InstructionType::SHR_CL
-		|| instr.get_type() == InstructionType::SAR_CL) {
+		|| instr.get_type() == InstructionType::SAR_CL
+		|| instr.get_type() == InstructionType::ROL_CL
+		|| instr.get_type() == InstructionType::ROR_CL
+		|| instr.get_type() == InstructionType::RCL_CL
+		|| instr.get_type() == InstructionType::RCR_CL) {
 		fmt_concat(", cl")
 	}
 }

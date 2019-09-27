@@ -1,8 +1,6 @@
 #ifndef OXTRA_NOP_H
 #define OXTRA_NOP_H
 
-#include "oxtra/codegen/instruction.h"
-
 namespace codegen {
 	class Nop : public codegen::Instruction {
 	public:
