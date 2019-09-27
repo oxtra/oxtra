@@ -97,8 +97,8 @@ void codegen::helper::load_immediate(CodeBatch& batch, uintptr_t imm, encoding::
 	/* Number-structure: 00 00 01 11 22 23 33 44 */
 
 	// initialize the variables used for the generation
-	uint32_t packages[5] = { 0 };
-	uint8_t shifts[4] = { 0 };
+	uint32_t packages[5] = {0};
+	uint8_t shifts[4] = {0};
 	uint8_t index = 0;
 	int8_t current_bit = 63u;
 	bool lui_used = false;
@@ -126,33 +126,27 @@ void codegen::helper::load_immediate(CodeBatch& batch, uintptr_t imm, encoding::
 			if (digits > 12) {
 				equal_digits = digits - 12;
 				digits = 12;
-			}
-			else
+			} else
 				equal_digits = 0;
 			current_bit = -1;
-		}
-		else if (digits > 12) {
+		} else if (digits > 12) {
 			if (digits >= 32 && index == 0) {
 				current_bit = digits - 21;
 				digits = 20;
-			}
-			else if (digits + equal_digits >= 32 && index == 0) {
+			} else if (digits + equal_digits >= 32 && index == 0) {
 				digits += equal_digits;
 				if (digits > 32) {
 					equal_digits = digits - 32;
 					digits = 32;
-				}
-				else
+				} else
 					equal_digits = 0;
 				digits -= 12;
 				current_bit = 11;
-			}
-			else {
+			} else {
 				current_bit = digits - 13;
 				digits = 12;
 			}
-		}
-		else
+		} else
 			current_bit -= digits - 1;
 
 		// store the number to the package-array and check if its parent can be increased, or not
