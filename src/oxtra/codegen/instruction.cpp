@@ -504,7 +504,7 @@ void codegen::Instruction::update_overflow(CodeBatch& batch, jump_table::Entry e
 }
 
 void codegen::Instruction::update_overflow_single(codegen::CodeBatch& batch, codegen::jump_table::Entry entry,
-												  encoding::RiscVRegister va, encoding::RiscVRegister temp) const {
+												  encoding::RiscVRegister va, encoding::RiscVRegister temp, bool set_entry) const {
 	// check if the instruction has to update the overflow-flag
 	if ((update_flags & flags::overflow) == 0)
 		return;
@@ -512,8 +512,10 @@ void codegen::Instruction::update_overflow_single(codegen::CodeBatch& batch, cod
 	batch += encoding::SD(helper::context_address, va, flags::Info::overflow_values_offset);
 
 	// store the jump table index
-	batch += encoding::ADDI(temp, RiscVRegister::zero, static_cast<uint16_t>(entry) * 4);
-	batch += encoding::SH(helper::context_address, temp, flags::Info::overflow_operation_offset);
+	if(set_entry) {
+		batch += encoding::ADDI(temp, RiscVRegister::zero, static_cast<uint16_t>(entry) * 4);
+		batch += encoding::SH(helper::context_address, temp, flags::Info::overflow_operation_offset);
+	}
 }
 
 void codegen::Instruction::update_overflow_single(codegen::CodeBatch& batch, encoding::RiscVRegister vb) const {
@@ -561,7 +563,7 @@ void codegen::Instruction::update_carry(CodeBatch& batch, jump_table::Entry entr
 }
 
 void codegen::Instruction::update_carry_single(codegen::CodeBatch& batch, codegen::jump_table::Entry entry,
-											   encoding::RiscVRegister va, encoding::RiscVRegister temp) const {
+											   encoding::RiscVRegister va, encoding::RiscVRegister temp, bool set_entry) const {
 	// check if the instruction has to update the carry-flag
 	if ((update_flags & flags::carry) == 0)
 		return;
@@ -569,8 +571,10 @@ void codegen::Instruction::update_carry_single(codegen::CodeBatch& batch, codege
 	batch += encoding::SD(helper::context_address, va, flags::Info::carry_values_offset);
 
 	// store the jump table index
-	batch += encoding::ADDI(temp, RiscVRegister::zero, static_cast<uint16_t>(entry) * 4);
-	batch += encoding::SH(helper::context_address, temp, flags::Info::carry_operation_offset);
+	if(set_entry) {
+		batch += encoding::ADDI(temp, RiscVRegister::zero, static_cast<uint16_t>(entry) * 4);
+		batch += encoding::SH(helper::context_address, temp, flags::Info::carry_operation_offset);
+	}
 }
 
 void codegen::Instruction::update_carry_single(codegen::CodeBatch& batch, encoding::RiscVRegister vb) const {

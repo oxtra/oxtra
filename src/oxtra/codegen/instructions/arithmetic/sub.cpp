@@ -11,7 +11,7 @@ void codegen::Sub::execute_operation(CodeBatch& batch, encoding::RiscVRegister d
 	update_overflow(batch, overflow, src, dst, encoding::RiscVRegister::t4);
 
 	batch += encoding::SUB(dst, dst, src);
-	update_carry_single(batch, carry, dst, encoding::RiscVRegister::t4);
+	update_carry_single(batch, carry, dst, encoding::RiscVRegister::t4, true);
 }
 
 void codegen::Sub::execute_operation(CodeBatch& batch, encoding::RiscVRegister dst, intptr_t imm) const {
@@ -30,7 +30,7 @@ void codegen::Sub::execute_operation(CodeBatch& batch, encoding::RiscVRegister d
 	const auto [carry, overflow] = get_entries(imm, get_operand(0).get_size());
 
 	update_carry_single(batch, dst);
-	update_overflow_single(batch, overflow, dst, encoding::RiscVRegister::t4);
+	update_overflow_single(batch, overflow, dst, encoding::RiscVRegister::t4, true);
 
 	if (imm == -0x800) {
 		batch += encoding::ADDI(dst, dst, 1);
@@ -38,6 +38,6 @@ void codegen::Sub::execute_operation(CodeBatch& batch, encoding::RiscVRegister d
 	} else
 		batch += encoding::ADDI(dst, dst, -imm);
 
-	update_carry_single(batch, carry, dst, encoding::RiscVRegister::t4);
+	update_carry_single(batch, carry, dst, encoding::RiscVRegister::t4, true);
 	update_overflow_single(batch, dst);
 }
