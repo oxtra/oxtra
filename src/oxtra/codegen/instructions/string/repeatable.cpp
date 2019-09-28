@@ -70,6 +70,6 @@ void codegen::RepeatableFlag::update_flags(codegen::CodeBatch& batch) const {
 	const auto[carry, overflow] = helper::calculate_entries(jump_table::Entry::carry_add, jump_table::Entry::overflow_sub,
 															get_operand_size());
 
-	update_carry(batch, carry, diff_reg, dst_reg, encoding::RiscVRegister::t3);
-	update_overflow(batch, overflow, dst_reg, src_reg, encoding::RiscVRegister::t3);
+	update_carry(batch, &carry, &diff_reg, &dst_reg, encoding::RiscVRegister::t3);
+	update_overflow(batch, &overflow, &dst_reg, &src_reg, encoding::RiscVRegister::t3);
 }
