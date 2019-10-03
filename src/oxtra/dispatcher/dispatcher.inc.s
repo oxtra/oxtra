@@ -81,7 +81,7 @@ _ZN10dispatcher10Dispatcher14reroute_staticEv:
 	capture_context s11
 
 	# work on the stack after the sysv red zone
-	addi sp, sp, -128
+	addi sp, sp, red_zone
 
 	# store the callers address (needed for update_basic_block)
 	mv s1, ra
@@ -128,7 +128,7 @@ _ZN10dispatcher10Dispatcher15reroute_dynamicEv:
 	capture_context s11
 
 	# work on the stack after the sysv red zone
-	addi sp, sp, -128
+	addi sp, sp, red_zone
 
 	# t3 might be changed by upcoming function calls, which is why we back it up
 	mv s2, t3
@@ -163,7 +163,7 @@ _ZN10dispatcher10Dispatcher15syscall_handlerEv:
 	capture_context s11
 
 	# work on the stack after the sysv red zone
-	addi sp, sp, -128
+	addi sp, sp, red_zone
 
 	# invoke virtualize_syscall and check if it should be forwarded
     mv a0, s11

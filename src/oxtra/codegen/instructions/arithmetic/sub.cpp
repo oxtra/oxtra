@@ -7,11 +7,11 @@ void codegen::Sub::execute_operation(CodeBatch& batch, encoding::RiscVRegister d
 	const auto [carry, overflow] = helper::calculate_entries(
 			jump_table::Entry::carry_add, jump_table::Entry::overflow_sub, get_operand(0).get_size());
 
-	update_carry_single(batch, dst);
-	update_overflow(batch, overflow, src, dst, encoding::RiscVRegister::t4);
+	update_carry(batch, &carry, nullptr, &dst, encoding::RiscVRegister::t4);
+	update_overflow(batch, &overflow, &src, &dst, encoding::RiscVRegister::t4);
 
 	batch += encoding::SUB(dst, dst, src);
-	update_carry_single(batch, carry, dst, encoding::RiscVRegister::t4);
+	update_carry(batch, nullptr, &dst, nullptr);
 }
 
 void codegen::Sub::execute_operation(CodeBatch& batch, encoding::RiscVRegister dst, intptr_t imm) const {
@@ -29,8 +29,8 @@ void codegen::Sub::execute_operation(CodeBatch& batch, encoding::RiscVRegister d
 
 	const auto [carry, overflow] = get_entries(imm, get_operand(0).get_size());
 
-	update_carry_single(batch, dst);
-	update_overflow_single(batch, overflow, dst, encoding::RiscVRegister::t4);
+	update_carry(batch, &carry, nullptr, &dst, encoding::RiscVRegister::t4);
+	update_overflow(batch, &overflow, &dst, nullptr, encoding::RiscVRegister::t4);
 
 	if (imm == -0x800) {
 		batch += encoding::ADDI(dst, dst, 1);
@@ -38,6 +38,6 @@ void codegen::Sub::execute_operation(CodeBatch& batch, encoding::RiscVRegister d
 	} else
 		batch += encoding::ADDI(dst, dst, -imm);
 
-	update_carry_single(batch, carry, dst, encoding::RiscVRegister::t4);
-	update_overflow_single(batch, dst);
+	update_carry(batch, nullptr, &dst, nullptr);
+	update_overflow(batch, nullptr, nullptr, &dst);
 }

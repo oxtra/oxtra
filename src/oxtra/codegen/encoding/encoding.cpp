@@ -281,6 +281,18 @@ riscv_instruction_t encoding::SRAW(encoding::RiscVRegister rd, encoding::RiscVRe
 	return rtype(59, rd, 5, rs1, rs2, 32);
 }
 
+utils::riscv_instruction_t encoding::SLLIW(RiscVRegister rd, RiscVRegister rs, uint8_t shamt) {
+	return rtype(27, rd, 1, rs, static_cast<RiscVRegister>(shamt & 0x1fu), 0);
+}
+
+utils::riscv_instruction_t encoding::SRLIW(RiscVRegister rd, RiscVRegister rs, uint8_t shamt) {
+	return rtype(27, rd, 5, rs, static_cast<RiscVRegister>(shamt & 0x1fu), 0);
+}
+
+utils::riscv_instruction_t encoding::SRAIW(RiscVRegister rd, RiscVRegister rs, uint8_t shamt) {
+	return rtype(27, rd, 5, rs, static_cast<RiscVRegister>(shamt & 0x1fu), 32);
+}
+
 // probably not needed: FENCE, FENCE.I, EBREAK, CSRRW, CSRRS, CSRRC, CSRRWI, CSRRSI, CSRRCI
 
 /* --- M Standard Extensions ------------------------------------------------------------------------------------------ */

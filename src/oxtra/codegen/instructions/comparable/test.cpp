@@ -4,6 +4,7 @@
 encoding::RiscVRegister codegen::Test::execute_operation(codegen::CodeBatch& batch, encoding::RiscVRegister dst,
 														 encoding::RiscVRegister src) const {
 	batch += encoding::AND(encoding::RiscVRegister::t5, dst, src);
+
 	update_carry(batch, false, encoding::RiscVRegister::t4);
 	update_overflow(batch, false, encoding::RiscVRegister::t4);
 

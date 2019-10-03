@@ -49,11 +49,8 @@ void codegen::Cmova::execute_operation(CodeBatch& batch) const {
 
 	generate_move(batch);
 
-	batch[zero] = encoding::BNQZ(encoding::RiscVRegister::t4,
-								 (batch.size() - zero) * sizeof(utils::riscv_instruction_t));
-
-	batch[carry] = encoding::BNQZ(encoding::RiscVRegister::t4,
-								  (batch.size() - carry) * sizeof(utils::riscv_instruction_t));
+	batch.insert(zero, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(zero, batch.size()) * sizeof(utils::riscv_instruction_t)));
+	batch.insert(carry, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(carry, batch.size()) * sizeof(utils::riscv_instruction_t)));
 }
 
 // cf == 1 || zf == 1
@@ -64,13 +61,11 @@ void codegen::Cmovbe::execute_operation(CodeBatch& batch) const {
 	evaluate_carry(batch);
 	const auto carry = batch.add(encoding::NOP());
 
-	batch[zero] = encoding::BNQZ(encoding::RiscVRegister::t4,
-								 (batch.size() - zero) * sizeof(utils::riscv_instruction_t));
+	batch.insert(zero, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(zero, batch.size()) * sizeof(utils::riscv_instruction_t)));
 
 	generate_move(batch);
 
-	batch[carry] = encoding::BEQZ(encoding::RiscVRegister::t4,
-								  (batch.size() - carry) * sizeof(utils::riscv_instruction_t));
+	batch.insert(carry, encoding::BEQZ(encoding::RiscVRegister::t4, batch.offset(carry, batch.size()) * sizeof(utils::riscv_instruction_t)));
 }
 
 // cf == 1
@@ -80,8 +75,7 @@ void codegen::Cmovc::execute_operation(CodeBatch& batch) const {
 
 	generate_move(batch);
 
-	batch[carry] = encoding::BEQZ(encoding::RiscVRegister::t4,
-								  (batch.size() - carry) * sizeof(utils::riscv_instruction_t));
+	batch.insert(carry, encoding::BEQZ(encoding::RiscVRegister::t4, batch.offset(carry, batch.size()) * sizeof(utils::riscv_instruction_t)));
 }
 
 // zf == 0 && sf == of
@@ -96,11 +90,9 @@ void codegen::Cmovg::execute_operation(CodeBatch& batch) const {
 
 	generate_move(batch);
 
-	batch[zero] = encoding::BNQZ(encoding::RiscVRegister::t4,
-								 (batch.size() - zero) * sizeof(utils::riscv_instruction_t));
+	batch.insert(zero, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(zero, batch.size()) * sizeof(utils::riscv_instruction_t)));
 
-	batch[equal] = encoding::BNE(encoding::RiscVRegister::t0, encoding::RiscVRegister::t4,
-								 (batch.size() - equal) * sizeof(utils::riscv_instruction_t));
+	batch.insert(equal, encoding::BNE(encoding::RiscVRegister::t0, encoding::RiscVRegister::t4, batch.offset(equal, batch.size()) * sizeof(utils::riscv_instruction_t)));
 }
 
 // sf == of
@@ -112,8 +104,7 @@ void codegen::Cmovge::execute_operation(CodeBatch& batch) const {
 
 	generate_move(batch);
 
-	batch[equal] = encoding::BNE(encoding::RiscVRegister::t0, encoding::RiscVRegister::t4,
-								 (batch.size() - equal) * sizeof(utils::riscv_instruction_t));
+	batch.insert(equal, encoding::BNE(encoding::RiscVRegister::t0, encoding::RiscVRegister::t4, batch.offset(equal, batch.size()) * sizeof(utils::riscv_instruction_t)));
 }
 
 // sf != of
@@ -125,8 +116,7 @@ void codegen::Cmovl::execute_operation(CodeBatch& batch) const {
 
 	generate_move(batch);
 
-	batch[equal] = encoding::BEQ(encoding::RiscVRegister::t0, encoding::RiscVRegister::t4,
-								 (batch.size() - equal) * sizeof(utils::riscv_instruction_t));
+	batch.insert(equal, encoding::BEQ(encoding::RiscVRegister::t0, encoding::RiscVRegister::t4, batch.offset(equal, batch.size()) * sizeof(utils::riscv_instruction_t)));
 }
 
 // zf == 1 || sf != of
@@ -139,13 +129,11 @@ void codegen::Cmovle::execute_operation(CodeBatch& batch) const {
 	evaluate_overflow(batch);
 	const auto equal = batch.add(encoding::NOP());
 
-	batch[zero] = encoding::BNQZ(encoding::RiscVRegister::t4,
-								 (batch.size() - zero) * sizeof(utils::riscv_instruction_t));
+	batch.insert(zero, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(zero, batch.size()) * sizeof(utils::riscv_instruction_t)));
 
 	generate_move(batch);
 
-	batch[equal] = encoding::BEQ(encoding::RiscVRegister::t0, encoding::RiscVRegister::t4,
-								 (batch.size() - equal) * sizeof(utils::riscv_instruction_t));
+	batch.insert(equal, encoding::BEQ(encoding::RiscVRegister::t0, encoding::RiscVRegister::t4, batch.offset(equal, batch.size()) * sizeof(utils::riscv_instruction_t)));
 }
 
 // cf == 0
@@ -154,9 +142,7 @@ void codegen::Cmovnc::execute_operation(CodeBatch& batch) const {
 	const auto carry = batch.add(encoding::NOP());
 
 	generate_move(batch);
-
-	batch[carry] = encoding::BNQZ(encoding::RiscVRegister::t4,
-								  (batch.size() - carry) * sizeof(utils::riscv_instruction_t));
+	batch.insert(carry, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(carry, batch.size()) * sizeof(utils::riscv_instruction_t)));
 }
 
 // of == 0
@@ -166,8 +152,7 @@ void codegen::Cmovno::execute_operation(CodeBatch& batch) const {
 
 	generate_move(batch);
 
-	batch[overflow] = encoding::BNQZ(encoding::RiscVRegister::t4,
-									 (batch.size() - overflow) * sizeof(utils::riscv_instruction_t));
+	batch.insert(overflow, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(overflow, batch.size()) * sizeof(utils::riscv_instruction_t)));
 }
 
 // pf == 0
@@ -177,8 +162,7 @@ void codegen::Cmovnp::execute_operation(CodeBatch& batch) const {
 
 	generate_move(batch);
 
-	batch[parity] = encoding::BNQZ(encoding::RiscVRegister::t4,
-								   (batch.size() - parity) * sizeof(utils::riscv_instruction_t));
+	batch.insert(parity, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(parity, batch.size()) * sizeof(utils::riscv_instruction_t)));
 }
 
 // sf == 0
@@ -188,8 +172,7 @@ void codegen::Cmovns::execute_operation(CodeBatch& batch) const {
 
 	generate_move(batch);
 
-	batch[sign] = encoding::BNQZ(encoding::RiscVRegister::t4,
-								 (batch.size() - sign) * sizeof(utils::riscv_instruction_t));
+	batch.insert(sign, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(sign, batch.size()) * sizeof(utils::riscv_instruction_t)));
 }
 
 // zf == 0
@@ -199,8 +182,7 @@ void codegen::Cmovnz::execute_operation(CodeBatch& batch) const {
 
 	generate_move(batch);
 
-	batch[zero] = encoding::BNQZ(encoding::RiscVRegister::t4,
-								 (batch.size() - zero) * sizeof(utils::riscv_instruction_t));
+	batch.insert(zero, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(zero, batch.size()) * sizeof(utils::riscv_instruction_t)));
 }
 
 // of == 1
@@ -210,8 +192,7 @@ void codegen::Cmovo::execute_operation(CodeBatch& batch) const {
 
 	generate_move(batch);
 
-	batch[overflow] = encoding::BEQZ(encoding::RiscVRegister::t4,
-									 (batch.size() - overflow) * sizeof(utils::riscv_instruction_t));
+	batch.insert(overflow, encoding::BEQZ(encoding::RiscVRegister::t4, batch.offset(overflow, batch.size()) * sizeof(utils::riscv_instruction_t)));
 }
 
 // pf == 1
@@ -221,8 +202,7 @@ void codegen::Cmovp::execute_operation(CodeBatch& batch) const {
 
 	generate_move(batch);
 
-	batch[parity] = encoding::BEQZ(encoding::RiscVRegister::t4,
-								   (batch.size() - parity) * sizeof(utils::riscv_instruction_t));
+	batch.insert(parity, encoding::BEQZ(encoding::RiscVRegister::t4, batch.offset(parity, batch.size()) * sizeof(utils::riscv_instruction_t)));
 }
 
 // sf == 1
@@ -232,8 +212,7 @@ void codegen::Cmovs::execute_operation(CodeBatch& batch) const {
 
 	generate_move(batch);
 
-	batch[sign] = encoding::BEQZ(encoding::RiscVRegister::t4,
-								 (batch.size() - sign) * sizeof(utils::riscv_instruction_t));
+	batch.insert(sign, encoding::BEQZ(encoding::RiscVRegister::t4, batch.offset(sign, batch.size()) * sizeof(utils::riscv_instruction_t)));
 }
 
 // zf == 1
@@ -243,6 +222,5 @@ void codegen::Cmovz::execute_operation(CodeBatch& batch) const {
 
 	generate_move(batch);
 
-	batch[zero] = encoding::BEQZ(encoding::RiscVRegister::t4,
-								 (batch.size() - zero) * sizeof(utils::riscv_instruction_t));
+	batch.insert(zero, encoding::BEQZ(encoding::RiscVRegister::t4, batch.offset(zero, batch.size()) * sizeof(utils::riscv_instruction_t)));
 }

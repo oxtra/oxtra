@@ -20,6 +20,13 @@ namespace utils {
 	 * represents a risc-v instruction
 	 */
 	using riscv_instruction_t = uint32_t;
+
+	/**
+	 * Page-aligns the address. Addresses that are not already page-aligned will be rounded up.
+	 */
+	constexpr uintptr_t page_align(uintptr_t address) {
+		return (address + 0xfffu) & ~0xfffu;
+	}
 }
 
 #define unused_parameter(x) ((void)x)

@@ -112,6 +112,9 @@ namespace dispatcher {
 		// 0x248
 		uint64_t fs_base, gs_base;
 
+		// 0x258
+		uint64_t initial_break, last_break_page, program_break;
+
 		static constexpr uintptr_t
 			fs_offset = 0x248,
 			gs_offset = 0x250;

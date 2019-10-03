@@ -19,11 +19,11 @@ namespace codegen {
 
 		virtual void insert(size_t index, utils::riscv_instruction_t inst) = 0;
 
+		virtual size_t offset(size_t start, size_t end) = 0;
+
 		size_t size() const;
 
 		void operator+=(utils::riscv_instruction_t inst);
-
-		virtual utils::riscv_instruction_t& operator[](size_t index) = 0;
 	};
 
 	/**
@@ -41,7 +41,7 @@ namespace codegen {
 
 		virtual void insert(size_t index, utils::riscv_instruction_t inst) override;
 
-		virtual utils::riscv_instruction_t& operator[](size_t index) override;
+		virtual size_t offset(size_t start, size_t end) override;
 	};
 
 	/**
@@ -53,9 +53,9 @@ namespace codegen {
 	public:
 		virtual size_t add(utils::riscv_instruction_t inst) override;
 
-		virtual void insert(size_t index, utils::riscv_instruction_t inst) override;
+		virtual size_t offset(size_t start, size_t end);
 
-		virtual utils::riscv_instruction_t& operator[](size_t index) override;
+		virtual void insert(size_t index, utils::riscv_instruction_t inst) override;
 
 		virtual void reset();
 

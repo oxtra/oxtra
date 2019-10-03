@@ -21,6 +21,22 @@ debug_entry:
 	sd t1, guest_t1_offset(s11)
 	sd t2, guest_t2_offset(s11)
 
+	# check if a signal-handler is registered
+	ld t1, debug_sig_address(t0)
+	beqz t1, debugger_no_signal
+
+	# store the upcoming address and the registers
+	sd ra, debug_sig_address(t0)
+	addi t1, t0, debug_sig_registers
+	capture_context_debug t1
+	ld t1, guest_t0_offset(s11)
+    sd t1, debug_sig_t0(t0)
+    ld t1, guest_t1_offset(s11)
+	sd t1, debug_sig_t1(t0)
+    ld t1, guest_t2_offset(s11)
+    sd t1, debug_sig_t2(t0)
+	debugger_no_signal:
+
 	# check if the execution is supposed to be halted
 	lbu t2, debug_halt(t0)
 	beqz t2, debugger_no_halt
@@ -72,11 +88,10 @@ debug_entry:
 
     # set the three arguments
     mv a0, t0	# Debugger
-    mv a1, s11	# ExecutionContext
-    mv a2, t1	# BreakPointEntry
+    mv a1, t1	# BreakPointEntry
 
 	# call the debugging-entry-function
-	jal ra, _ZN8debugger8Debugger5entryEPN10dispatcher16ExecutionContextEm
+	jal ra, _ZN8debugger8Debugger5entryEm
 
 	# restore the context and return to the execution
 	restore_context_debug s11
@@ -98,6 +113,21 @@ debug_entry_riscv:
 	# store the current t1-register
 	sd t1, guest_t1_offset(s11)
 
+	# check if a signal-handler is registered
+	ld t1, debug_sig_address(t0)
+	beqz t1, debugger_riscv_no_signal
+
+	# store the upcoming address and the registers
+	sd ra, debug_sig_address(t0)
+	addi t1, t0, debug_sig_registers
+	capture_context_debug t1
+	ld t1, guest_t0_offset(s11)
+    sd t1, debug_sig_t0(t0)
+    ld t1, guest_t1_offset(s11)
+    sd t1, debug_sig_t1(t0)
+    sd t2, debug_sig_t2(t0)
+    debugger_riscv_no_signal:
+
 	# check if the execution is supposed to be halted
 	lbu t1, debug_step_riscv(t0)
 	bnez t1, debugger_riscv_enter
@@ -110,17 +140,17 @@ debug_entry_riscv:
 	# capture the context
 	debugger_riscv_enter:
     capture_context_debug s11
+    sd t2, guest_t2_offset(s11)
 
 	# work on the stack after the sysv red zone
 	addi sp, sp, -128
 
     # set the three arguments
     mv a0, t0	# Debugger
-    mv a1, s11	# ExecutionContext
-    addi a2, zero, 0x600
+    addi a1, zero, 0x600 # entry-type
 
 	# call the debugging-entry-function
-	jal ra, _ZN8debugger8Debugger5entryEPN10dispatcher16ExecutionContextEm
+	jal ra, _ZN8debugger8Debugger5entryEm
 
 	# restore the context and return to the execution
 	restore_context_debug s11

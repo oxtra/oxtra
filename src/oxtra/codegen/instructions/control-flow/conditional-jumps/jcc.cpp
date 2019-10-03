@@ -27,15 +27,13 @@ void codegen::Ja::generate(codegen::CodeBatch& batch) const {
 	generate_step(batch);
 
 	// compute the offset and generate the jump
-	size_t offset = batch.size() - index;
-	batch[index] = encoding::BEQZ(encoding::RiscVRegister::t4, offset * 4);
+	batch.insert(index, encoding::BEQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
 
 	// load the carry flag
 	evaluate_carry(batch);
 
 	// generate the jump to the leave
-	offset = leave - batch.size();
-	batch += encoding::BNQZ(encoding::RiscVRegister::t4, offset * 4);
+	batch.add(encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(batch.size(), leave) * 4));
 
 	generate_jump(batch);
 }
@@ -53,15 +51,13 @@ void codegen::Jbe::generate(codegen::CodeBatch& batch) const {
 	generate_jump(batch);
 
 	// compute the offset and generate the jump
-	size_t offset = batch.size() - index;
-	batch[index] = encoding::BEQZ(encoding::RiscVRegister::t4, offset * 4);
+	batch.insert(index, encoding::BEQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
 
 	// load the carry flag
 	evaluate_carry(batch);
 
 	// generate the jump to the out-jump
-	offset = finish - batch.size();
-	batch += encoding::BNQZ(encoding::RiscVRegister::t4, offset * 4);
+	batch.add(encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(batch.size(), finish) * 4));
 
 	// generate the code to leave the function
 	generate_step(batch);
@@ -79,8 +75,7 @@ void codegen::Jc::generate(codegen::CodeBatch& batch) const {
 	generate_step(batch);
 
 	// compute the offset and generate the jump
-	size_t offset = batch.size() - index;
-	batch[index] = encoding::BNQZ(encoding::RiscVRegister::t4, offset * 4);
+	batch.insert(index, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
 
 	generate_jump(batch);
 }
@@ -102,8 +97,7 @@ void codegen::Jcxz::generate(codegen::CodeBatch& batch) const {
 	generate_step(batch);
 
 	// compute the offset and generate the jump
-	size_t offset = batch.size() - index;
-	batch[index] = encoding::BNQZ(reg, offset * 4);
+	batch.insert(index, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
 
 	generate_jump(batch);
 }
@@ -121,8 +115,7 @@ void codegen::Jg::generate(codegen::CodeBatch& batch) const {
 	generate_step(batch);
 
 	// compute the offset and generate the jump
-	size_t offset = batch.size() - index;
-	batch[index] = encoding::BEQZ(encoding::RiscVRegister::t4, offset * 4);
+	batch.insert(index, encoding::BEQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
 
 	// load the sign flag
 	evaluate_sign(batch, encoding::RiscVRegister::t0, encoding::RiscVRegister::t5);
@@ -131,8 +124,7 @@ void codegen::Jg::generate(codegen::CodeBatch& batch) const {
 	evaluate_overflow(batch);
 
 	// generate the jump to the leave
-	offset = leave - batch.size();
-	batch += encoding::BNE(encoding::RiscVRegister::t4, encoding::RiscVRegister::t0, offset * 4);
+	batch.add(encoding::BNE(encoding::RiscVRegister::t4, encoding::RiscVRegister::t0, batch.offset(batch.size(), leave) * 4));
 
 	generate_jump(batch);
 }
@@ -152,8 +144,7 @@ void codegen::Jge::generate(codegen::CodeBatch& batch) const {
 	generate_step(batch);
 
 	// compute the offset and generate the jump
-	size_t offset = batch.size() - index;
-	batch[index] = encoding::BEQ(encoding::RiscVRegister::t4, encoding::RiscVRegister::t0, offset * 4);
+	batch.insert(index, encoding::BEQ(encoding::RiscVRegister::t4, encoding::RiscVRegister::t0, batch.offset(index, batch.size()) * 4));
 
 	generate_jump(batch);
 }
@@ -173,8 +164,7 @@ void codegen::Jl::generate(codegen::CodeBatch& batch) const {
 	generate_step(batch);
 
 	// compute the offset and generate the jump
-	size_t offset = batch.size() - index;
-	batch[index] = encoding::BNE(encoding::RiscVRegister::t4, encoding::RiscVRegister::t0, offset * 4);
+	batch.insert(index, encoding::BNE(encoding::RiscVRegister::t4, encoding::RiscVRegister::t0, batch.offset(index, batch.size()) * 4));
 
 	generate_jump(batch);
 }
@@ -192,8 +182,7 @@ void codegen::Jle::generate(codegen::CodeBatch& batch) const {
 	generate_jump(batch);
 
 	// compute the offset and generate the jump
-	size_t offset = batch.size() - index;
-	batch[index] = encoding::BEQZ(encoding::RiscVRegister::t4, offset * 4);
+	batch.insert(index, encoding::BEQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
 
 	// load the sign flag
 	evaluate_sign(batch, encoding::RiscVRegister::t0, encoding::RiscVRegister::t5);
@@ -202,8 +191,7 @@ void codegen::Jle::generate(codegen::CodeBatch& batch) const {
 	evaluate_overflow(batch);
 
 	// generate the jump to the result
-	offset = finish - batch.size();
-	batch += encoding::BNE(encoding::RiscVRegister::t4, encoding::RiscVRegister::t0, offset * 4);
+	batch.add(encoding::BNE(encoding::RiscVRegister::t4, encoding::RiscVRegister::t0, batch.offset(batch.size(), finish) * 4));
 
 	// generate the code to leave the jump
 	generate_step(batch);
@@ -221,8 +209,7 @@ void codegen::Jnc::generate(codegen::CodeBatch& batch) const {
 	generate_step(batch);
 
 	// compute the offset and generate the jump
-	size_t offset = batch.size() - index;
-	batch[index] = encoding::BEQZ(encoding::RiscVRegister::t4, offset * 4);
+	batch.insert(index, encoding::BEQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
 
 	generate_jump(batch);
 }
@@ -239,8 +226,7 @@ void codegen::Jno::generate(codegen::CodeBatch& batch) const {
 	generate_step(batch);
 
 	// compute the offset and generate the jump
-	size_t offset = batch.size() - index;
-	batch[index] = encoding::BEQZ(encoding::RiscVRegister::t4, offset * 4);
+	batch.insert(index, encoding::BEQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
 
 	generate_jump(batch);
 }
@@ -257,8 +243,7 @@ void codegen::Jnp::generate(codegen::CodeBatch& batch) const {
 	generate_step(batch);
 
 	// compute the offset and generate the jump
-	size_t offset = batch.size() - index;
-	batch[index] = encoding::BEQZ(encoding::RiscVRegister::t4, offset * 4);
+	batch.insert(index, encoding::BEQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
 
 	generate_jump(batch);
 }
@@ -275,8 +260,7 @@ void codegen::Jns::generate(codegen::CodeBatch& batch) const {
 	generate_step(batch);
 
 	// compute the offset and generate the jump
-	size_t offset = batch.size() - index;
-	batch[index] = encoding::BEQZ(encoding::RiscVRegister::t4, offset * 4);
+	batch.insert(index, encoding::BEQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
 
 	generate_jump(batch);
 }
@@ -293,8 +277,7 @@ void codegen::Jnz::generate(codegen::CodeBatch& batch) const {
 	generate_step(batch);
 
 	// compute the offset and generate the jump
-	size_t offset = batch.size() - index;
-	batch[index] = encoding::BEQZ(encoding::RiscVRegister::t4, offset * 4);
+	batch.insert(index, encoding::BEQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
 
 	generate_jump(batch);
 }
@@ -311,8 +294,7 @@ void codegen::Jo::generate(codegen::CodeBatch& batch) const {
 	generate_step(batch);
 
 	// compute the offset and generate the jump
-	size_t offset = batch.size() - index;
-	batch[index] = encoding::BNQZ(encoding::RiscVRegister::t4, offset * 4);
+	batch.insert(index, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
 
 	generate_jump(batch);
 }
@@ -329,8 +311,7 @@ void codegen::Jp::generate(codegen::CodeBatch& batch) const {
 	generate_step(batch);
 
 	// compute the offset and generate the jump
-	size_t offset = batch.size() - index;
-	batch[index] = encoding::BNQZ(encoding::RiscVRegister::t4, offset * 4);
+	batch.insert(index, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
 
 	generate_jump(batch);
 }
@@ -347,8 +328,7 @@ void codegen::Js::generate(codegen::CodeBatch& batch) const {
 	generate_step(batch);
 
 	// compute the offset and generate the jump
-	size_t offset = batch.size() - index;
-	batch[index] = encoding::BNQZ(encoding::RiscVRegister::t4, offset * 4);
+	batch.insert(index, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
 
 	generate_jump(batch);
 }
@@ -365,8 +345,7 @@ void codegen::Jz::generate(codegen::CodeBatch& batch) const {
 	generate_step(batch);
 
 	// compute the offset and generate the jump
-	size_t offset = batch.size() - index;
-	batch[index] = encoding::BNQZ(encoding::RiscVRegister::t4, offset * 4);
+	batch.insert(index, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
 
 	generate_jump(batch);
 }
