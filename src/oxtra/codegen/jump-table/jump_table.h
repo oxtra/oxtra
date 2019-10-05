@@ -13,6 +13,7 @@ namespace codegen::jump_table {
 		virtual_syscall = 0,
 		reroute_static,
 		reroute_dynamic,
+		reroute_return,
 		debug_callback,
 		debug_callback_riscv,
 		c_wrapper,
@@ -93,6 +94,11 @@ namespace codegen::jump_table {
 	* Generates a jump to reroute_dynamic.
 	*/
 	void jump_reroute_dynamic(CodeBatch& batch);
+
+	/**
+	 * Generates a jump to reroute_return.
+	 */
+	void jump_reroute_return(CodeBatch& batch);
 
 	/**
 	 * Generates a jump to the debugger routine.

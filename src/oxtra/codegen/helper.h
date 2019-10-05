@@ -9,6 +9,8 @@ namespace codegen::helper {
 	// If these registers are changed, the documentation has to be updated
 	constexpr static encoding::RiscVRegister
 			address_destination = encoding::RiscVRegister::t3,
+			return_stack = encoding::RiscVRegister::s1,
+			call_table_address = encoding::RiscVRegister::s8,
 			jump_table_address = encoding::RiscVRegister::s10,
 			context_address = encoding::RiscVRegister::s11;
 
