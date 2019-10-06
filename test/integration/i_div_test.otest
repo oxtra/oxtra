@@ -1,7 +1,6 @@
 # shelltestrunner apparently does not accept program return values larger than 8 bit
 
-$ ./o
-
+$ ./oxtra test/resources/no_libc/div/div_08b_1.elf
 >= 5
 $ ./oxtra test/resources/no_libc/div/div_08b_2.elf
 >= 251 # -5
@@ -44,15 +43,15 @@ $ ./oxtra test/resources/no_libc/div/div_64b_4.elf
 >= 5
 
 $ ./oxtra test/resources/no_libc/div/div_zero.elf
-> /.*Divide exception.*/
+>2 /.*Divide exception.*/
 >= !0
 $ ./oxtra test/resources/no_libc/div/div_overflow_08b.elf
-> /.*Divide exception.*/
+>2 /.*Divide exception.*/
 >= !0
 $ ./oxtra test/resources/no_libc/div/div_overflow_16b.elf
-> /.*Divide exception.*/
+>2 /.*Divide exception.*/
 >= !0
 $ ./oxtra test/resources/no_libc/div/div_overflow_32b.elf
-> /.*Divide exception.*/
+>2 /.*Divide exception.*/
 >= !0
 # 64 bit overflow not being detected is a known bug
