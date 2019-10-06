@@ -2,7 +2,9 @@
 #include "dispatcher.h"
 #include "execution_context.h"
 
-#include <spdlog/spdlog.h>
+#include "oxtra/logger/logger.h"
+
+#include <cstring>
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -17,7 +19,7 @@ void dispatcher::syscalls::open(dispatcher::ExecutionContext* context) {
 
 	const auto fd = openat(AT_FDCWD, file, flag, mode);
 
-	spdlog::info("open({}, 0x{:x}, {}) syscall handled (returned: {}).", file, flag, mode, fd);
+	logger::syscall("open({}, 0x{:x}, {}) syscall handled (returned: {}).\n", file, flag, mode, fd);
 	context->guest.map.rax = fd;
 }
 
@@ -77,7 +79,7 @@ void dispatcher::syscalls::exit(dispatcher::ExecutionContext* context) {
 void dispatcher::syscalls::brk(dispatcher::ExecutionContext* context) {
 	const auto address = context->guest.map.rdi;
 
-	spdlog::info("brk(0x{:x}) (current break: 0x{:x})", address, context->program_break);
+	logger::syscall("brk(0x{:x}) (current break: 0x{:x})\n", address, context->program_break);
 
 	// we neither allocate nor free
 	if (address < context->initial_break) {
@@ -108,7 +110,7 @@ void dispatcher::syscalls::brk(dispatcher::ExecutionContext* context) {
 
 	// failed to allocate the memory
 	if (reinterpret_cast<void*>(mem) == MAP_FAILED) {
-		spdlog::error("failed to allocate memory for brk (size: 0x{:x})", alloc_size);
+		logger::syscall("failed to allocate memory for brk (size: 0x{:x})\n", alloc_size);
 		context->guest.map.rax = context->program_break;
 		return;
 	}
@@ -116,12 +118,12 @@ void dispatcher::syscalls::brk(dispatcher::ExecutionContext* context) {
 	// allocated the memory but at a wrong address
 	else if (mem != context->last_break_page) {
 		munmap(reinterpret_cast<void*>(mem), alloc_size);
-		spdlog::error("failed to allocate memory for brk (size: 0x{:x})", alloc_size);
+		logger::syscall("failed to allocate memory for brk (size: 0x{:x})\n", alloc_size);
 		context->guest.map.rax = context->program_break;
 		return;
 	}
 
-	spdlog::info("allocated 0x{:x} bytes for brk. new program break: 0x{:x}.", alloc_size, address);
+	logger::syscall("allocated 0x{:x} bytes for brk. new program break: 0x{:x}.\n", alloc_size, address);
 
 	context->last_break_page += alloc_size;
 	context->program_break = address;
@@ -141,7 +143,7 @@ void dispatcher::syscalls::arch_prctl(dispatcher::ExecutionContext* context) {
 
 			// gs:[0] = gs_base
 			*reinterpret_cast<uint64_t*>(context->gs_base) = context->gs_base;
-			spdlog::debug("gs base set to {0:x}", context->gs_base);
+			logger::syscall("gs base set to {0:x}\n", context->gs_base);
 			break;
 
 		case arch_set_fs:
@@ -149,7 +151,7 @@ void dispatcher::syscalls::arch_prctl(dispatcher::ExecutionContext* context) {
 
 			// fs:[0] = fs_base
 			*reinterpret_cast<uint64_t*>(context->fs_base) = context->fs_base;
-			spdlog::debug("fs base set to {0:x}", context->fs_base);
+			logger::syscall("fs base set to {0:x}\n", context->fs_base);
 			break;
 
 		case arch_get_fs:
@@ -169,16 +171,16 @@ void dispatcher::syscalls::arch_prctl(dispatcher::ExecutionContext* context) {
 }
 
 void dispatcher::syscalls::sigaction(dispatcher::ExecutionContext* context) {
-	spdlog::info("ignored sigaction syscall.");
+	logger::syscall("ignored sigaction syscall.\n");
 	context->guest.map.rax = 0;
 }
 
 void dispatcher::syscalls::sigprocmask(dispatcher::ExecutionContext* context) {
-	spdlog::info("ignored sigprocmask syscall.");
+	logger::syscall("ignored sigprocmask syscall.\n");
 	context->guest.map.rax = 0;
 }
 
 void dispatcher::syscalls::ioctl(dispatcher::ExecutionContext* context) {
-	spdlog::info("ignored ioctl syscall.");
+	logger::syscall("ignored ioctl syscall.\n");
 	context->guest.map.rax = 0;
 }

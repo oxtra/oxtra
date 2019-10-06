@@ -1,9 +1,9 @@
 #include "debugger.h"
-#include <spdlog/spdlog.h>
 #include <string>
 #include <iostream>
 #include <csignal>
 
+#include "oxtra/logger/logger.h"
 #include "oxtra/dispatcher/dispatcher.h"
 
 // define the constants
@@ -89,7 +89,7 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address) {
 					   "flags      fg                      Print the flags.\n"
 					   "help                               Print this menu.\n"
 					   "hex        hx                      Set the register print-type to hexadecimal.\n"
-					   "logging    log                     Set the current logging-level (same as argument).\n"
+					   "logging    log                     Toggle the current logging-level (same as argument).\n"
 					   "quit       q                       Disable the debugger and continue normal execution.\n"
 					   "read       rd                      Read from memory. (Won't protect from segmentation-faults!)\n"
 					   "remove     rbp                     Remove one break-point.\n"
@@ -331,29 +331,36 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address) {
 			_state &= ~DebugState::reg_dec;
 			return "set register-printing to hex!";
 		case DebugInputKey::logging:
-			if (arg_state[0] != arg_state_number)
+			if (arg_state[0] != arg_state_number) {
 				return "invalid logging-level!";
+			}
+
 			switch (arg_number[0]) {
 				case 0:
-					spdlog::set_level(spdlog::level::level_enum::trace);
+					logger::set_riscv(!logger::get_riscv());
 					break;
 				case 1:
-					spdlog::set_level(spdlog::level::level_enum::debug);
+					logger::set_x86(!logger::get_x86());
 					break;
 				case 2:
-					spdlog::set_level(spdlog::level::level_enum::info);
+					logger::set_translated(!logger::get_translated());
 					break;
 				case 3:
-					spdlog::set_level(spdlog::level::level_enum::warn);
+					logger::set_reroutes(!logger::get_reroutes());
 					break;
 				case 4:
-					spdlog::set_level(spdlog::level::level_enum::err);
+					logger::set_syscall(!logger::get_syscall());
 					break;
 				case 5:
-					spdlog::set_level(spdlog::level::level_enum::critical);
+					logger::set_return_value(!logger::get_return_value());
 					break;
 				case 6:
-					spdlog::set_level(spdlog::level::level_enum::off);
+					if (logger::get_level() == 0) {
+						logger::set_level(logger::Level::riscv | logger::Level::x86 | logger::Level::translated |
+										  logger::Level::reroutes | logger::Level::syscall | logger::Level::return_value);
+					} else {
+						logger::set_level(0);
+					}
 					break;
 				default:
 					return "logging-level out of range!";

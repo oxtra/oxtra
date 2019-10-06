@@ -2,19 +2,14 @@
 #include "oxtra/dispatcher/syscalls.h"
 #include "execution_context.h"
 #include "oxtra/debugger/debugger.h"
-#include <spdlog/spdlog.h>
-#include <elf.h>
+#include "oxtra/logger/logger.h"
+#include "elf.h"
+
+#include <cstring>
 
 using namespace dispatcher;
 using namespace codegen;
 using namespace utils;
-
-/* This statement is required and must not be removed.
- * Otherwise reroute_static & reroute_dynamic will not compile,
- * because they use this function with this prototype, but they
- * are not capable of triggering the compiler to compile this function.
- * Thus we have to trigger if from outside. */
-template void spdlog::info(const char*, const unsigned long&);
 
 Dispatcher::Dispatcher(const elf::Elf& elf, const arguments::Arguments& args, char** envp)
 		: _elf(elf), _args(args), _envp(envp), _codegen(args, elf) {}
@@ -123,9 +118,6 @@ void Dispatcher::init_guest_context() {
 			entry->a_un.a_val = _elf.get_entry_point();
 		}
 	}
-
-	spdlog::debug("initialized guest stack with {} arguments, {} environment pointers, and {} auxiliary vectors.",
-				  _args.get_guest_arguments().size() + 1, env_count, auxv_count);
 }
 
 long Dispatcher::virtualize_syscall(ExecutionContext* context) {
@@ -144,10 +136,10 @@ long Dispatcher::virtualize_syscall(ExecutionContext* context) {
 			// do we forward this syscall to the riscv kernel?
 			if (entry.is_forwarded()) {
 				// print the systemcall with its attributes
-				spdlog::info("syscall: [{:03}]->[{:03}]({:#x}, {:#x}, {:#x}, {:#x}, {:#x}, {:#x})",
-							 guest_index, entry.riscv_index,
-							 context->guest.map.rdi, context->guest.map.rsi, context->guest.map.rdx,
-							 context->guest.map.r10, context->guest.map.r8, context->guest.map.r9);
+				logger::syscall("syscall: [{:03}]->[{:03}]({:#x}, {:#x}, {:#x}, {:#x}, {:#x}, {:#x})\n",
+								guest_index, entry.riscv_index,
+								context->guest.map.rdi, context->guest.map.rsi, context->guest.map.rdx,
+								context->guest.map.r10, context->guest.map.r8, context->guest.map.r9);
 
 				return entry.riscv_index;
 			}

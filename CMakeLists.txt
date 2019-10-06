@@ -29,13 +29,16 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
-# Add sub directories
-add_subdirectory(libs/fadec)
-add_subdirectory(libs/spdlog)
-
 add_subdirectory(src)
 
+# Add sub directories
+add_subdirectory(libs/fadec)
+add_subdirectory(libs/fmt)
+
 add_executable(${PROJECT_NAME} src/main.cpp)
+
+
+
 
 target_link_libraries(${PROJECT_NAME}
 		fadec

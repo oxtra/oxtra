@@ -1,5 +1,5 @@
-#include <spdlog/spdlog.h>
 #include "arguments.h"
+#include "oxtra/logger/logger.h"
 
 using namespace arguments;
 
@@ -8,7 +8,7 @@ const char* argp_program_bug_address = "https://gitlab.lrz.de/lrr-tum/students/e
 
 Arguments::Arguments(int argc, char** argv) :
 		_executable_path{argv[0]},
-		_stored_arguments{nullptr, std::vector<std::string>(), spdlog::level::level_enum::warn,
+		_stored_arguments{nullptr, std::vector<std::string>(), 0,
 						  0, 0x200000, 0x1000, 0x200, 0x40} {
 
 	parse_arguments(argc, argv);
@@ -22,8 +22,8 @@ const std::vector<std::string>& Arguments::get_guest_arguments() const {
 	return _stored_arguments.guest_arguments;
 }
 
-enum spdlog::level::level_enum Arguments::get_log_level() const {
-	return _stored_arguments.spdlog_log_level;
+uint8_t Arguments::get_log_level() const {
+	return _stored_arguments.log_level;
 }
 
 size_t Arguments::get_stack_size() const {
@@ -118,8 +118,13 @@ error_t Arguments::parse_opt(int key, char* arg, struct argp_state* state) {
 			arguments->guest_arguments = string_split(arg, ' ');
 			break;
 		case 'l': {
-			int parsed = parse_string(state, arg, 0, 6, "Illegal log level.");
-			arguments->spdlog_log_level = static_cast<enum spdlog::level::level_enum>(parsed);
+			const auto parsed = static_cast<uint32_t>(parse_string(state, arg, 0, 6, "Illegal log level."));
+			if (parsed == 6) {
+				arguments->log_level = logger::Level::riscv | logger::Level::x86 | logger::Level::translated |
+									   logger::Level::reroutes | logger::Level::syscall | logger::Level::return_value;
+			} else {
+				arguments->log_level |= (1u << parsed);
+			}
 			break;
 		}
 		case dbk_key:

@@ -62,12 +62,12 @@ add_library(oxtra_libs
 		oxtra/codegen/instructions/logic/bit-test/bittest.cpp
 		oxtra/codegen/instructions/logic/setcc/setcc.cpp
 		oxtra/codegen/instructions/logic/logic.cpp
-		oxtra/Logger/Logger.cpp
+		oxtra/logger/logger.cpp
 )
 
 target_link_libraries(oxtra_libs
 		fadec
-		spdlog
+		fmt
 )
 
 target_include_directories(oxtra_libs

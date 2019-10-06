@@ -1,8 +1,6 @@
-#include "oxtra/codegen/codestore/codestore.h"
-
-#include <spdlog/spdlog.h>
-#include <spdlog/sinks/basic_file_sink.h>
-#include <oxtra/dispatcher/dispatcher.h>
+#include "codestore.h"
+#include "oxtra/dispatcher/dispatcher.h"
+#include "oxtra/logger/logger.h"
 
 using namespace utils;
 using namespace codegen::codestore;
