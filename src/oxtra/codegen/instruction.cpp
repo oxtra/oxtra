@@ -70,7 +70,12 @@ RiscVRegister codegen::Instruction::translate_operand(CodeBatch& batch, const fa
 
 	// check if the operand describes an immediate
 	if (op.get_type() == OperandType::imm) {
-		load_immediate(batch, get_immediate(), temp_a);
+		auto imm = get_immediate();
+		if (op.get_size() < 8 && !sign_extend && !full_load) {
+			imm &= (0xffff'ffff'ffff'ffffull >> (64 - op.get_size() * 8));
+		}
+
+		load_immediate(batch, imm, temp_a);
 		return temp_a;
 	}
 
