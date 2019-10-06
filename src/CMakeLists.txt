@@ -62,6 +62,7 @@ add_library(oxtra_libs
 		oxtra/codegen/instructions/logic/bit-test/bittest.cpp
 		oxtra/codegen/instructions/logic/setcc/setcc.cpp
 		oxtra/codegen/instructions/logic/logic.cpp
+		oxtra/Logger/Logger.cpp
 )
 
 target_link_libraries(oxtra_libs
