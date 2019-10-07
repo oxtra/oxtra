@@ -49,7 +49,7 @@ void codegen::CodeBatchImpl::end() {
 
 void codegen::CodeBatchImpl::print() const {
 	for (size_t i = 0; i < count; ++i)
-		logger::riscv("    [{:02}] = {}\n", i, decoding::parse_riscv(riscv[i]));
+		logger::log(logger::Level::riscv, "    [{:02}] = {}\n", i, decoding::parse_riscv(riscv[i]));
 }
 
 utils::riscv_instruction_t* codegen::CodeBatchImpl::get() {

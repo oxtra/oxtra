@@ -89,7 +89,7 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address) {
 					   "flags      fg                      Print the flags.\n"
 					   "help                               Print this menu.\n"
 					   "hex        hx                      Set the register print-type to hexadecimal.\n"
-					   "logging    log                     Toggle the current logging-level (same as argument).\n"
+					   "logging    log                     Set the current logging-level (same as argument).\n"
 					   "quit       q                       Disable the debugger and continue normal execution.\n"
 					   "read       rd                      Read from memory. (Won't protect from segmentation-faults!)\n"
 					   "remove     rbp                     Remove one break-point.\n"
@@ -335,36 +335,7 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address) {
 				return "invalid logging-level!";
 			}
 
-			switch (arg_number[0]) {
-				case 0:
-					logger::set_riscv(!logger::get_riscv());
-					break;
-				case 1:
-					logger::set_x86(!logger::get_x86());
-					break;
-				case 2:
-					logger::set_translated(!logger::get_translated());
-					break;
-				case 3:
-					logger::set_reroutes(!logger::get_reroutes());
-					break;
-				case 4:
-					logger::set_syscall(!logger::get_syscall());
-					break;
-				case 5:
-					logger::set_return_value(!logger::get_return_value());
-					break;
-				case 6:
-					if (logger::get_level() == 0) {
-						logger::set_level(logger::Level::riscv | logger::Level::x86 | logger::Level::translated |
-										  logger::Level::reroutes | logger::Level::syscall | logger::Level::return_value);
-					} else {
-						logger::set_level(0);
-					}
-					break;
-				default:
-					return "logging-level out of range!";
-			}
+			logger::set_level(static_cast<uint8_t>(arg_number[0]));
 			return "logging-level set!";
 		case DebugInputKey::quit:
 			_context->debugger = nullptr;

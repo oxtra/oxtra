@@ -117,16 +117,9 @@ error_t Arguments::parse_opt(int key, char* arg, struct argp_state* state) {
 		case 'a':
 			arguments->guest_arguments = string_split(arg, ' ');
 			break;
-		case 'l': {
-			const auto parsed = static_cast<uint32_t>(parse_string(state, arg, 0, 6, "Illegal log level."));
-			if (parsed == 6) {
-				arguments->log_level = logger::Level::riscv | logger::Level::x86 | logger::Level::translated |
-									   logger::Level::reroutes | logger::Level::syscall | logger::Level::return_value;
-			} else {
-				arguments->log_level |= (1u << parsed);
-			}
+		case 'l':
+			arguments->log_level = std::strtol(arg, nullptr, 0);
 			break;
-		}
 		case dbk_key:
 			arguments->debugging = parse_string(state, arg, 0, 2, "unknown debugging-mode.");
 			break;

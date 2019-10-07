@@ -26,10 +26,10 @@ size_t debugger::DebuggerBatch::add(utils::riscv_instruction_t inst) {
 void debugger::DebuggerBatch::print() const {
 	if (Debugger::step_riscv()) {
 		for (size_t i = 1; i < count; i += 2)
-			logger::riscv("    [{:02}] = {}\n", i / 2, decoding::parse_riscv(riscv[i]));
+			logger::log(logger::Level::riscv, "    [{:02}] = {}\n", i / 2, decoding::parse_riscv(riscv[i]));
 	} else {
 		for (size_t i = 1; i < count; i++)
-			logger::riscv("    [{:02}] = {}\n", i - 1, decoding::parse_riscv(riscv[i]));
+			logger::log(logger::Level::riscv, "    [{:02}] = {}\n", i - 1, decoding::parse_riscv(riscv[i]));
 	}
 }
 

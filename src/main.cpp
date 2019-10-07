@@ -18,7 +18,7 @@ int main(int argc, char** argv, char** envp) {
 
 	// startup the translation and execution of the source-code
 	const auto return_value = dispatcher.run();
-	logger::return_value("guest returned: {0:#x} ({1:d})\n", static_cast<unsigned long>(return_value), return_value);
+	logger::log(logger::Level::return_value, "guest returned: {0:#x} ({1:d})\n", static_cast<unsigned long>(return_value), return_value);
 
 	return return_value;
 }

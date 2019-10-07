@@ -101,11 +101,11 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 		_batch->end();
 
 		// print some debug-information
-		if (logger::get_x86()) {
-			logger::x86("  {}\n", inst->string());
+		if (logger::get_level(logger::Level::x86)) {
+			logger::log(logger::Level::x86, "  {}\n", inst->string());
 		}
 
-		if (logger::get_riscv()) {
+		if (logger::get_level(logger::Level::riscv)) {
 			_batch->print();
 		}
 
@@ -117,7 +117,7 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 	debugger::Debugger::end_block(*_batch, &codeblock);
 
 	// add dynamic tracing-information for the basic-block
-	logger::translated("basicblock: [{0:#x} - {1:#x}] -> [{2:#x}]\n", codeblock.x86_start, codeblock.x86_end,
+	logger::log(logger::Level::translated, "basicblock: [{0:#x} - {1:#x}] -> [{2:#x}]\n", codeblock.x86_start, codeblock.x86_end,
 				 codeblock.riscv_start);
 
 	return codeblock.riscv_start;

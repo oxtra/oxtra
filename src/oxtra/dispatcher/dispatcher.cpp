@@ -136,7 +136,7 @@ long Dispatcher::virtualize_syscall(ExecutionContext* context) {
 			// do we forward this syscall to the riscv kernel?
 			if (entry.is_forwarded()) {
 				// print the systemcall with its attributes
-				logger::syscall("syscall: [{:03}]->[{:03}]({:#x}, {:#x}, {:#x}, {:#x}, {:#x}, {:#x})\n",
+				logger::log(logger::Level::syscall, "syscall: [{:03}]->[{:03}]({:#x}, {:#x}, {:#x}, {:#x}, {:#x}, {:#x})\n",
 								guest_index, entry.riscv_index,
 								context->guest.map.rdi, context->guest.map.rsi, context->guest.map.rdx,
 								context->guest.map.r10, context->guest.map.r8, context->guest.map.r9);

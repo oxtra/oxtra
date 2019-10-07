@@ -43,7 +43,7 @@ namespace arguments {
 				{"debug",        dbk_key, "MODE",            0, "Specify to attach and enable the debugger. 0=disabled, 1=lightweight, 2=riscv-enabled. The default is 0.", 0},
 				{"lentry-size",  'e',     "SIZE",             0, "The size of the list containing block entires. Limit for consecutive block entries. The default is 64.",                   0},
 				{"linst-size",   'i',     "SIZE",             0, "The size of the list containing instructions. Limit for generated RISCV instructions in a block. The default is 4096.",    0},
-				{"log-level",    'l',     "LEVEL",            0, "Specify the attributes to log. 0=riscv, 1=x86, 2=translated, 3=reroutes, 4=syscalls, 5=return value, 6=all. The default is none.",                   0},
+				{"log-level",    'l',     "LEVEL",            0, "Specify the attributes to log. 0x1=riscv, 0x2=x86, 0x4=translated, 0x8=reroutes, 0x10=syscalls, 0x20=return value. The default is none.",                   0},
 				{"loffset-size", 'o',     "SIZE",             0, "The size of the list containing offset. Limit for consecutive offsets. The default is 512.",                               0},
 				{"stack-size",   's',     "SIZE",             0, "The size of the stack in decimal. The default size is 2MiB (0x200000).",                                                   0},
 				// This specifies the required x86 executable argument
