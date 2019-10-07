@@ -42,6 +42,7 @@
 .section .rodata
 reroute_static_fmt: .string "reroute_static: {0:#x}\n"
 reroute_dynamic_fmt: .string "reroute_dynamic: {0:#x}\n"
+reroute_return_fmt: .string "reroute_return: {0:#x}\n"
 unsupported_overflow_string: .string "the overflow flag of an instruction which doesn't update it it yet, has been used: "
 unsupported_carry_string: .string "the carry flag of an instruction which doesn't update it it yet, has been used: "
 

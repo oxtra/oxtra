@@ -20,7 +20,7 @@ if (NOT CMAKE_COMPILER_IS_GNUCC)
 	message(FATAL_ERROR "Only GNUCC is supported.")
 endif ()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wl,-Ttext-segment=0x7F000000")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wl,-Ttext-segment=0x7F000000 -ffixed-s11")
 
 set(CMAKE_EXE_LINKER_FLAGS "-static")
 set(CMAKE_C_STANDARD 99)

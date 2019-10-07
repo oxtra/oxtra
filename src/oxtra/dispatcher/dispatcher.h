@@ -8,6 +8,8 @@
 #include "oxtra/elf/elf.h"
 #include "execution_context.h"
 
+//#define declare_execution_context() register dispatcher::ExecutionContext* execution_context asm("s11")
+
 namespace dispatcher {
 	static_assert(codegen::helper::address_destination == encoding::RiscVRegister::t3,
 				  "dispatcher::reroute_static, reroute_dynamic requires t3");
@@ -26,7 +28,6 @@ namespace dispatcher {
 		Dispatcher(const elf::Elf& elf, const arguments::Arguments& args, char** envp);
 
 		Dispatcher(const Dispatcher&) = delete;
-
 		Dispatcher(Dispatcher&&) = delete;
 
 	public:
@@ -49,11 +50,13 @@ namespace dispatcher {
 		 */
 		static void fault_exit(const char* fault_string, long exit_code = -1);
 
+		static ExecutionContext* execution_context();
+
 	private:
 		/**
 		 * Initialize the guest context with an (x64) ABI conform stack and registers.
 		 */
-		void init_guest_context();
+		std::pair<uintptr_t, uintptr_t> init_guest_context();
 
 		/**
 		 * Called instead of a syscall instruction.
@@ -78,6 +81,11 @@ namespace dispatcher {
 		 * by jumping to the target in software.
 		 */
 		static void reroute_dynamic();
+
+		/**
+		 * Translates a return address, saves it in the call table and jumps to it.
+		 */
+		static void reroute_return();
 
 		/**
 		 * Entry into the guest context. (Reversed by guest_exit or fault_exit).
