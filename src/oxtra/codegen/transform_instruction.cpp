@@ -1,4 +1,4 @@
-#include "transform_instruction.h"
+#include "codegen.h"
 
 #include "oxtra/codegen/instructions/arithmetic/add.h"
 #include "oxtra/codegen/instructions/arithmetic/adc.h"
@@ -39,7 +39,7 @@
 using namespace codegen;
 using namespace fadec;
 
-std::unique_ptr<codegen::Instruction> codegen::transform_instruction(const fadec::Instruction& inst) {
+std::unique_ptr<codegen::Instruction> codegen::CodeGenerator::transform_instruction(const fadec::Instruction& inst) const {
 	switch (inst.get_type()) {
 		case InstructionType::ADD:
 		case InstructionType::ADD_IMM:

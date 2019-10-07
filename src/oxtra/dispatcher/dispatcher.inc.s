@@ -3,6 +3,7 @@
 .global _ZN10dispatcher10Dispatcher10fault_exitEPKcl # fault_exit
 .global _ZN10dispatcher10Dispatcher14reroute_staticEv # reroute_static
 .global _ZN10dispatcher10Dispatcher15reroute_dynamicEv # reroute_dynamic
+.global _ZN10dispatcher10Dispatcher14reroute_returnEv # reroute_return
 .global _ZN10dispatcher10Dispatcher15syscall_handlerEv # syscall_handler
 
 .section .text
@@ -68,7 +69,6 @@ _ZN10dispatcher10Dispatcher10fault_exitEPKcl:
 	# move the exit-code into a0 and return to the point where guest_enter was called
 	mv a0, t2
 	ret
-
 
 # reroute_static
 _ZN10dispatcher10Dispatcher14reroute_staticEv:
@@ -151,6 +151,44 @@ _ZN10dispatcher10Dispatcher15reroute_dynamicEv:
 	restore_context s11
 	jalr zero, t3, 0
 
+# reroute_return
+_ZN10dispatcher10Dispatcher14reroute_returnEv:
+	# capture the guest context
+	capture_context s11
+
+	# work on the stack after the sysv red zone
+	addi sp, sp, red_zone
+
+	# t3 might be changed by upcoming function calls, which is why we back it up
+	mv s2, t1
+
+	# spdlog::info("reroute_return: 0x{0:x}")
+	# Speedlog requires a reference on the value.
+	# To implement this, we push the value to display on the stack.
+	# Afterwards we can just pass the stackpointer to SpeedLog.
+	la a0, reroute_return_fmt
+	addi sp, sp, -8
+	sd s2, 0(sp)
+	mv a1, sp
+	jal ra, _ZN6spdlog4infoIJmEEEvPKcDpRKT_
+	addi sp, sp, 8
+
+	# _codegen.translate(return address)
+	ld a0, codegen_offset(s11)
+	ld a1, 0(s2)
+	jal ra, _ZN7codegen13CodeGenerator9translateEm
+
+	# store the risc-v return address in the CallEntry
+	sd a0, 8(s2)
+
+	# a0 will be overridden by restore_context so we have to save the translated address
+	mv t3, a0
+
+	# restore the guest context
+	restore_context s11
+
+	# jump to the return address
+	jalr zero, t3, 0
 
 # syscall_handler
 _ZN10dispatcher10Dispatcher15syscall_handlerEv:

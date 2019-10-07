@@ -1,5 +1,4 @@
 #include "oxtra/codegen/codegen.h"
-#include "transform_instruction.h"
 #include "oxtra/dispatcher/dispatcher.h"
 #include "oxtra/debugger/debugger.h"
 #include "helper.h"
@@ -13,7 +12,7 @@ using namespace encoding;
 using namespace dispatcher;
 
 CodeGenerator::CodeGenerator(const arguments::Arguments& args, const elf::Elf& elf)
-		: _elf{elf}, _codestore{args, elf} {
+		: _elf{elf}, _codestore{args, elf}, _call_table{CallEntry{}} {
 	// instantiate the code-batch
 	if (args.get_debugging())
 		_batch = std::make_unique<debugger::DebuggerBatch>();
@@ -126,6 +125,10 @@ void CodeGenerator::update_basic_block(utils::host_addr_t addr, utils::host_addr
 	// write the new instructions
 	helper::load_immediate(code, absolute_address, helper::address_destination);
 	code += encoding::JALR(RiscVRegister::zero, helper::address_destination, 0);
+}
+
+CallEntry* CodeGenerator::get_call_table() {
+	return _call_table.data();
 }
 
 codegen::Instruction& CodeGenerator::decode_instruction(utils::guest_addr_t& addr, inst_vec_t& inst_vec) const {

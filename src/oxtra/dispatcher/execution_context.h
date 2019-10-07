@@ -36,13 +36,11 @@ namespace dispatcher {
 			private:
 				uintptr_t _gp, _tp, _t0, _t1, _t2;
 			public:
-				uintptr_t rbp;
-			private:
-				uintptr_t _s1;
+				uintptr_t rbp, return_stack;
 			public:
-				uintptr_t rax, rbx, rcx, rdx, rsi, rdi, r8, r9, r10, r11, r12, r13, r14, r15;
+				uintptr_t rax, rbx, rcx, rdx, rsi, rdi, r8, r9, r10, r11, r12, r13, r14, r15, call_table;
 			private:
-				uintptr_t _s8, _s9;
+				uintptr_t _s9;
 			public:
 				uintptr_t jump_table, context;
 			private:
@@ -62,7 +60,7 @@ namespace dispatcher {
 						  << "\n\tt1: " << c.t1
 						  << "\n\tt2: " << c.t2
 						  << "\n\tfp = rbp: " << c.fp
-						  << "\n\ts1: " << c.s1
+						  << "\n\ts1 = rs: " << c.s1
 						  << "\n\ta0 = rax: " << c.a0
 						  << "\n\ta1 = rbx: " << c.a1
 						  << "\n\ta2 = rcx: " << c.a2
@@ -77,7 +75,7 @@ namespace dispatcher {
 						  << "\n\ts5 = r13: " << c.s5
 						  << "\n\ts6 = r14: " << c.s6
 						  << "\n\ts7 = r15: " << c.s7
-						  << "\n\ts8: " << c.s8
+						  << "\n\ts8 = ct: " << c.s8
 						  << "\n\ts9: " << c.s9
 						  << "\n\ts10 = jt: " << c.s10
 						  << "\n\ts11 = ctx: " << c.s11

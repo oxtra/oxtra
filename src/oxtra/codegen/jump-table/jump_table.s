@@ -185,6 +185,7 @@ _ZN7codegen10jump_table13table_addressEv:
 	jal zero, _ZN10dispatcher10Dispatcher15syscall_handlerEv
 	jal zero, _ZN10dispatcher10Dispatcher14reroute_staticEv
 	jal zero, _ZN10dispatcher10Dispatcher15reroute_dynamicEv
+	jal zero, _ZN10dispatcher10Dispatcher14reroute_returnEv
 	jal zero, debug_entry
 	jal zero, debug_entry_riscv
 	jal zero, c_wrapper
