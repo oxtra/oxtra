@@ -4,14 +4,10 @@ string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_LOWER)
 if (CMAKE_BUILD_TYPE_LOWER STREQUAL "release")
 	set(CMAKE_BUILD_TYPE Release)
 	add_compile_definitions(RELEASE)
-
-	add_compile_definitions(SPDLOG_ACTIVE_LEVEL=3)
 else ()
 	message(AUTHOR_WARNING "This project has been created with a debug configuration. Use -DCMAKE_BUILD_TYPE=release if this is not a debug environment.")
 	set(CMAKE_BUILD_TYPE Debug)
 	add_compile_definitions(DEBUG)
-
-	add_compile_definitions(SPDLOG_ACTIVE_LEVEL=0)
 endif ()
 
 project(oxtra)
