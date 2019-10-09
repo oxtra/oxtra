@@ -1,15 +1,15 @@
 #ifndef OXTRA_MOVSX_H
 #define OXTRA_MOVSX_H
 
-#include "oxtra/codegen/instructions/binary_operation.h"
+#include "oxtra/codegen/instruction.h"
 
 namespace codegen {
-	class Movsx : public BinaryOperation {
+	class Movsx : public Instruction {
 	public:
 		explicit Movsx(const fadec::Instruction& inst)
-				: BinaryOperation{inst, flags::none, flags::none, false} {}
+				: Instruction{inst, flags::none, flags::none} {}
 
-		void execute_operation(CodeBatch& batch, encoding::RiscVRegister dst, encoding::RiscVRegister src) const override;
+		void generate(CodeBatch& batch) const final;
 	};
 }
 
