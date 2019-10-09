@@ -331,11 +331,13 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address) {
 			_state &= ~DebugState::reg_dec;
 			return "set register-printing to hex!";
 		case DebugInputKey::logging:
-			if (arg_state[0] != arg_state_number) {
+			if (arg_state[0] == arg_state_neg_rel) {
+				logger::set_level(static_cast<uint8_t>(~arg_number[0] + 1));
+			} else if (arg_state[0] != arg_state_number) {
 				return "invalid logging-level!";
+			} else {
+				logger::set_level(static_cast<uint8_t>(arg_number[0]));
 			}
-
-			logger::set_level(static_cast<uint8_t>(arg_number[0]));
 			return "logging-level set!";
 		case DebugInputKey::quit:
 			_context->debugger = nullptr;
