@@ -52,8 +52,8 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address) {
 	input.clear();
 	std::string arg_string[3];
 	uintptr_t arg_number[3] = {0, 0, 0};
-	uint8_t arg_state[3] = {arg_state_unused, arg_state_unused};
-	DebugInputKey arg_key[3] = {DebugInputKey::none, DebugInputKey::none};
+	uint8_t arg_state[3] = {arg_state_unused, arg_state_unused, arg_state_unused};
+	DebugInputKey arg_key[3] = {DebugInputKey::none, DebugInputKey::none, DebugInputKey::none};
 	sstr >> input >> arg_string[0] >> arg_string[1] >> arg_string[2];
 
 	// lookup the key
