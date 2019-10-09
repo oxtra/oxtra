@@ -73,16 +73,19 @@ _ZN10dispatcher10Dispatcher10fault_exitEPKcl:
 # reroute_static
 _ZN10dispatcher10Dispatcher14reroute_staticEv:
 	# capture the guest context
-	capture_context s11
+    capture_context s11
 
-	# work on the stack after the sysv red zone
-	addi sp, sp, red_zone
+    # store the callers address (needed for update_basic_block)
+    mv s1, ra
 
-	# store the callers address (needed for update_basic_block)
-	mv s1, ra
+    # work on the stack after the sysv red zone
+    addi sp, sp, red_zone
+
+    # compute the hash-address
+    compute_tlb_address reroute_static_tlb
 
 	# t3 might be changed by upcoming function calls, which is why we back it up
-	mv s2, t3
+    mv s2, t3
 
 	# logger::reroutes("reroute_static: 0x{0:x}")
 	la a0, reroute_static_fmt
@@ -94,16 +97,20 @@ _ZN10dispatcher10Dispatcher14reroute_staticEv:
 	mv a1, s2
 	jal ra, _ZN7codegen13CodeGenerator9translateEm
 
+	# update the tlb
+	update_tlb_entry
+
 	# write the new address into s0
 	mv s2, a0
 
 	# _codegen.update_basic_block(ra, translated_address);
+	reroute_static_tlb:
 	ld a0, codegen_offset(s11)
 	mv a1, s1
 	mv a2, s2
 	jal ra, _ZN7codegen13CodeGenerator18update_basic_blockEmm
 
-	# s0 will be overridden by restore_context so we have to save the translated address
+	# s2 will be overridden by restore_context so we have to save the translated address
 	mv t3, s2
 
 	# restore the guest context
@@ -113,6 +120,13 @@ _ZN10dispatcher10Dispatcher14reroute_staticEv:
 
 # reroute_dynamic
 _ZN10dispatcher10Dispatcher15reroute_dynamicEv:
+	# capture the s2 and s4-register (t0-t2 are not required to be saved)
+	ld s2, guest_s2_offset(s11)
+	ld s4, guest_s4_offset(s11)
+
+	# compute the hash-address
+	compute_tlb_address reroute_dynamic_tlb
+
 	# capture the guest context
 	capture_context s11
 
@@ -127,10 +141,13 @@ _ZN10dispatcher10Dispatcher15reroute_dynamicEv:
 	mv a1, s2
 	jal ra, _ZN6logger8reroutesEPKcm
 
-    # _codegen.translate(t3)
-    ld a0, codegen_offset(s11)
-    mv a1, s2
-    jal ra, _ZN7codegen13CodeGenerator9translateEm
+	# _codegen.translate(t3)
+	ld a0, codegen_offset(s11)
+	mv a1, s2
+	jal ra, _ZN7codegen13CodeGenerator9translateEm
+
+	# update the tlb
+	update_tlb_entry
 
 	# a0 will be overridden by restore_context so we have to save the translated address
 	mv t3, a0
@@ -138,6 +155,14 @@ _ZN10dispatcher10Dispatcher15reroute_dynamicEv:
 	# restore the guest context
 	restore_context s11
 	jalr zero, t3, 0
+
+	# restore s2 and s4 and jump to the address in s2
+	reroute_dynamic_tlb:
+	mv t3, s2
+	ld s2, guest_s2_offset(s11)
+	ld s4, guest_s4_offset(s11)
+	jalr zero, t3, 0
+
 
 # reroute_return
 _ZN10dispatcher10Dispatcher14reroute_returnEv:

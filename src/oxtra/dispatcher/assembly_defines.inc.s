@@ -10,6 +10,8 @@
 .equ guest_r8_offset, 0x78
 .equ guest_r9_offset, 0x80
 .equ guest_r10_offset, 0x88
+.equ guest_s2_offset, 0x88
+.equ guest_s4_offset, 0x98
 .equ host_offset, 0x0F8
 .equ codegen_offset, 0x1F0
 .equ debugger_offset, 0x1F8
@@ -135,4 +137,33 @@ unsupported_carry_string: .string "the carry flag of an instruction which doesn'
     ld t5, 0xE8(\reg)
 	ld t6, 0xF0(\reg)
 	restore_context \reg
+.endm
+
+# global macro to compute the address of the tlb-entry (s9 = tlb, t0,s2,s4 = usable, t3 = x86-address)
+# if in tlb: jump to target, s2 = address
+# else: continue with execution, s4 = tlb-entry-address
+.macro compute_tlb_address target
+	# hash the address (stored in t3) (hash-width: 7bits)
+	srli t0, t3, 11
+	xor t0, t0, t3
+	andi t0, t0, 0x7f0  # hash: (addr[17:11] ^ addr[10:4]) & 0b0111'1111'0000
+
+	# as the four lower bits of the hash are zero, it can also be used as the offset into the tlb
+	add s4, t0, s9
+
+	# load the x86-address from the tlb and compare it to the target-address
+	ld t0, 0(s4)
+	bne t0, t3, not_\target
+
+	# store the riscv-address into s2
+	ld s2, 8(s4)
+	j \target
+	not_\target:
+.endm
+
+# global macro to update the tlb (s2 = x86-address, a0 = riscv-address, s4 = tlb-entry-address)
+.macro update_tlb_entry
+	# write the new addresses into the tlb
+	sd s2, 0(s4)
+    sd a0, 8(s4)
 .endm
