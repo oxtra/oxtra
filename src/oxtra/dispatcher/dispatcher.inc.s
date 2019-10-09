@@ -152,7 +152,7 @@ _ZN10dispatcher10Dispatcher14reroute_returnEv:
 
 	# logger::reroutes("reroute_return: 0x{0:x}")
 	la a0, reroute_return_fmt
-	mv a1, s2
+	ld a1, 0(s2)
 	jal ra, _ZN6logger8reroutesEPKcm
 
 	# _codegen.translate(return address)
