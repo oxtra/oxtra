@@ -1,5 +1,5 @@
-#include <spdlog/spdlog.h>
 #include "arguments.h"
+#include "oxtra/logger/logger.h"
 
 using namespace arguments;
 
@@ -8,7 +8,7 @@ const char* argp_program_bug_address = "https://gitlab.lrz.de/lrr-tum/students/e
 
 Arguments::Arguments(int argc, char** argv) :
 		_executable_path{argv[0]},
-		_stored_arguments{nullptr, std::vector<std::string>(), spdlog::level::level_enum::warn,
+		_stored_arguments{nullptr, std::vector<std::string>(), 0,
 						  0, 0x200000, 0x1000, 0x200, 0x40} {
 
 	parse_arguments(argc, argv);
@@ -22,8 +22,8 @@ const std::vector<std::string>& Arguments::get_guest_arguments() const {
 	return _stored_arguments.guest_arguments;
 }
 
-enum spdlog::level::level_enum Arguments::get_log_level() const {
-	return _stored_arguments.spdlog_log_level;
+uint8_t Arguments::get_log_level() const {
+	return _stored_arguments.log_level;
 }
 
 size_t Arguments::get_stack_size() const {
@@ -59,10 +59,10 @@ void Arguments::parse_arguments(int argc, char** argv) {
  * If there was an error while parsing, the failure_string will be printed.
  * @return The parsed value. If there was an error, the application will be exited.
  */
-static long parse_string(struct argp_state* state, char* str, int min_value, const char* failure_string) {
+static long parse_string(struct argp_state* state, char* str, const char* failure_string) {
 	char* end_parse;
-	long parsed_value = strtol(str, &end_parse, 10);
-	if (*end_parse != '\0' || parsed_value < min_value) {
+	long parsed_value = strtol(str, &end_parse, 0);
+	if (*end_parse != '\0') {
 		argp_failure(state, 1, 0, "%s: %s", failure_string, str);
 	}
 
@@ -70,17 +70,32 @@ static long parse_string(struct argp_state* state, char* str, int min_value, con
 }
 
 /**
+ * This method parses a given string and ensures that it is >= the min_value.
+ * If there was an error while parsing, the failure_string will be printed.
+ * @return The parsed value. If there was an error, the application will be exited.
+ */
+static long parse_string(struct argp_state* state, char* str, int min_value, const char* failure_string) {
+	long ret = parse_string(state, str, failure_string);
+
+	if (ret < min_value) {
+		argp_failure(state, 1, 0, "%s: %s. %s %d", failure_string, str,
+					 "Please specify a value larger than", min_value);
+	}
+
+	return ret;
+}
+
+/**
  * This method parses a given string and ensures that it is >= the min_value and <= the max_value.
  * If there was an error while parsing, the failure_string will be printed.
  * @return The parsed value. If there was an error, the application will be exited.
  */
-static int parse_string(struct argp_state* state, char* str,
-						int min_value, int max_value, const char* failure_string) {
-	int ret = parse_string(state, str, min_value, failure_string);
+static long parse_string(struct argp_state* state, char* str, int min_value, int max_value, const char* failure_string) {
+	long ret = parse_string(state, str, min_value, failure_string);
 
 	if (ret > max_value) {
-		argp_failure(state, 1, 0, "%s: %s. %s %d-%d.", failure_string, str, "Please specify a value between", min_value,
-					 max_value);
+		argp_failure(state, 1, 0, "%s: %s. %s %d-%d", failure_string, str,
+					 "Please specify a value between", min_value, max_value);
 	}
 
 	return ret;
@@ -117,25 +132,23 @@ error_t Arguments::parse_opt(int key, char* arg, struct argp_state* state) {
 		case 'a':
 			arguments->guest_arguments = string_split(arg, ' ');
 			break;
-		case 'l': {
-			int parsed = parse_string(state, arg, 0, 6, "Illegal log level.");
-			arguments->spdlog_log_level = static_cast<enum spdlog::level::level_enum>(parsed);
+		case 'l':
+			arguments->log_level |= parse_string(state, arg, "Illegal log level, must be an integer (decimal, or hex)");
 			break;
-		}
 		case dbk_key:
-			arguments->debugging = parse_string(state, arg, 0, 2, "unknown debugging-mode.");
+			arguments->debugging = parse_string(state, arg, 0, 2, "Illegal debugging-mode");
 			break;
 		case 's':
-			arguments->stack_size = parse_string(state, arg, 1, "Illegal size, must be a positive integer.");
+			arguments->stack_size = parse_string(state, arg, 1, "Illegal size, must be a positive integer");
 			break;
 		case 'i':
-			arguments->instruction_list_size = parse_string(state, arg, 1, "Illegal size, must be a positive integer.");
+			arguments->instruction_list_size = parse_string(state, arg, 1, "Illegal size, must be a positive integer");
 			break;
 		case 'o':
-			arguments->offset_list_size = parse_string(state, arg, 1, "Illegal size, must be a positive integer.");
+			arguments->offset_list_size = parse_string(state, arg, 1, "Illegal size, must be a positive integer");
 			break;
 		case 'e':
-			arguments->entry_list_size = parse_string(state, arg, 1, "Illegal size, must be a positive integer.");
+			arguments->entry_list_size = parse_string(state, arg, 1, "Illegal size, must be a positive integer");
 			break;
 		case ARGP_KEY_NO_ARGS:
 			argp_usage(state);

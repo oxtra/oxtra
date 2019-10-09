@@ -1,8 +1,8 @@
 #include "oxtra/codegen/codegen.h"
 #include "oxtra/dispatcher/dispatcher.h"
 #include "oxtra/debugger/debugger.h"
+#include "oxtra/logger/logger.h"
 #include "helper.h"
-#include <spdlog/spdlog.h>
 
 using namespace codegen;
 using namespace utils;
@@ -100,8 +100,13 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 		_batch->end();
 
 		// print some debug-information
-		spdlog::debug("  {}", inst->string());
-		_batch->print();
+		if (logger::get_level(logger::Level::x86)) {
+			logger::log(logger::Level::x86, "  {}\n", inst->string());
+		}
+
+		if (logger::get_level(logger::Level::riscv)) {
+			_batch->print();
+		}
 
 		// add the instruction to the store
 		_codestore.add_instruction(codeblock, inst->get_address(), inst->get_size(), _batch->get(), _batch->size());
@@ -111,7 +116,7 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 	debugger::Debugger::end_block(*_batch, &codeblock);
 
 	// add dynamic tracing-information for the basic-block
-	spdlog::info("basicblock: [{0:#x} - {1:#x}] -> [{2:#x}]", codeblock.x86_start, codeblock.x86_end,
+	logger::log(logger::Level::translated, "basicblock: [{0:#x} - {1:#x}] -> [{2:#x}]\n", codeblock.x86_start, codeblock.x86_end,
 				 codeblock.riscv_start);
 
 	return codeblock.riscv_start;

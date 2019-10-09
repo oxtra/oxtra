@@ -1,9 +1,9 @@
 # Set the project name
-project(fadec LANGUAGES CXX)
+project(fmt LANGUAGES CXX)
 
 # Add a library with the above sources
 add_library(${PROJECT_NAME}
-		src/fadec.cpp
+		src/format.cc
 )
 
 target_include_directories(${PROJECT_NAME}

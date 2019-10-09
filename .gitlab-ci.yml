@@ -1,11 +1,5 @@
 image: plainerman/qemuriscv:oxtra
 
-cache:
-  key: ${CI_COMMIT_REF_SLUG}
-  paths:
-    - libs/spdlog/CMakeFiles/
-    - libs/spdlog/libspdlog.a
-
 build:
   stage: build
   script:

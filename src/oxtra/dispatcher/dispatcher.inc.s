@@ -84,16 +84,10 @@ _ZN10dispatcher10Dispatcher14reroute_staticEv:
 	# t3 might be changed by upcoming function calls, which is why we back it up
 	mv s2, t3
 
-	# spdlog::info("reroute_static: 0x{0:x}")
-	# Speedlog requires a reference on the value.
-	# To implement this, we push the value to display on the stack.
-	# Afterwards we can just pass the stackpointer to SpeedLog.
+	# logger::reroutes("reroute_static: 0x{0:x}")
 	la a0, reroute_static_fmt
-	addi sp, sp, -8
-	sd s2, 0(sp)
-	mv a1, sp
-	jal ra, _ZN6spdlog4infoIJmEEEvPKcDpRKT_
-	addi sp, sp, 8
+	mv a1, s2
+	jal ra, _ZN6logger8reroutesEPKcm
 
 	# _codegen.translate(t3)
 	ld a0, codegen_offset(s11)
@@ -128,16 +122,10 @@ _ZN10dispatcher10Dispatcher15reroute_dynamicEv:
 	# t3 might be changed by upcoming function calls, which is why we back it up
 	mv s2, t3
 
-	# spdlog::info("reroute_dynamic: 0x{0:x}")
-	# Speedlog requires a reference on the value.
-	# To implement this, we push the value to display on the stack.
-	# Afterwards we can just pass the stackpointer to SpeedLog.
+	# logger::reroutes("reroute_dynamic: 0x{0:x}")
 	la a0, reroute_dynamic_fmt
-	addi sp, sp, -8
-	sd s2, 0(sp)
-	mv a1, sp
-	jal ra, _ZN6spdlog4infoIJmEEEvPKcDpRKT_
-	addi sp, sp, 8
+	mv a1, s2
+	jal ra, _ZN6logger8reroutesEPKcm
 
     # _codegen.translate(t3)
     ld a0, codegen_offset(s11)
@@ -162,16 +150,10 @@ _ZN10dispatcher10Dispatcher14reroute_returnEv:
 	# t3 might be changed by upcoming function calls, which is why we back it up
 	mv s2, t1
 
-	# spdlog::info("reroute_return: 0x{0:x}")
-	# Speedlog requires a reference on the value.
-	# To implement this, we push the value to display on the stack.
-	# Afterwards we can just pass the stackpointer to SpeedLog.
+	# logger::reroutes("reroute_return: 0x{0:x}")
 	la a0, reroute_return_fmt
-	addi sp, sp, -8
-	sd s2, 0(sp)
-	mv a1, sp
-	jal ra, _ZN6spdlog4infoIJmEEEvPKcDpRKT_
-	addi sp, sp, 8
+	ld a1, 0(s2)
+	jal ra, _ZN6logger8reroutesEPKcm
 
 	# _codegen.translate(return address)
 	ld a0, codegen_offset(s11)

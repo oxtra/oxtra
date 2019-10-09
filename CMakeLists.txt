@@ -4,14 +4,10 @@ string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_LOWER)
 if (CMAKE_BUILD_TYPE_LOWER STREQUAL "release")
 	set(CMAKE_BUILD_TYPE Release)
 	add_compile_definitions(RELEASE)
-
-	add_compile_definitions(SPDLOG_ACTIVE_LEVEL=3)
 else ()
 	message(AUTHOR_WARNING "This project has been created with a debug configuration. Use -DCMAKE_BUILD_TYPE=release if this is not a debug environment.")
 	set(CMAKE_BUILD_TYPE Debug)
 	add_compile_definitions(DEBUG)
-
-	add_compile_definitions(SPDLOG_ACTIVE_LEVEL=0)
 endif ()
 
 project(oxtra)
@@ -29,13 +25,14 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
-# Add sub directories
-add_subdirectory(libs/fadec)
-add_subdirectory(libs/spdlog)
-
 add_subdirectory(src)
 
+# Add sub directories
+add_subdirectory(libs/fadec)
+add_subdirectory(libs/fmt)
+
 add_executable(${PROJECT_NAME} src/main.cpp)
+
 
 target_link_libraries(${PROJECT_NAME}
 		fadec

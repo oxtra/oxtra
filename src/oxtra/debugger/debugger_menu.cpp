@@ -1,9 +1,9 @@
 #include "debugger.h"
-#include <spdlog/spdlog.h>
 #include <string>
 #include <iostream>
 #include <csignal>
 
+#include "oxtra/logger/logger.h"
 #include "oxtra/dispatcher/dispatcher.h"
 
 // define the constants
@@ -52,8 +52,8 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address) {
 	input.clear();
 	std::string arg_string[3];
 	uintptr_t arg_number[3] = {0, 0, 0};
-	uint8_t arg_state[3] = {arg_state_unused, arg_state_unused};
-	DebugInputKey arg_key[3] = {DebugInputKey::none, DebugInputKey::none};
+	uint8_t arg_state[3] = {arg_state_unused, arg_state_unused, arg_state_unused};
+	DebugInputKey arg_key[3] = {DebugInputKey::none, DebugInputKey::none, DebugInputKey::none};
 	sstr >> input >> arg_string[0] >> arg_string[1] >> arg_string[2];
 
 	// lookup the key
@@ -331,32 +331,12 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address) {
 			_state &= ~DebugState::reg_dec;
 			return "set register-printing to hex!";
 		case DebugInputKey::logging:
-			if (arg_state[0] != arg_state_number)
+			if (arg_state[0] == arg_state_neg_rel) {
+				logger::set_level(static_cast<uint8_t>(~arg_number[0] + 1));
+			} else if (arg_state[0] != arg_state_number) {
 				return "invalid logging-level!";
-			switch (arg_number[0]) {
-				case 0:
-					spdlog::set_level(spdlog::level::level_enum::trace);
-					break;
-				case 1:
-					spdlog::set_level(spdlog::level::level_enum::debug);
-					break;
-				case 2:
-					spdlog::set_level(spdlog::level::level_enum::info);
-					break;
-				case 3:
-					spdlog::set_level(spdlog::level::level_enum::warn);
-					break;
-				case 4:
-					spdlog::set_level(spdlog::level::level_enum::err);
-					break;
-				case 5:
-					spdlog::set_level(spdlog::level::level_enum::critical);
-					break;
-				case 6:
-					spdlog::set_level(spdlog::level::level_enum::off);
-					break;
-				default:
-					return "logging-level out of range!";
+			} else {
+				logger::set_level(static_cast<uint8_t>(arg_number[0]));
 			}
 			return "logging-level set!";
 		case DebugInputKey::quit:
