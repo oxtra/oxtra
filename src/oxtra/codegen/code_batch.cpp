@@ -1,5 +1,5 @@
 #include "code_batch.h"
-#include <spdlog/spdlog.h>
+#include "oxtra/logger/logger.h"
 #include "oxtra/dispatcher/dispatcher.h"
 
 size_t codegen::CodeBatch::size() const {
@@ -49,7 +49,7 @@ void codegen::CodeBatchImpl::end() {
 
 void codegen::CodeBatchImpl::print() const {
 	for (size_t i = 0; i < count; ++i)
-		spdlog::trace("    [{:02}] = {}", i, decoding::parse_riscv(riscv[i]));
+		logger::log(logger::Level::riscv, "    [{:02}] = {}\n", i, decoding::parse_riscv(riscv[i]));
 }
 
 utils::riscv_instruction_t* codegen::CodeBatchImpl::get() {

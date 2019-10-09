@@ -13,6 +13,10 @@ void codegen::jump_table::jump_reroute_dynamic(CodeBatch& batch) {
 	jump_table_entry(batch, Entry::reroute_dynamic);
 }
 
+void codegen::jump_table::jump_reroute_return(codegen::CodeBatch& batch) {
+	jump_table_entry(batch, Entry::reroute_return);
+}
+
 void codegen::jump_table::jump_debugger(CodeBatch& batch) {
 	jump_table_entry(batch, Entry::debug_callback);
 }

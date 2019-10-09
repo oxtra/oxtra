@@ -26,8 +26,8 @@ constexpr const char* register_string[32] = {
 		//"t3", "t4", "t5", "t6"
 
 		"zero", "Vra", "rsp", "Vgp", "Vtp", "Vt0", "Vt1", "Vt2", "rbp",
-		"unmapped_s1", "rax", "rbx", "rcx", "rdx", "rsi", "rdi", "r8", "r9",
-		"r10", "r11", "r12", "r13", "r14", "r15", "unmapped_ss8", "unmapped_ss9",
+		"return_stack", "rax", "rbx", "rcx", "rdx", "rsi", "rdi", "r8", "r9",
+		"r10", "r11", "r12", "r13", "r14", "r15", "call_table", "unmapped_s9",
 		"jump_table", "context", "Vt3", "Vt4", "Vt5", "Vt6"
 };
 constexpr const char* opcode_string[128] = {

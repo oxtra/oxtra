@@ -1,9 +1,12 @@
 #ifndef OXTRA_ARGUMENTS_H
 #define OXTRA_ARGUMENTS_H
 
-#include <spdlog/common.h>
 #include <cstdlib>
 #include <argp.h>
+#include <vector>
+#include <string>
+
+#include "oxtra/logger/logger.h"
 
 namespace arguments {
 	class Arguments {
@@ -24,7 +27,7 @@ namespace arguments {
 		struct StoredArguments {
 			char* guest_path;
 			std::vector<std::string> guest_arguments;
-			spdlog::level::level_enum spdlog_log_level;
+			uint8_t log_level;
 			uint8_t debugging;
 			size_t stack_size;
 			size_t instruction_list_size, offset_list_size, entry_list_size;
@@ -40,7 +43,7 @@ namespace arguments {
 				{"debug",        dbk_key, "MODE",            0, "Specify to attach and enable the debugger. 0=disabled, 1=lightweight, 2=riscv-enabled. The default is 0.", 0},
 				{"lentry-size",  'e',     "SIZE",             0, "The size of the list containing block entires. Limit for consecutive block entries. The default is 64.",                   0},
 				{"linst-size",   'i',     "SIZE",             0, "The size of the list containing instructions. Limit for generated RISCV instructions in a block. The default is 4096.",    0},
-				{"log-level",    'l',     "LEVEL",            0, "Specify the log level. 0=trace, 1=debug, 2=info, 3=warn, 4=error, 5=critical, 6=off. The default is 3.",                   0},
+				{"log-level",    'l',     "LEVEL",            0, "Specify the attributes to log. 0x1=riscv, 0x2=x86, 0x4=translated, 0x8=reroutes, 0x10=syscalls, 0x20=return value. Multiple log entries can be specified that will be OR'd. The default is none (0).",                   0},
 				{"loffset-size", 'o',     "SIZE",             0, "The size of the list containing offset. Limit for consecutive offsets. The default is 512.",                               0},
 				{"stack-size",   's',     "SIZE",             0, "The size of the stack in decimal. The default size is 2MiB (0x200000).",                                                   0},
 				// This specifies the required x86 executable argument
@@ -64,7 +67,7 @@ namespace arguments {
 
 		const std::vector<std::string>& get_guest_arguments() const;
 
-		enum spdlog::level::level_enum get_log_level() const;
+		uint8_t get_log_level() const;
 
 		size_t get_stack_size() const;
 

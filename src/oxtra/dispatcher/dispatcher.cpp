@@ -2,25 +2,20 @@
 #include "oxtra/dispatcher/syscalls.h"
 #include "execution_context.h"
 #include "oxtra/debugger/debugger.h"
-#include <spdlog/spdlog.h>
-#include <elf.h>
+#include "oxtra/logger/logger.h"
+#include "elf.h"
+
+#include <cstring>
 
 using namespace dispatcher;
 using namespace codegen;
 using namespace utils;
 
-/* This statement is required and must not be removed.
- * Otherwise reroute_static & reroute_dynamic will not compile,
- * because they use this function with this prototype, but they
- * are not capable of triggering the compiler to compile this function.
- * Thus we have to trigger if from outside. */
-template void spdlog::info(const char*, const unsigned long&);
-
 Dispatcher::Dispatcher(const elf::Elf& elf, const arguments::Arguments& args, char** envp)
 		: _elf(elf), _args(args), _envp(envp), _codegen(args, elf) {}
 
 long Dispatcher::run() {
-	init_guest_context();
+	const auto [guest_stack, return_stack] = init_guest_context();
 
 	// initialize the debugger if necessary
 	std::unique_ptr<debugger::Debugger> debugger = nullptr;
@@ -44,13 +39,21 @@ long Dispatcher::run() {
 	const char* error_string = nullptr;
 	const auto exit_code = guest_enter(&_context, _elf.get_entry_point(), &error_string);
 
+	munmap(reinterpret_cast<void*>(guest_stack), _args.get_stack_size());
+	munmap(reinterpret_cast<void*>(return_stack), 0x1000);
+
 	// check if the guest has ended with and error
 	if (error_string != nullptr)
 		throw std::runtime_error(error_string);
 	return exit_code;
 }
 
-void Dispatcher::init_guest_context() {
+ExecutionContext* Dispatcher::execution_context() {
+	register ExecutionContext* ctx asm("s11");
+	return ctx;
+}
+
+std::pair<uintptr_t, uintptr_t> Dispatcher::init_guest_context() {
 	// https://software.intel.com/sites/default/files/article/402129/mpx-linux64-abi.pdf
 
 	register uintptr_t gp_reg asm("gp");
@@ -60,6 +63,9 @@ void Dispatcher::init_guest_context() {
 	_context.guest.tp = tp_reg;
 
 	_context.guest.map.rdx = 0; // function-pointer to on-exit
+	_context.guest.map.call_table = reinterpret_cast<uintptr_t>(_codegen.get_call_table());
+	_context.guest.map.return_stack = reinterpret_cast<uintptr_t>(mmap(nullptr, 0x1000, PROT_READ | PROT_WRITE,
+																	   MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
 	_context.guest.map.jump_table = reinterpret_cast<uintptr_t>(jump_table::table_address);
 	_context.guest.map.context = reinterpret_cast<uintptr_t>(&_context);
 	_context.codegen = &_codegen;
@@ -83,15 +89,15 @@ void Dispatcher::init_guest_context() {
 
 	// the count of the necessary arguments with zero entries in between (in bytes). Zero paddings are included in size
 	const auto min_stack_size = utils::page_align(auxv_size + // auxv
-						  env_count * sizeof(char*) + // envp
-						  sizeof(char*) + _args.get_guest_arguments().size() * sizeof(char*) + // argv
-						  sizeof(size_t)); // argc
+												  env_count * sizeof(char*) + // envp
+												  sizeof(char*) + _args.get_guest_arguments().size() * sizeof(char*) + // argv
+												  sizeof(size_t)); // argc
 
 	// initialize the stack (assume a page for the arg, env pointers and aux vectors)
 	const auto stack_size = utils::page_align(_args.get_stack_size());
 
 	const auto stack_memory = reinterpret_cast<uintptr_t>(mmap(nullptr, stack_size, PROT_READ | PROT_WRITE,
-								   MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+															   MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
 
 	// page aligned by only using page-aligned values
 	_context.guest.map.rsp = stack_memory + stack_size - min_stack_size;
@@ -124,8 +130,7 @@ void Dispatcher::init_guest_context() {
 		}
 	}
 
-	spdlog::debug("initialized guest stack with {} arguments, {} environment pointers, and {} auxiliary vectors.",
-				  _args.get_guest_arguments().size() + 1, env_count, auxv_count);
+	return {stack_memory, _context.guest.map.return_stack};
 }
 
 long Dispatcher::virtualize_syscall(ExecutionContext* context) {
@@ -144,10 +149,10 @@ long Dispatcher::virtualize_syscall(ExecutionContext* context) {
 			// do we forward this syscall to the riscv kernel?
 			if (entry.is_forwarded()) {
 				// print the systemcall with its attributes
-				spdlog::info("syscall: [{:03}]->[{:03}]({:#x}, {:#x}, {:#x}, {:#x}, {:#x}, {:#x})",
-							 guest_index, entry.riscv_index,
-							 context->guest.map.rdi, context->guest.map.rsi, context->guest.map.rdx,
-							 context->guest.map.r10, context->guest.map.r8, context->guest.map.r9);
+				logger::log(logger::Level::syscall, "syscall: [{:03}]->[{:03}]({:#x}, {:#x}, {:#x}, {:#x}, {:#x}, {:#x})\n",
+								guest_index, entry.riscv_index,
+								context->guest.map.rdi, context->guest.map.rsi, context->guest.map.rdx,
+								context->guest.map.r10, context->guest.map.r8, context->guest.map.r9);
 
 				return entry.riscv_index;
 			}

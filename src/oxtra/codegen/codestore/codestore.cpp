@@ -1,8 +1,6 @@
-#include "oxtra/codegen/codestore/codestore.h"
-
-#include <spdlog/spdlog.h>
-#include <spdlog/sinks/basic_file_sink.h>
-#include <oxtra/dispatcher/dispatcher.h>
+#include "codestore.h"
+#include "oxtra/dispatcher/dispatcher.h"
+#include "oxtra/logger/logger.h"
 
 using namespace utils;
 using namespace codegen::codestore;
@@ -16,9 +14,15 @@ host_addr_t CodeStore::find(guest_addr_t x86_code) const {
 	// Index into the page table by shifting the address.
 	auto&& entries = _pages[get_page_index(x86_code)];
 
-	// Loop through all basic block entries to find the one that contains the x86_code.
-	for (const auto entry : entries) {
-		if (x86_code >= entry->x86_start && x86_code < entry->x86_end) {
+	// Binary search through all basic block entries to find the one that contains the x86_code.
+	for (size_t l = 0, r = entries.size(); l != r;) {
+		const auto index = (l + r) / 2;
+		const auto entry = entries[index];
+		if (x86_code < entry->x86_start) {
+			r = index;
+		} else if (x86_code >= entry->x86_end) {
+			l = index + 1;
+		} else /*if (entry contains the address)*/ {
 			// Find the address of the instructions corresponding to the x86_code.
 			auto guest_address = entry->x86_start;
 			auto host_address = entry->riscv_start;

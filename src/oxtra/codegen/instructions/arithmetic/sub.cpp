@@ -1,8 +1,6 @@
 #include "sub.h"
 #include "oxtra/codegen/helper.h"
 
-#include <spdlog/spdlog.h>
-
 void codegen::Sub::execute_operation(CodeBatch& batch, encoding::RiscVRegister dst, encoding::RiscVRegister src) const {
 	const auto [carry, overflow] = helper::calculate_entries(
 			jump_table::Entry::carry_add, jump_table::Entry::overflow_sub, get_operand(0).get_size());
