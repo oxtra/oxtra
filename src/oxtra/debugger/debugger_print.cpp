@@ -473,7 +473,7 @@ std::string debugger::Debugger::print_blocks() {
 	return out_str;
 }
 
-std::string debugger::Debugger::print_memory(uintptr_t address, uint8_t count) {
+std::string debugger::Debugger::print_memory(uintptr_t address, uint32_t count) {
 	std::string out_str = "memory:\n";
 
 	// iterate through the memory and print it

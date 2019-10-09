@@ -49,7 +49,7 @@ unsupported_overflow_string: .string "the overflow flag of an instruction which 
 unsupported_carry_string: .string "the carry flag of an instruction which doesn't update it it yet, has been used: "
 
 # global macro's to capture parts of the context or even the whole context
-.macro capture_context reg
+.macro capture_context_tlb reg
 	sd ra, 0x00(\reg)
 	sd sp, 0x08(\reg)
 	sd gp, 0x10(\reg)
@@ -64,9 +64,7 @@ unsupported_carry_string: .string "the carry flag of an instruction which doesn'
 	sd a5, 0x70(\reg)
 	sd a6, 0x78(\reg)
 	sd a7, 0x80(\reg)
-	sd s2, 0x88(\reg)
 	sd s3, 0x90(\reg)
-	sd s4, 0x98(\reg)
 	sd s5, 0xA0(\reg)
 	sd s6, 0xA8(\reg)
 	sd s7, 0xB0(\reg)
@@ -74,6 +72,11 @@ unsupported_carry_string: .string "the carry flag of an instruction which doesn'
 	sd s9, 0xC0(\reg)
 	sd s10, 0xC8(\reg)
 	sd s11, 0xD0(\reg)
+.endm
+.macro capture_context reg
+	capture_context_tlb \reg
+	sd s2, 0x88(\reg)
+	sd s4, 0x98(\reg)
 .endm
 .macro capture_context_high_level reg
 	capture_context \reg

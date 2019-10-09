@@ -166,7 +166,7 @@ namespace debugger {
 
 		std::string print_blocks();
 
-		std::string print_memory(uintptr_t address, uint8_t count);
+		std::string print_memory(uintptr_t address, uint32_t count);
 	};
 }
 

@@ -121,14 +121,14 @@ _ZN10dispatcher10Dispatcher14reroute_staticEv:
 # reroute_dynamic
 _ZN10dispatcher10Dispatcher15reroute_dynamicEv:
 	# capture the s2 and s4-register (t0-t2 are not required to be saved)
-	ld s2, guest_s2_offset(s11)
-	ld s4, guest_s4_offset(s11)
+	sd s2, guest_s2_offset(s11)
+	sd s4, guest_s4_offset(s11)
 
 	# compute the hash-address
 	compute_tlb_address reroute_dynamic_tlb
 
 	# capture the guest context
-	capture_context s11
+	capture_context_tlb s11
 
 	# work on the stack after the sysv red zone
 	addi sp, sp, red_zone
@@ -166,13 +166,21 @@ _ZN10dispatcher10Dispatcher15reroute_dynamicEv:
 
 # reroute_return
 _ZN10dispatcher10Dispatcher14reroute_returnEv:
-	# capture the guest context
-	capture_context s11
+	# capture the s2 and s4-register (t0-t2 are not required to be saved)
+	sd s2, guest_s2_offset(s11)
+	sd s4, guest_s4_offset(s11)
 
-	# work on the stack after the sysv red zone
+	# compute the hash-address
+	ld t3, 0(t1)
+	compute_tlb_address reroute_return_tlb
+
+	# capture the guest context
+	capture_context_tlb s11
+
+    # work on the stack after the sysv red zone
 	addi sp, sp, red_zone
 
-	# t3 might be changed by upcoming function calls, which is why we back it up
+	# t1 might be changed by upcoming function calls, which is why we back it up
 	mv s2, t1
 
 	# logger::reroutes("reroute_return: 0x{0:x}")
@@ -188,14 +196,25 @@ _ZN10dispatcher10Dispatcher14reroute_returnEv:
 	# store the risc-v return address in the CallEntry
 	sd a0, 8(s2)
 
-	# a0 will be overridden by restore_context so we have to save the translated address
+	# update the tlb
+	ld s2, 0(s2)
+    update_tlb_entry
+
+    # a0 will be overridden by restore_context so we have to save the translated address
 	mv t3, a0
 
 	# restore the guest context
 	restore_context s11
-
-	# jump to the return address
 	jalr zero, t3, 0
+
+	# restore s2 and s4 and jump to the address in s2
+	reroute_return_tlb:
+	mv t3, s2
+	ld s2, 8(t1)
+	ld s2, guest_s2_offset(s11)
+	ld s4, guest_s4_offset(s11)
+	jalr zero, t3, 0
+
 
 # syscall_handler
 _ZN10dispatcher10Dispatcher15syscall_handlerEv:

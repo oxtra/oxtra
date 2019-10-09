@@ -346,8 +346,8 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address) {
 			if (arg_state[0] != arg_state_number)
 				return "invalid address!";
 			if (arg_state[1] == arg_state_number) {
-				if (arg_number[1] == 0 || arg_number[1] > 128)
-					return "count out of range [1;128]!";
+				if (arg_number[1] == 0 || arg_number[1] > 512)
+					return "count out of range [1;512]!";
 				return print_memory(arg_number[0], arg_number[1]);
 			}
 			return print_memory(arg_number[0], 1);
