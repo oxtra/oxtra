@@ -8,8 +8,6 @@
 #include "oxtra/elf/elf.h"
 #include "execution_context.h"
 
-//#define declare_execution_context() register dispatcher::ExecutionContext* execution_context asm("s11")
-
 namespace dispatcher {
 	static_assert(codegen::helper::address_destination == encoding::RiscVRegister::t3,
 				  "dispatcher::reroute_static, reroute_dynamic requires t3");
@@ -23,6 +21,9 @@ namespace dispatcher {
 		const arguments::Arguments& _args;
 		char** _envp;
 		codegen::CodeGenerator _codegen;
+
+	private:
+		static constexpr size_t tlb_size = 0x80;
 
 	public:
 		Dispatcher(const elf::Elf& elf, const arguments::Arguments& args, char** envp);
@@ -56,7 +57,7 @@ namespace dispatcher {
 		/**
 		 * Initialize the guest context with an (x64) ABI conform stack and registers.
 		 */
-		std::pair<uintptr_t, uintptr_t> init_guest_context();
+		std::tuple<uintptr_t, uintptr_t, uintptr_t> init_guest_context();
 
 		/**
 		 * Called instead of a syscall instruction.

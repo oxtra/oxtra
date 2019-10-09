@@ -15,7 +15,7 @@ Dispatcher::Dispatcher(const elf::Elf& elf, const arguments::Arguments& args, ch
 		: _elf(elf), _args(args), _envp(envp), _codegen(args, elf) {}
 
 long Dispatcher::run() {
-	const auto [guest_stack, return_stack] = init_guest_context();
+	const auto[guest_stack, return_stack, tlb_address] = init_guest_context();
 
 	// initialize the debugger if necessary
 	std::unique_ptr<debugger::Debugger> debugger = nullptr;
@@ -41,6 +41,7 @@ long Dispatcher::run() {
 
 	munmap(reinterpret_cast<void*>(guest_stack), _args.get_stack_size());
 	munmap(reinterpret_cast<void*>(return_stack), 0x1000);
+	munmap(reinterpret_cast<void*>(tlb_address), Dispatcher::tlb_size * sizeof(uintptr_t) * 2);
 
 	// check if the guest has ended with and error
 	if (error_string != nullptr)
@@ -53,7 +54,7 @@ ExecutionContext* Dispatcher::execution_context() {
 	return ctx;
 }
 
-std::pair<uintptr_t, uintptr_t> Dispatcher::init_guest_context() {
+std::tuple<uintptr_t, uintptr_t, uintptr_t> Dispatcher::init_guest_context() {
 	// https://software.intel.com/sites/default/files/article/402129/mpx-linux64-abi.pdf
 
 	register uintptr_t gp_reg asm("gp");
@@ -67,6 +68,8 @@ std::pair<uintptr_t, uintptr_t> Dispatcher::init_guest_context() {
 	_context.guest.map.return_stack = reinterpret_cast<uintptr_t>(mmap(nullptr, 0x1000, PROT_READ | PROT_WRITE,
 																	   MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
 	_context.guest.map.jump_table = reinterpret_cast<uintptr_t>(jump_table::table_address);
+	_context.guest.map.tlb = reinterpret_cast<uintptr_t>(mmap(nullptr, Dispatcher::tlb_size * sizeof(uintptr_t) * 2,
+															  PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
 	_context.guest.map.context = reinterpret_cast<uintptr_t>(&_context);
 	_context.codegen = &_codegen;
 	_context.program_break = _context.initial_break = _context.last_break_page = _elf.get_base_vaddr() + _elf.get_image_size();
@@ -130,7 +133,7 @@ std::pair<uintptr_t, uintptr_t> Dispatcher::init_guest_context() {
 		}
 	}
 
-	return {stack_memory, _context.guest.map.return_stack};
+	return {stack_memory, _context.guest.map.return_stack, _context.guest.map.tlb};
 }
 
 long Dispatcher::virtualize_syscall(ExecutionContext* context) {
@@ -150,9 +153,9 @@ long Dispatcher::virtualize_syscall(ExecutionContext* context) {
 			if (entry.is_forwarded()) {
 				// print the systemcall with its attributes
 				logger::log(logger::Level::syscall, "syscall: [{:03}]->[{:03}]({:#x}, {:#x}, {:#x}, {:#x}, {:#x}, {:#x})\n",
-								guest_index, entry.riscv_index,
-								context->guest.map.rdi, context->guest.map.rsi, context->guest.map.rdx,
-								context->guest.map.r10, context->guest.map.r8, context->guest.map.r9);
+							guest_index, entry.riscv_index,
+							context->guest.map.rdi, context->guest.map.rsi, context->guest.map.rdx,
+							context->guest.map.r10, context->guest.map.r8, context->guest.map.r9);
 
 				return entry.riscv_index;
 			}

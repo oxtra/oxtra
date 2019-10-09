@@ -37,9 +37,7 @@ namespace dispatcher {
 			public:
 				uintptr_t rbp, return_stack;
 			public:
-				uintptr_t rax, rbx, rcx, rdx, rsi, rdi, r8, r9, r10, r11, r12, r13, r14, r15, call_table;
-			private:
-				uintptr_t _s9;
+				uintptr_t rax, rbx, rcx, rdx, rsi, rdi, r8, r9, r10, r11, r12, r13, r14, r15, call_table, tlb;
 			public:
 				uintptr_t jump_table, context;
 			private:
