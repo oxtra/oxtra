@@ -113,6 +113,14 @@ void codegen::helper::load_immediate(CodeBatch& batch, uintptr_t imm, encoding::
 			equal_digits++;
 		}
 
+		/* check if the last instruction was lui and the shift is too small */
+		if (index == 1 && lui_used) {
+			if (equal_digits < 12) {
+				current_bit += equal_digits - 1;
+				equal_digits = 1;
+			}
+		}
+
 		/* Compute the number of digits of the current number.
 		 * This number is based on the number of equal bits in the beginning
 		 * as well as the number of bits after the first change and
