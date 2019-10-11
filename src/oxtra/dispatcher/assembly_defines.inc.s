@@ -58,8 +58,6 @@ unsupported_carry_string: .string "the carry flag of an instruction which doesn'
 .macro capture_context_tlb reg
 	sd ra, 0x00(\reg)
 	sd sp, 0x08(\reg)
-	sd gp, 0x10(\reg)
-	sd tp, 0x18(\reg)
 	sd fp, 0x38(\reg)
 	sd s1, 0x40(\reg)
 	sd a0, 0x48(\reg)
@@ -105,8 +103,6 @@ unsupported_carry_string: .string "the carry flag of an instruction which doesn'
 .macro restore_context reg
 	ld ra, 0x00(\reg)
 	ld sp, 0x08(\reg)
-	ld gp, 0x10(\reg)
-	ld tp, 0x18(\reg)
 	ld fp, 0x38(\reg)
 	ld s1, 0x40(\reg)
 	ld a0, 0x48(\reg)

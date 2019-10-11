@@ -69,7 +69,7 @@ namespace dispatcher {
 		 * Checks if the syscall has to be emulated and emulates it or forwards it otherwise.
 		 * @return Index of the riscv syscall or -1 if it was emulated.
 		 */
-		static long virtualize_syscall(ExecutionContext* context);
+		static void virtualize_syscall(ExecutionContext* context);
 
 		/**
 		 * Translates a guest branch address and reroutes the control flow to the branch target

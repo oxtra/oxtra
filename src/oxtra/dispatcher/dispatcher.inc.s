@@ -249,21 +249,7 @@ _ZN10dispatcher10Dispatcher15syscall_handlerEv:
 
 	# invoke virtualize_syscall and check if it should be forwarded
     mv a0, s11
-    jal ra, _ZN10dispatcher10Dispatcher18virtualize_syscallEPNS_16ExecutionContextE
-    bltz a0, syscall_handled
-
-	# arguments
-	mv a7, a0 # syscall index -> a7
-	ld a0, guest_rdi_offset(s11) # arg0 (rdi)
-	ld a1, guest_rsi_offset(s11) # arg1 (rsi)
-	ld a2, guest_rdx_offset(s11) # arg2 (rdx)
-	ld a3, guest_r10_offset(s11) # arg3 (r10)
-	ld a4, guest_r8_offset(s11) # arg4 (r8)
-	ld a5, guest_r9_offset(s11) # arg5 (r9)
-
-	# execute the syscall and write the return value into _guest_context.a0
-	ecall
-	sd a0, guest_a7_offset(s11)
+    call _ZN10dispatcher10Dispatcher18virtualize_syscallEPNS_16ExecutionContextE
 
 	# restore the guest context and return to caller
 syscall_handled:

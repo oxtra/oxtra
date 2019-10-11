@@ -39,13 +39,19 @@ long Dispatcher::run() {
 	const char* error_string = nullptr;
 	const auto exit_code = guest_enter(&_context, _elf.get_entry_point(), &error_string);
 
-	munmap(reinterpret_cast<void*>(guest_stack), _args.get_stack_size());
 	munmap(reinterpret_cast<void*>(return_stack), 0x1000);
 	munmap(reinterpret_cast<void*>(tlb_address), Dispatcher::tlb_size * sizeof(uintptr_t) * 2);
 
 	// check if the guest has ended with and error
-	if (error_string != nullptr)
-		throw std::runtime_error(error_string);
+	if (error_string != nullptr) {
+		std::string error{error_string};
+
+		munmap(reinterpret_cast<void*>(guest_stack), _args.get_stack_size());
+		throw std::runtime_error(error);
+	}
+
+	munmap(reinterpret_cast<void*>(guest_stack), _args.get_stack_size());
+
 	return exit_code;
 }
 
@@ -56,12 +62,6 @@ ExecutionContext* Dispatcher::execution_context() {
 
 std::tuple<uintptr_t, uintptr_t, uintptr_t> Dispatcher::init_guest_context() {
 	// https://software.intel.com/sites/default/files/article/402129/mpx-linux64-abi.pdf
-
-	register uintptr_t gp_reg asm("gp");
-	register uintptr_t tp_reg asm("tp");
-
-	_context.guest.gp = gp_reg;
-	_context.guest.tp = tp_reg;
 
 	_context.guest.map.rdx = 0; // function-pointer to on-exit
 	_context.guest.map.call_table = reinterpret_cast<uintptr_t>(_codegen.get_call_table());
@@ -137,7 +137,7 @@ std::tuple<uintptr_t, uintptr_t, uintptr_t> Dispatcher::init_guest_context() {
 	return {stack_memory, _context.guest.map.return_stack, _context.guest.map.tlb};
 }
 
-long Dispatcher::virtualize_syscall(ExecutionContext* context) {
+void Dispatcher::virtualize_syscall(ExecutionContext* context) {
 	using namespace syscalls;
 
 	// the x86 syscall index
@@ -149,23 +149,8 @@ long Dispatcher::virtualize_syscall(ExecutionContext* context) {
 		// get the entry from the syscall map
 		const auto entry = syscall_map[guest_index];
 		if (entry.is_valid()) {
-
-			// do we forward this syscall to the riscv kernel?
-			if (entry.is_forwarded()) {
-				// print the systemcall with its attributes
-				logger::log(logger::Level::syscall, "syscall: [{:03}]->[{:03}]({:#x}, {:#x}, {:#x}, {:#x}, {:#x}, {:#x})\n",
-							guest_index, entry.riscv_index,
-							context->guest.map.rdi, context->guest.map.rsi, context->guest.map.rdx,
-							context->guest.map.r10, context->guest.map.r8, context->guest.map.r9);
-
-				return entry.riscv_index;
-			}
-
-				// should this syscall be emulated?
-			else /*if (entry.is_emulated())*/ {
-				entry.emulation_fn(context);
-				return -1;
-			}
+			entry.emulation_fn(context);
+			return;
 		}
 	}
 
@@ -173,5 +158,4 @@ long Dispatcher::virtualize_syscall(ExecutionContext* context) {
 	char fault_message[256];
 	snprintf(fault_message, sizeof(fault_message), "Guest tried to call an unsupported syscall (%li).", guest_index);
 	dispatcher::Dispatcher::fault_exit(fault_message);
-	return -1;
 }
