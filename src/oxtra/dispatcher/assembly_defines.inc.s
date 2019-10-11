@@ -19,6 +19,8 @@
 .equ codegen_offset, 0x1F0
 .equ debugger_offset, 0x1F8
 .equ syscall_map_offset, 0x270
+.equ syscall_map_size, 322
+.equ syscall_map_threshold, 0x1000
 .equ flag_info_offset, 0x200
 .equ flag_info_zero_value, 0x200
 .equ flag_info_sign_value, 0x208
@@ -38,13 +40,13 @@
 .equ debug_bp_array, 0x08
 .equ red_zone, -128
 .equ debug_sig_address, 0x08
-.equ debug_sig_registers, 0x10
-.equ debug_sig_t0, 0x30
-.equ debug_sig_t1, 0x38
-.equ debug_sig_t2, 0x40
-.equ debug_bp_array, 0x108
-.equ syscall_map_size, 322
-.equ syscall_map_threshold, 0x1000
+.equ debug_count_riscv, 0x10
+.equ debug_count_x86, 0x18
+.equ debug_sig_registers, 0x20
+.equ debug_sig_t0, 0x40
+.equ debug_sig_t1, 0x48
+.equ debug_sig_t2, 0x50
+.equ debug_bp_array, 0x118
 
 # global important strings
 .section .rodata
