@@ -78,7 +78,6 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address) {
 					   "blocks     blk                     Print the basic blocks.\n"
 					   "break      bp                      Print the break-points or set them.\n"
 					   "config     cfg                     Configure features for the printing.\n"
-					   "continue   cne                     Continue execution for a number of instructions.\n"
 					   "crawl      c                       Step by one riscv-instruction.\n"
 					   "dec        dc                      Set the register print-type to decimal.\n"
 					   "disable    dis                     Disable auto-print.\n"
@@ -120,8 +119,6 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address) {
 						   "config stack limit            Set the stack-limit.\n"
 						   "config riscv/rv               Set the registers to riscv.\n"
 						   "config x86/x                  Set the registers to x86.";
-				case DebugInputKey::continue_run:
-					return "continue count                Continue execution for count-instructions.";
 				case DebugInputKey::crawl:
 					return "crawl count                   Continue execution for count riscv-instructions.";
 				case DebugInputKey::disable:
@@ -160,6 +157,8 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address) {
 					return "stack limit                   Print the stack with given limit.\n"
 						   "stack limit address           Print the stack with given limit and at given address.\n"
 						   "stack limit relative          Print the stack with given limit and relative to rsp.";
+				case DebugInputKey::step:
+					return "step count                    Continue execution for count x86-instructions.";
 				default:
 					return "no additional features!";
 			}
@@ -252,12 +251,6 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address) {
 				return "successfully configured!";
 			} else
 				return "invalid config-attribute!";
-		case DebugInputKey::continue_run:
-			if (arg_state[0] == arg_state_number) {
-				_state |= DebugState::await_counter;
-				_run_break = arg_number[0];
-			}
-			return "";
 		case DebugInputKey::crawl:
 			if (!_riscv_enabled)
 				return "riscv-stepping is disabled!";
@@ -449,7 +442,11 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address) {
 			_state |= DebugState::await_sob;
 			return "";
 		case DebugInputKey::step:
-			_state |= DebugState::await_step;
+			if (arg_state[0] == arg_state_number) {
+				_state |= DebugState::await_counter;
+				_run_break = arg_number[0];
+			} else
+				_state |= DebugState::await_step;
 			return "";
 		default:
 			break;
@@ -519,9 +516,7 @@ debugger::Debugger::DebugInputKey debugger::Debugger::parse_key(std::string key)
 				return DebugInputKey::blocks;
 			break;
 		case 'c':
-			if (key == "continue" || key == "cne")
-				return DebugInputKey::continue_run;
-			else if (key == "config" || key == "cfg")
+			if (key == "config" || key == "cfg")
 				return DebugInputKey::config;
 			else if (key == "crawl" || key == "c")
 				return DebugInputKey::crawl;

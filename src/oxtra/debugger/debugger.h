@@ -49,7 +49,6 @@ namespace debugger {
 			all,
 			breakpoint,
 			config,
-			continue_run,
 			decimal,
 			endofblock,
 			exit,
