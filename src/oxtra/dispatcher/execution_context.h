@@ -37,9 +37,8 @@ namespace dispatcher {
 			public:
 				uintptr_t rbp, return_stack;
 			public:
-				uintptr_t rax, rbx, rcx, rdx, rsi, rdi, r8, r9, r10, r11, r12, r13, r14, r15, call_table, tlb;
-			public:
-				uintptr_t jump_table, context;
+				uintptr_t rdi, rsi, rdx, r10, r8, r9, rcx, rax, rbx, r11, r12, r13, r14, r15;
+				uintptr_t call_table, tlb, jump_table, context;
 			private:
 				uintptr_t _t3, _t4, _t5, _t6;
 			} map;
@@ -72,6 +71,9 @@ namespace dispatcher {
 
 		// 0x258
 		uint64_t initial_break, last_break_page, program_break;
+
+		// 0x270
+		const uintptr_t* syscall_map;
 
 		static constexpr uintptr_t
 			fs_offset = 0x248,

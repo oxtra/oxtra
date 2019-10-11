@@ -9,65 +9,65 @@ using namespace encoding;
 using namespace decoding;
 
 constexpr const char* expected_rtype[] = {
-		"sub rcx, rdx -> rbx",
-		"add Vt2, rdx -> rbx",
-		"mul rcx, rsp -> rbx",
-		"rem rcx, Vgp -> rbx"
+		"sub rdx, r10 -> rsi",
+		"add Vt2, r10 -> rsi",
+		"mul rdx, rsp -> rsi",
+		"rem rdx, Vgp -> rsi"
 };
 constexpr const char* expected_shift[] = {
-		"slli rcx, 0x3f(63) -> rbx",
-		"srli rcx, 0x1f(31) -> rbx",
-		"slli rcx, 0x1(1) -> rbx",
-		"srai rcx, 0x0(0) -> rbx"
+		"slli rdx, 0x3f(63) -> rsi",
+		"srli rdx, 0x1f(31) -> rsi",
+		"slli rdx, 0x1(1) -> rsi",
+		"srai rdx, 0x0(0) -> rsi"
 };
 constexpr const char* expected_itype[] = {
-		"addi zero, 0x7ff(2047) -> rbx",
-		"andi zero, 0x2(2) -> rbx",
-		"ori zero, 0x0(0) -> rbx",
-		"xori zero, -0x2(-2) -> rbx",
-		"addi zero, -0x800(-2048) -> rbx"
+		"addi zero, 0x7ff(2047) -> rsi",
+		"andi zero, 0x2(2) -> rsi",
+		"ori zero, 0x0(0) -> rsi",
+		"xori zero, -0x2(-2) -> rsi",
+		"addi zero, -0x800(-2048) -> rsi"
 };
 constexpr const char* expected_utype[] = {
-		"lui 0x7ffff(524287) -> rbx",
-		"lui 0x2(2) -> rbx",
-		"lui 0x0(0) -> rbx",
-		"lui 0xffffe(1048574) -> rbx",
-		"lui 0x80000(524288) -> rbx"
+		"lui 0x7ffff(524287) -> rsi",
+		"lui 0x2(2) -> rsi",
+		"lui 0x0(0) -> rsi",
+		"lui 0xffffe(1048574) -> rsi",
+		"lui 0x80000(524288) -> rsi"
 };
 constexpr const char* expected_load[] = {
-		"lb [rcx + 0x7ff(2047)] -> rbx",
-		"lh [rcx + 0x2(2)] -> rbx",
-		"lw [rcx] -> rbx",
-		"ld [rcx - 0x2(2)] -> rbx",
-		"lhu [rcx - 0x800(2048)] -> rbx"
+		"lb [rdx + 0x7ff(2047)] -> rsi",
+		"lh [rdx + 0x2(2)] -> rsi",
+		"lw [rdx] -> rsi",
+		"ld [rdx - 0x2(2)] -> rsi",
+		"lhu [rdx - 0x800(2048)] -> rsi"
 };
 constexpr const char* expected_store[] = {
-		"sb rcx -> [rbx + 0x7ff(2047)]",
-		"sh rcx -> [rbx + 0x2(2)]",
-		"sw rcx -> [rbx]",
-		"sd rcx -> [rbx - 0x2(2)]",
-		"sw rcx -> [rbx - 0x800(2048)]"
+		"sb rdx -> [rsi + 0x7ff(2047)]",
+		"sh rdx -> [rsi + 0x2(2)]",
+		"sw rdx -> [rsi]",
+		"sd rdx -> [rsi - 0x2(2)]",
+		"sw rdx -> [rsi - 0x800(2048)]"
 };
 constexpr const char* expected_jtype[] = {
-		"jal [pc + 0x7fffe(524286)] -> rbx",
-		"jal [pc + 0x2(2)] -> rbx",
-		"jal [pc] -> rbx",
-		"jal [pc - 0x2(2)] -> rbx",
-		"jal [pc - 0x80000(524288)] -> rbx"
+		"jal [pc + 0x7fffe(524286)] -> rsi",
+		"jal [pc + 0x2(2)] -> rsi",
+		"jal [pc] -> rsi",
+		"jal [pc - 0x2(2)] -> rsi",
+		"jal [pc - 0x80000(524288)] -> rsi"
 };
 constexpr const char* expected_relative[] = {
-		"jalr [rcx + 0x7ff(2047)] -> rbx",
-		"jalr [rcx + 0x2(2)] -> rbx",
-		"jalr [rcx] -> rbx",
-		"jalr [rcx - 0x2(2)] -> rbx",
-		"jalr [rcx - 0x800(2048)] -> rbx"
+		"jalr [rdx + 0x7ff(2047)] -> rsi",
+		"jalr [rdx + 0x2(2)] -> rsi",
+		"jalr [rdx] -> rsi",
+		"jalr [rdx - 0x2(2)] -> rsi",
+		"jalr [rdx - 0x800(2048)] -> rsi"
 };
 constexpr const char* expected_btype[] = {
-		"beq (rbx, rcx) ? [pc + 0x7fe(2046)]",
-		"bne (rbx, rcx) ? [pc + 0x2(2)]",
-		"blt (rbx, rcx) ? [pc]",
-		"bge (rbx, rcx) ? [pc - 0x2(2)]",
-		"bltu (rbx, rcx) ? [pc - 0x800(2048)]"
+		"beq (rsi, rdx) ? [pc + 0x7fe(2046)]",
+		"bne (rsi, rdx) ? [pc + 0x2(2)]",
+		"blt (rsi, rdx) ? [pc]",
+		"bge (rsi, rdx) ? [pc - 0x2(2)]",
+		"bltu (rsi, rdx) ? [pc - 0x800(2048)]"
 };
 constexpr const char* expected_ecall = "ecall";
 

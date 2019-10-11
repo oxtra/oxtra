@@ -218,7 +218,30 @@ _ZN10dispatcher10Dispatcher14reroute_returnEv:
 
 # syscall_handler
 _ZN10dispatcher10Dispatcher15syscall_handlerEv:
-	# capture the guest context
+	# check if the syscall must be handled in software
+    li t0, syscall_map_size
+	bge a7, t0, syscall_handler_software
+
+	# compute the index into the syscall-map and load it into t0
+	ld t0, syscall_map_offset(s11)
+	slli t1, a7, 3
+    add t0, t0, t1
+    ld t0, 0(t0)
+
+	# check if the syscall can be mapped
+	li t1, syscall_map_threshold
+	bge t0, t1, syscall_handler_software
+
+	# remap the arguments and invoke the systemcall
+	mv a7, t0 # syscall index -> a7
+    ecall
+
+    # move the return value into rax
+    mv a7, a0
+	ret
+
+	# enter the syscall-handler
+	syscall_handler_software:
 	capture_context s11
 
 	# work on the stack after the sysv red zone
@@ -226,21 +249,7 @@ _ZN10dispatcher10Dispatcher15syscall_handlerEv:
 
 	# invoke virtualize_syscall and check if it should be forwarded
     mv a0, s11
-    jal ra, _ZN10dispatcher10Dispatcher18virtualize_syscallEPNS_16ExecutionContextE
-    bltz a0, syscall_handled
-
-	# arguments
-	mv a7, a0 # syscall index -> a7
-	ld a0, 0x70(s11) # arg0 (rdi)
-	ld a1, 0x68(s11) # arg1 (rsi)
-	ld a2, 0x60(s11) # arg2 (rdx)
-	ld a3, 0x88(s11) # arg3 (r10)
-	ld a4, 0x78(s11) # arg4 (r8)
-	ld a5, 0x80(s11) # arg5 (r9)
-
-	# execute the syscall and write the return value into _guest_context.a0
-	ecall
-	sd a0, guest_a0_offset(s11)
+    call _ZN10dispatcher10Dispatcher18virtualize_syscallEPNS_16ExecutionContextE
 
 	# restore the guest context and return to caller
 syscall_handled:

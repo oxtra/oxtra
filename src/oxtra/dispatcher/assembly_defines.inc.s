@@ -3,18 +3,22 @@
 .equ guest_t0_offset, 0x20
 .equ guest_t1_offset, 0x28
 .equ guest_t2_offset, 0x30
-.equ guest_a0_offset, 0x48
-.equ guest_rdi_offset, 0x70
-.equ guest_rsi_offset, 0x68
-.equ guest_rdx_offet, 0x60
-.equ guest_r8_offset, 0x78
-.equ guest_r9_offset, 0x80
-.equ guest_r10_offset, 0x88
+.equ guest_a7_offset, 0x80
+.equ guest_rax_offset, 0x80
+.equ guest_rdx_offset, 0x58
+.equ guest_rsi_offset, 0x50
+.equ guest_rdi_offset, 0x48
+.equ guest_r8_offset, 0x68
+.equ guest_r9_offset, 0x70
+.equ guest_r10_offset, 0x60
 .equ guest_s2_offset, 0x88
 .equ guest_s4_offset, 0x98
 .equ host_offset, 0x0F8
 .equ codegen_offset, 0x1F0
 .equ debugger_offset, 0x1F8
+.equ syscall_map_offset, 0x270
+.equ syscall_map_size, 322
+.equ syscall_map_threshold, 0x1000
 .equ flag_info_offset, 0x200
 .equ flag_info_zero_value, 0x200
 .equ flag_info_sign_value, 0x208
@@ -54,8 +58,6 @@ unsupported_carry_string: .string "the carry flag of an instruction which doesn'
 .macro capture_context_tlb reg
 	sd ra, 0x00(\reg)
 	sd sp, 0x08(\reg)
-	sd gp, 0x10(\reg)
-	sd tp, 0x18(\reg)
 	sd fp, 0x38(\reg)
 	sd s1, 0x40(\reg)
 	sd a0, 0x48(\reg)
@@ -101,8 +103,6 @@ unsupported_carry_string: .string "the carry flag of an instruction which doesn'
 .macro restore_context reg
 	ld ra, 0x00(\reg)
 	ld sp, 0x08(\reg)
-	ld gp, 0x10(\reg)
-	ld tp, 0x18(\reg)
 	ld fp, 0x38(\reg)
 	ld s1, 0x40(\reg)
 	ld a0, 0x48(\reg)

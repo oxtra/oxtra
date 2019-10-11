@@ -7,6 +7,9 @@
 
 #include "execution_context.h"
 
+/* The syscall-map size as well as the emulation-threshold are
+ * defined as constants in assembly_defines.s. If they change
+ * the file has to be updated as well. */
 namespace dispatcher::syscalls {
 	/**
 	 * Describes an entry in the syscall map.

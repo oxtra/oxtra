@@ -23,12 +23,7 @@ namespace encoding {
 		a0, a1,		// function arguments/return values
 		a2, a3, a4, a5, a6, a7, // function arguments
 		s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, // saved registers
-		t3, t4, t5, t6, // temporaries
-		pc,			// program counter
-		rax = a0, rbx = a1, rcx = a2, rdx = a3,
-		rsi = a4, rdi = a5,
-		r8 = a6, r9 = a7, r10 = s2, r11 = s3, r12 = s4, r13 = s5, r14 = s6, r15 = s7,
-		rsp = sp, rbp = s0
+		t3, t4, t5, t6 // temporaries
 	};
 
 	enum class RiscVFloatingRegister {
