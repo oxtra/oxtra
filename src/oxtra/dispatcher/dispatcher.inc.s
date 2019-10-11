@@ -235,6 +235,9 @@ _ZN10dispatcher10Dispatcher15syscall_handlerEv:
 	# remap the arguments and invoke the systemcall
 	mv a7, t0 # syscall index -> a7
     ecall
+
+    # move the return value into rax
+    mv a7, a0
 	ret
 
 	# enter the syscall-handler
