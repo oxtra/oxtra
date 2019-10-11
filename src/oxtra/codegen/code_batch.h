@@ -33,9 +33,10 @@ namespace codegen {
 	protected:
 		utils::riscv_instruction_t* address;
 		size_t max_size;
+		bool _adding_jump;
 	public:
 		explicit CodeMemory(utils::riscv_instruction_t* address, size_t buffer_size)
-				: address{address}, max_size{buffer_size} {}
+				: address{address}, max_size{buffer_size}, _adding_jump{false} {}
 
 		virtual size_t add(utils::riscv_instruction_t inst) override;
 

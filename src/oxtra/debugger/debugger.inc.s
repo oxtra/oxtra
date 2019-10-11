@@ -21,7 +21,15 @@ debug_entry:
 	sd t1, guest_t1_offset(s11)
 	sd t2, guest_t2_offset(s11)
 
-	# check if a signal-handler is registered
+	# increase the instruction-counts
+	ld t1, debug_count_x86(t0)
+	addi t1, t1, 1
+	sd t1, debug_count_x86(t0)
+	ld t1, debug_count_riscv(t0)
+	addi t1, t1, 1
+	sd t1, debug_count_riscv(t0)
+
+    # check if a signal-handler is registered
 	ld t1, debug_sig_address(t0)
 	beqz t1, debugger_no_signal
 
@@ -112,6 +120,11 @@ debug_entry_riscv:
 
 	# store the current t1-register
 	sd t1, guest_t1_offset(s11)
+
+	# increase the instruction-count
+	ld t1, debug_count_riscv(t0)
+	addi t1, t1, 1
+	sd t1, debug_count_riscv(t0)
 
 	# check if a signal-handler is registered
 	ld t1, debug_sig_address(t0)

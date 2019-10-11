@@ -49,7 +49,6 @@ namespace debugger {
 			all,
 			breakpoint,
 			config,
-			continue_run,
 			decimal,
 			endofblock,
 			exit,
@@ -96,6 +95,8 @@ namespace debugger {
 		uint8_t _halt;
 		uint8_t _step_riscv;
 		uintptr_t _signal_address;
+		uint64_t _exec_count_riscv;
+		uint64_t _exec_count_x86;
 		uintptr_t _signal_registers[31];
 		uintptr_t _bp_array[256]{};
 
