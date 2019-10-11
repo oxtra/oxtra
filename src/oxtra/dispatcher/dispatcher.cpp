@@ -73,6 +73,7 @@ std::tuple<uintptr_t, uintptr_t, uintptr_t> Dispatcher::init_guest_context() {
 	_context.guest.map.context = reinterpret_cast<uintptr_t>(&_context);
 	_context.codegen = &_codegen;
 	_context.program_break = _context.initial_break = _context.last_break_page = _elf.get_base_vaddr() + _elf.get_image_size();
+	_context.syscall_map = reinterpret_cast<const uintptr_t*>(syscalls::syscall_map.data());
 
 	auto envp = _envp;
 

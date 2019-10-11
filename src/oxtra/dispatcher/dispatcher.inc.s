@@ -218,7 +218,50 @@ _ZN10dispatcher10Dispatcher14reroute_returnEv:
 
 # syscall_handler
 _ZN10dispatcher10Dispatcher15syscall_handlerEv:
-	# capture the guest context
+	# check if the syscall must be handled in software
+    li t0, syscall_map_size
+	bge a0, t0, syscall_handler_software
+
+	# compute the index into the syscall-map and load it into t0
+	ld t0, syscall_map_offset(s11)
+	slli t1, a0, 3
+    add t0, t0, t1
+    ld t0, 0(t0)
+
+	# check if the syscall can be mapped
+	li t1, syscall_map_threshold
+	bge t0, t1, syscall_handler_software
+
+	# store the syscall-registers
+	sd a0, guest_rax_offset(s11)
+	sd a1, guest_rbx_offset(s11)
+	sd a2, guest_rcx_offset(s11)
+	sd a3, guest_rdx_offset(s11)
+	sd a4, guest_rsi_offset(s11)
+	sd a5, guest_rdi_offset(s11)
+	sd a7, guest_r9_offset(s11)
+
+	# remap the arguments and invoke the systemcall
+	mv a0, a5 # arg0 (rdi)
+	mv a1, a4 # arg1 (rsi)
+	mv a2, a3 # arg2 (rdx)
+	mv a3, s2 # arg3 (r10)
+	mv a4, a6 # arg4 (r8)
+	mv a5, a7 # arg5 (r9)
+	mv a7, t0 # syscall index -> a7
+    ecall
+
+	# restore the registers
+	ld a1, guest_rbx_offset(s11)
+	ld a2, guest_rcx_offset(s11)
+	ld a3, guest_rdx_offset(s11)
+	ld a4, guest_rsi_offset(s11)
+	ld a5, guest_rdi_offset(s11)
+	ld a7, guest_r9_offset(s11)
+	ret
+
+	# enter the syscall-handler
+	syscall_handler_software:
 	capture_context s11
 
 	# work on the stack after the sysv red zone

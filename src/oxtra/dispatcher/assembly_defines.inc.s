@@ -4,9 +4,12 @@
 .equ guest_t1_offset, 0x28
 .equ guest_t2_offset, 0x30
 .equ guest_a0_offset, 0x48
-.equ guest_rdi_offset, 0x70
+.equ guest_rax_offset, 0x48
+.equ guest_rbx_offset, 0x50
+.equ guest_rcx_offset, 0x58
+.equ guest_rdx_offset, 0x60
 .equ guest_rsi_offset, 0x68
-.equ guest_rdx_offet, 0x60
+.equ guest_rdi_offset, 0x70
 .equ guest_r8_offset, 0x78
 .equ guest_r9_offset, 0x80
 .equ guest_r10_offset, 0x88
@@ -15,6 +18,7 @@
 .equ host_offset, 0x0F8
 .equ codegen_offset, 0x1F0
 .equ debugger_offset, 0x1F8
+.equ syscall_map_offset, 0x270
 .equ flag_info_offset, 0x200
 .equ flag_info_zero_value, 0x200
 .equ flag_info_sign_value, 0x208
@@ -39,6 +43,8 @@
 .equ debug_sig_t1, 0x38
 .equ debug_sig_t2, 0x40
 .equ debug_bp_array, 0x108
+.equ syscall_map_size, 322
+.equ syscall_map_threshold, 0x1000
 
 # global important strings
 .section .rodata
