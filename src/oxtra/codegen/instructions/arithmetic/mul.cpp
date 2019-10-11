@@ -16,8 +16,8 @@ void codegen::Mul::generate(codegen::CodeBatch& batch) const {
 	const auto has_upper_destination = get_type() == InstructionType::MUL || get_type() == InstructionType::IMUL;
 
 	// the default values are for MUL and IMUL
-	auto upper_destination = RiscVRegister::rdx;
-	auto lower_destination = RiscVRegister::rax;
+	auto upper_destination = helper::map_reg(fadec::Register::rdx);
+	auto lower_destination = helper::map_reg(fadec::Register::rax);
 
 	auto src1 = RiscVRegister::t1;
 	auto src2 = RiscVRegister::t2;
@@ -33,7 +33,7 @@ void codegen::Mul::generate(codegen::CodeBatch& batch) const {
 		src1 = translate_operand(batch, get_operand(1), nullptr, src1, RiscVRegister::t4, false, true, true, false);
 		src2 = translate_operand(batch, get_operand(2), nullptr, src2, RiscVRegister::t4, false, true, true, false);
 	} else { // MUL, or IMUL
-		src1 = helper::load_from_register(batch, RiscVRegister::rax, op_size, RiscVRegister::t4, false, true, is_signed);
+		src1 = helper::load_from_register(batch, helper::map_reg(fadec::Register::rax), op_size, RiscVRegister::t4, false, true, is_signed);
 		src2 = translate_operand(batch, get_operand(0), nullptr, src2, RiscVRegister::t4, false, true, is_signed, false);
 	}
 

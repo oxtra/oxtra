@@ -83,7 +83,7 @@ void codegen::Jc::generate(codegen::CodeBatch& batch) const {
 // ecx == 0 / rcx == 0
 void codegen::Jcxz::generate(codegen::CodeBatch& batch) const {
 	// check what operand size is used
-	auto reg = encoding::RiscVRegister::rcx;
+	auto reg = helper::map_reg(fadec::Register::rcx);
 	if (get_address_size() != 8) {
 		batch += encoding::SLLI(encoding::RiscVRegister::t0, reg, 32);
 		reg = encoding::RiscVRegister::t0;

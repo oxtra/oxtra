@@ -220,11 +220,11 @@ _ZN10dispatcher10Dispatcher14reroute_returnEv:
 _ZN10dispatcher10Dispatcher15syscall_handlerEv:
 	# check if the syscall must be handled in software
     li t0, syscall_map_size
-	bge a0, t0, syscall_handler_software
+	bge a7, t0, syscall_handler_software
 
 	# compute the index into the syscall-map and load it into t0
 	ld t0, syscall_map_offset(s11)
-	slli t1, a0, 3
+	slli t1, a7, 3
     add t0, t0, t1
     ld t0, 0(t0)
 
@@ -232,32 +232,9 @@ _ZN10dispatcher10Dispatcher15syscall_handlerEv:
 	li t1, syscall_map_threshold
 	bge t0, t1, syscall_handler_software
 
-	# store the syscall-registers
-	sd a0, guest_rax_offset(s11)
-	sd a1, guest_rbx_offset(s11)
-	sd a2, guest_rcx_offset(s11)
-	sd a3, guest_rdx_offset(s11)
-	sd a4, guest_rsi_offset(s11)
-	sd a5, guest_rdi_offset(s11)
-	sd a7, guest_r9_offset(s11)
-
 	# remap the arguments and invoke the systemcall
-	mv a0, a5 # arg0 (rdi)
-	mv a1, a4 # arg1 (rsi)
-	mv a2, a3 # arg2 (rdx)
-	mv a3, s2 # arg3 (r10)
-	mv a4, a6 # arg4 (r8)
-	mv a5, a7 # arg5 (r9)
 	mv a7, t0 # syscall index -> a7
     ecall
-
-	# restore the registers
-	ld a1, guest_rbx_offset(s11)
-	ld a2, guest_rcx_offset(s11)
-	ld a3, guest_rdx_offset(s11)
-	ld a4, guest_rsi_offset(s11)
-	ld a5, guest_rdi_offset(s11)
-	ld a7, guest_r9_offset(s11)
 	ret
 
 	# enter the syscall-handler
@@ -274,16 +251,16 @@ _ZN10dispatcher10Dispatcher15syscall_handlerEv:
 
 	# arguments
 	mv a7, a0 # syscall index -> a7
-	ld a0, 0x70(s11) # arg0 (rdi)
-	ld a1, 0x68(s11) # arg1 (rsi)
-	ld a2, 0x60(s11) # arg2 (rdx)
-	ld a3, 0x88(s11) # arg3 (r10)
-	ld a4, 0x78(s11) # arg4 (r8)
-	ld a5, 0x80(s11) # arg5 (r9)
+	ld a0, guest_rdi_offset(s11) # arg0 (rdi)
+	ld a1, guest_rsi_offset(s11) # arg1 (rsi)
+	ld a2, guest_rdx_offset(s11) # arg2 (rdx)
+	ld a3, guest_r10_offset(s11) # arg3 (r10)
+	ld a4, guest_r8_offset(s11) # arg4 (r8)
+	ld a5, guest_r9_offset(s11) # arg5 (r9)
 
 	# execute the syscall and write the return value into _guest_context.a0
 	ecall
-	sd a0, guest_a0_offset(s11)
+	sd a0, guest_a7_offset(s11)
 
 	# restore the guest context and return to caller
 syscall_handled:

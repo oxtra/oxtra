@@ -108,24 +108,25 @@ namespace codegen::helper {
 	 * @param reg The x86-register.
 	 * @return The riscv-register.
 	 */
+
 	constexpr encoding::RiscVRegister map_reg(const fadec::Register reg) {
 		constexpr encoding::RiscVRegister register_mapping[] = {
-				encoding::RiscVRegister::rax,
-				encoding::RiscVRegister::rcx,
-				encoding::RiscVRegister::rdx,
-				encoding::RiscVRegister::rbx,
-				encoding::RiscVRegister::rsp,
-				encoding::RiscVRegister::rbp,
-				encoding::RiscVRegister::rsi,
-				encoding::RiscVRegister::rdi,
-				encoding::RiscVRegister::r8,
-				encoding::RiscVRegister::r9,
-				encoding::RiscVRegister::r10,
-				encoding::RiscVRegister::r11,
-				encoding::RiscVRegister::r12,
-				encoding::RiscVRegister::r13,
-				encoding::RiscVRegister::r14,
-				encoding::RiscVRegister::r15
+				encoding::RiscVRegister::a7,	// rax
+				encoding::RiscVRegister::a6,	// rcx
+				encoding::RiscVRegister::a2,	// rdx
+				encoding::RiscVRegister::s2,	// rbx
+				encoding::RiscVRegister::sp,	// rsp
+				encoding::RiscVRegister::s0,	// rbp
+				encoding::RiscVRegister::a1,	// rsi
+				encoding::RiscVRegister::a0,	// rdi
+				encoding::RiscVRegister::a4,	// r8
+				encoding::RiscVRegister::a5,	// r9
+				encoding::RiscVRegister::a3,	// r10
+				encoding::RiscVRegister::s3,	// r11
+				encoding::RiscVRegister::s4,	// r12
+				encoding::RiscVRegister::s5,	// r13
+				encoding::RiscVRegister::s6,	// r14
+				encoding::RiscVRegister::s7		// r15
 		};
 
 		return register_mapping[static_cast<uint8_t>(reg)];
