@@ -68,6 +68,8 @@ debugger::Debugger::Debugger(const elf::Elf& elf, dispatcher::ExecutionContext* 
 	_stack_high = stack_low + stack_size;
 	_context = context;
 	_signal_address = 0;
+	_exec_count_riscv = -1;
+	_exec_count_x86 = -1;
 
 	// mark this as the active debugger
 	active_debugger = this;
@@ -211,7 +213,12 @@ void debugger::Debugger::entry(uintptr_t break_point) {
 		out << "block-guest  : [" << print_number(_current->entry->x86_start, true);
 		out << " - " << print_number(_current->entry->x86_end, true) << "]\n";
 		out << "block-host   : [" << print_number(_current->entry->riscv_start, true);
-		out << " - " << print_number(_current->riscv_end, true) << "]\n\n";
+		out << " - " << print_number(_current->riscv_end, true) << "]\n";
+		out << "guest-instructions: " << std::dec << _exec_count_x86;
+		if(_riscv_enabled)
+			out << "\nhost-instructions : " << std::dec << _exec_count_riscv << "\n\n";
+		else
+			out << "\n\n";
 
 		// print the break-points
 		if (_state & DebugState::print_bp)
@@ -288,7 +295,7 @@ void debugger::Debugger::entry(uintptr_t break_point) {
 	std::cout << '\n' << std::string(100, '-') << std::endl;
 
 	// update the halt-flag
-	_halt = (_state & DebugState::await) != 0;
+	_halt = (_state & DebugState::await) != 0 || _step_riscv;
 }
 
 utils::guest_addr_t debugger::Debugger::enter_break(uintptr_t break_point, utils::host_addr_t address) {
@@ -340,8 +347,6 @@ utils::guest_addr_t debugger::Debugger::resolve_block(utils::host_addr_t address
 	if (_current == nullptr) {
 		// look for the basic-block
 		for (size_t i = 0; i < _blocks.size(); i++) {
-			if (address < _blocks[i].entry->riscv_start)
-				break;
 			if (address >= _blocks[i].entry->riscv_start && address < _blocks[i].riscv_end) {
 				_current = &_blocks[i];
 				_current_index = i;
