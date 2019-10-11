@@ -116,16 +116,18 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 	debugger::Debugger::end_block(*_batch, &codeblock);
 
 	// add dynamic tracing-information for the basic-block
-	logger::log(logger::Level::translated, "basicblock: [{0:#x} - {1:#x}] -> [{2:#x}]\n", codeblock.x86_start, codeblock.x86_end,
-				 codeblock.riscv_start);
+	logger::log(logger::Level::translated, "basicblock: [{0:#x} - {1:#x}] -> [{2:#x}]\n", codeblock.x86_start,
+				codeblock.x86_end,
+				codeblock.riscv_start);
 
 	return codeblock.riscv_start;
 }
 
 void CodeGenerator::update_basic_block(utils::host_addr_t addr, utils::host_addr_t absolute_address) {
 	// compute new base-address where the new absolute address will be written to t0
-	// 9 = 8 [load_64bit_immediate] + 1 [JALR]
-	CodeMemory code{reinterpret_cast<riscv_instruction_t*>(addr - 9 * sizeof(riscv_instruction_t)), 9};
+	// 9 = 8 [load_64bit_immediate] + 1 [JALR] ( + 8 * debug_step_entry)
+	size_t batch_size = (debugger::Debugger::step_riscv() ? 17 : 9);
+	CodeMemory code{reinterpret_cast<riscv_instruction_t*>(addr - batch_size * sizeof(riscv_instruction_t)), batch_size};
 
 	// write the new instructions
 	helper::load_immediate(code, absolute_address, helper::address_destination);
