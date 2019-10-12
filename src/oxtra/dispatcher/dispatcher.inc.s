@@ -249,7 +249,7 @@ _ZN10dispatcher10Dispatcher15syscall_handlerEv:
 
 	# invoke virtualize_syscall and check if it should be forwarded
     mv a0, s11
-    call _ZN10dispatcher10Dispatcher18virtualize_syscallEPNS_16ExecutionContextE
+    call _ZN10dispatcher10Dispatcher15emulate_syscallEPNS_16ExecutionContextE
 
 	# restore the guest context and return to caller
 syscall_handled:

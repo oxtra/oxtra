@@ -137,7 +137,7 @@ std::tuple<uintptr_t, uintptr_t, uintptr_t> Dispatcher::init_guest_context() {
 	return {stack_memory, _context.guest.map.return_stack, _context.guest.map.tlb};
 }
 
-void Dispatcher::virtualize_syscall(ExecutionContext* context) {
+void Dispatcher::emulate_syscall(ExecutionContext* context) {
 	using namespace syscalls;
 
 	// the x86 syscall index
