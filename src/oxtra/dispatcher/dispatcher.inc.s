@@ -73,19 +73,19 @@ _ZN10dispatcher10Dispatcher10fault_exitEPKcl:
 # reroute_static
 _ZN10dispatcher10Dispatcher14reroute_staticEv:
 	# capture the guest context
-    capture_context s11
+	capture_context s11
 
-    # store the callers address (needed for update_basic_block)
-    mv s1, ra
+	# store the callers address (needed for update_basic_block)
+	mv s1, ra
 
-    # work on the stack after the sysv red zone
-    addi sp, sp, red_zone
+	# work on the stack after the sysv red zone
+	addi sp, sp, red_zone
 
-    # compute the hash-address
-    compute_tlb_address reroute_static_tlb
+	# compute the hash-address
+	compute_tlb_address reroute_static_tlb
 
 	# t3 might be changed by upcoming function calls, which is why we back it up
-    mv s2, t3
+	mv s2, t3
 
 	# logger::reroutes("reroute_static: 0x{0:x}")
 	la a0, reroute_static_fmt
@@ -177,7 +177,7 @@ _ZN10dispatcher10Dispatcher14reroute_returnEv:
 	# capture the guest context
 	capture_context_tlb s11
 
-    # work on the stack after the sysv red zone
+	# work on the stack after the sysv red zone
 	addi sp, sp, red_zone
 
 	# t1 might be changed by upcoming function calls, which is why we back it up
@@ -198,9 +198,9 @@ _ZN10dispatcher10Dispatcher14reroute_returnEv:
 
 	# update the tlb
 	ld s2, 0(s2)
-    update_tlb_entry
+	update_tlb_entry
 
-    # a0 will be overridden by restore_context so we have to save the translated address
+	# a0 will be overridden by restore_context so we have to save the translated address
 	mv t3, a0
 
 	# restore the guest context
@@ -219,25 +219,28 @@ _ZN10dispatcher10Dispatcher14reroute_returnEv:
 # syscall_handler
 _ZN10dispatcher10Dispatcher15syscall_handlerEv:
 	# check if the syscall must be handled in software
-    li t0, syscall_map_size
-	bge a7, t0, syscall_handler_software
+	li t0, syscall_map_size
+	bgeu a7, t0, syscall_handler_software
 
 	# compute the index into the syscall-map and load it into t0
 	ld t0, syscall_map_offset(s11)
 	slli t1, a7, 3
-    add t0, t0, t1
-    ld t0, 0(t0)
+	add t0, t0, t1
+	ld t0, 0(t0)
 
 	# check if the syscall can be mapped
 	li t1, syscall_map_threshold
-	bge t0, t1, syscall_handler_software
+	bgeu t0, t1, syscall_handler_software
+
+	sd a0, guest_a0_offset(s11)
 
 	# remap the arguments and invoke the systemcall
 	mv a7, t0 # syscall index -> a7
-    ecall
+	ecall
 
-    # move the return value into rax
-    mv a7, a0
+	# move the return value into rax
+	mv a7, a0
+	ld a0, guest_a0_offset(s11)
 	ret
 
 	# enter the syscall-handler
@@ -248,10 +251,10 @@ _ZN10dispatcher10Dispatcher15syscall_handlerEv:
 	addi sp, sp, red_zone
 
 	# invoke virtualize_syscall and check if it should be forwarded
-    mv a0, s11
-    call _ZN10dispatcher10Dispatcher18virtualize_syscallEPNS_16ExecutionContextE
+	mv a0, s11
+	call _ZN10dispatcher10Dispatcher15emulate_syscallEPNS_16ExecutionContextE
 
 	# restore the guest context and return to caller
 syscall_handled:
-    restore_context s11
-    ret
+ 	restore_context s11
+ 	ret

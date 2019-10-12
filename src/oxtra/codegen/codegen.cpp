@@ -126,12 +126,26 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 void CodeGenerator::update_basic_block(utils::host_addr_t addr, utils::host_addr_t absolute_address) {
 	// compute new base-address where the new absolute address will be written to t0
 	// 9 = 8 [load_64bit_immediate] + 1 [JALR] ( + 8 * debug_step_entry)
-	size_t batch_size = (debugger::Debugger::step_riscv() ? 17 : 9);
-	CodeMemory code{reinterpret_cast<riscv_instruction_t*>(addr - batch_size * sizeof(riscv_instruction_t)), batch_size};
+	const size_t batch_size = (debugger::Debugger::step_riscv() ? 17 : 9);
+	const auto start = addr - batch_size * sizeof(riscv_instruction_t);
+	CodeMemory code{reinterpret_cast<riscv_instruction_t*>(start), batch_size};
 
 	// write the new instructions
-	helper::load_immediate(code, absolute_address, helper::address_destination);
-	code += encoding::JALR(RiscVRegister::zero, helper::address_destination, 0);
+	auto diff = absolute_address - start;
+
+	if (std::abs(static_cast<ptrdiff_t>(diff)) <= 0x7fff'ffff) {
+		const auto lo = diff & 0xfffu;
+		auto hi = diff >> 12u;
+		if (lo & 0x800u) {
+			hi++;
+		}
+
+		code += encoding::AUIPC(helper::address_destination, hi);
+		code += encoding::JALR(RiscVRegister::zero, helper::address_destination, lo);
+	} else {
+		helper::load_immediate(code, absolute_address, helper::address_destination);
+		code += encoding::JALR(RiscVRegister::zero, helper::address_destination, 0);
+	}
 }
 
 CallEntry* CodeGenerator::get_call_table() {

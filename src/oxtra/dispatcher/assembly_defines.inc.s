@@ -3,6 +3,7 @@
 .equ guest_t0_offset, 0x20
 .equ guest_t1_offset, 0x28
 .equ guest_t2_offset, 0x30
+.equ guest_a0_offset, 0x48
 .equ guest_a7_offset, 0x80
 .equ guest_rax_offset, 0x80
 .equ guest_rdx_offset, 0x58

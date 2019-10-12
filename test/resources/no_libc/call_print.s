@@ -25,7 +25,6 @@ print:
 
 
 exit:
-	mov rdi, 1
 	mov rax, 0x3c
 	syscall
 
