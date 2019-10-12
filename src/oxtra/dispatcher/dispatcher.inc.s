@@ -220,7 +220,7 @@ _ZN10dispatcher10Dispatcher14reroute_returnEv:
 _ZN10dispatcher10Dispatcher15syscall_handlerEv:
 	# check if the syscall must be handled in software
     li t0, syscall_map_size
-	bge a7, t0, syscall_handler_software
+	bgeu a7, t0, syscall_handler_software
 
 	# compute the index into the syscall-map and load it into t0
 	ld t0, syscall_map_offset(s11)
@@ -230,7 +230,7 @@ _ZN10dispatcher10Dispatcher15syscall_handlerEv:
 
 	# check if the syscall can be mapped
 	li t1, syscall_map_threshold
-	bge t0, t1, syscall_handler_software
+	bgeu t0, t1, syscall_handler_software
 
 	# remap the arguments and invoke the systemcall
 	mv a7, t0 # syscall index -> a7
