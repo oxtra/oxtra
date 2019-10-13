@@ -16,7 +16,7 @@ uintptr_t codegen::Jcc::branch_address() const {
 	return 0;
 }
 
-uint8_t codegen::Jcc::control_flow_type() const {
+uint8_t codegen::Jcc::control_flow_dimension() const {
 	return 2;
 }
 

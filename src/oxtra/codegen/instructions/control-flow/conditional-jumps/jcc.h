@@ -17,7 +17,7 @@ namespace codegen {
 
 		uintptr_t branch_address() const final;
 
-		uint8_t control_flow_type() const final;
+		uint8_t control_flow_dimension() const final;
 	};
 }
 

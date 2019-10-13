@@ -59,19 +59,29 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 
 	// set the flags for the first instruction
 	size_t required_updates = flags::all;
-	if (const auto address = instructions.back()->branch_address()) {
-		if (const auto type = instructions.back()->control_flow_type(); type == 1) {
+	if (const auto& last = *instructions.back(); last.branch_address()) {
+
+		// for a direct jmp/call we start the flag prediction at the branch address
+		if (const auto type = instructions.back()->control_flow_dimension(); type == 1) {
 			required_updates &= ~instructions.back()->get_update();
-			required_updates = recursive_flag_requirements(required_updates, address, 4);
-			required_updates |= instructions.back()->get_require();
-		} else if (type == 2) {
-			required_updates &= ~instructions.back()->get_update();
-			required_updates = recursive_flag_requirements(required_updates, addr, 4) |
-							   recursive_flag_requirements(required_updates, address, 4);
+			required_updates = recursive_flag_requirements(required_updates, last.branch_address(), 4);
 			required_updates |= instructions.back()->get_require();
 		}
+
+		// for a jcc we predict both outcomes
+		else if (type == 2) {
+			required_updates &= ~instructions.back()->get_update();
+			required_updates = recursive_flag_requirements(required_updates, addr, 4) |
+							   recursive_flag_requirements(required_updates, last.branch_address(), 4);
+			required_updates |= instructions.back()->get_require();
+		}
+
+		// set flags that the instruction should update
 		instructions.back()->set_update(required_updates);
-	} else if (next_block) {
+	}
+
+	// if this is not a branch instruction and the next block exists, then start the flag prediction from the next instruction
+	else if (next_block) {
 		required_updates = recursive_flag_requirements(required_updates, addr, 4);
 		instructions.back()->set_update(required_updates);
 	}
@@ -89,16 +99,22 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 		// to indicate to previous instructions, that the flags are needed, and update its update-flags
 		required_updates |= inst->get_require();
 
-		// check if the instruction has recursive requirements
-		if (const auto type = inst->control_flow_type(); type != 0) {
+		// check if this is a branch instruction
+		if (const auto type = inst->control_flow_dimension(); type != 0) {
+
+			// if this is a direct branch, then predict the flags
 			if (const auto branch = inst->branch_address()) {
 				required_updates |= recursive_flag_requirements(flags::all & ~(inst->get_update() & required_updates), branch,
 																4);
-			} else {
+			}
+
+			// we don't know what flags the target block needs, if it is not a direct branch
+			else {
 				required_updates = flags::all;
 			}
 		}
 
+		// update the flags that this instruction has to update
 		inst->set_update(need_update);
 	}
 
@@ -162,6 +178,7 @@ void CodeGenerator::update_basic_block(utils::host_addr_t addr, utils::host_addr
 	// write the new instructions
 	auto diff = absolute_address - start;
 
+	// if the target address is in a 4-GB range from the current pc then use AUIPC and JALR
 	if (std::abs(static_cast<ptrdiff_t>(diff)) <= 0x7fff'ffff) {
 		const auto lo = diff & 0xfffu;
 		auto hi = diff >> 12u;
@@ -171,7 +188,10 @@ void CodeGenerator::update_basic_block(utils::host_addr_t addr, utils::host_addr
 
 		code += encoding::AUIPC(helper::address_destination, hi);
 		code += encoding::JALR(RiscVRegister::zero, helper::address_destination, lo);
-	} else {
+	}
+
+	// otherwise we have to load the immediate
+	else {
 		helper::load_immediate(code, absolute_address, helper::address_destination);
 		code += encoding::JALR(RiscVRegister::zero, helper::address_destination, 0);
 	}
@@ -235,29 +255,43 @@ size_t CodeGenerator::recursive_flag_requirements(size_t unclear, uintptr_t addr
 
 		// update the required flags of the instruction
 		must_update |= inst->get_require();
-		if (const auto type = inst->control_flow_type(); type == 1) {
+
+		// if this is a control flow instruction, then follow each possible control flow recursively and predict the flags
+		if (const auto type = inst->control_flow_dimension(); type == 1) {
+
+			// follow the control flow for a direct branch
 			if (const auto branch_address = inst->branch_address()) {
 				return must_update |
 					   recursive_flag_requirements(unclear & ~inst->get_update(), inst->branch_address(), depth - 1);
 			}
 
+			// stop predicting if this is a indirect branch
 			return must_update | unclear;
 		} else if (type == 2) {
 			const auto unclear_branch = unclear & ~inst->get_update();
+
+			// follow the control flow for each target address
 			if (const auto branch_address = inst->branch_address()) {
 				return must_update | recursive_flag_requirements(unclear_branch, branch_address, depth - 1)
 					   | recursive_flag_requirements(unclear_branch, addr, depth - 1);
 			}
 
+			// stop predicting if this is a indirect branch
 			return must_update | unclear;
 		}
 
+		// remove the flags from unclear that have to be updated or are updated by this instruction
 		unclear &= ~(inst->get_update() | must_update);
 
+		// if we know what to do with each flag, then we're done
 		if (unclear == 0)
 			return must_update;
+
+		// if this is the end of a block, but we couldn't follow the control flow, then stop predicting
 		if (inst->get_eob())
 			break;
 	}
+
+	// return all flags that have to be updated and those which could not be predicted
 	return unclear | must_update;
 }

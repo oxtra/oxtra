@@ -13,7 +13,7 @@ namespace codegen {
 
 		uintptr_t branch_address() const override;
 
-		uint8_t control_flow_type() const override;
+		uint8_t control_flow_dimension() const override;
 	};
 }
 

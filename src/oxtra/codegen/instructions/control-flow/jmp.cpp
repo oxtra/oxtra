@@ -16,6 +16,6 @@ uintptr_t codegen::Jmp::branch_address() const {
 	return 0;
 }
 
-uint8_t codegen::Jmp::control_flow_type() const {
+uint8_t codegen::Jmp::control_flow_dimension() const {
 	return 1;
 }
