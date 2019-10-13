@@ -57,9 +57,15 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 		}
 	}
 
-	// iterate through the instructions backwards and check where the instructions have to be up-to-date
+	// set the flags for the first instruction
 	size_t required_updates = flags::all;
-	for (auto it = instructions.rbegin(); it != instructions.rend(); ++it) {
+	if (const uintptr_t rec_addr = instructions.back()->recursive_require(); rec_addr != 0) {
+		required_updates = recursive_flag_requirements(flags::all & ~instructions.back()->get_update(), rec_addr, 4);
+		required_updates |= instructions.back()->get_require();
+	}
+
+	// iterate through the instructions backwards and check where the instructions have to be up-to-date
+	for (auto it = instructions.rbegin() + 1; it != instructions.rend(); ++it) {
 		// get the instruction
 		auto&& inst = *it;
 
@@ -70,6 +76,10 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 		// add the requirements of this instruction to the search-requirements,
 		// to indicate to previous instructions, that the flags are needed, and update its update-flags
 		required_updates |= inst->get_require();
+
+		// check if the instruction has recursive requirements
+		if (const uintptr_t rec_addr = inst->recursive_require(); rec_addr != 0)
+			required_updates |= recursive_flag_requirements(flags::all & ~inst->get_update(), rec_addr, 4);
 		inst->set_update(need_update);
 	}
 
@@ -181,4 +191,38 @@ codegen::Instruction& CodeGenerator::decode_instruction(utils::guest_addr_t& add
 	inst_vec.emplace_back(std::move(inst_object));
 
 	return *inst_vec.back();
+}
+
+size_t CodeGenerator::recursive_flag_requirements(size_t require, uintptr_t addr, uint8_t depth) const {
+	// check if the instruction ends the recursion
+	if (depth == 0)
+		return require;
+
+	// iterate through the addresses and decode the instructions
+	size_t must_update = 0;
+	while (true) {
+		// decode the instruction
+		fadec::Instruction entry{};
+		if (fadec::decode(reinterpret_cast<uint8_t*>(addr), _elf.get_size(addr), DecodeMode::decode_64, addr, entry) <= 0)
+			return require | must_update;
+
+		// transform the instruction into our representation
+		auto inst = transform_instruction(entry);
+		if (!inst)
+			return require | must_update;
+
+		// adjust the address
+		addr += inst->get_size();
+
+		// update the required flags of the instruction
+		must_update |= inst->get_require();
+		if(const uintptr_t rec_addr = inst->recursive_require(); rec_addr != 0)
+			must_update |= recursive_flag_requirements(require, rec_addr, depth - 1);
+		require &= ~(inst->get_update() | must_update);
+		if (require == 0)
+			return must_update;
+		if (inst->get_eob())
+			break;
+	}
+	return require | must_update;
 }

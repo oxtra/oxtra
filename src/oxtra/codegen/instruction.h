@@ -31,6 +31,8 @@ namespace codegen {
 
 		uint8_t get_require() const;
 
+		virtual uintptr_t recursive_require() const;
+
 		uint8_t get_update() const;
 
 		bool get_eob() const;

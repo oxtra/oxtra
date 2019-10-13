@@ -10,6 +10,8 @@ namespace codegen {
 				: codegen::Instruction{inst, flags::none, flags::none, true} {}
 
 		void generate(CodeBatch& batch) const override;
+
+		uintptr_t recursive_require() const override;
 	};
 }
 

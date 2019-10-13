@@ -9,3 +9,9 @@ void codegen::Jmp::generate(codegen::CodeBatch& batch) const {
 		helper::append_eob(batch, helper::address_destination);
 	}
 }
+
+uintptr_t codegen::Jmp::recursive_require() const {
+	if (get_operand(0).get_type() == fadec::OperandType::imm)
+		return get_immediate();
+	return 0;
+}
