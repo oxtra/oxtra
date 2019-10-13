@@ -9,7 +9,7 @@ const char* argp_program_bug_address = "https://gitlab.lrz.de/lrr-tum/students/e
 Arguments::Arguments(int argc, char** argv) :
 		_executable_path{argv[0]},
 		_stored_arguments{nullptr, std::vector<std::string>(), 0,
-						  0, 4,0x200000, 0x1000, 0x200, 0x40} {
+						  0, 4, 0x200000, 0x1000, 0x200, 0x40} {
 
 	parse_arguments(argc, argv);
 }
@@ -143,7 +143,8 @@ error_t Arguments::parse_opt(int key, char* arg, struct argp_state* state) {
 			arguments->debugging = parse_string(state, arg, 0, 2, "Illegal debugging-mode");
 			break;
 		case 'd':
-			arguments->flag_prediction_depth = static_cast<uint8_t>(parse_string(state, arg, 0, 255, "Illegal flag prediction depth"));
+			arguments->flag_prediction_depth = static_cast<uint8_t>(parse_string(state, arg, 0, 255,
+																				 "Illegal flag prediction depth"));
 			break;
 		case 's':
 			arguments->stack_size = parse_string(state, arg, 1, "Illegal size, must be a positive integer");
