@@ -66,9 +66,14 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 			required_updates |= instructions.back()->get_require();
 		} else if (type == 2) {
 			required_updates &= ~instructions.back()->get_update();
-			required_updates = recursive_flag_requirements(required_updates, addr, 4) | recursive_flag_requirements(required_updates, address, 4);
+			required_updates = recursive_flag_requirements(required_updates, addr, 4) |
+							   recursive_flag_requirements(required_updates, address, 4);
 			required_updates |= instructions.back()->get_require();
 		}
+		instructions.back()->set_update(required_updates);
+	} else if (next_block) {
+		required_updates = recursive_flag_requirements(required_updates, addr, 4);
+		instructions.back()->set_update(required_updates);
 	}
 
 	// iterate through the instructions backwards and check where the instructions have to be up-to-date
@@ -87,7 +92,8 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 		// check if the instruction has recursive requirements
 		if (const auto type = inst->control_flow_type(); type != 0) {
 			if (const auto branch = inst->branch_address()) {
-				required_updates |= recursive_flag_requirements(flags::all & ~(inst->get_update() & required_updates), branch, 4);
+				required_updates |= recursive_flag_requirements(flags::all & ~(inst->get_update() & required_updates), branch,
+																4);
 			} else {
 				required_updates = flags::all;
 			}
@@ -211,8 +217,6 @@ size_t CodeGenerator::recursive_flag_requirements(size_t unclear, uintptr_t addr
 	if (depth == 0)
 		return unclear;
 
-	//printf("rec_flags(unclear: %lx, addr: %lx)\n", unclear, addr);
-
 	// iterate through the addresses and decode the instructions
 	size_t must_update = 0;
 	while (true) {
@@ -233,7 +237,8 @@ size_t CodeGenerator::recursive_flag_requirements(size_t unclear, uintptr_t addr
 		must_update |= inst->get_require();
 		if (const auto type = inst->control_flow_type(); type == 1) {
 			if (const auto branch_address = inst->branch_address()) {
-				return must_update | recursive_flag_requirements(unclear & ~inst->get_update(), inst->branch_address(), depth - 1);
+				return must_update |
+					   recursive_flag_requirements(unclear & ~inst->get_update(), inst->branch_address(), depth - 1);
 			}
 
 			return must_update | unclear;
@@ -248,8 +253,6 @@ size_t CodeGenerator::recursive_flag_requirements(size_t unclear, uintptr_t addr
 		}
 
 		unclear &= ~(inst->get_update() | must_update);
-
-		//printf("\tunclear: %lx, must_update: %lx\n", unclear, must_update);
 
 		if (unclear == 0)
 			return must_update;
