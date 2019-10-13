@@ -31,7 +31,9 @@ namespace codegen {
 
 		uint8_t get_require() const;
 
-		virtual uintptr_t recursive_require() const;
+		virtual uintptr_t branch_address() const;
+
+		virtual uint8_t control_flow_type() const;
 
 		uint8_t get_update() const;
 

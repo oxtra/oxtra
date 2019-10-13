@@ -15,7 +15,9 @@ namespace codegen {
 		 */
 		void generate_jump(CodeBatch& batch) const;
 
-		uintptr_t recursive_require() const final;
+		uintptr_t branch_address() const final;
+
+		uint8_t control_flow_type() const final;
 	};
 }
 

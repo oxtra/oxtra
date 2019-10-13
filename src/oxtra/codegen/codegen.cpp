@@ -59,10 +59,16 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 
 	// set the flags for the first instruction
 	size_t required_updates = flags::all;
-	if (const uintptr_t rec_addr = instructions.back()->recursive_require(); rec_addr != 0) {
-		required_updates &= ~instructions.back()->get_update();
-		required_updates = recursive_flag_requirements(required_updates, rec_addr, 4);
-		required_updates |= instructions.back()->get_require();
+	if (const auto address = instructions.back()->branch_address()) {
+		if (const auto type = instructions.back()->control_flow_type(); type == 1) {
+			required_updates &= ~instructions.back()->get_update();
+			required_updates = recursive_flag_requirements(required_updates, address, 4);
+			required_updates |= instructions.back()->get_require();
+		} else if (type == 2) {
+			required_updates &= ~instructions.back()->get_update();
+			required_updates = recursive_flag_requirements(required_updates, addr, 4) | recursive_flag_requirements(required_updates, address, 4);
+			required_updates |= instructions.back()->get_require();
+		}
 	}
 
 	// iterate through the instructions backwards and check where the instructions have to be up-to-date
@@ -79,9 +85,14 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 		required_updates |= inst->get_require();
 
 		// check if the instruction has recursive requirements
-		if (const uintptr_t rec_addr = inst->recursive_require(); rec_addr != 0)
-			required_updates |= recursive_flag_requirements(flags::all & ~inst->get_update(), rec_addr, 4);
-		
+		if (const auto type = inst->control_flow_type(); type != 0) {
+			if (const auto branch = inst->branch_address()) {
+				required_updates |= recursive_flag_requirements(flags::all & ~(inst->get_update() & required_updates), branch, 4);
+			} else {
+				required_updates = flags::all;
+			}
+		}
+
 		inst->set_update(need_update);
 	}
 
@@ -200,6 +211,8 @@ size_t CodeGenerator::recursive_flag_requirements(size_t unclear, uintptr_t addr
 	if (depth == 0)
 		return unclear;
 
+	//printf("rec_flags(unclear: %lx, addr: %lx)\n", unclear, addr);
+
 	// iterate through the addresses and decode the instructions
 	size_t must_update = 0;
 	while (true) {
@@ -218,13 +231,25 @@ size_t CodeGenerator::recursive_flag_requirements(size_t unclear, uintptr_t addr
 
 		// update the required flags of the instruction
 		must_update |= inst->get_require();
-		if(const uintptr_t rec_addr = inst->recursive_require(); rec_addr != 0) {
+		if (const auto type = inst->control_flow_type(); type == 1) {
+			if (const auto branch_address = inst->branch_address()) {
+				return must_update | recursive_flag_requirements(unclear & ~inst->get_update(), inst->branch_address(), depth - 1);
+			}
+
+			return must_update | unclear;
+		} else if (type == 2) {
 			const auto unclear_branch = unclear & ~inst->get_update();
-			return must_update | recursive_flag_requirements(unclear_branch, rec_addr, depth - 1)
-				| recursive_flag_requirements(unclear_branch, addr, depth - 1);
+			if (const auto branch_address = inst->branch_address()) {
+				return must_update | recursive_flag_requirements(unclear_branch, branch_address, depth - 1)
+					   | recursive_flag_requirements(unclear_branch, addr, depth - 1);
+			}
+
+			return must_update | unclear;
 		}
 
 		unclear &= ~(inst->get_update() | must_update);
+
+		//printf("\tunclear: %lx, must_update: %lx\n", unclear, must_update);
 
 		if (unclear == 0)
 			return must_update;

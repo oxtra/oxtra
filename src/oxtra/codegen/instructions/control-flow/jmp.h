@@ -11,7 +11,9 @@ namespace codegen {
 
 		void generate(CodeBatch& batch) const override;
 
-		uintptr_t recursive_require() const override;
+		uintptr_t branch_address() const override;
+
+		uint8_t control_flow_type() const override;
 	};
 }
 

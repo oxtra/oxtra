@@ -10,10 +10,14 @@ void codegen::Jcc::generate_jump(codegen::CodeBatch& batch) const {
 	}
 }
 
-uintptr_t codegen::Jcc::recursive_require() const {
+uintptr_t codegen::Jcc::branch_address() const {
 	if (get_operand(0).get_type() == fadec::OperandType::imm)
 		return get_immediate();
 	return 0;
+}
+
+uint8_t codegen::Jcc::control_flow_type() const {
+	return 2;
 }
 
 // cf == 0 && zf == 0

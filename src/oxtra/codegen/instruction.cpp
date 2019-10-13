@@ -17,7 +17,11 @@ uint8_t codegen::Instruction::get_require() const {
 	return require_flags;
 }
 
-uintptr_t codegen::Instruction::recursive_require() const {
+uintptr_t codegen::Instruction::branch_address() const {
+	return 0;
+}
+
+uint8_t codegen::Instruction::control_flow_type() const {
 	return 0;
 }
 
