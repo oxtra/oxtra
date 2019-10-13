@@ -106,11 +106,11 @@ void codegen::Jg::generate(codegen::CodeBatch& batch) const {
 	evaluate_overflow(batch);
 
 	// generate the code to leave the jump
-	size_t leave = batch.size();
+	size_t leave = batch.add(encoding::NOP());
 	generate_jump(batch);
 
 	// if sf != of then don't go to the jump
-	batch.insert(leave, encoding::BNE(encoding::RiscVRegister::t4, encoding::RiscVRegister::t5, batch.offset(leave, batch.size())));
+	batch.insert(leave, encoding::BNE(encoding::RiscVRegister::t4, encoding::RiscVRegister::t0, batch.offset(leave, batch.size()) * 4));
 
 	// compute the offset and generate the jump
 	batch.insert(index, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
@@ -197,7 +197,6 @@ void codegen::Jno::generate(codegen::CodeBatch& batch) const {
 	// append a dummy-branch
 	size_t index = batch.add(encoding::NOP());
 
-	// generate the code to jump
 	generate_jump(batch);
 
 	// compute the offset and generate the jump

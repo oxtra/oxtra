@@ -23,6 +23,7 @@ add_library(oxtra_libs
 		oxtra/codegen/instruction.cpp
 		oxtra/codegen/transform_instruction.cpp
 		oxtra/codegen/jump-table/jump_table.cpp
+		oxtra/codegen/instructions/unsupported_instruction.cpp
 		oxtra/codegen/instructions/binary_operation.cpp
 		oxtra/codegen/instructions/unary_operation.cpp
 		oxtra/codegen/instructions/arithmetic/add.cpp
