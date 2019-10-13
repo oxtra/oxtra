@@ -197,8 +197,8 @@ void codegen::Jno::generate(codegen::CodeBatch& batch) const {
 	// append a dummy-branch
 	size_t index = batch.add(encoding::NOP());
 
-	// generate the code to leave the jump
-	generate_step(batch);
+	// generate the code to jump
+	generate_jump(batch);
 
 	// compute the offset and generate the jump
 	batch.insert(index, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
