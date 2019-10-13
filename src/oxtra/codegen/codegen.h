@@ -24,6 +24,7 @@ namespace codegen {
 		codestore::CodeStore _codestore;
 		std::unique_ptr<codegen::CodeBatchImpl> _batch;
 		std::vector<CallEntry> _call_table;
+		uint8_t _flag_prediction_depth;
 
 	public:
 		CodeGenerator(const arguments::Arguments& args, const elf::Elf& elf);

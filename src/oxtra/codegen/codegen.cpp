@@ -18,6 +18,8 @@ CodeGenerator::CodeGenerator(const arguments::Arguments& args, const elf::Elf& e
 		_batch = std::make_unique<debugger::DebuggerBatch>();
 	else
 		_batch = std::make_unique<CodeBatchImpl>();
+
+	_flag_prediction_depth = args.get_flag_prediction_depth();
 }
 
 host_addr_t CodeGenerator::translate(guest_addr_t addr) {
@@ -64,15 +66,15 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 		// for a direct jmp/call we start the flag prediction at the branch address
 		if (const auto type = instructions.back()->control_flow_dimension(); type == 1) {
 			required_updates &= ~instructions.back()->get_update();
-			required_updates = recursive_flag_requirements(required_updates, last.branch_address(), 4);
+			required_updates = recursive_flag_requirements(required_updates, last.branch_address(), _flag_prediction_depth);
 			required_updates |= instructions.back()->get_require();
 		}
 
 		// for a jcc we predict both outcomes
 		else if (type == 2) {
 			required_updates &= ~instructions.back()->get_update();
-			required_updates = recursive_flag_requirements(required_updates, addr, 4) |
-							   recursive_flag_requirements(required_updates, last.branch_address(), 4);
+			required_updates = recursive_flag_requirements(required_updates, addr, _flag_prediction_depth) |
+							   recursive_flag_requirements(required_updates, last.branch_address(), _flag_prediction_depth);
 			required_updates |= instructions.back()->get_require();
 		}
 
@@ -82,7 +84,7 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 
 	// if this is not a branch instruction and the next block exists, then start the flag prediction from the next instruction
 	else if (next_block) {
-		required_updates = recursive_flag_requirements(required_updates, addr, 4);
+		required_updates = recursive_flag_requirements(required_updates, addr, _flag_prediction_depth);
 		instructions.back()->set_update(required_updates);
 	}
 
@@ -105,7 +107,7 @@ host_addr_t CodeGenerator::translate(guest_addr_t addr) {
 			// if this is a direct branch, then predict the flags
 			if (const auto branch = inst->branch_address()) {
 				required_updates |= recursive_flag_requirements(flags::all & ~(inst->get_update() & required_updates), branch,
-																4);
+																_flag_prediction_depth);
 			}
 
 			// we don't know what flags the target block needs, if it is not a direct branch
