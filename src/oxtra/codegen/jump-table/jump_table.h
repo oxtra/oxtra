@@ -17,6 +17,7 @@ namespace codegen::jump_table {
 		debug_callback,
 		debug_callback_riscv,
 		c_wrapper,
+		unsupported_instruction,
 		unsupported_carry,
 		unsupported_overflow,
 		high_level_carry,
@@ -109,6 +110,11 @@ namespace codegen::jump_table {
 	 * Generates a jump to the riscv-debugger routine.
 	 */
 	void jump_debugger_riscv(CodeBatch& batch);
+
+	/**
+	 * Generates a jump to the unsupported instruction handling routine.
+	 */
+	void jump_unsupported_instruction(CodeBatch& batch);
 
 	/**
 	 * Generates a jump into the jump table to the offset in the register.

@@ -17,6 +17,14 @@ uint8_t codegen::Instruction::get_require() const {
 	return require_flags;
 }
 
+uintptr_t codegen::Instruction::branch_address() const {
+	return 0;
+}
+
+uint8_t codegen::Instruction::control_flow_dimension() const {
+	return 0;
+}
+
 uint8_t codegen::Instruction::get_update() const {
 	return update_flags;
 }
@@ -296,7 +304,7 @@ void codegen::Instruction::write_to_memory(CodeBatch& batch, const fadec::Operan
 		}
 	}
 
-	// if the displacement is too big to be encoded in 12-bits then it was added to the address before
+		// if the displacement is too big to be encoded in 12-bits then it was added to the address before
 	else if (displacement < -0x800 || displacement >= 0x800) {
 		operation_displacement = 0;
 	}

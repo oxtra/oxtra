@@ -10,6 +10,10 @@ namespace codegen {
 				: codegen::Instruction{inst, flags::none, flags::none, true} {}
 
 		void generate(CodeBatch& batch) const override;
+
+		uintptr_t branch_address() const override;
+
+		uint8_t control_flow_dimension() const override;
 	};
 }
 

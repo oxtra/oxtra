@@ -9,3 +9,13 @@ void codegen::Jmp::generate(codegen::CodeBatch& batch) const {
 		helper::append_eob(batch, helper::address_destination);
 	}
 }
+
+uintptr_t codegen::Jmp::branch_address() const {
+	if (get_operand(0).get_type() == fadec::OperandType::imm)
+		return get_immediate();
+	return 0;
+}
+
+uint8_t codegen::Jmp::control_flow_dimension() const {
+	return 1;
+}

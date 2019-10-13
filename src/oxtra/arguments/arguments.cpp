@@ -3,13 +3,13 @@
 
 using namespace arguments;
 
-const char* argp_program_version = "oxtra 1.0 [alpha]";
+const char* argp_program_version = "oxtra 1.0";
 const char* argp_program_bug_address = "https://gitlab.lrz.de/lrr-tum/students/eragp-x86emu-2019";
 
 Arguments::Arguments(int argc, char** argv) :
 		_executable_path{argv[0]},
 		_stored_arguments{nullptr, std::vector<std::string>(), 0,
-						  0, 0x200000, 0x1000, 0x200, 0x40} {
+						  0, 4, 0x200000, 0x1000, 0x200, 0x40} {
 
 	parse_arguments(argc, argv);
 }
@@ -44,6 +44,10 @@ size_t Arguments::get_entry_list_size() const {
 
 uint8_t Arguments::get_debugging() const {
 	return _stored_arguments.debugging;
+}
+
+uint8_t Arguments::get_flag_prediction_depth() const {
+	return _stored_arguments.flag_prediction_depth;
 }
 
 void Arguments::parse_arguments(int argc, char** argv) {
@@ -137,6 +141,10 @@ error_t Arguments::parse_opt(int key, char* arg, struct argp_state* state) {
 			break;
 		case dbk_key:
 			arguments->debugging = parse_string(state, arg, 0, 2, "Illegal debugging-mode");
+			break;
+		case 'd':
+			arguments->flag_prediction_depth = static_cast<uint8_t>(parse_string(state, arg, 0, 255,
+																				 "Illegal flag prediction depth"));
 			break;
 		case 's':
 			arguments->stack_size = parse_string(state, arg, 1, "Illegal size, must be a positive integer");

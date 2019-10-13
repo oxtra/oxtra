@@ -189,6 +189,7 @@ _ZN7codegen10jump_table13table_addressEv:
 	jal zero, debug_entry
 	jal zero, debug_entry_riscv
 	jal zero, c_wrapper
+	jal zero, _ZN7codegen22UnsupportedInstruction30handle_unsupported_instructionEm
 	jal zero, unsupported_carry
 	jal zero, unsupported_overflow
 	jal zero, high_level_carry

@@ -1,5 +1,6 @@
 #include "codegen.h"
 
+#include "oxtra/codegen/instructions/unsupported_instruction.h"
 #include "oxtra/codegen/instructions/arithmetic/add.h"
 #include "oxtra/codegen/instructions/arithmetic/adc.h"
 #include "oxtra/codegen/instructions/arithmetic/inc.h"
@@ -295,6 +296,6 @@ std::unique_ptr<codegen::Instruction> codegen::CodeGenerator::transform_instruct
 			return std::make_unique<Stos>(inst);
 
 		default:
-			return nullptr;
+			return std::make_unique<UnsupportedInstruction>(inst);
 	}
 }

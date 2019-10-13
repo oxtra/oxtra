@@ -31,6 +31,19 @@ namespace codegen {
 
 		uint8_t get_require() const;
 
+		/**
+		 * Returns the direct branch address or 0 if there is none.
+		 */
+		virtual uintptr_t branch_address() const;
+
+		/**
+		 * Returns the number of possible control flow changes.
+		 * 0: normal instructions
+		 * 1: jmp, call..
+		 * 2: jcc
+		 */
+		virtual uint8_t control_flow_dimension() const;
+
 		uint8_t get_update() const;
 
 		bool get_eob() const;

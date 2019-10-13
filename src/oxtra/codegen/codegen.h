@@ -24,6 +24,7 @@ namespace codegen {
 		codestore::CodeStore _codestore;
 		std::unique_ptr<codegen::CodeBatchImpl> _batch;
 		std::vector<CallEntry> _call_table;
+		uint8_t _flag_prediction_depth;
 
 	public:
 		CodeGenerator(const arguments::Arguments& args, const elf::Elf& elf);
@@ -43,6 +44,8 @@ namespace codegen {
 		using inst_vec_t = std::vector<std::unique_ptr<codegen::Instruction>>;
 
 		codegen::Instruction& decode_instruction(utils::guest_addr_t& addr, inst_vec_t& inst_vec) const;
+
+		size_t recursive_flag_requirements(size_t unclear, uintptr_t addr, uint8_t depth) const;
 
 		/**
 	 	 * Transforms a fadec instruction object into our own representation.
