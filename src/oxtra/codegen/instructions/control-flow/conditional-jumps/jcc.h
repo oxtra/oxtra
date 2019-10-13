@@ -14,6 +14,8 @@ namespace codegen {
 		 * This should be called if the condition is true.
 		 */
 		void generate_jump(CodeBatch& batch) const;
+
+		uintptr_t recursive_require() const final;
 	};
 }
 

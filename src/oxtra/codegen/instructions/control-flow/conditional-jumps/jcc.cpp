@@ -10,6 +10,12 @@ void codegen::Jcc::generate_jump(codegen::CodeBatch& batch) const {
 	}
 }
 
+uintptr_t codegen::Jcc::recursive_require() const {
+	if (get_operand(0).get_type() == fadec::OperandType::imm)
+		return get_immediate();
+	return 0;
+}
+
 // cf == 0 && zf == 0
 void codegen::Ja::generate(codegen::CodeBatch& batch) const {
 	// load the zero-flag (first, as it is easier to compute)
