@@ -7,7 +7,7 @@ namespace codegen {
 	class Syscall : public codegen::Instruction {
 	public:
 		explicit Syscall(const fadec::Instruction& inst)
-			: codegen::Instruction{inst, flags::all, flags::none} {}
+			: codegen::Instruction{inst, flags::all, flags::none, true} {}
 
 		void generate(CodeBatch& batch) const final;
 	};

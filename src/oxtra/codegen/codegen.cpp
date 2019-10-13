@@ -1,7 +1,6 @@
 #include "oxtra/codegen/codegen.h"
 #include "oxtra/dispatcher/dispatcher.h"
 #include "oxtra/debugger/debugger.h"
-#include "oxtra/codegen/instructions/unsupported_instruction.h"
 #include "oxtra/logger/logger.h"
 #include "helper.h"
 
@@ -187,8 +186,8 @@ codegen::Instruction& CodeGenerator::decode_instruction(utils::guest_addr_t& add
 	fadec::Instruction entry{};
 	if (fadec::decode(reinterpret_cast<uint8_t*>(addr), _elf.get_size(addr), DecodeMode::decode_64, addr,
 					  entry) <= 0) {
-		inst_vec.emplace_back(std::make_unique<codegen::UnsupportedInstruction>(entry));
-		return *inst_vec.back();
+		inst_vec.~vector();
+		Dispatcher::fault_exit("Failed to decode the instruction");
 	}
 
 	// transform the instruction into our representation
