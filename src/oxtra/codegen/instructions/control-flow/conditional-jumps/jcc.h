@@ -7,19 +7,13 @@ namespace codegen {
 	class Jcc : public codegen::Instruction {
 	protected:
 		explicit Jcc(const fadec::Instruction& inst, uint8_t required)
-				: codegen::Instruction{inst, flags::none, required, true} {}
+				: codegen::Instruction{inst, flags::none, required} {}
 
 		/**
 		 * Generates the instructions that perform the jump.
 		 * This should be called if the condition is true.
 		 */
 		void generate_jump(CodeBatch& batch) const;
-
-		/**
-		 * Generates the instructions that step to the next instruction.
-		 * This should be called if the condition is false.
-		 */
-		void generate_step(CodeBatch& batch) const;
 	};
 }
 

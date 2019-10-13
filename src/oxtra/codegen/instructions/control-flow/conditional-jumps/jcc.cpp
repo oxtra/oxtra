@@ -10,32 +10,28 @@ void codegen::Jcc::generate_jump(codegen::CodeBatch& batch) const {
 	}
 }
 
-void codegen::Jcc::generate_step(codegen::CodeBatch& batch) const {
-	helper::append_eob(batch, get_address() + get_size());
-}
-
 // cf == 0 && zf == 0
 void codegen::Ja::generate(codegen::CodeBatch& batch) const {
 	// load the zero-flag (first, as it is easier to compute)
 	evaluate_zero(batch, encoding::RiscVRegister::t4);
 
 	// append a dummy-branch
-	size_t index = batch.add(encoding::NOP());
-
-	// generate the code to leave the jump
-	size_t leave = batch.size();
-	generate_step(batch);
-
-	// compute the offset and generate the jump
-	batch.insert(index, encoding::BEQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
+	size_t dummy0 = batch.add(encoding::NOP());
 
 	// load the carry flag
 	evaluate_carry(batch);
 
-	// generate the jump to the leave
-	batch.add(encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(batch.size(), leave) * 4));
+	// append the dummy-branch
+	size_t dummy1 = batch.add(encoding::NOP());
 
+	// generate the jump
 	generate_jump(batch);
+
+	// compute the offset and generate the jump
+	batch.insert(dummy0, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(dummy0, batch.size()) * 4));
+
+	// generate the jump to the leave
+	batch.insert(dummy1, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(dummy1, batch.size()) * 4));
 }
 
 // cf == 1 || zf == 1
@@ -58,9 +54,6 @@ void codegen::Jbe::generate(codegen::CodeBatch& batch) const {
 
 	// generate the jump to the out-jump
 	batch.add(encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(batch.size(), finish) * 4));
-
-	// generate the code to leave the function
-	generate_step(batch);
 }
 
 // cf == 1
@@ -71,13 +64,11 @@ void codegen::Jc::generate(codegen::CodeBatch& batch) const {
 	// append a dummy-branch
 	size_t index = batch.add(encoding::NOP());
 
-	// generate the code to leave the jump
-	generate_step(batch);
+	// generate the code to jump
+	generate_jump(batch);
 
 	// compute the offset and generate the jump
-	batch.insert(index, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
-
-	generate_jump(batch);
+	batch.insert(index, encoding::BEQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
 }
 
 // ecx == 0 / rcx == 0
@@ -93,13 +84,11 @@ void codegen::Jcxz::generate(codegen::CodeBatch& batch) const {
 	// append a dummy-branch
 	size_t index = batch.add(encoding::NOP());
 
-	// generate the code to leave the jump
-	generate_step(batch);
+	// generate the code to jump
+	generate_jump(batch);
 
 	// compute the offset and generate the jump
 	batch.insert(index, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
-
-	generate_jump(batch);
 }
 
 //(ZF == 0 && SF == OF)
