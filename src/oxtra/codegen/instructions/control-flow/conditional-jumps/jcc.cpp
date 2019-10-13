@@ -91,7 +91,7 @@ void codegen::Jcxz::generate(codegen::CodeBatch& batch) const {
 	batch.insert(index, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
 }
 
-//(ZF == 0 && SF == OF)
+// zf == 0 && sf == of
 void codegen::Jg::generate(codegen::CodeBatch& batch) const {
 	// load the zero-flag (first, as it is easier to compute)
 	evaluate_zero(batch, encoding::RiscVRegister::t4);
@@ -99,23 +99,21 @@ void codegen::Jg::generate(codegen::CodeBatch& batch) const {
 	// append a dummy-branch
 	size_t index = batch.add(encoding::NOP());
 
-	// generate the code to leave the jump
-	size_t leave = batch.size();
-	generate_step(batch);
-
-	// compute the offset and generate the jump
-	batch.insert(index, encoding::BEQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
-
 	// load the sign flag
 	evaluate_sign(batch, encoding::RiscVRegister::t0, encoding::RiscVRegister::t5);
 
 	// load the overflow-flag
 	evaluate_overflow(batch);
 
-	// generate the jump to the leave
-	batch.add(encoding::BNE(encoding::RiscVRegister::t4, encoding::RiscVRegister::t0, batch.offset(batch.size(), leave) * 4));
-
+	// generate the code to leave the jump
+	size_t leave = batch.size();
 	generate_jump(batch);
+
+	// if sf != of then don't go to the jump
+	batch.insert(leave, encoding::BNE(encoding::RiscVRegister::t4, encoding::RiscVRegister::t5, batch.offset(leave, batch.size())));
+
+	// compute the offset and generate the jump
+	batch.insert(index, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
 }
 
 // sf == of
@@ -129,13 +127,10 @@ void codegen::Jge::generate(codegen::CodeBatch& batch) const {
 	// append a dummy-branch
 	size_t index = batch.add(encoding::NOP());
 
-	// generate the code to leave the jump
-	generate_step(batch);
+	generate_jump(batch);
 
 	// compute the offset and generate the jump
-	batch.insert(index, encoding::BEQ(encoding::RiscVRegister::t4, encoding::RiscVRegister::t0, batch.offset(index, batch.size()) * 4));
-
-	generate_jump(batch);
+	batch.insert(index, encoding::BNE(encoding::RiscVRegister::t4, encoding::RiscVRegister::t0, batch.offset(index, batch.size()) * 4));
 }
 
 // sf != of
@@ -149,13 +144,10 @@ void codegen::Jl::generate(codegen::CodeBatch& batch) const {
 	// append a dummy-branch
 	size_t index = batch.add(encoding::NOP());
 
-	// generate the code to leave the jump
-	generate_step(batch);
+	generate_jump(batch);
 
 	// compute the offset and generate the jump
-	batch.insert(index, encoding::BNE(encoding::RiscVRegister::t4, encoding::RiscVRegister::t0, batch.offset(index, batch.size()) * 4));
-
-	generate_jump(batch);
+	batch.insert(index, encoding::BEQ(encoding::RiscVRegister::t4, encoding::RiscVRegister::t0, batch.offset(index, batch.size()) * 4));
 }
 
 // zf == 1 || sf != of
@@ -181,9 +173,6 @@ void codegen::Jle::generate(codegen::CodeBatch& batch) const {
 
 	// generate the jump to the result
 	batch.add(encoding::BNE(encoding::RiscVRegister::t4, encoding::RiscVRegister::t0, batch.offset(batch.size(), finish) * 4));
-
-	// generate the code to leave the jump
-	generate_step(batch);
 }
 
 // cf == 0
@@ -194,13 +183,10 @@ void codegen::Jnc::generate(codegen::CodeBatch& batch) const {
 	// append a dummy-branch
 	size_t index = batch.add(encoding::NOP());
 
-	// generate the code to leave the jump
-	generate_step(batch);
+	generate_jump(batch);
 
 	// compute the offset and generate the jump
-	batch.insert(index, encoding::BEQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
-
-	generate_jump(batch);
+	batch.insert(index, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
 }
 
 // of == 0
@@ -215,9 +201,7 @@ void codegen::Jno::generate(codegen::CodeBatch& batch) const {
 	generate_step(batch);
 
 	// compute the offset and generate the jump
-	batch.insert(index, encoding::BEQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
-
-	generate_jump(batch);
+	batch.insert(index, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
 }
 
 // pf == 0
@@ -228,13 +212,10 @@ void codegen::Jnp::generate(codegen::CodeBatch& batch) const {
 	// append a dummy-branch
 	size_t index = batch.add(encoding::NOP());
 
-	// generate the code to leave the jump
-	generate_step(batch);
+	generate_jump(batch);
 
 	// compute the offset and generate the jump
-	batch.insert(index, encoding::BEQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
-
-	generate_jump(batch);
+	batch.insert(index, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
 }
 
 // sf == 0
@@ -245,13 +226,10 @@ void codegen::Jns::generate(codegen::CodeBatch& batch) const {
 	// append a dummy-branch
 	size_t index = batch.add(encoding::NOP());
 
-	// generate the code to leave the jump
-	generate_step(batch);
+	generate_jump(batch);
 
 	// compute the offset and generate the jump
-	batch.insert(index, encoding::BEQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
-
-	generate_jump(batch);
+	batch.insert(index, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
 }
 
 // zf == 0
@@ -262,13 +240,10 @@ void codegen::Jnz::generate(codegen::CodeBatch& batch) const {
 	// append a dummy-branch
 	size_t index = batch.add(encoding::NOP());
 
-	// generate the code to leave the jump
-	generate_step(batch);
+	generate_jump(batch);
 
 	// compute the offset and generate the jump
-	batch.insert(index, encoding::BEQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
-
-	generate_jump(batch);
+	batch.insert(index, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
 }
 
 // of == 1
@@ -279,13 +254,10 @@ void codegen::Jo::generate(codegen::CodeBatch& batch) const {
 	// append a dummy-branch
 	size_t index = batch.add(encoding::NOP());
 
-	// generate the code to leave the jump
-	generate_step(batch);
+	generate_jump(batch);
 
 	// compute the offset and generate the jump
-	batch.insert(index, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
-
-	generate_jump(batch);
+	batch.insert(index, encoding::BEQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
 }
 
 // pf == 1
@@ -296,13 +268,10 @@ void codegen::Jp::generate(codegen::CodeBatch& batch) const {
 	// append a dummy-branch
 	size_t index = batch.add(encoding::NOP());
 
-	// generate the code to leave the jump
-	generate_step(batch);
+	generate_jump(batch);
 
 	// compute the offset and generate the jump
-	batch.insert(index, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
-
-	generate_jump(batch);
+	batch.insert(index, encoding::BEQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
 }
 
 // sf == 1
@@ -313,13 +282,10 @@ void codegen::Js::generate(codegen::CodeBatch& batch) const {
 	// append a dummy-branch
 	size_t index = batch.add(encoding::NOP());
 
-	// generate the code to leave the jump
-	generate_step(batch);
+	generate_jump(batch);
 
 	// compute the offset and generate the jump
-	batch.insert(index, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
-
-	generate_jump(batch);
+	batch.insert(index, encoding::BEQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
 }
 
 // zf == 1
@@ -330,11 +296,8 @@ void codegen::Jz::generate(codegen::CodeBatch& batch) const {
 	// append a dummy-branch
 	size_t index = batch.add(encoding::NOP());
 
-	// generate the code to leave the jump
-	generate_step(batch);
+	generate_jump(batch);
 
 	// compute the offset and generate the jump
-	batch.insert(index, encoding::BNQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
-
-	generate_jump(batch);
+	batch.insert(index, encoding::BEQZ(encoding::RiscVRegister::t4, batch.offset(index, batch.size()) * 4));
 }
