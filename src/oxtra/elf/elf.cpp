@@ -39,7 +39,7 @@ ElfException::ElfException(Error e) {
 ElfException::ElfException(Error e, const char* info) {
 	_err = e;
 	_info = std::string(error_string(_err));
-	_info.append("(desc: ").append(info).append(")");
+	_info.append(" (desc: ").append(info).append(")");
 }
 
 const char* ElfException::what() const noexcept {

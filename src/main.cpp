@@ -10,15 +10,24 @@ int main(int argc, char** argv, char** envp) {
 	const auto arguments = arguments::Arguments(argc, argv);
 	logger::set_level(arguments.get_log_level());
 
-	// create the elf-object
-	const auto elf = elf::Elf(arguments.get_guest_path());
+	try {
+		// create the elf-object
+		const auto elf = elf::Elf(arguments.get_guest_path());
 
-	// create the dispatcher
-	dispatcher::Dispatcher dispatcher(elf, arguments, envp);
+		// create the dispatcher
+		dispatcher::Dispatcher dispatcher(elf, arguments, envp);
 
-	// startup the translation and execution of the source-code
-	const auto return_value = dispatcher.run();
-	logger::log(logger::Level::return_value, "guest returned: {0:#x} ({1:d})\n", static_cast<unsigned long>(return_value), return_value);
+		// startup the translation and execution of the source-code
+		const auto return_value = dispatcher.run();
 
-	return return_value;
+		logger::log(logger::Level::return_value, "guest returned: {0:#x} ({1:d})\n", static_cast<unsigned long>(return_value),
+					return_value);
+
+		return return_value;
+
+	} catch (const std::exception& e) {
+		fmt::print(stderr, "oxtra: {}\n", e.what());
+
+		return -1;
+	}
 }
