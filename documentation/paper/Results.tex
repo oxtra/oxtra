@@ -146,7 +146,7 @@ As the tests could not be run on real hardware, these results can only give a ro
 		\caption{5 runs, first primes below 1,000,000}
 		\label{fig:bench-prime-1m}
 	\end{subfigure}
-	\caption[Prime Benchmarking]{Comparison of prime number computation between oxtra and QEMU.}
+	\caption[Prime Benchmarking]{Comparison of prime number computation runtime.}
 	\label{fig:bench-prime}
 \end{figure}
 
@@ -342,7 +342,7 @@ As the tests could not be run on real hardware, these results can only give a ro
 		\caption{5 runs, 13MB file}
 		\label{fig:bench-gzip-13mb}
 	\end{subfigure}
-	\caption[Gzip Benchmarking]{Comparison of gzip between oxtra and QEMU.}
+	\caption[Gzip Benchmarking]{Comparison of gzip-compression runtime.}
 	\label{fig:bench-gzip}
 \end{figure}
 
@@ -366,13 +366,11 @@ For computing primes below 10,000 QEMU executes 1.70 times as many instructions 
 	xtick=data,
 	xtick style={draw=none},
 	%x = 83,
-	xlabel = {Number of executed Instructions (lower is better)},
-	x label style={at={(0.5,-0.025)}},
-	legend style={at={(0.5,-0.35)},anchor=north,legend columns=-1,/tikz/every even column/.append style={column sep=0.5cm}},
+	legend style={at={(0.5,-0.2)},anchor=north,legend columns=-1,/tikz/every even column/.append style={column sep=0.5cm}},
 	legend image code/.code={
 		\draw [#1] (0cm,-0.12cm) rectangle ++(0.25cm,0.25cm);
 	},
-	height=5.2cm,
+	height=5.5cm,
 	width=\linewidth
 	]
 	% qemu
@@ -416,7 +414,7 @@ For computing primes below 10,000 QEMU executes 1.70 times as many instructions 
 	{=at=at={(0.5,-0.2)}}
 	\end{axis}
 	\end{tikzpicture}
-	\caption[Generated Instructions Benchmarking]{Comparison of executed instructions between oxtra and QEMU (normalized).}
+	\caption[Generated Instructions Benchmarking]{Comparison of executed instructions (normalized).}
 	\label{fig:bench-instr-exec}
 \end{figure}
 
@@ -438,13 +436,11 @@ In the realm of memory, the results are more or less invariant between calls to 
 			xtick=data,
 			xtick style={draw=none},
 			%x = 110,
-			xlabel = {Peak Memory Usage [kB] (lower is better)},
-			x label style={at={(0.5,-0.025)}},
-			legend style={at={(0.5,-0.35)},anchor=north,legend columns=-1,/tikz/every even column/.append style={column sep=0.5cm}},
+			legend style={at={(0.5,-0.2)},anchor=north,legend columns=-1,/tikz/every even column/.append style={column sep=0.5cm}},
 			legend image code/.code={
 				\draw [#1] (0cm,-0.12cm) rectangle ++(0.25cm,0.25cm);
 			},
-			height=5.2cm,
+			height=5.5cm,
 			width=\linewidth,
 			]
 			% native
@@ -492,7 +488,7 @@ In the realm of memory, the results are more or less invariant between calls to 
 {=at=at={(0.5,-0.2)}}		
 		\end{axis}
 	\end{tikzpicture}
-	\caption[Memory Usage Benchmarking]{Comparison of peak memory usage between oxtra and QEMU (normalized).}
+	\caption[Memory Usage Benchmarking]{Comparison of peak memory usage (normalized).}
 	\label{fig:bench-memory}
 \end{figure}
 
@@ -513,9 +509,7 @@ In addition to measuring the amount of generated instructions and the memory usa
 	symbolic x coords={Primes (1k),Primes (100k),gzip (132kB),gzip (526kB)},
 	xtick=data,
 	xtick style={draw=none},
-	xlabel = {Number of generated Instructions (lower is better)},
-	x label style={at={(0.5,-0.025)}},
-	legend style={at={(0.5,-0.35)},anchor=north,legend columns=-1,/tikz/every even column/.append style={column sep=0.5cm}},
+	legend style={at={(0.5,-0.2)},anchor=north,legend columns=-1,/tikz/every even column/.append style={column sep=0.5cm}},
 	legend image code/.code={
 		\draw [#1] (0cm,-0.12cm) rectangle ++(0.25cm,0.25cm);
 	},
@@ -555,7 +549,7 @@ In addition to measuring the amount of generated instructions and the memory usa
 	{=at=at={(0.5,-0.2)}}
 	\end{axis}
 	\end{tikzpicture}
-	\caption[Generated Instructions Benchmarking]{Comparison of generated instructions between oxtra and QEMU (normalized).}
+	\caption[Generated Instructions Benchmarking]{Comparison of generated instructions (normalized).}
 	\label{fig:bench-instr-gen}
 \end{figure}
 
