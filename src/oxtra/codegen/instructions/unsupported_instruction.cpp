@@ -3,7 +3,7 @@
 #include "oxtra/dispatcher/dispatcher.h"
 
 void codegen::UnsupportedInstruction::generate(CodeBatch& batch) const {
-	helper::load_immediate(batch, get_address(), encoding::RiscVRegister::t0);
+	helper::load_immediate(batch, get_address(), encoding::RiscVRegister::a0);
 	jump_table::jump_unsupported_instruction(batch);
 }
 
@@ -18,7 +18,7 @@ void codegen::UnsupportedInstruction::handle_unsupported_instruction(utils::gues
 	fadec::format(inst, format, sizeof(format));
 
 	char buffer[512];
-	if (snprintf(buffer, sizeof(buffer), "failed to decode the instruction at 0x%lx: %s", addr, format) < 0) {
+	if (snprintf(buffer, sizeof(buffer), "failed to translate the instruction at 0x%lx: %s", addr, format) < 0) {
 		dispatcher::Dispatcher::fault_exit("failed to format the string in unsupported instruction");
 	}
 
