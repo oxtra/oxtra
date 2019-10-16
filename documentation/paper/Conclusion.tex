@@ -1,0 +1,27 @@
+% Oxtra ist geil und ist geil und fokusiert auf zwei architekturen
+Oxtra's focus on two specific architectures enables it to outperform the leading competitor QEMU in many cases. 
+In benchmarks performed against a QEMU emulation, oxtra is up to 20\% faster than QEMU when executing the command line tool gzip and generally outperforms QEMU when executing low to medium complexity programs. 
+Notably, as the comparison is based on a QEMU emulation, the results might be different on real RISC-V hardware. 
+
+For a rough indicator of performance on actual hardware, we also analyzed the number of generated instructions and actually executed instructions (including the instructions required for code translation). 
+In our test suite, oxtra generates about 20\% fewer instructions than QEMU and executes about 10--40\% fewer instructions than QEMU.
+With non-trivial input, the proportional advantage of oxtra over QEMU decreases but consistently remains above 10\%.
+\\
+
+\noindent Oxtra currently only supports a small subset of x86-64 instructions. 
+Most notable is the lack of support for SSE instructions. While adding specific instructions of an already supported instruction set is straightforward, adding a completely new instruction set (extension) potentially requires modifying the core architecture.
+
+As of now, oxtra is only able to translate statically linked Linux programs and is incapable of loading libraries at runtime.
+This is prohibited by the internal structure of the code store. 
+Additionally, multi-threaded programs and self-modifying code are not supported.
+
+In oxtra, code can only be translated once.
+This implies that instructions that logically belong to the same block but are translated later must be connected through static links. 
+Allowing code to be translated again (replacing previous blocks) would solve this issue and is the next step for improving performance.
+Flag evaluation can also be improved: Currently, the instruction that updates the flag stores information to memory and the instruction that uses the flag loads this information from memory before calculating the state. 
+This can be avoided by evaluating the flag directly and is the more common case. 
+\\
+
+% was wären die nächsten logischen steps für oxtra (instruktionen hinzufügen etc.)
+% also generell die zukunft
+\noindent The current version of oxtra is limited in its capabilities but still proves to have a lot of potential and can be used as a starting point for a performant RISC-V binary translator.

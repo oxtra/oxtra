@@ -1,0 +1,81 @@
+\documentclass[course=erap]{aspdoc}
+
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usetikzlibrary{pgfplots.statistics} 
+\usetikzlibrary{positioning}
+\usepackage{pgfplotstable}
+\usetikzlibrary{calc}
+
+\newcommand{\tikzmark}[2]{%
+	\tikz[overlay,remember picture] \node[text=black,
+	inner sep=2pt] (#1) {#2};}
+
+\usepackage[backend=bibtex,style=numeric,sorting=none]{biblatex}
+\addbibresource{References.bib}
+
+\usepackage{caption}
+\usepackage{subcaption}
+
+\usepackage{cleveref}
+
+\usepackage[titletoc,page]{appendix}
+\renewcommand{\autodot}{} % Otherwise number-sections end with a dot
+
+\hypersetup{hidelinks}
+
+\graphicspath{{images/}}
+
+\definecolor{oxtra-purple}{RGB}{178, 178, 255}
+\definecolor{oxtra-orange}{RGB}{255, 217, 178}
+\definecolor{oxtra-green}{RGB}{178, 255, 178}
+\definecolor{oxtra-red}{RGB}{255, 150, 150}
+\definecolor{oxtra-gray}{RGB}{217, 217, 217}
+
+\pgfplotscreateplotcyclelist{colorbrewer-oxtra}{
+	{oxtra-purple},
+	{oxtra-orange},
+	{oxtra-green},
+	{oxtra-red},
+	{oxtra-gray}
+}
+
+\author{Knud Haase \and Björn Boss Henrichsen \and Michael Plainer \and Justus Polzin}
+\date{Summer Semester 2019}
+
+\title{Implementation of a Dynamic Binary Translator for RISC-V}
+
+\begin{document}
+\maketitle
+\setcounter{tocdepth}{2} % Change depth of table of contents to only list *.*
+\tableofcontents
+
+\section{Introduction} % 1 Seite
+\input{Introduction}
+
+\section{Related Work} % 2-3 Seiten
+\input{Related_Work}
+
+\section{Approach} % 12 Seiten
+\input{Approach}
+
+\section{Documentation of the Implementation} % 12 Seiten
+\input{Documentation}
+
+\pagebreak
+\section{Results} % 7 Seiten
+\input{Results}
+
+\pagebreak
+\section{Conclusion} % 1 Seite
+\input{Conclusion}
+
+\pagebreak
+\printbibliography[heading=bibintoc,title={References}]
+
+\pagebreak
+\begin{appendices}
+\input{Appendix}
+\end{appendices}
+
+\end{document}

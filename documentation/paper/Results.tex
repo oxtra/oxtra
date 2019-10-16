@@ -1,0 +1,813 @@
+Now that we have laid our implementation bare, let us examine whether we succeeded in our endeavor. To this end we have devised multiple axes on which to compare oxtra to our main competitor QEMU: how fast they run inside emulation, how much memory they use, and how many instructions they execute overall. As test cases we have chosen a simple program that calculates and prints prime numbers below a threshold \(n\), and the much more complicated program \emph{gzip}. The files that were used as input to gzip are csv files made up of floating-point numbers (you can access them in the directory benchmarking that is distributed with this document).
+
+\subsection{Supporting a Linux Tool}
+Before we could begin our testing, there were some hurdles to overcome when it came to running gzip. Oxtra's limitation of not yet supporting SSE instructions made this considerably harder, since SSE instructions appear in sometimes rather unexpected places, namely in \texttt{printf} and \texttt{malloc}. To solve this conundrum, we forked \emph{musl-gcc}\footnote{\url{https://github.com/oxtra/musl-gcc} (visited on 15/10/2019)}, modified it to suit our needs (not generating SSE instructions), and statically recompiled gzip.
+
+\subsection{Versions}
+To document our progress and to evaluate which optimizations brought the greatest benefit, we tested multiple versions of oxtra from different stages of development. \enquote{Oxtra (a)} is the first feature-complete version. \enquote{Oxtra (b)} introduces a return stack to optimize \texttt{call} instructions. \enquote{Oxtra (c)} implements a translation lookaside buffer, optimizes system calls (implementation in assembly and correct mapping of registers) and most importantly adds branching lookahead for flag prediction as well as reconfiguring conditional jumps to not end the block.
+
+To provide a baseline, oxtra is often compared to a natively compiled version of the program, simply referred to as \enquote{native}. Since the guest programs that are being tested are all compiled with musl-gcc, the native version is also compiled with musl-gcc but for RISC-V.
+
+Not that we opted to always use the latest available releases to perform the tests. For QEMU the version 4.1.0 is being used and for gzip 1.10.7.
+
+\subsection{Benchmarking}
+Since there is no actual RISC-V hardware available to us, benchmarking had to be performed within an emulator (system-mode QEMU running Fedora\footnote{\url{https://fedorapeople.org/groups/risc-v/disk-images} (visited on 11/10/2019)}), which somewhat obscures the results, especially when it comes to timing. For that reason, we also counted how many RISC-V instructions were executed overall, since this gives a more objective estimate of how the DBTs would perform on real hardware.
+
+We also measured how much memory QEMU and oxtra use and, relatedly, how many instructions were generated in total. Finally, we measured how many blocks of a certain instruction length were decoded by oxtra. Although we did not compare this to any equivalent data from QEMU, it gives a better understanding for the optimizations in oxtra.
+
+\subsubsection{Performance}
+As the tests could not be run on real hardware, these results can only give a rough estimate and have to be interpreted with a grain of salt. For inputs of small sizes, such as primes below 10,000 and a 132kB file, oxtra is up to twice as fast as QEMU (see \autoref{fig:bench-prime-10k}, \autoref{fig:bench-gzip-132kb}). However, as inputs become larger, oxtra becomes comparatively slower, being merely 25\% faster in the case of gzipping a 526kB file and further dropping to 20\% faster with a 13MB file (see \autoref{fig:bench-gzip-526kb}, \autoref{fig:bench-gzip-13mb}). When computing primes below 1 million, oxtra is still slower by 35\% than QEMU (see \autoref{fig:bench-prime-1m}).
+
+% -.------------------------------------------------------ primes
+\begin{figure}[H]
+	% -.------------------------------------------------------ primes 10,000
+	\begin{subfigure}[b]{1.0\textwidth}
+		\centering
+		\begin{tikzpicture}
+		\begin{axis}[
+		cycle list name=colorbrewer-oxtra,
+		ytick={1,2,3,4,5},
+		yticklabels={oxtra (c), oxtra (b), oxtra (a), QEMU, native},
+		xlabel = {Execution Time [ms] (lower is better)},
+		xmin=0,
+		height=5.5cm,
+		width=\linewidth
+		]
+		
+		% oxtra-current
+		\addplot+ [boxplot prepared = {
+			median = 20.6794,
+			upper quartile = 22.0921,
+			lower quartile = 19.8888,
+			upper whisker = 31.2483,
+			lower whisker = 17.5211
+		}, fill, draw=black] coordinates {};
+		
+		% oxtra-v1.x
+		\addplot+ [boxplot prepared = {
+			median = 24.3691,
+			upper quartile = 25.2089,
+			lower quartile = 23.1744,
+			upper whisker = 28.2899,
+			lower whisker = 20.6649
+		}, fill, draw=black] coordinates {};
+		
+		% oxtra-v1.0
+		\addplot+ [boxplot prepared = {
+			median = 52.7028,
+			upper quartile = 54.4455,
+			lower quartile = 51.5160,
+			upper whisker = 67.6453,
+			lower whisker = 47.6540
+		}, fill, draw=black] coordinates {};
+		
+		% qemu
+		\addplot+ [boxplot prepared = {
+			median = 54.7083,
+			upper quartile = 56.6773,
+			lower quartile = 52.1453,
+			upper whisker = 76.4932,
+			lower whisker = 44.8002
+		}, fill, draw=black] coordinates {};
+		
+		%native
+		\addplot+ [boxplot prepared = {
+			median = 4.8004,
+			upper quartile = 5.3761,
+			lower quartile = 4.2246,
+			upper whisker = 6.3292,
+			lower whisker = 3.4931
+		}, fill, draw=black] coordinates {};
+		\end{axis}
+		\end{tikzpicture}
+		\caption{100 runs, first primes below 10,000}
+		\label{fig:bench-prime-10k}
+	\end{subfigure}%
+	
+% -.------------------------------------------------------ primes 1,000,000
+	\begin{subfigure}[b]{1.0\textwidth}
+		\centering
+		\begin{tikzpicture}
+		\begin{axis}[
+		cycle list name=colorbrewer-oxtra,
+		ytick={1,2,3,4,5},
+		yticklabels={oxtra (c), oxtra (b), oxtra (a), QEMU, native},
+		xlabel = {Execution Time [ms] (lower is better)},
+		xmin=0,
+		height=5.5cm,
+		width=\linewidth
+		]
+		% oxtra-current
+		\addplot+ [boxplot prepared = {
+			median = 3685,
+			upper quartile = 3756,
+			lower quartile = 3680,
+			upper whisker = 4006,
+			lower whisker = 3617
+		}, fill, draw=black] coordinates {};
+		
+		% oxtra-v1.x
+		\addplot+ [boxplot prepared = {
+			median = 5838,
+			upper quartile = 6195,
+			lower quartile = 5648,
+			upper whisker = 6658,
+			lower whisker = 5621
+		}, fill, draw=black] coordinates {};
+		
+		% oxtra-v1.0
+		\addplot+ [boxplot prepared = {
+			median = 6818,
+			upper quartile = 6911,
+			lower quartile = 6798,
+			upper whisker = 7573,
+			lower whisker = 6791
+		}, fill, draw=black] coordinates {};
+		
+		% qemu
+		\addplot+ [boxplot prepared = {
+			median = 2720,
+			upper quartile = 2814,
+			lower quartile = 2700,
+			upper whisker = 2837,
+			lower whisker = 2696
+		}, fill, draw=black] coordinates {};
+		
+		%native
+		\addplot+ [boxplot prepared = {
+			median = 556.5645,
+			upper quartile = 566.9689,
+			lower quartile = 555.0147,
+			upper whisker = 573.0974,
+			lower whisker = 542.0588
+		}, fill, draw=black] coordinates {};
+		\end{axis}
+		\end{tikzpicture}
+		\caption{5 runs, first primes below 1,000,000}
+		\label{fig:bench-prime-1m}
+	\end{subfigure}
+	\caption[Prime Benchmarking]{Comparison of prime number computation between oxtra and QEMU.}
+	\label{fig:bench-prime}
+\end{figure}
+
+% -.------------------------------------------------------ gzip
+\begin{figure}[H]
+	% ------------------------------------------------------------------ gzip 100kb
+	\begin{subfigure}[b]{1.0\textwidth}
+		\centering
+		\begin{tikzpicture}
+		\begin{axis}[
+		cycle list name=colorbrewer-oxtra,
+		ytick={1,2,3,4,5},
+		yticklabels={oxtra (c), oxtra (b), oxtra (a), QEMU, native},
+		xlabel = {Execution Time [ms] (lower is better)},
+		xmin=0,
+		height=5.5cm,
+		width=\linewidth
+		]
+		
+		% oxtra-current
+		\addplot+ [boxplot prepared = {
+			median = 60.4227,
+			upper quartile = 67.1506,
+			lower quartile = 58.1981,
+			upper whisker = 105.3662,
+			lower whisker = 53.3809
+		}, fill, draw=black] coordinates {};
+		
+		% oxtra-v1.x
+		\addplot+ [boxplot prepared = {
+			median = 80.3841,
+			upper quartile = 83.9034,
+			lower quartile = 77.6303,
+			upper whisker = 91.6314,
+			lower whisker = 69.5358
+		}, fill, draw=black] coordinates {};
+		
+		% oxtra-v1.0
+		\addplot+ [boxplot prepared = {
+			median = 204.9708,
+			upper quartile = 209.4706,
+			lower quartile = 200.8066,
+			upper whisker = 231.7253,
+			lower whisker = 187.1737
+		}, fill, draw=black] coordinates {};
+		
+		% qemu
+		\addplot+ [boxplot prepared = {
+			median = 154.8260,
+			upper quartile = 161.0182,
+			lower quartile = 142.5401,
+			upper whisker = 186.8086,
+			lower whisker = 112.5810
+		}, fill, draw=black] coordinates {};
+		
+		%native
+		\addplot+ [boxplot prepared = {
+			median = 12.6356,
+			upper quartile = 13.5187,
+			lower quartile = 11.9254,
+			upper whisker = 18.4493,
+			lower whisker = 10.6250
+		}, fill, draw=black] coordinates {};
+		\end{axis}
+		\end{tikzpicture}
+		\caption[Gzip Benchmarking]{100 runs, 132kB file}
+		\label{fig:bench-gzip-132kb}
+	\end{subfigure}%
+	
+	% ------------------------------------------------------------------ gzip 500kb
+	\begin{subfigure}[b]{1.0\textwidth}
+		\centering
+		\begin{tikzpicture}
+		\begin{axis}[
+		cycle list name=colorbrewer-oxtra,
+		ytick={1,2,3,4,5},
+		yticklabels={oxtra (c), oxtra (b), oxtra (a), QEMU, native},
+		xlabel = {Execution Time [ms] (lower is better)},
+		xmin=0,
+		height=5.5cm,
+		width=\linewidth
+		]
+		
+		% oxtra-current
+		\addplot+ [boxplot prepared = {
+			median = 270.5086,
+			upper quartile = 282.3870,
+			lower quartile = 262.1701,
+			upper whisker = 455.4503,
+			lower whisker = 224.9859
+		}, fill, draw=black] coordinates {};
+		
+		% oxtra-v1.x
+		\addplot+ [boxplot prepared = {
+			median = 338.3531,
+			upper quartile = 345.3674,
+			lower quartile = 331.5516,
+			upper whisker = 378.1770,
+			lower whisker = 304.4584
+		}, fill, draw=black] coordinates {};
+		
+		% oxtra-v1.0
+		\addplot+ [boxplot prepared = {
+			median = 563.2868,
+			upper quartile = 573.8206,
+			lower quartile = 556.0573,
+			upper whisker = 726.8772,
+			lower whisker = 527.2146
+		}, fill, draw=black] coordinates {};
+		
+		% qemu
+		\addplot+ [boxplot prepared = {
+			median = 348.9223,
+			upper quartile = 357.3158,
+			lower quartile = 338.8517,
+			upper whisker = 540.7108,
+			lower whisker = 262.3598
+		}, fill, draw=black] coordinates {};
+		
+		%native
+		\addplot+ [boxplot prepared = {
+			median = 32.3528,
+			upper quartile = 33.4633,
+			lower quartile = 30.8993,
+			upper whisker = 39.3789,
+			lower whisker = 27.4189
+		}, fill, draw=black] coordinates {};
+		\end{axis}
+		\end{tikzpicture}
+		\caption{100 runs, 526kB file}
+		\label{fig:bench-gzip-526kb}
+	\end{subfigure}
+% ------------------------------------------------------------------ gzip 13MB
+	\begin{subfigure}[b]{1.0\textwidth}
+		\centering
+		\begin{tikzpicture}
+		\begin{axis}[
+		cycle list name=colorbrewer-oxtra,
+		ytick={1,2,3,4,5},
+		yticklabels={oxtra (c), oxtra (b), oxtra (a), QEMU, native},
+		xlabel = {Execution Time [ms] (lower is better)},
+		xmin=0,
+		height=5.5cm,
+		width=\linewidth
+		]
+		
+		% oxtra-current
+		\addplot+ [boxplot prepared = {
+			median = 2623,
+			upper quartile = 2669,
+			lower quartile = 2618,
+			upper whisker = 2751,
+			lower whisker = 2587
+		}, fill, draw=black] coordinates {};
+		
+		% oxtra-v1.x
+		\addplot+ [boxplot prepared = {
+			median = 3987,
+			upper quartile = 4027,
+			lower quartile = 3965,
+			upper whisker = 4092,
+			lower whisker = 3892
+		}, fill, draw=black] coordinates {};
+		
+		% oxtra-v1.0
+		\addplot+ [boxplot prepared = {
+			median = 5731,
+			upper quartile = 5738,
+			lower quartile = 5689,
+			upper whisker = 5851,
+			lower whisker = 5632
+		}, fill, draw=black] coordinates {};
+		
+		% qemu
+		\addplot+ [boxplot prepared = {
+			median = 3137,
+			upper quartile = 3232,
+			lower quartile = 3126,
+			upper whisker = 3235,
+			lower whisker = 3098
+		}, fill, draw=black] coordinates {};
+		
+		%native
+		\addplot+ [boxplot prepared = {
+			median = 331.7269,
+			upper quartile = 336.0362,
+			lower quartile = 330.5293,
+			upper whisker = 337.1718,
+			lower whisker = 329.3180
+		}, fill, draw=black] coordinates {};
+		\end{axis}
+		\end{tikzpicture}
+		\caption{5 runs, 13MB file}
+		\label{fig:bench-gzip-13mb}
+	\end{subfigure}
+	\caption[Gzip Benchmarking]{Comparison of gzip between oxtra and QEMU.}
+	\label{fig:bench-gzip}
+\end{figure}
+
+This trend is also reflected in the amount of executed instructions, a measurement that is invariant between execution in hardware and emulation (see \autoref{fig:bench-instr-exec}). The number of executed instruction has been counted by running oxtra and QEMU inside QEMU user-mode emulation, allowing to not only consider executed guest instructions but also those of the host (oxtra/QEMU respectively).
+
+For computing primes below 10,000 QEMU executes 1.70 times as many instructions as oxtra (c), but by the time we reach primes below 1,000,000 this factor has shrunk to 1.16. With gzip these changes between input sizes are less drastic: QEMU executes 1.26 times as many instructions as oxtra when gzipping a 132kB file, 1.14 times as many with a 526kB file, and 1.13 times for a 13MB file. As files grow in size, the ratio of executed instructions initially changes drastically and then stagnates.
+
+% ----------------------------------------------------------------- executed instruction count
+\begin{figure}[H]
+	\centering
+	\begin{tikzpicture}
+	\begin{axis}[
+	cycle list name=colorbrewer-oxtra,
+	ybar,
+	%y = 600,
+	ymin=0,
+	ytick={0, 0.5, 1, 1.5, 2, 2.5, 3},
+	ymajorgrids=true, % if we disable this, also remove the next line
+	ytick style={draw=none},
+	symbolic x coords={Primes (10k),Primes (1M),gzip (132kB),gzip (526kB),gzip (13MB)},
+	xtick=data,
+	xtick style={draw=none},
+	%x = 83,
+	xlabel = {Number of executed Instructions (lower is better)},
+	x label style={at={(0.5,-0.025)}},
+	legend style={at={(0.5,-0.35)},anchor=north,legend columns=-1,/tikz/every even column/.append style={column sep=0.5cm}},
+	legend image code/.code={
+		\draw [#1] (0cm,-0.12cm) rectangle ++(0.25cm,0.25cm);
+	},
+	height=5.2cm,
+	width=\linewidth
+	]
+	% qemu
+	\addplot+ [ybar,fill=oxtra-red,draw=black] coordinates {
+		(Primes (10k), 1) % 48077961
+		(Primes (1M), 1) % 20984557712
+		(gzip (132kB), 1) % 278772366
+		(gzip (526kB), 1) % 1351776475
+		(gzip (13MB), 1) % 16908309483
+	};
+
+	% oxtra a
+	\addplot+ [ybar,fill=oxtra-green,draw=black] coordinates {
+		(Primes (10k), 2.3905) % 114931900
+		(Primes (1M), 1.3908) % 29186370714
+		(gzip (132kB), 2.2723) % 633449386
+		(gzip (526kB), 1.7374) % 2348576601
+		(gzip (13MB), 1.6187) % 27369295882	
+	};
+
+	% oxtra b
+	\addplot+ [ybar,fill=oxtra-orange,draw=black] coordinates {
+		(Primes (10k), 0.8429) % 40523034
+		(Primes (1M), 1.3200) % 27700259604
+		(gzip (132kB), 1.0762) % 300018229
+		(gzip (526kB), 1.2217) % 1651532694
+		(gzip (13MB), 1.2566) % 21247756341
+	};
+	
+	% oxtra c
+	\addplot+ [ybar,fill=oxtra-purple,draw=black] coordinates {
+		(Primes (10k), 0.5873) % 28238834
+		(Primes (1M), 0.8607) % 18061560034
+		(gzip (132kB), 0.7941) % 221392039
+		(gzip (526kB), 0.8790) % 1188288750
+		(gzip (13MB), 0.8862) % 14985600539
+	};
+	
+		
+	\legend{QEMU,oxtra (a), oxtra (b), oxtra (c)}
+	{=at=at={(0.5,-0.2)}}
+	\end{axis}
+	\end{tikzpicture}
+	\caption[Generated Instructions Benchmarking]{Comparison of executed instructions between oxtra and QEMU (normalized).}
+	\label{fig:bench-instr-exec}
+\end{figure}
+
+\subsubsection{Memory usage}
+In the realm of memory, the results are more or less invariant between calls to the same program with different inputs. Compared to native execution, oxtra (c) uses 1.45 times as much memory when computing primes and 1.99 times as much memory when executing gzip (see \autoref{fig:bench-memory}). The variance in memory usage between different versions of oxtra ranges from 1.01\% to 1.09\%. Compared to QEMU however, oxtra (c) is better by a factor of 3.87 in the case of prime numbers and 2.55 in the case of gzip.
+
+% ---------------------------------------------------------------------- memory
+\begin{figure}[H]
+	\centering
+	\begin{tikzpicture}
+		\begin{axis}[
+			cycle list name=colorbrewer-oxtra,
+			ybar,
+			%ymax=7300,
+			ymin=0,
+			ymajorgrids=true, % if we disable this, also remove the next line
+			ytick style={draw=none},
+			symbolic x coords={Primes (10k),Primes (1M),gzip (132kB),gzip (526kB),gzip (13MB)},
+			xtick=data,
+			xtick style={draw=none},
+			%x = 110,
+			xlabel = {Peak Memory Usage [kB] (lower is better)},
+			x label style={at={(0.5,-0.025)}},
+			legend style={at={(0.5,-0.35)},anchor=north,legend columns=-1,/tikz/every even column/.append style={column sep=0.5cm}},
+			legend image code/.code={
+				\draw [#1] (0cm,-0.12cm) rectangle ++(0.25cm,0.25cm);
+			},
+			height=5.2cm,
+			width=\linewidth,
+			]
+			% native
+			\addplot+ [ybar,fill=oxtra-gray,draw=black] coordinates {
+				(Primes (10k), 0.1784) % 968
+				(Primes (1M), 0.1784) % 968
+				(gzip (132kB), 0.0768) % 496
+				(gzip (526kB), 0.1051) % 700
+				(gzip (13MB), 0.1093) % 732
+			};
+			% qemu
+			\addplot+ [ybar,fill=oxtra-red,draw=black] coordinates {
+				(Primes (10k), 1) % 5424
+				(Primes (1M), 1) % 5424
+				(gzip (132kB), 1) % 6452
+				(gzip (526kB), 1) % 6660
+				(gzip (13MB), 1) % 6696
+			};
+			% oxtra v 1.0
+			\addplot+ [ybar,fill=oxtra-green,draw=black] coordinates {
+				(Primes (10k), 0.2713) % 1472
+				(Primes (1M), 0.2735) % 1484
+				(gzip (132kB), 0.3856) % 2488
+				(gzip (526kB), 0.3735) % 2488
+				(gzip (13MB), 0.3715) % 2488
+			};
+			% oxtra v 1.x
+			\addplot+ [ybar,fill=oxtra-orange,draw=black] coordinates {
+				(Primes (10k), 0.2500) % 1356
+				(Primes (1M), 0.2522) % 1368
+				(gzip (132kB), 0.3905) % 2520
+				(gzip (526kB), 0.3795) % 2528
+				(gzip (13MB), 0.3775) % 2528
+			};
+			% oxtra current
+			\addplot+ [ybar,fill=oxtra-purple,draw=black] coordinates {
+				(Primes (10k), 0.2566) % 1392
+				(Primes (1M), 0.2566) % 1392
+				(gzip (132kB), 0.3887) % 2508
+				(gzip (526kB), 0.3765) % 2508
+				(gzip (13MB), 0.3745) % 2508
+			};
+		
+		\legend{native,QEMU,oxtra (a),oxtra (b),oxtra (c)}
+{=at=at={(0.5,-0.2)}}		
+		\end{axis}
+	\end{tikzpicture}
+	\caption[Memory Usage Benchmarking]{Comparison of peak memory usage between oxtra and QEMU (normalized).}
+	\label{fig:bench-memory}
+\end{figure}
+
+\subsubsection{Instruction Generation}
+In addition to measuring the amount of generated instructions and the memory usage, we also counted how many instructions were generated (some of these might have been executed multiple times or even not at all). Oxtra (c) generates only 0.79 as many instructions as QEMU when translating the prime program, and 0.82 times as many instructions when translating gzip (see \autoref{fig:bench-instr-gen}). There is a considerable difference between different versions of oxtra; oxtra (c) generates 1.05 times as many instructions as oxtra (a) for the prime number program, but 1.01 times less instructions than oxtra (b). This difference is slightly less pronounced for gzip.
+
+% ----------------------------------------------------------------- generated instruction count
+\begin{figure}[H]
+	\centering
+	\begin{tikzpicture}
+	\begin{axis}[
+	cycle list name=colorbrewer-oxtra,
+	ybar,
+	ymin=0,
+	ytick={0, 0.25, 0.5, 0.75, 1},
+	ymajorgrids=true, % if we disable this, also remove the next line
+	ytick style={draw=none},
+	symbolic x coords={Primes (1k),Primes (100k),gzip (132kB),gzip (526kB)},
+	xtick=data,
+	xtick style={draw=none},
+	xlabel = {Number of generated Instructions (lower is better)},
+	x label style={at={(0.5,-0.025)}},
+	legend style={at={(0.5,-0.35)},anchor=north,legend columns=-1,/tikz/every even column/.append style={column sep=0.5cm}},
+	legend image code/.code={
+		\draw [#1] (0cm,-0.12cm) rectangle ++(0.25cm,0.25cm);
+	},
+	height=5.5cm,
+	width=\linewidth
+	]
+	% qemu
+	\addplot+ [ybar,fill=oxtra-red,draw=black] coordinates {
+		(Primes (1k), 1) % 8977
+		(Primes (100k), 1) % 9337
+		(gzip (132kB), 1) % 44772
+		(gzip (526kB), 1) % 45284
+	};
+	% oxtra v 1.0
+	\addplot+ [ybar,fill=oxtra-green,draw=black] coordinates {
+		(Primes (1k), 0.7587) % 6811
+		(Primes (100k), 0.7648) % 7141
+		(gzip (132kB), 0.8041) % 36000
+		(gzip (526kB), 0.8005) % 36248
+	};
+	% oxtra v 1.x
+	\addplot+ [ybar,fill=oxtra-orange,draw=black] coordinates {
+		(Primes (1k), 0.8085) % 7258
+		(Primes (100k), 0.8139) % 7599
+		(gzip (132kB), 0.8440) % 37787
+		(gzip (526kB), 0.8401) % 38045
+	};
+	% oxtra current
+	\addplot+ [ybar,fill=oxtra-purple,draw=black] coordinates {
+		(Primes (1k), 0.7984) % 7167
+		(Primes (100k), 0.8035) % 7502
+		(gzip (132kB), 0.8197) % 36700
+		(gzip (526kB), 0.8159) % 36946
+	};
+	
+	\legend{QEMU,oxtra (a),oxtra (b),oxtra (c)}
+	{=at=at={(0.5,-0.2)}}
+	\end{axis}
+	\end{tikzpicture}
+	\caption[Generated Instructions Benchmarking]{Comparison of generated instructions between oxtra and QEMU (normalized).}
+	\label{fig:bench-instr-gen}
+\end{figure}
+
+\subsubsection{Blocks}
+The vast majority of blocks employed by early versions of oxtra are only sparsely populated with instructions. A mere 6.97\% of blocks in the prime program even have an amount of instructions in the double digits (see \autoref{fig:bench-block-prime-b}). Similarly, 60.22\% of blocks in gzip contain four or less instructions (see \autoref{fig:bench-block-gzip-b}). The reconfiguration of conditional jumps done in oxtra (c) to not end blocks anymore raises the instruction density per block by a factor of 1.5 on average (see \autoref{fig:bench-block-prime-c}, \autoref{fig:bench-block-gzip-c}).
+% density
+% primes100k: 31.1434 --> 45.1927
+% gzipvery: 36.1644 --> 54.4926
+
+% ----------------------------------------------------------------- block count -------------
+\begin{figure*}[t!]
+	\centering
+	\begin{subfigure}[t]{0.49\textwidth}
+		\centering
+		\begin{tikzpicture}
+			\begin{axis}[
+				xmin=0,
+				ymin=0,
+				ymax=100,
+				height=5.5cm,
+				xlabel={Instructions per Block},
+				ylabel={Number of Blocks}
+				%width=0.5\linewidth
+			]
+			\addplot+ [draw=oxtra-purple] coordinates {
+				(1 ,28 )
+				(2 ,73 )
+				(3 ,46 )
+				(4 ,27 )
+				(5 ,21 )
+				(6 ,10 )
+				(7 ,8 )
+				(8 ,7 )
+				(9 ,7 )
+				(10,5 )
+				(11,2 )
+				(12,2 )
+				(13,3 )
+				(14,1 )
+				(15,1 )
+				(19,1 )
+				(21,1 )
+				(25,1 )
+			};
+			\end{axis}
+		\end{tikzpicture}
+		\caption[Instructions per Block]{Primes, oxtra (b)}
+		\label{fig:bench-block-prime-b}
+	\end{subfigure}
+	~
+	\begin{subfigure}[t]{0.49\textwidth}
+		\centering
+		\begin{tikzpicture}
+		\begin{axis}[
+		xmin=0,
+		ymin=0,
+		ymax=100,
+		height=5.5cm,
+		xlabel={Instructions per Block},
+		ylabel={Number of Blocks}
+		%width=0.5\linewidth
+		]
+		\addplot+ [draw=oxtra-purple] coordinates {
+			(1 ,19)
+			(2 ,22)
+			(3 ,19)
+			(4 ,16)
+			(5 , 9)
+			(6 , 9)
+			(7 ,14)
+			(8 , 9)
+			(9 , 9)
+			(10, 5)
+			(11, 7)
+			(13, 5)
+			(16, 1)
+			(18, 5)
+			(19, 1)
+			(20, 1)
+			(21, 3)
+			(22, 1)
+			(23, 1)
+			(24, 4)
+			(25, 4)
+			(28, 1)
+			(45, 1)
+		};
+		\end{axis}
+		\end{tikzpicture}
+		\caption[Instructions per Block]{Primes, oxtra (c)}
+		\label{fig:bench-block-prime-c}
+	\end{subfigure}
+	~
+	\begin{subfigure}[t]{0.49\textwidth}
+		\centering
+		\begin{tikzpicture}
+		\begin{axis}[
+		xmin=0,
+		ymin=0,
+		ymax=250,
+		height=5.5cm,
+		xlabel={Instructions per Block},
+		ylabel={Number of Blocks}
+		%width=0.5\linewidth
+		]
+		\addplot+ [draw=oxtra-purple] coordinates {
+			(1 ,74 )
+			(2 ,224 )
+			(3 ,207 )
+			(4 ,125 )
+			(5 ,80 )
+			(6 ,52 )
+			(7 ,49 )
+			(8 ,39 )
+			(9 ,33 )
+			(10,32 )
+			(11,28 )
+			(12,20 )
+			(13,9 )
+			(14,17 )
+			(15,14 )
+			(16,7 )
+			(17,7 )
+			(18,5 )
+			(19,4 )
+			(20,3 )
+			(22,1 )
+			(23,3 )
+			(24,1 )
+			(25,2 )
+			(26,2 )
+			(27,1 )
+			(36,1 )
+			(37,2 )
+			(40,1 )
+			(44,1 )
+			(47,1 )
+			(49,1 )
+		};
+		\end{axis}
+		\end{tikzpicture}
+		\caption[Instructions per Block]{gzip, oxtra (b)}
+		\label{fig:bench-block-gzip-b}
+	\end{subfigure}	
+	~
+	\begin{subfigure}[t]{0.49\textwidth}
+		\centering
+		\begin{tikzpicture}
+		\begin{axis}[
+		xmin=0,
+		ymin=0,
+		ymax=250,
+		height=5.5cm,
+		xlabel={Instructions per Block},
+		ylabel={Number of Blocks}
+		%width=0.5\linewidth
+		]
+		\addplot+ [draw=oxtra-purple] coordinates {
+			(1 ,42 )
+			(2 ,70 )
+			(3 ,59 )
+			(4 ,65 )
+			(5 ,62 )
+			(6 ,35 )
+			(7 ,44 )
+			(8 ,45 )
+			(9 ,27 )
+			(10,28 )
+			(11,24 )
+			(12,15 )
+			(13,15 )
+			(14,14 )
+			(15,11 )
+			(16,17 )
+			(17,13 )
+			(18,11 )
+			(19,5 )
+			(20,8 )
+			(21,4 )
+			(22,6 )
+			(23,5 )
+			(24,7 )
+			(25,9 )
+			(26,2 )
+			(27,2 )
+			(28,1 )
+			(29,1 )
+			(30,1 )
+			(31,1 )
+			(32,2 )
+			(33,2 )
+			(34,3 )
+			(35,1 )
+			(36,1 )
+			(37,1 )
+			(38,3 )
+			(39,1 )
+			(40,2 )
+			(42,1 )
+			(43,3 )
+			(45,1 )
+			(52,1 )
+			(54,1 )
+			(55,1 )
+			(61,1 )
+			(81,1 )
+			(93,1 )
+			(132,1 )
+			(143,1 )
+		};
+		\end{axis}
+		\end{tikzpicture}
+		\caption[Instructions per Block]{gzip, oxtra (c)}
+		\label{fig:bench-block-gzip-c}
+	\end{subfigure}
+	\caption[Instructions per Block]{Occurrences of instructions per block (more instructions is better).}
+\end{figure*}
+
+% Limitations of testing
+% Compare Prime test?
+% Compare GZIP
+% Compare memory, speed?
+% Compare generation of instructions with qemu
+% Generally compare with qemu
+
+\subsection{Interpreting the Data}
+The most striking feature of our dataset is oxtra's dwindling performance as inputs become less trivial. One possible explanation for this is the relatively low instruction density in the blocks we translate. Since oxtra does not retranslate any already translated code, it happens quite frequently, that a single instruction is executed, followed by a forced jump to the code which has already been translated.
+
+Also of note is the considerable gain in performance observed after implementing a return stack. Doing so reduces the amount of necessary context switches, each of which would have necessitated loading and storing each register, a very time-consuming operation.
+
+The performance increase resulting from recursive lookahead flag prediction is initially not as impressive as the one resulting from the return stack but becomes quite considerable as input sizes grow. This is likely due to the fact that only a few blocks are ever executed in a loop and decreasing the number of instructions generated for flag evaluation becomes more and more beneficial the more often that loop is executed.
+
+\subsection{Possibility for Optimization}
+% super blocks - less flag code
+% translation process
+% optimize blocks - problem: jumping to an instruction that was optimized
+Considering that oxtra quickly becomes slower than QEMU as input become larger, there is still a lot to be done in the realm of optimization. Most importantly the translation process has a lot of potential.
+
+One of the possible optimizations is to further optimize the blocks, for example by combining sequential \texttt{cmp} and \texttt{jcc} instructions into a single compare-and-branch instruction. However, this could lead to problems if the guest tries to jump to an instruction that was optimized away. In that case parts of that block would have to be translated again, which is not possible with our current code store architecture.
+
+Another possible optimization would be to translate code multiple times. Even though this increases the time required to translate the code, it could yield an increase in execution speed as the number of static links on a path of blocks is reduced. This increase would be especially noticeable in frequently executed code such as conditional loops in the main execution cycle.
+
+Another noteworthy optimization possibility is the strict rule of a block only having one entry. Currently the CodeStore allows blocks to have multiple entry and exit points, which prohibits optimizations within a block. If blocks were restricted to only having one single point of entry, the translated instructions could be optimized across each other. 
+
+\subsection{Implementation Drawbacks and Trade-offs}
+% free blocks - actual code cache
+% allow guest to allocate new code
+% allow guest to rewrite code
+% code store page size - memory vs runtime
+% call/ret optimization
+% link oxtra statically - smaller binary size
+% elf parser - allow dynamically linked executables (we can relocate it)
+Many of the design decisions made during the development of oxtra come with their own characteristic downsides. First and foremost is our decision to store translated code indefinitely and optimize code generation based on that. Not only does this mean that we use more memory than if we had used a true code cache, it also prevents the guest from effectively utilizing self-modifying code since it would invalidate previously generated code. Depending on the extent of the modification large swaths of code would need to be retranslated even though oxtra is implemented on the assumption that code would only need to be translated once, as opposed to using a code cache, where self-modifying code could be dealt with by simply flushing the cache.
+
+Another possibility for optimization is how large the pages oxtra uses internally to store generated code are. Smaller pages lead to more memory overhead but in turn improve execution time, since searching for addresses becomes easier, although adjusting this value often only has a small impact, since oxtra's code store uses binary search when looking up addresses.

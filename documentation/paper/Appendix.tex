@@ -1,0 +1,146 @@
+\section{Working with oxtra}
+\label{Build Environment and Dependencies}
+Oxtra is meant to be built as a 64 bit Linux ELF for RISC-V. This means, that it can only be used if RISC-V hardware is available\footnote{Oxtra has never been tested on real RISC-V hardware.} or an emulator is available. During development, we have used \emph{QEMU} with \emph{binfmt-support} installed alongside. All tools required for building and running oxtra are available as a Docker image: \texttt{plainerman/qemuriscv:oxtra}.
+
+\subsection{Building and Testing}
+In order to build oxtra, a C++ compiler for RISC-V (currently, only \emph{gcc} is supported) is required. Further, oxtra is a CMake project, hence requiring \emph{CMake} itself and a build tool to be installed alongside (e.g. \emph{make}).
+
+With all the necessary requirements being installed and the git repository checked out, the CMake project can be initialized. Depending on preferences, the build type can be set to debug or release and a specific path for the RISC-V C/C++ compiler can be specified (required for building on a non-RISC-V computer). 
+
+\begin{lstlisting}
+$ cmake -D CMAKE_BUILD_TYPE=release \
+ -D CMAKE_C_COMPILER=/opt/riscv/bin/riscv64-gnu-gcc \ 
+ -D CMAKE_CXX_COMPILER=/opt/riscv/bin/riscv64-gnu-g++ .
+\end{lstlisting}
+
+Once the Makefile has been generated, oxtra can be built (including unit tests) by simply issuing the following command:
+
+\begin{lstlisting}
+$ make
+\end{lstlisting}
+
+Tests are not executed automatically during the build process and must be started manually. The unit tests are a self-contained binary (created by \emph{catch2}), but for the integration tests, \emph{shelltestrunner}\footnote{\url{https://github.com/simonmichael/shelltestrunner}} is required.
+
+% Perl is only a hack, otherwise the /* would be interpreted as a comment
+\begin{lstlisting}[language=Perl]
+$ test/unit_tests
+$ shelltest --all --timeout=30 --threads=4 test/integration/*.otest
+\end{lstlisting}
+
+\subsection{Using oxtra}
+If QEMU is installed with binfmt-support (or you have a RISC-V 64 bit Linux), oxtra can be executed by simply invoking:
+\begin{lstlisting}
+$ ./oxtra path/to/x86-64-elf [-a "arguments"]
+\end{lstlisting}
+
+The above line executes the specified x86-64 elf binary and if arguments have been added, passes those to the guest application.
+
+It is often useful to enable logging. Every logging type can be enabled/disabled separately. To enable all types, \(-1\) can be passed with:
+\begin{lstlisting}
+$ ./oxtra path/to/x86-64-elf [-a "arguments"] -l -1
+\end{lstlisting}
+
+If there is unexpected behavior, you can debug the execution by appending the debug flag and specifying the granularity (1 for debugging x86-64 instructions, 2 for RISC-V):
+\begin{lstlisting}
+$ ./oxtra path/to/x86-64-elf [-a "arguments"] --debug 1
+\end{lstlisting}
+
+Once the first basic block has been translated, you can enter "help" for more information. Additional resources on how to use the debugger can be found in \cref{Debugger}.
+\\\\
+\noindent For more information, you can consult the help page by entering:
+\begin{lstlisting}
+$ ./oxtra --help
+\end{lstlisting}
+
+\pagebreak
+\section{Contribution}
+Oxtra provides many highly optimized methods that enable the quick implementation of features (especially new instructions) without working on low-level RISC-V instructions directly. 
+	
+	\subsection{Helper Methods in Instruction}
+	To ease the process of translating instructions, oxtra features a large set of helper functions. The most noteworthy are explained below.
+	
+	\subsubsection{translate\_operand}
+	This function loads the operand at a given index into a register. It takes a lot of flags upon invoking, which ensure optimal code generation. As an example, there exists a flag that indicates to the function whether the resulting register should be modifiable or not or if the register should be loaded fully or only the operand size number of bits.
+	
+	\subsubsection{translate\_destination}
+	This function is the counterpart to \texttt{translate\_operand}. It takes a register and stores it at the location described by the first operand of the instruction. It too comes with many flags indicating some features for optimizations.
+	
+	\subsubsection{read\_from\_memory and write\_to\_memory}
+	These functions allow reading a certain value from memory into a register or writing it from a register into memory. They are used internally by \texttt{translate\_operand} and \texttt{translate\_destination}. In case of the destination being a memory address, both functions should be used, as they combine to make some optimizations, which otherwise would not be possible. 
+	
+	\subsubsection{translate\_memory}
+	This function just computes a memory address and stores the result into a register passed to it. It is used internally by \texttt{read\_from\_memory and write\_to\_memory}.
+	
+	\subsubsection{call\_high\_level}
+	This function allows for implementing very complicated logic in the generated code. It takes a callback to a static C or C++ function, which is invoked whenever the guest executes the corresponding instruction. The function works in the same way as the high-level evaluation for flags. Upon entry the function has access to the \texttt{ExecutionContext}, which contains all registers of the guest. The only modified register will be \texttt{RiscVRegister::t4}. The callback returns a 64 bit integer, which will be placed into register t4 before continuing execution of the generated code. 
+	
+	\subsubsection{load\_immediate}
+	Loads a 64 bit immediate into a given register. The generated code aims at being the most efficient code to set the bits of the register the same way the immediate is set. 
+	
+	\subsubsection{load\_address}
+	Loads a 64 bit address into a given register. The generated code will always consist of 8 instructions. This function is required by \texttt{reroute\_static} as it will overwrite the address it has been called from. If the previous address is shorter to encode than the new address, \texttt{reroute\_static} would run out of space to generate the new code.
+	
+	\subsubsection{append\_eob}
+	Used by instructions that end the current block to append the code to call \texttt{reroute\_static} or \texttt{reroute\_dynamic}. Uses \texttt{load\_address} and the \texttt{jump table} internally.
+	
+	\subsection{Exiting the Guest}
+	In the rare event that an error occurs, either in the code generation or in a high-level function written for the execution or for the flags, the generating code can exit the guest at any time. The dispatcher offers the functions \texttt{guest\_exit} and \texttt{fault\_exit}. Invoking these functions will restore the host context and exit the program. While both functions take a 64 bit value as return value, \texttt{fault\_exit} also takes a string pointer. This string will be printed as reason for the fault if the function is invoked.
+
+\pagebreak
+\section{Supported Instructions}
+\label{Supported Instructions}
+\[\begin{array}{llllll}
+\texttt{adc} &
+\texttt{add} &
+\texttt{and} &
+\texttt{bt} &
+\texttt{btc} &
+\texttt{btr} \\
+\texttt{bts} &
+\texttt{call} &
+\texttt{cbw} &
+\texttt{cdqe} &
+\texttt{clc} &
+\texttt{cmovcc} \\
+\texttt{cmp} &
+\texttt{cmps} &
+\texttt{cwd} &
+\texttt{cwde} &
+\texttt{cdq} &
+\texttt{cqo} \\
+\texttt{dec} &
+\texttt{div} &
+\texttt{idiv} &
+\texttt{imul} &
+\texttt{inc} &
+\texttt{jcc} \\
+\texttt{jmp} &
+\texttt{lea} &
+\texttt{leave} &
+\texttt{lods} &
+\texttt{mov} &
+\texttt{movs} \\
+\texttt{movsx} &
+\texttt{movzx} &
+\texttt{mul} &
+\texttt{neg} &
+\texttt{nop} &
+\texttt{not} \\
+\texttt{or} &
+\texttt{pop} &
+\texttt{push} &
+\texttt{ret} &
+\texttt{rol} &
+\texttt{ror} \\
+\texttt{sar} &
+\texttt{scas} &
+\texttt{setcc} &
+\texttt{shl} &
+\texttt{shr} &
+\texttt{stc} \\
+\texttt{stos} &
+\texttt{sub} &
+\texttt{syscall} &
+\texttt{test} &
+\texttt{xor} &
+\end{array}\]
