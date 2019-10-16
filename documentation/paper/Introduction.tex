@@ -1,0 +1,44 @@
+RISC-V is a powerful albeit relatively new Reduced Instruction Set Computer (RISC) Instruction Set Architecture (ISA) \cite{riscvisa}, focusing on simple and concise instructions. To this day, adoption is still an issue especially since RISC-V is mostly not supported by leading software manufacturers. One way around this problem is dynamic binary translation of existing executables.
+
+This paper presents the design and features of \emph{oxtra}, a dynamic binary translator (\emph{DBT}) capable of translating x86-64 to 64 bit RISC-V. We discuss the core principles of dynamic binary translation as well as our specific implementation. Further, we provide benchmarking data and compare oxtra to the existing competitor \emph{QEMU}.
+
+\subsection{Problem Description}
+When a new computing platform is released, it often takes a considerable amount of time before large software development institutions start supporting it. As such, many established, and for some industries essential, programs are not available on that platform, significantly lowering its attractiveness. Without access to the source code of these (proprietary) programs, the only way to execute them is through emulating an already compiled version. Dynamic binary translation is an option for this emulation process that offers particularly high performance.
+
+Our aim was to create a DBT that targets translation from x86-64 Linux to base 64 RISC-V systems running Linux. We do not provide a full system emulation, merely execution of single programs in user space.
+
+\subsection{Design Philosophy of RISC-V}
+Many popular commercially available ISAs such as x86-64 have grown organically over the years, manifesting in many legacy instructions that are rarely used by modern compilers. Nevertheless, those deprecated instructions are included in every new iteration of the ISA to maintain backwards compatibility. Additionally, every instruction added in future versions increases the complexity significantly and may even end up becoming deprecated itself.
+
+RISC-V remedies this through focusing on simplicity and making extensibility an explicit design goal. The core of RISC-V, the base integer ISA RV64I, provides a baseline for a minimally functioning processor with merely 62 instructions \cite{riscvisa}.
+
+\subsection{Comparison of x86-64 and RISC-V}
+x86-64 being a complex and RISC-V a reduced ISA, the differences between those two architectures are substantial. While RISC-V could somewhat accurately be described as a subset of x86-64 in the instruction space, some key concepts are entirely different.
+
+\subsubsection{Register Space}
+There are 16 general purpose registers in x86-64, half of which were added for 64 bit mode (\texttt{r8}--\texttt{r15}). Four of the eight registers that were carried over from 32 bit have special purposes: stack pointer \texttt{rsp}, base pointer \texttt{rbp}, source index \texttt{rsi}, and destination index \texttt{rdi}. The remaining four have a special access mode. While all registers without a special purpose allow access to either the full 64 bits, the lower 32, 16 or even 8 (while leaving the rest of the stored value untouched), only \texttt{rax, rbx, rcx} and \texttt{rdx} allow a program to operate on bits 15 to 8 of the register (a leftover from previous processor generations).
+
+Floating point operations in x86-64 are performed exclusively through SSE instructions and for this purpose there are 16 SSE register available (\texttt{xmm0}--\texttt{xmm15}). Finally, there is a register for the instruction pointer (\texttt{rip}) and one that stores the flags (\texttt{rflags}).\\
+
+\noindent In RISC-V on the other hand, subregister access modes are not available; registers may only be accessed completely. In addition to a register that is hardwired to zero, there are 31 general purpose registers, of which four have dedicated purposes: return address \texttt{ra}, stack pointer \texttt{sp}, global pointer \texttt{gp}, and thread pointer \texttt{tp}. The other 27 are divided into caller-saved (\texttt{a0}--\texttt{a7}), callee-saved (\texttt{s0}--\texttt{s11}), and temporary registers (\texttt{t0}--\texttt{t6}).
+
+Although there is a proposal for a vector operations extension, it is still in the early phases of development and thus \emph{SIMD} instructions (and registers) are not yet defined in the RISC-V standard. Floating point operations are already available, as well as 32 floating point registers, which are also divided into caller-saved, callee-saved, and temporary registers (none of them have a special purpose).
+
+\subsubsection{Instruction Encoding}
+An x86-64 instruction can be anywhere from 1 to 15 bytes long. It is built from the following components, not all of which are required for every instruction: legacy prefixes, the opcodes with its prefixes, register or memory address, a scaled indexed byte (SIB), a displacement for the memory address, and an immediate. Each of these components (except for the displacement and the immediate) is rather complex. This large variety of different instruction formats makes decoding them a rather difficult task.\\
+
+\noindent The standard length of a RISC-V instruction is 32 bit. Although longer or shorter instructions built from chunks of 16 bits are possible, we only focus on 32 bit instructions. The instruction length is encoded in the lowest two bits (meaning these bits do not need to be cached); for instructions larger than 32 bit, more than two bits are required. 
+
+There are four base instruction formats from which different instructions can be built by using the corresponding opcode. The different types are: \texttt{R}-type (for operations on registers), \texttt{I}-type (for operations on immediates), \texttt{S}-type (for writing registers to memory), and \texttt{U}-type (specifically for \texttt{lui} and \texttt{auipc}). For jumps and branches there are \texttt{J}- and \texttt{B}-type, which are variants of \texttt{U}- and \texttt{S}-type respectively.
+
+The position of source and destination register (if present) is consistent over all instruction types. Further, if the instruction contains an immediate, the highest bit is always the sign bit.
+
+Since most instruction have the same length, and essential information (e.g. sign bit, destination register) is always stored in the same place, decoding can be implemented very efficiently. One downside is that large immediates cannot be encoded in a single fixed-size instruction but require multiple operations to load.
+
+\subsubsection{Conditional Branching}
+Whether a branch is taken on an x86-64 processor is determined by examining the value stored in the flags register \texttt{rflags} based on the condition code. Values in the flags register are set in accordance with the result of executed arithmetic instructions and stored until the next arithmetic instruction overwrites them (there is also a special compare instruction that is equivalent to \texttt{sub}). This system allows for the separation of a conditional branch instruction and its corresponding arithmetic or logical operation.
+
+In RISC-V, comparing two values and branching based on their result are fused into a single operation, a so-called compare-and-branch instruction. Since branching is purely comparison based, complex conditions such as whether the last instruction caused an overflow are not available.
+
+\subsubsection{Memory Access}
+x86-64 is a register-memory architecture, allowing operands to be either loaded from memory or register. RISC-V however is a load-store architecture; all operands have to be in registers, and special load and store instructions are required for accessing memory.
