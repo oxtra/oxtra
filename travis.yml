@@ -1,0 +1,14 @@
+sudo: required
+language: cpp
+services:
+ - docker
+before_install:
+ - docker pull plainerman/qemuriscv:oxtra
+ - docker run -it -d --name build plainerman/qemuriscv:oxtra bash
+ - docker exec build git clone https://github.com/oxtra/oxtra.git
+script:
+ - docker exec -it build bash -c "cd /oxtra && cmake -D CMAKE_BUILD_TYPE=release -D CMAKE_C_COMPILER=/opt/riscv/bin/riscv64-unknown-linux-gnu-gcc -D CMAKE_CXX_COMPILER=/opt/riscv/bin/riscv64-unknown-linux-gnu-g++ ."
+ - docker exec -it build bash -c "cd /oxtra && make"
+ - docker exec -it build bash -c "cd /oxtra && qemu-riscv64 test/unit_tests"
+ - docker exec build shelltest --version
+ - docker exec -it build bash -c "cd /oxtra && shelltest --all --timeout=30 --threads=4 test/integration/*.otest --with='qemu-riscv64 oxtra'"
