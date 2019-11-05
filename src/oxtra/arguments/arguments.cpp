@@ -4,7 +4,7 @@
 using namespace arguments;
 
 const char* argp_program_version = "oxtra 1.0.1";
-const char* argp_program_bug_address = "https://gitlab.lrz.de/lrr-tum/students/eragp-x86emu-2019";
+const char* argp_program_bug_address = "https://github.com/oxtra/oxtra";
 
 Arguments::Arguments(int argc, char** argv) :
 		_executable_path{argv[0]},
