@@ -1,4 +1,5 @@
 # oxtra &mdash; x86 to RISC-V translator
+[![Version](https://img.shields.io/github/v/release/oxtra/oxtra?style=flat-square)](https://github.com/oxtra/oxtra/releases)
 [![Build Status (Master)](https://img.shields.io/travis/com/oxtra/oxtra?style=flat-square)](https://travis-ci.com/oxtra/oxtra)
 [![License](https://img.shields.io/github/license/oxtra/oxtra?style=flat-square)](https://github.com/oxtra/oxtra/blob/master/LICENSE)
 
