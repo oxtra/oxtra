@@ -1,4 +1,5 @@
 # oxtra &mdash; x86 to RISC-V Translator
+[![C++](https://img.shields.io/badge/c++%20-%2300599C.svg?style=flat-square)](https://github.com/oxtra/oxtra)
 [![Version](https://img.shields.io/github/v/release/oxtra/oxtra?style=flat-square)](https://github.com/oxtra/oxtra/releases)
 [![Build Status (Master)](https://img.shields.io/travis/com/oxtra/oxtra?style=flat-square)](https://travis-ci.com/oxtra/oxtra)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg?style=flat-square)](CODE_OF_CONDUCT.md) 
