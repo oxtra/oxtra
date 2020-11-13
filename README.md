@@ -1,5 +1,3 @@
-
-
 # oxtra &mdash; x86 to RISC-V Translator
 [![Version](https://img.shields.io/github/v/release/oxtra/oxtra?style=flat-square)](https://github.com/oxtra/oxtra/releases) [![Build Status (Master)](https://img.shields.io/travis/com/oxtra/oxtra?style=flat-square)](https://travis-ci.com/oxtra/oxtra) [![License](https://img.shields.io/github/license/oxtra/oxtra?style=flat-square)](https://github.com/oxtra/oxtra/blob/master/LICENSE)
 
@@ -135,9 +133,10 @@ As stated above, oxtra was developed to be faster than the very versatile and mo
 
 The following benchmarks show qemu compared to three different versions of oxtra (a,b,c), where c is version 1.0.1. The current version, consistently beats qemu in our toy-examples.
 
-![The execution time of different versions of oxtra compared to qemu. The latest version of extra beats qemu.](documentation/paper/images/benchmarks/executiontime.png?raw=true "Comparison of execution times")
-![The number of instructions executed by different versions of oxtra compared to qemu. The latest version of extra beats qemu.](documentation/paper/images/benchmarks/executedinstructions.png?raw=true "Comparison of executed instructions")
-![The memory consumption of different versions of oxtra compared to qemu. All versions of extra beat qemu.](documentation/paper/images/benchmarks/memory.png?raw=true "Comparison of memory usage")
+<img alt="The execution time of different versions of oxtra compared to qemu. The latest version of extra beats qemu." src="documentation/paper/images/benchmarks/executiontime.png" width="60%">
+<img alt="The number of instructions executed by different versions of oxtra compared to qemu. The latest version of extra beats qemu." src="documentation/paper/images/benchmarks/executedinstructions.png" width="60%">
+<img alt="The memory consumption of different versions of oxtra compared to qemu. All versions of extra beat qemu." src="documentation/paper/images/benchmarks/memory.png" width="60%">
+
 ## Support
 If you need any support, don't hesitate to open an issue. As this project is not actively maintained by us anymore, it may take some time for us to respond and or to reproduce your issue. You can expect an answer from us within a week or two. 
 
