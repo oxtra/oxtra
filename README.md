@@ -1,5 +1,8 @@
 # oxtra &mdash; x86 to RISC-V Translator
-[![Version](https://img.shields.io/github/v/release/oxtra/oxtra?style=flat-square)](https://github.com/oxtra/oxtra/releases) [![Build Status (Master)](https://img.shields.io/travis/com/oxtra/oxtra?style=flat-square)](https://travis-ci.com/oxtra/oxtra) [![License](https://img.shields.io/github/license/oxtra/oxtra?style=flat-square)](https://github.com/oxtra/oxtra/blob/master/LICENSE)
+[![Version](https://img.shields.io/github/v/release/oxtra/oxtra?style=flat-square)](https://github.com/oxtra/oxtra/releases)
+[![Build Status (Master)](https://img.shields.io/travis/com/oxtra/oxtra?style=flat-square)](https://travis-ci.com/oxtra/oxtra)
+[![License](https://img.shields.io/github/license/oxtra/oxtra?style=flat-square)](https://github.com/oxtra/oxtra/blob/master/LICENSE)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg?style=flat-square)](https://github.com/oxtra/oxtra/blob/master/CODE_OF_CONDUCT.md) 
 
 oxtra is a lightweight and easy to use binary translator capable of executing x86-64 programs on RISC-V.
 
