@@ -1,6 +1,6 @@
 # oxtra &mdash; x86 to RISC-V Translator
-[![Build Status (Master)](https://img.shields.io/travis/com/oxtra/oxtra?style=flat-square)](https://travis-ci.com/oxtra/oxtra)
 [![Version](https://img.shields.io/github/v/release/oxtra/oxtra?style=flat-square)](https://github.com/oxtra/oxtra/releases)
+[![Build Status (Master)](https://img.shields.io/travis/com/oxtra/oxtra?style=flat-square)](https://travis-ci.com/oxtra/oxtra)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg?style=flat-square)](CODE_OF_CONDUCT.md) 
 [![License](https://img.shields.io/github/license/oxtra/oxtra?style=flat-square)](LICENSE)
 
@@ -19,7 +19,7 @@ Currently, oxtra only supports a small subset of x86 instructions and only works
 ## Project Status and Contribution
 oxtra has been developed in the course of about half a year as a university project. Although we are all very passionate about this project, as of now we do not really find the time to contribute to oxtra. 
 
-This is why all contributions and all directions you have for this project are welcome and highly appreciated. Just create an issue and we will be happy to discuss your ideas and probably give you commit access directly. 
+This is why all contributions and all directions you have for this project are welcome and highly appreciated. Just create an issue and we will be happy to discuss your ideas and probably give you commit access directly. Please read the [code of conduct](CODE_OF_CONDUCT.md) and the [contribution guidelines](CONTRIBUTING.md) before becoming a part of the community.
 
 ## Installing and Building the Project
 If you happen to have a RISC-V computer (which you probably don't), you can just head to the [releases page](https://github.com/oxtra/oxtra/releases), and download the latest oxtra executable. 
