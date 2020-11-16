@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ $# -ne 1 ]; then
-	echo "Usage: ./create_nolibc.sh <outputfile>"
+	echo "Usage: ./create_asm_nolibc.sh <outputfile>"
 	exit 1
 fi
 

@@ -86,7 +86,7 @@ void CodeStore::add_instruction(BlockEntry& block, utils::guest_addr_t address, 
 	block.instruction_count++;
 	block.x86_end = address + size;
 
-	//check if the block overlaps into another page
+	// check if the block overlaps into another page
 	if ((block.x86_start >> page_shift) < (block.x86_end >> page_shift)) {
 		/* This block will be executed for every instruction added, which lies within another page.
 		 * As we expect instruction-blocks not to overlap, we can accelerate the execution, by making the assumption

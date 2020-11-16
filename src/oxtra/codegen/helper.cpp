@@ -162,7 +162,7 @@ void codegen::helper::load_immediate(CodeBatch& batch, uintptr_t imm, encoding::
 			lui_used = true;
 
 		/* check if the number requires the parent to be inverted, as it will invert the parent on load
-		 * Note: Eventhough the loaded value will affect all parents, only the first parent has to be inverted.
+		 * Note: Even though the loaded value will affect all parents, only the first parent has to be inverted.
 	             This is because: due to the inversion of the parent, will its sign-extension for the other
 				 parents also flip on load. This means, that they will be implicitly inverted as well.
 		 */

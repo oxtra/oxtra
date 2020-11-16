@@ -43,7 +43,7 @@ namespace arguments {
 				{"args",         	'a',     "\"ARGUMENTS...\"", 0, "Specify the arguments that will be passed to the x86 executable. The default is no arguments",                             0},
 				{"debug",        	dbk_key,      "MODE",             0, "Specify to attach and enable the debugger. 0=disabled, 1=lightweight, 2=riscv-enabled. The default is 0.", 0},
 				{"flag-depth",		'd',     "DEPTH",            0, "The recursion depth of the flag prediction. The default is 4.", 0},
-				{"lentry-size",  	'e',     "SIZE",             0, "The size of the list containing block entires. Limit for consecutive block entries. The default is 64.",                   0},
+				{"lentry-size",  	'e',     "SIZE",             0, "The size of the list containing block entries. Limit for consecutive block entries. The default is 64.",                   0},
 				{"linst-size",   	'i',     "SIZE",             0, "The size of the list containing instructions. Limit for generated RISCV instructions in a block. The default is 4096.",    0},
 				{"log-level",    	'l',     "LEVEL",            0, "Specify the attributes to log. 0x1=riscv, 0x2=x86, 0x4=translated, 0x8=reroutes, 0x10=syscalls, 0x20=return value. Multiple log entries can be specified that will be OR'd. The default is none (0).",                   0},
 				{"loffset-size", 	'o',     "SIZE",             0, "The size of the list containing offset. Limit for consecutive offsets. The default is 512.",                               0},

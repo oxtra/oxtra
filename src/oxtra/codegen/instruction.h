@@ -204,7 +204,7 @@ namespace codegen {
 		void update_carry_unsupported(CodeBatch& batch, const char* instruction, encoding::RiscVRegister temp) const;
 
 		/*
-		 * Invokes the callback with ExecutionContext* as argument and stores the returnvalue in t4.
+		 * Invokes the callback with ExecutionContext* as argument and stores the return value in t4.
 		 * t4 Value will be overriden before reaching the callback
 		 */
 		void update_carry_high_level(CodeBatch& batch, c_callback_t callback,
@@ -213,14 +213,14 @@ namespace codegen {
 		void update_overflow_unsupported(CodeBatch& batch, const char* instruction, encoding::RiscVRegister temp) const;
 
 		/*
-		 * Invokes the callback with ExecutionContext* as argument and stores the returnvalue in t4.
+		 * Invokes the callback with ExecutionContext* as argument and stores the return value in t4.
 		 * t4 Value will be overriden before reaching the callback
 		 */
 		void update_overflow_high_level(CodeBatch& batch, c_callback_t callback,
 										encoding::RiscVRegister temp) const;
 
 		/*
-		 * Invokes the callback with ExecutionContext* as argument and stores the returnvalue in t4.
+		 * Invokes the callback with ExecutionContext* as argument and stores the return value in t4.
 		 * t4 Value will be overriden before reaching the callback
 		 */
 		void call_high_level(CodeBatch& batch, c_callback_t callback) const;

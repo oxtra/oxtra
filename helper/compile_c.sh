@@ -8,7 +8,7 @@ fi
 
 if ! [ -x "$(command -v musl-gcc)" ]; then
 	echo "Musl-GCC is not installed"
-	echo "Use apt-get install musl-tools to instal it"
+	echo "Use apt-get install musl-tools to install it"
 	exit 2
 fi
 

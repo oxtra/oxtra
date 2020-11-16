@@ -30,7 +30,7 @@ The [README](README.md) file should explain everything that is required to setup
 
     $ docker run -v /home/user/desktop/oxtra:/oxtra -it plainerman/qemuriscv:oxtra /bin/bash
 
-The colon seperates the local path from the container path.
+The colon separates the local path from the container path.
 
 #### Additional Notes
 It is important, that if you make modifications to the source code itself that you test your features, as described in [testing](#testing). A PR containing code changes with failing or missing tests will not be accepted.
@@ -50,7 +50,7 @@ The first line of the commit message should be as short as possible while still 
 If applicable, you can and should reference the issue id in your commit.  
 
 ### Testing
-In oxtra, we use two different kinds of tests. Unit and integration tests.
+In oxtra, we use two different kinds of tests: unit and integration tests.
 
 Unit tests are written in C++ and check whether given functions / units behave correctly. Those are written with [Catch2](https://github.com/catchorg/Catch2), are found in [test/oxtra](https://github.com/oxtra/oxtra/tree/master/test/oxtra), and can be executed with the following command.
 

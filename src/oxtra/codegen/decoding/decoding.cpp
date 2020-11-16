@@ -15,7 +15,7 @@ enum class RiscVOpcode : uint8_t {
 	SUBW, SLLW, SRLW, SRAW,
 
 	JAL, JALR, BEQ, BNE, BLT, BGE, BLTU, BGEU,
-	
+
 	ECALL
 };
 
@@ -102,7 +102,7 @@ void parse_number(stringstream& sstr, uint32_t nbr, bool sign) {
 
 // create the stream
 stringstream initialize_string(RiscVOpcode opcode){
-	// creaate the sstream with the opcode
+	// create the stream with the opcode
 	stringstream sstr;
 	sstr << opcode_string[static_cast<uint8_t>(opcode)];
 	return sstr;
@@ -137,7 +137,7 @@ string parse_shift(RiscVOpcode opcode, riscv_instruction_t instruction) {
 	return sstr.str();
 }
 
-//immediate-register instructions
+// immediate-register instructions
 string parse_itype(RiscVOpcode opcode, riscv_instruction_t instruction) {
 	stringstream sstr = initialize_string(opcode);
 
@@ -158,7 +158,7 @@ string parse_itype(RiscVOpcode opcode, riscv_instruction_t instruction) {
 	return sstr.str();
 }
 
-//upper-register-immediate instructions
+// upper-register-immediate instructions
 string parse_utype(RiscVOpcode opcode, riscv_instruction_t instruction) {
 	stringstream sstr = initialize_string(opcode);
 
@@ -170,7 +170,7 @@ string parse_utype(RiscVOpcode opcode, riscv_instruction_t instruction) {
 	return sstr.str();
 }
 
-//load instructions
+// load instructions
 string parse_load(RiscVOpcode opcode, riscv_instruction_t instruction) {
 	stringstream sstr = initialize_string(opcode);
 
@@ -179,7 +179,7 @@ string parse_load(RiscVOpcode opcode, riscv_instruction_t instruction) {
 	const auto base = split_off(instruction, 15);
 	auto offset = static_cast<uint16_t>(split_off(instruction, 20, 12));
 	if (!handle_context_addressing(sstr, base, offset)) {
-		// prase the base-register
+		// parse the base-register
 		sstr << register_string[base];
 
 		if (offset > 0) {
@@ -203,14 +203,14 @@ string parse_load(RiscVOpcode opcode, riscv_instruction_t instruction) {
 	return sstr.str();
 }
 
-//store instructions
+// store instructions
 string parse_store(RiscVOpcode opcode, riscv_instruction_t instruction) {
 	stringstream sstr = initialize_string(opcode);
 
 	// parse the source-register
 	sstr << " " << register_string[split_off(instruction, 20)];
 
-	// prase the base-register
+	// parse the base-register
 	sstr << " -> [";
 
 	const auto base = split_off(instruction, 15);
@@ -236,7 +236,7 @@ string parse_store(RiscVOpcode opcode, riscv_instruction_t instruction) {
 	return sstr.str();
 }
 
-//jump-type instructions
+// jump-type instructions
 string parse_jtype(RiscVOpcode opcode, riscv_instruction_t instruction) {
 	stringstream sstr = initialize_string(opcode);
 
@@ -265,7 +265,7 @@ string parse_jtype(RiscVOpcode opcode, riscv_instruction_t instruction) {
 	return sstr.str();
 }
 
-//relative-jump-type instructions
+// relative-jump-type instructions
 string parse_relative(RiscVOpcode opcode, riscv_instruction_t instruction) {
 	stringstream sstr = initialize_string(opcode);
 
@@ -295,7 +295,7 @@ string parse_relative(RiscVOpcode opcode, riscv_instruction_t instruction) {
 	return sstr.str();
 }
 
-//branch-type instructions
+// branch-type instructions
 string parse_btype(RiscVOpcode opcode, riscv_instruction_t instruction) {
 	stringstream sstr = initialize_string(opcode);
 
@@ -326,14 +326,14 @@ string parse_btype(RiscVOpcode opcode, riscv_instruction_t instruction) {
 	return sstr.str();
 }
 
-//implementation of the parsing-function
+// implementation of the parsing-function
 string decoding::parse_riscv(riscv_instruction_t instruction) {
 	// split off the opcode and the functional-codes
 	uint8_t opcode = split_off(instruction, 0, 7);
 	uint8_t func3 = split_off(instruction, 12, 3);
 	uint8_t func7 = split_off(instruction, 25, 7);
 
-	//handle the opcode
+	// handle the opcode
 	switch (opcode) {
 		/* following are all of the jump & branch-instructions */
 		case 0x67:
@@ -450,7 +450,7 @@ string decoding::parse_riscv(riscv_instruction_t instruction) {
 			if (split_off(instruction, 7, 25) == 0)
 				return opcode_string[static_cast<uint16_t>(RiscVOpcode::ECALL)];
 			return error_string;
-			
+
 			/* the following are all of the rtype-instructions */
 		case 0x33:
 			if (func7 == 0x01) {
