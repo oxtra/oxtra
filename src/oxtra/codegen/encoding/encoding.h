@@ -413,7 +413,7 @@ namespace encoding {
 	utils::riscv_instruction_t REMU(RiscVRegister rd, RiscVRegister rs1, RiscVRegister rs2);
 
 	/* --- RV64M Standard Extension --- */
-	//*W instructions maybe necessary
+	// *W instructions maybe necessary
 
 	// probably not needed: atomics
 

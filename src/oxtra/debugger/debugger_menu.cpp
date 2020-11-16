@@ -373,7 +373,7 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address) {
 				else
 					return print_reg(hex, riscv);
 
-				// check if a second attribte exists
+				// check if a second attribute exists
 				if (arg_state[1] == arg_state_key) {
 					if (arg_key[1] == DebugInputKey::hexadecimal)
 						hex = true;
@@ -420,7 +420,7 @@ std::string debugger::Debugger::parse_input(utils::guest_addr_t address) {
 				}
 				if (!str.empty())
 					str.push_back('\n');
-				str.append("signal-handler attachted!");
+				str.append("signal-handler attached!");
 				return str;
 			}
 		case DebugInputKey::stack:

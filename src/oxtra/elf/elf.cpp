@@ -68,12 +68,12 @@ ElfImage& ElfImage::operator=(elf::ElfImage&& other) {
 }
 
 size_t Elf::read_file(const char* path) {
-	//open the file
+	// open the file
 	FILE* file = fopen(path, "r");
 	if (file == nullptr)
 		throw ElfException(ElfException::file_failed, "open the file");
 
-	//read the size of the file
+	// read the size of the file
 	fseek(file, 0, SEEK_END);
 	size_t size = ftell(file);
 	fseek(file, 0, SEEK_SET);
@@ -82,10 +82,10 @@ size_t Elf::read_file(const char* path) {
 		throw ElfException(ElfException::file_failed, "file too small");
 	}
 
-	//allocate a buffer for the file
+	// allocate a buffer for the file
 	_page_flags = std::make_unique<uint8_t[]>(size);
 
-	//read the contents of the file
+	// read the contents of the file
 	if (fread(_page_flags.get(), 1, size, file) != size) {
 		fclose(file);
 		throw ElfException(ElfException::file_failed, "read the file");
@@ -100,10 +100,10 @@ tp Elf::resolve_offset(uintptr_t offset) {
 }
 
 void Elf::validate_elf() {
-	//get the pointer to the fileheader
+	// get the pointer to the file header
 	auto ehdr = resolve_offset<Elf64_Ehdr*>(0);
 
-	//validate the header-identification
+	// validate the header-identification
 	if (memcmp(ehdr->e_ident, ELFMAG, SELFMAG) != 0)
 		throw ElfException(ElfException::not_elf_file, "invalid signature");
 	if (ehdr->e_ident[EI_CLASS] != ELFCLASS64)
@@ -117,13 +117,13 @@ void Elf::validate_elf() {
 	if (ehdr->e_ident[EI_ABIVERSION] != 0)
 		throw ElfException(ElfException::format_issue, "invalid abi-version");
 
-	//validate the type and machine of this binary
+	// validate the type and machine of this binary
 	if (ehdr->e_type != ET_EXEC)
 		throw ElfException(ElfException::unsupported_type, "not static executable");
 	if (ehdr->e_machine != EM_X86_64)
 		throw ElfException(ElfException::unsupported_binary, "invalid machine");
 
-	//validate the rest of the parameter of the header
+	// validate the rest of the parameter of the header
 	if (ehdr->e_version != EV_CURRENT)
 		throw ElfException(ElfException::format_issue, "invalid version");
 	if (ehdr->e_entry == 0)
@@ -135,16 +135,16 @@ void Elf::validate_elf() {
 }
 
 void Elf::unpack_file(size_t file_size) {
-	//extract the file-header and the entry-point
+	// extract the file-header and the entry-point
 	auto ehdr = resolve_offset<Elf64_Ehdr*>(0);
 	_entry_point = ehdr->e_entry;
 
-	//extract the number of program-headers/section-header & the index to the string-table
+	// extract the number of program-headers/section-header & the index to the string-table
 	size_t p_c = ehdr->e_phnum;
 	size_t s_c = ehdr->e_shnum;
 	size_t s_i = ehdr->e_shstrndx;
 	if (ehdr->e_phnum == PN_XNUM || ehdr->e_shnum == 0 || s_i == SHN_XINDEX) {
-		//extract the initial section-header
+		// extract the initial section-header
 		auto shdr = resolve_offset<Elf64_Shdr*>(ehdr->e_shoff);
 		if (ehdr->e_phnum == PN_XNUM)
 			p_c = shdr->sh_info;
@@ -154,14 +154,14 @@ void Elf::unpack_file(size_t file_size) {
 			s_i = shdr->sh_link;
 	}
 
-	//extract the program-header & section-header
+	// extract the program-header & section-header
 	auto phdr = resolve_offset<Elf64_Phdr*>(ehdr->e_phoff);
 	auto shdr = resolve_offset<Elf64_Shdr*>(ehdr->e_shoff);
 
-	//get a pointer to the seciton-names and find the bss-section
+	// get a pointer to the section-names and find the bss-section
 	Elf64_Shdr* bss_section = nullptr;
 	if (s_c > 0) {
-		//get the section-name-pointer and iterate through the sections
+		// get the section-name-pointer and iterate through the sections
 		auto name_ptr = resolve_offset<uint8_t*>(shdr[s_i].sh_offset);
 		for (size_t i = 0; i < s_c; i++) {
 			if (shdr[i].sh_name + 5 > shdr[s_i].sh_size)
@@ -173,13 +173,13 @@ void Elf::unpack_file(size_t file_size) {
 		}
 	}
 
-	//check if the binary was statically linked
+	// check if the binary was statically linked
 	for (size_t i = 0; i < p_c; i++) {
 		if (phdr[i].p_type == PT_INTERP)
 			throw ElfException(ElfException::not_static, "contains interpreter");
 	}
 
-	//extract the base-address and the total address-range
+	// extract the base-address and the total address-range
 	size_t base_address = ~0x00u;
 	size_t image_size = 0;
 	for (size_t i = 0; i < p_c; i++) {
@@ -197,45 +197,45 @@ void Elf::unpack_file(size_t file_size) {
 			image_size = bss_section->sh_addr + bss_section->sh_size;
 	}
 
-	//page-align the base and the range
+	// page-align the base and the range
 	base_address ^= (base_address & 0x00000FFFu);
 	image_size = utils::page_align(image_size);
 	image_size -= base_address;
 
-	//allocate the buffer for the image & the table for the page-entries
+	// allocate the buffer for the image & the table for the page-entries
 	_image = ElfImage(base_address, image_size);
 
-	//allocate and initialize the page-array
+	// allocate and initialize the page-array
 	auto temp_flags = std::make_unique<uint8_t[]>(image_size >> 12u);
 	memset(temp_flags.get(), 0, image_size >> 12u);
 
-	//iterate through the program-headers and write them to memory
+	// iterate through the program-headers and write them to memory
 	for (size_t i = 0; i < p_c; i++) {
 		if (phdr[i].p_type != PT_LOAD)
 			continue;
 
-		//compute the first and the last page the blocks are within
+		// compute the first and the last page the blocks are within
 		size_t page_start = phdr[i].p_vaddr - base_address;
 		size_t page_end = phdr[i].p_vaddr + phdr[i].p_memsz - base_address;
 		page_start >>= 12u;
 		page_end = (page_end >> 12u) + ((page_end & 0x00000FFFu) > 0 ? 1 : 0);
 
-		//extract the page-flags
+		// extract the page-flags
 		uint8_t flags = PAGE_MAPPED;
 		if (phdr[i].p_flags & PF_X) flags |= PAGE_EXECUTE;
 		if (phdr[i].p_flags & PF_W) flags |= PAGE_WRITE;
 		if (phdr[i].p_flags & PF_R) flags |= PAGE_READ;
 
-		//setup the page-flags
+		// setup the page-flags
 		for (auto p = page_start; p < page_end; p++)
 			temp_flags[p] = flags;
 
-		//compute the source and destination-address as well as the copy-size
+		// compute the source and destination-address as well as the copy-size
 		uintptr_t copy_src = resolve_offset<uintptr_t>(phdr[i].p_offset);
 		uintptr_t copy_dest = phdr[i].p_vaddr;
 		size_t copy_size = phdr[i].p_filesz;
 
-		//align the source to be page-aligned
+		// align the source to be page-aligned
 		if (phdr[i].p_vaddr & 0x00000FFFu) {
 			uintptr_t offset = phdr[i].p_vaddr & 0x00000FFFu;
 			copy_src -= offset;
@@ -243,42 +243,42 @@ void Elf::unpack_file(size_t file_size) {
 			copy_size += offset;
 		}
 
-		//align the size to be page-aligned
+		// align the size to be page-aligned
 		if (copy_size & 0x00000FFFu)
 			copy_size += 0x1000;
 		copy_size ^= (copy_size & 0x00000FFFu);
 
-		//adjust the size (in order to not overrun the file-size)
+		// adjust the size (in order to not overrun the file-size)
 		if (copy_src + copy_size > reinterpret_cast<uintptr_t>(_page_flags.get()) + file_size)
 			copy_size = reinterpret_cast<uintptr_t>(_page_flags.get()) + file_size - copy_src;
 
 		mprotect(reinterpret_cast<void*>(copy_dest), copy_src, PROT_WRITE | PROT_READ);
 
-		//map the section to memory
+		// map the section to memory
 		memcpy(reinterpret_cast<void*>(copy_dest), reinterpret_cast<void*>(copy_src), copy_size);
 
-		//update the flags of the page
+		// update the flags of the page
 		int prot = ((flags & PAGE_EXECUTE) ? PROT_EXEC : 0) | ((flags & PAGE_READ) ? PROT_READ : 0) |
 				   ((flags & PAGE_WRITE) ? PROT_WRITE : 0);
 
 		mprotect(reinterpret_cast<void*>(phdr[i].p_vaddr ^ (phdr[i].p_vaddr & 0x00000FFFu)), phdr[i].p_memsz, prot);
 	}
 
-	//map the bss-section to pages
+	// map the bss-section to pages
 	if (bss_section != nullptr) {
 		memset(reinterpret_cast<void*>(bss_section->sh_addr), 0, bss_section->sh_size);
-		//compute the first and the last page the blocks are within
+		// compute the first and the last page the blocks are within
 		size_t page_start = bss_section->sh_addr - base_address;
 		size_t page_end = bss_section->sh_addr + bss_section->sh_size - base_address;
 		page_start >>= 12u;
 		page_end = (page_end >> 12u) + ((page_end & 0x00000FFFu) > 0 ? 1 : 0);
 
-		//setup the page-flags
+		// setup the page-flags
 		uint8_t flags = PAGE_MAPPED | PAGE_READ | PAGE_WRITE;
 		for (auto p = page_start; p < page_end; p++)
 			temp_flags[p] = flags;
 
-		//update the flags of the page
+		// update the flags of the page
 		int prot = ((flags & PAGE_EXECUTE) ? PROT_EXEC : 0) | ((flags & PAGE_READ) ? PROT_READ : 0) |
 				   ((flags & PAGE_WRITE) ? PROT_WRITE : 0);
 		mprotect(reinterpret_cast<void*>(bss_section->sh_addr ^ (bss_section->sh_addr & 0x00000FFFu)), bss_section->sh_size,
@@ -290,22 +290,22 @@ void Elf::unpack_file(size_t file_size) {
 }
 
 Elf::Elf(const char* path) {
-	//initialize the this object
+	// initialize the this object
 	_page_flags = nullptr;
 	_entry_point = 0;
 
-	//read the file
+	// read the file
 	const auto file_size = read_file(path);
 
-	//validate the file
+	// validate the file
 	validate_elf();
 
-	//unpack the file
+	// unpack the file
 	unpack_file(file_size);
 }
 
 Elf::Elf(const uint8_t* ptr, size_t size, uintptr_t base_address, size_t exec_pages) {
-	//initialize the this object
+	// initialize the this object
 	_page_flags = nullptr;
 	_entry_point = base_address;
 
@@ -332,7 +332,7 @@ Elf::Elf(const uint8_t* ptr, size_t size, uintptr_t base_address, size_t exec_pa
 }
 
 uint8_t Elf::get_page_flags(uintptr_t vaddr) const {
-	//validate the address
+	// validate the address
 	vaddr -= reinterpret_cast<uintptr_t>(_image.get_base());
 	if (vaddr >= _image.get_size())
 		return 0;
@@ -340,27 +340,27 @@ uint8_t Elf::get_page_flags(uintptr_t vaddr) const {
 }
 
 size_t Elf::get_size(uintptr_t vaddr, size_t max_page) const {
-	//validate the address
+	// validate the address
 	vaddr -= reinterpret_cast<uintptr_t>(_image.get_base());
 	if (vaddr >= _image.get_size())
 		return 0;
 
-	//extract the page-flags
+	// extract the page-flags
 	uint8_t flags = _page_flags[vaddr >> 12u];
 
-	//compute the initial size and convert vaddr to its page-index
+	// compute the initial size and convert vaddr to its page-index
 	size_t size = vaddr & 0x00000FFFu;
 	vaddr = (vaddr >> 12u) + 1;
 
 	// subtract the offset inside the page from the page size
 	size = 0x1000 - size;
 
-	//compute the page-index of the last page to check and clip the value
+	// compute the page-index of the last page to check and clip the value
 	max_page += vaddr;
 	if (max_page > (_image.get_size() >> 12u))
 		max_page = (_image.get_size() >> 12u);
 
-	//iterate through the pages and add their size up
+	// iterate through the pages and add their size up
 	for (auto i = vaddr; i < max_page; i++) {
 		if (flags != _page_flags[i])
 			return size;
