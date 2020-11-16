@@ -149,4 +149,4 @@ Further, you can always take a look at [our written report](https://github.com/o
 ## Authors and Acknowledgement
 oxtra was developed by Knud Haase, Björn Boss Henrichsen, Michael Plainer, and Justus Polzin.
 
-We would like to thank our advisor Alexis Engelke, as he supported us throughout the development with great tips and has learned us a lot.
+We would like to thank our advisor Alexis Engelke, as he supported us throughout the development with great tips and has teached us a lot.
